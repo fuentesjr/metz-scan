@@ -1,0 +1,6 @@
+plugins:
+  - rubocop-metz
+
+AllCops:
+  TargetRubyVersion: 3.3
+  NewCops: enable
