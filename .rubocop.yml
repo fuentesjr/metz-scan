@@ -4,3 +4,17 @@ plugins:
 AllCops:
   TargetRubyVersion: 3.3
   NewCops: enable
+  SuggestExtensions: false
+
+Style/StringLiterals:
+  EnforcedStyle: double_quotes
+
+Style/Documentation:
+  Enabled: false
+
+Gemspec/RequireMFA:
+  Enabled: false
+
+Naming/FileName:
+  Exclude:
+    - rubocop-metz/lib/rubocop-metz.rb
