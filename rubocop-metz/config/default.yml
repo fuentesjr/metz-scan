@@ -18,3 +18,9 @@ Metz/MethodsTooLong:
   CountAsOne: []
   AllowedMethods: []
   AllowedPatterns: []
+
+Metz/MethodsTooManyParameters:
+  Description: 'Flags methods whose parameter list exceeds Max; the Metz default is stricter than core RuboCop.'
+  Enabled: true
+  Severity: refactor
+  Max: 4
