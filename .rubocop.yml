@@ -18,3 +18,23 @@ Gemspec/RequireMFA:
 Naming/FileName:
   Exclude:
     - rubocop-metz/lib/rubocop-metz.rb
+
+Metrics/MethodLength:
+  Exclude:
+    - rubocop-metz/test/**/*
+
+Metrics/ModuleLength:
+  Exclude:
+    - rubocop-metz/test/**/*
+
+Metrics/ClassLength:
+  Exclude:
+    - rubocop-metz/test/**/*
+
+Metrics/AbcSize:
+  Exclude:
+    - rubocop-metz/test/**/*
+
+Style/FormatStringToken:
+  Exclude:
+    - rubocop-metz/test/**/*
