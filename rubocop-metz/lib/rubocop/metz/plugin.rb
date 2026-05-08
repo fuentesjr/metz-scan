@@ -8,13 +8,16 @@ require_relative "version"
 module RuboCop
   module Metz
     class Plugin < LintRoller::Plugin
+      ABOUT = LintRoller::About.new(
+        name: "rubocop-metz",
+        version: RuboCop::Metz::VERSION,
+        homepage: "https://rubygems.org/gems/rubocop-metz",
+        description: "Sandi-Metz-inspired RuboCop cops."
+      ).freeze
+      private_constant :ABOUT
+
       def about
-        LintRoller::About.new(
-          name: "rubocop-metz",
-          version: RuboCop::Metz::VERSION,
-          homepage: "https://rubygems.org/gems/rubocop-metz",
-          description: "Sandi-Metz-inspired RuboCop cops."
-        )
+        ABOUT
       end
 
       def supported?(context)

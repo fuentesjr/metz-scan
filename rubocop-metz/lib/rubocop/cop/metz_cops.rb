@@ -5,3 +5,4 @@
 # wiring in a single discoverable location.
 
 require_relative "metz/classes_too_long"
+require_relative "metz/methods_too_long"

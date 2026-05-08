@@ -8,3 +8,13 @@ Metz/ClassesTooLong:
   Max: 100
   CountComments: false
   CountAsOne: []
+
+Metz/MethodsTooLong:
+  Description: 'Flags methods longer than the configured Max line count; the Metz default is stricter than core RuboCop.'
+  Enabled: true
+  Severity: refactor
+  Max: 5
+  CountComments: false
+  CountAsOne: []
+  AllowedMethods: []
+  AllowedPatterns: []

@@ -23,6 +23,10 @@ Metrics/MethodLength:
   Exclude:
     - rubocop-metz/test/**/*
 
+Metz/MethodsTooLong:
+  Exclude:
+    - rubocop-metz/test/**/*
+
 Metrics/ModuleLength:
   Exclude:
     - rubocop-metz/test/**/*
