@@ -38,3 +38,7 @@ Metrics/AbcSize:
 Style/FormatStringToken:
   Exclude:
     - rubocop-metz/test/**/*
+
+Style/OneClassPerFile:
+  Exclude:
+    - rubocop-metz/test/**/*
