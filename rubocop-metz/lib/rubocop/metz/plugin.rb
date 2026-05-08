@@ -12,7 +12,7 @@ module RuboCop
         LintRoller::About.new(
           name: "rubocop-metz",
           version: RuboCop::Metz::VERSION,
-          homepage: "https://github.com/salfuentes/metz_scan",
+          homepage: "https://rubygems.org/gems/rubocop-metz",
           description: "Sandi-Metz-inspired RuboCop cops."
         )
       end

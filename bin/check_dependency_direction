@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# Enforces the rubocop-metz → metz-scan dependency direction invariant:
+# nothing under rubocop-metz/lib/ may reference MetzScan / metz_scan
+# (case-insensitive). The sub-gem must remain useful to anyone who never
+# installs the wrapper. The gemspec is the only file allowed to mention
+# the wrapper name and is excluded from the grep.
+
+set -u
+
+repo_root="$(cd "$(dirname "$0")/.." && pwd)"
+target_dir="$repo_root/rubocop-metz/lib"
+
+if [ ! -d "$target_dir" ]; then
+  printf 'check_dependency_direction: missing directory %s\n' "$target_dir" >&2
+  exit 2
+fi
+
+matches="$(grep -RIniE 'metz[_-]?scan' "$target_dir" 2>/dev/null || true)"
+
+if [ -n "$matches" ]; then
+  printf 'check_dependency_direction: forbidden MetzScan/metz_scan reference under rubocop-metz/lib/:\n' >&2
+  printf '%s\n' "$matches" >&2
+  exit 1
+fi
+
+exit 0

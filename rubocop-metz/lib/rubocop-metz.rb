@@ -5,3 +5,4 @@ require "rubocop-ast"
 
 require_relative "rubocop/metz/version"
 require_relative "rubocop/metz/plugin"
+require_relative "rubocop/cop/metz_cops"
