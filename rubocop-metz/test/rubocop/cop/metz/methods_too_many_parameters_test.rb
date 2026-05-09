@@ -62,6 +62,26 @@ class RuboCopCopMetzMethodsTooManyParametersTest < Minitest::Test
     assert_metz_offense_count(1, "def self.big(a, b, c, d, e); end\n")
   end
 
+  def test_silent_on_five_argument_lambda_literal
+    refute_offense("five = ->(a, b, c, d, e) { a }\n")
+  end
+
+  def test_silent_on_lambda_keyword_form
+    refute_offense("five = lambda { |a, b, c, d, e| a }\n")
+  end
+
+  def test_silent_on_five_argument_proc_literal
+    refute_offense("five = proc { |a, b, c, d, e| a }\n")
+  end
+
+  def test_silent_on_five_argument_block_literal
+    refute_offense("[].each { |a, b, c, d, e| a }\n")
+  end
+
+  def test_silent_on_five_argument_do_end_block
+    refute_offense("[].each do |a, b, c, d, e|\n  a\nend\n")
+  end
+
   def assert_metz_offense_count(expected, source)
     metz_inspect(source, nil)
     actual = (@metz_offenses || []).select { |o| o.cop_name == "Metz/MethodsTooManyParameters" }

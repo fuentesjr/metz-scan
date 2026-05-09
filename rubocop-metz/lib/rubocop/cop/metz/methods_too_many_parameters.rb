@@ -25,7 +25,14 @@ module RuboCop
         exclude_limit "Max"
 
         def on_args(node)
-          count = args_count(node)
+          return unless method_definition_args?(node)
+
+          register_offense(node, args_count(node))
+        end
+
+        private
+
+        def register_offense(node, count)
           return unless count > max_params
 
           add_offense(node, message: format(MSG, max: max_params, count: count)) do
@@ -33,7 +40,12 @@ module RuboCop
           end
         end
 
-        private
+        def method_definition_args?(node)
+          parent = node.parent
+          return false unless parent
+
+          parent.def_type? || parent.defs_type?
+        end
 
         def args_count(node)
           node.children.count { |arg| !arg.blockarg_type? }
