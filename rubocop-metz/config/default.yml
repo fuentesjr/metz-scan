@@ -24,3 +24,27 @@ Metz/MethodsTooManyParameters:
   Enabled: true
   Severity: refactor
   Max: 4
+
+Metz/DemeterTrainWreck:
+  Description: 'Detects Law-of-Demeter-violating object-graph traversal chains.'
+  Enabled: true
+  Severity: refactor
+  Max: 4
+  AllowedReceivers:
+    - Rails
+    - Arel
+    - Time
+    - Date
+    - DateTime
+  AllowedValueObjects:
+    - String
+    - Integer
+    - Float
+    - Symbol
+    - Array
+    - Hash
+    - Set
+  Exclude:
+    - 'spec/**/*'
+    - 'db/migrate/**/*'
+  VersionAdded: '0.1'

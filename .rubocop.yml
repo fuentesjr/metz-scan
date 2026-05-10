@@ -5,6 +5,8 @@ AllCops:
   TargetRubyVersion: 3.3
   NewCops: enable
   SuggestExtensions: false
+  Exclude:
+    - rubocop-metz/test/fixtures/**/*
 
 Style/StringLiterals:
   EnforcedStyle: double_quotes
@@ -24,6 +26,14 @@ Metrics/MethodLength:
     - rubocop-metz/test/**/*
 
 Metz/MethodsTooLong:
+  Exclude:
+    - rubocop-metz/test/**/*
+
+Metz/ClassesTooLong:
+  Exclude:
+    - rubocop-metz/test/**/*
+
+Metz/DemeterTrainWreck:
   Exclude:
     - rubocop-metz/test/**/*
 

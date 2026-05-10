@@ -7,3 +7,4 @@
 require_relative "metz/classes_too_long"
 require_relative "metz/methods_too_long"
 require_relative "metz/methods_too_many_parameters"
+require_relative "metz/demeter_train_wreck"
