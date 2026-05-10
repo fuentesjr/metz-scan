@@ -48,3 +48,12 @@ Metz/DemeterTrainWreck:
     - 'spec/**/*'
     - 'db/migrate/**/*'
   VersionAdded: '0.1'
+
+Metz/ControllersTooManyDirectCollaborators:
+  Description: 'Flags Rails controller actions that reach into more than MaxCollaborators distinct collaborator constants.'
+  Enabled: true
+  Severity: refactor
+  MaxCollaborators: 1
+  Include:
+    - 'app/controllers/**/*.rb'
+  VersionAdded: '0.1'
