@@ -1,0 +1,19 @@
+---
+controllers:
+  violating:
+    - users_controller.rb
+    - orders_controller.rb
+    - dashboard_controller.rb
+  clean:
+    - home_controller.rb
+    - health_controller.rb
+    - sessions_controller.rb
+views:
+  violating:
+    - app/views/users/index.html.erb
+    - app/views/orders/show.html.erb
+    - app/views/dashboard/show.html.erb
+  clean:
+    - app/views/home/index.html.erb
+    - app/views/health/index.html.erb
+    - app/views/sessions/new.html.erb

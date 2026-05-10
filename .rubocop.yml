@@ -7,6 +7,7 @@ AllCops:
   SuggestExtensions: false
   Exclude:
     - rubocop-metz/test/fixtures/**/*
+    - spec/fixtures/sample_app/**/*
 
 Style/StringLiterals:
   EnforcedStyle: double_quotes

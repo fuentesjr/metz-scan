@@ -1,0 +1,56 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Enforces the M4 sample-app freeze gate: every regular file under
+# spec/fixtures/sample_app/ must match the SHA-256 recorded in
+# spec/fixtures/sample_app/.frozen.sha256. Missing files, modified files,
+# and extra files all cause a non-zero exit and an error printed to stderr.
+
+require "digest"
+
+ROOT = File.expand_path("..", __dir__)
+FIXTURE_DIR = File.join(ROOT, "spec/fixtures/sample_app")
+MANIFEST = File.join(FIXTURE_DIR, ".frozen.sha256")
+SELF_REF = "__SELF__"
+
+def fail_with(messages)
+  Array(messages).each { |m| warn m }
+  exit 1
+end
+
+fail_with("check_sample_app_frozen: missing #{FIXTURE_DIR}") unless File.directory?(FIXTURE_DIR)
+fail_with("check_sample_app_frozen: missing manifest #{MANIFEST}") unless File.file?(MANIFEST)
+
+manifest_entries = {}
+File.foreach(MANIFEST).with_index do |line, idx|
+  line = line.strip
+  next if line.empty?
+
+  hash, path = line.split(/\s+/, 2)
+  if hash.nil? || path.nil? || path.empty?
+    fail_with("check_sample_app_frozen: malformed manifest line #{idx + 1}: #{line.inspect}")
+  end
+  manifest_entries[path] = hash
+end
+
+all_paths = Dir.glob(File.join(FIXTURE_DIR, "**/*"), File::FNM_DOTMATCH)
+on_disk = all_paths.select { |p| File.file?(p) }
+                   .map { |p| p.sub("#{FIXTURE_DIR}/", "") }
+                   .sort
+
+manifest_paths = manifest_entries.keys.sort
+
+extra_errors = (on_disk - manifest_paths).map { |path| "extra file not in manifest: #{path}" }
+missing_errors = (manifest_paths - on_disk).map { |path| "manifest file missing on disk: #{path}" }
+
+mismatch_errors = (manifest_paths & on_disk).filter_map do |path|
+  expected = manifest_entries[path]
+  next if expected == SELF_REF && path == ".frozen.sha256"
+
+  actual = Digest::SHA256.file(File.join(FIXTURE_DIR, path)).hexdigest
+  "checksum mismatch: #{path} (expected #{expected}, got #{actual})" unless actual == expected
+end
+
+errors = extra_errors + missing_errors + mismatch_errors
+fail_with(errors) unless errors.empty?
+exit 0
