@@ -57,3 +57,12 @@ Metz/ControllersTooManyDirectCollaborators:
   Include:
     - 'app/controllers/**/*.rb'
   VersionAdded: '0.1'
+
+Metz/ViewsDeepNavigation:
+  Description: 'Flags Rails view templates whose ERB/HAML/SLIM expressions traverse the object graph deeper than MaxChainLength.'
+  Enabled: true
+  Severity: refactor
+  MaxChainLength: 3
+  Include:
+    - 'app/views/**/*.{erb,haml,slim}'
+  VersionAdded: '0.1'

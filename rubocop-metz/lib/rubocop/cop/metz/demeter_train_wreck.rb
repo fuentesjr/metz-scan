@@ -39,7 +39,11 @@ module RuboCop
           return if allowed_receiver_root?(links.first)
 
           hops = count_graph_traversals(links)
-          add_offense(node, message: format(MSG, count: hops, max: max)) if hops > max
+          add_offense(node, message: build_message(hops)) if hops > max
+        end
+
+        def build_message(hops)
+          format(self.class::MSG, count: hops, max: max)
         end
 
         def chain_links(node)
