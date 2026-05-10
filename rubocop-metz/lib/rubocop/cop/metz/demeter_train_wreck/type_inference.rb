@@ -174,6 +174,30 @@ module RuboCop
             proc: {
               call: :unknown, :[] => :unknown,
               arity: :integer, lambda?: :boolean, curry: :proc, to_proc: :proc
+            }.freeze,
+            set: {
+              add: :set, add?: :set, delete: :set, delete?: :set,
+              merge: :set, replace: :set, clear: :set,
+              union: :set, intersection: :set, difference: :set,
+              subtract: :set, flatten: :set, classify: :hash, divide: :set,
+              keep_if: :set, delete_if: :set, reject!: :set, select!: :set, filter!: :set,
+              :+ => :set, :- => :set, :& => :set, :| => :set, :^ => :set,
+              dup: :set, clone: :set, freeze: :set,
+              size: :integer, length: :integer, count: :integer, hash: :integer,
+              empty?: :boolean, include?: :boolean, member?: :boolean,
+              subset?: :boolean, superset?: :boolean, disjoint?: :boolean,
+              proper_subset?: :boolean, proper_superset?: :boolean,
+              intersect?: :boolean, frozen?: :boolean,
+              any?: :boolean, all?: :boolean, none?: :boolean, one?: :boolean,
+              :== => :boolean, :=== => :boolean,
+              to_a: :array, to_ary: :array, sort: :array,
+              map: :array, collect: :array, select: :array, filter: :array,
+              reject: :array, partition: :array, group_by: :hash,
+              min: :unknown, max: :unknown, min_by: :unknown, max_by: :unknown,
+              first: :unknown, find: :unknown, detect: :unknown,
+              to_set: :set, sort_by: :array, tally: :hash,
+              each: :enumerator, each_with_index: :enumerator, each_with_object: :enumerator,
+              inspect: :string, to_s: :string, join: :string
             }.freeze
           }.freeze
 

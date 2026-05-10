@@ -141,6 +141,18 @@ class RuboCopCopMetzDemeterTrainWreckTest < Minitest::Test
     refute_offense("def m; arr[0] = bar; end\n")
   end
 
+  def test_set_size_zero_value_object_chain_silent
+    refute_offense("def m; set.size.zero?; end\n")
+  end
+
+  def test_set_new_add_each_to_a_first_chain_silent
+    refute_offense("def m; Set.new([1, 2, 3]).add(4).each.to_a.first; end\n")
+  end
+
+  def test_set_value_object_methods_cascade_through_long_chain
+    refute_offense("def m; some_set.add(:a).add(:b).add(:c).add(:d).each.to_a; end\n")
+  end
+
   def assert_demeter_offense_count(expected, source)
     metz_inspect(source, nil)
     actual = (@metz_offenses || []).select { |o| o.cop_name == "Metz/DemeterTrainWreck" }
