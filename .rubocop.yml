@@ -5,9 +5,19 @@ AllCops:
   TargetRubyVersion: 3.3
   NewCops: enable
   SuggestExtensions: false
+  Include:
+    - "**/*.rb"
+    - "**/*.gemspec"
+    - "**/Gemfile"
+    - "**/Rakefile"
+    - "**/*.erb"
+    - "**/*.haml"
+    - "**/*.slim"
   Exclude:
     - rubocop-metz/test/fixtures/**/*
+<% unless ARGV.any? { |a| a.include?("spec/fixtures/sample_app") } %>
     - spec/fixtures/sample_app/**/*
+<% end %>
 
 Style/StringLiterals:
   EnforcedStyle: double_quotes
@@ -37,6 +47,7 @@ Metz/ClassesTooLong:
 Metz/DemeterTrainWreck:
   Exclude:
     - rubocop-metz/test/**/*
+    - spec/fixtures/sample_app/**/*
 
 Metrics/ModuleLength:
   Exclude:
