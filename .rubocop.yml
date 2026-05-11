@@ -34,37 +34,91 @@ Naming/FileName:
 
 Metrics/MethodLength:
   Exclude:
-    - rubocop-metz/test/**/*
+    - rubocop-metz/test/audit/**/*
+    - rubocop-metz/test/cop/**/*
+    - rubocop-metz/test/integration/**/*
+    - rubocop-metz/test/metz/**/*
+    - rubocop-metz/test/rubocop/**/*
+    - rubocop-metz/test/cop_helper_test.rb
+    - rubocop-metz/test/test_helper.rb
 
 Metz/MethodsTooLong:
   Exclude:
-    - rubocop-metz/test/**/*
+    - rubocop-metz/test/audit/**/*
+    - rubocop-metz/test/cop/**/*
+    - rubocop-metz/test/integration/**/*
+    - rubocop-metz/test/metz/**/*
+    - rubocop-metz/test/rubocop/**/*
+    - rubocop-metz/test/cop_helper_test.rb
+    - rubocop-metz/test/test_helper.rb
 
 Metz/ClassesTooLong:
   Exclude:
-    - rubocop-metz/test/**/*
+    - rubocop-metz/test/audit/**/*
+    - rubocop-metz/test/cop/**/*
+    - rubocop-metz/test/integration/**/*
+    - rubocop-metz/test/metz/**/*
+    - rubocop-metz/test/rubocop/**/*
+    - rubocop-metz/test/cop_helper_test.rb
+    - rubocop-metz/test/test_helper.rb
 
 Metz/DemeterTrainWreck:
   Exclude:
-    - rubocop-metz/test/**/*
+    - rubocop-metz/test/audit/**/*
+    - rubocop-metz/test/cop/**/*
+    - rubocop-metz/test/integration/**/*
+    - rubocop-metz/test/metz/**/*
+    - rubocop-metz/test/rubocop/**/*
+    - rubocop-metz/test/cop_helper_test.rb
+    - rubocop-metz/test/test_helper.rb
     - spec/fixtures/sample_app/**/*
 
 Metrics/ModuleLength:
   Exclude:
-    - rubocop-metz/test/**/*
+    - rubocop-metz/test/audit/**/*
+    - rubocop-metz/test/cop/**/*
+    - rubocop-metz/test/integration/**/*
+    - rubocop-metz/test/metz/**/*
+    - rubocop-metz/test/rubocop/**/*
+    - rubocop-metz/test/cop_helper_test.rb
+    - rubocop-metz/test/test_helper.rb
 
 Metrics/ClassLength:
   Exclude:
-    - rubocop-metz/test/**/*
+    - rubocop-metz/test/audit/**/*
+    - rubocop-metz/test/cop/**/*
+    - rubocop-metz/test/integration/**/*
+    - rubocop-metz/test/metz/**/*
+    - rubocop-metz/test/rubocop/**/*
+    - rubocop-metz/test/cop_helper_test.rb
+    - rubocop-metz/test/test_helper.rb
 
 Metrics/AbcSize:
   Exclude:
-    - rubocop-metz/test/**/*
+    - rubocop-metz/test/audit/**/*
+    - rubocop-metz/test/cop/**/*
+    - rubocop-metz/test/integration/**/*
+    - rubocop-metz/test/metz/**/*
+    - rubocop-metz/test/rubocop/**/*
+    - rubocop-metz/test/cop_helper_test.rb
+    - rubocop-metz/test/test_helper.rb
 
 Style/FormatStringToken:
   Exclude:
-    - rubocop-metz/test/**/*
+    - rubocop-metz/test/audit/**/*
+    - rubocop-metz/test/cop/**/*
+    - rubocop-metz/test/integration/**/*
+    - rubocop-metz/test/metz/**/*
+    - rubocop-metz/test/rubocop/**/*
+    - rubocop-metz/test/cop_helper_test.rb
+    - rubocop-metz/test/test_helper.rb
 
 Style/OneClassPerFile:
   Exclude:
-    - rubocop-metz/test/**/*
+    - rubocop-metz/test/audit/**/*
+    - rubocop-metz/test/cop/**/*
+    - rubocop-metz/test/integration/**/*
+    - rubocop-metz/test/metz/**/*
+    - rubocop-metz/test/rubocop/**/*
+    - rubocop-metz/test/cop_helper_test.rb
+    - rubocop-metz/test/test_helper.rb
