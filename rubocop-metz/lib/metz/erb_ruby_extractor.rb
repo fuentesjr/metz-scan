@@ -26,11 +26,15 @@ module Metz
 
     def call(processed_source)
       path = processed_source.path
-      return nil unless path && ::Metz::FileClassifier.view?(path)
+      return nil unless path && handles?(path)
 
       snippets = extract_snippets(processed_source)
       snippets << empty_snippet(processed_source) if snippets.empty?
       snippets
+    end
+
+    def handles?(path)
+      File.extname(path.to_s) == ".erb" && ::Metz::FileClassifier.view?(path)
     end
 
     def install!

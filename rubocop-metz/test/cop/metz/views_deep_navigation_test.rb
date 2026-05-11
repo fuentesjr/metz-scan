@@ -112,7 +112,49 @@ class CopMetzViewsDeepNavigationTest < Minitest::Test
     end
   end
 
+  def test_violating_haml_fixture_fires_via_rubocop
+    assert_operator install_fixture_offense_count("violating.html.haml"), :>=, 1
+  end
+
+  def test_clean_haml_fixture_is_silent_via_rubocop
+    assert_equal 0, install_fixture_offense_count("clean.html.haml")
+  end
+
+  def test_violating_slim_fixture_fires_via_rubocop
+    assert_operator install_fixture_offense_count("violating.html.slim"), :>=, 1
+  end
+
+  def test_clean_slim_fixture_is_silent_via_rubocop
+    assert_equal 0, install_fixture_offense_count("clean.html.slim")
+  end
+
+  def test_haml_outside_app_views_does_not_fire_via_rubocop
+    assert_equal 0, install_fixture_offense_count("violating.html.haml",
+                                                  install_at: "lib/template.haml")
+  end
+
+  def test_slim_outside_app_views_does_not_fire_via_rubocop
+    assert_equal 0, install_fixture_offense_count("violating.html.slim",
+                                                  install_at: "lib/template.slim")
+  end
+
   private
+
+  def install_fixture_offense_count(fixture_name, install_at: nil)
+    Dir.mktmpdir do |dir|
+      ext = File.extname(fixture_name)
+      install_at ||= "app/views/x/show.html#{ext}"
+      dest = File.join(dir, install_at)
+      FileUtils.mkdir_p(File.dirname(dest))
+      FileUtils.cp(view_fixture_path(fixture_name), dest)
+
+      rubocop_offense_count(dest)
+    end
+  end
+
+  def view_fixture_path(name)
+    File.join(REPO_ROOT, "rubocop-metz/test/fixtures/views", name)
+  end
 
   def manifest
     @manifest ||= YAML.load_file(File.join(FIXTURE_DIR, ".fixture_manifest.yml"))
