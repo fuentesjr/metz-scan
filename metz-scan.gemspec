@@ -23,6 +23,9 @@ Gem::Specification.new do |spec|
   spec.metadata["source_code_uri"] = spec.homepage
 
   spec.files = Dir.glob("lib/**/*", File::FNM_DOTMATCH).reject { |f| File.directory?(f) } +
+               Dir.glob("bin/metz-scan").select { |f| File.file?(f) } +
                ["LICENSE", "metz-scan.gemspec"].select { |f| File.exist?(f) }
+  spec.bindir        = "bin"
+  spec.executables   = ["metz-scan"]
   spec.require_paths = ["lib"]
 end
