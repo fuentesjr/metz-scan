@@ -9,6 +9,7 @@ Rake::TestTask.new(:test) do |t|
   t.libs << "test"
   t.test_files = FileList[
     "rubocop-metz/test/**/*_test.rb",
+    "rubocop-metz/test/integration/**/*_test.rb",
     "test/**/*_test.rb"
   ]
   t.warning = false

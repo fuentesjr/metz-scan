@@ -65,7 +65,7 @@ module MetzScan
       handler ? handler.run(args, stdout: stdout, stderr: stderr) : stub_subcommand(name)
     end
 
-    SUBCOMMAND_HANDLERS = { "rules" => "Rules", "explain" => "Explain" }.freeze
+    SUBCOMMAND_HANDLERS = { "rules" => "Rules", "explain" => "Explain", "scan" => "Scan" }.freeze
     private_constant :SUBCOMMAND_HANDLERS
 
     def subcommand_handler(name)

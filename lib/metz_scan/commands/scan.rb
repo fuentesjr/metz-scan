@@ -1,0 +1,106 @@
+# frozen_string_literal: true
+
+require "json"
+require "optparse"
+
+require_relative "../version"
+require_relative "scan/runner"
+require_relative "scan/text_renderer"
+require_relative "scan/sarif_renderer"
+require_relative "scan/auto_fix"
+
+module MetzScan
+  module Commands
+    class Scan
+      USAGE = "Usage: metz-scan scan PATH... [--format text|json|sarif] [--auto-fix [--unsafe] [--dry-run]]"
+      VALID_FORMATS = %w[text json sarif].freeze
+      DEFAULT_FORMAT = "text"
+
+      Options = Struct.new(:format, :paths, :auto_fix, :unsafe, :dry_run, keyword_init: true)
+
+      def self.run(argv, stdout:, stderr:)
+        new(stdout: stdout, stderr: stderr).run(argv)
+      end
+
+      def initialize(stdout:, stderr:)
+        @stdout = stdout
+        @stderr = stderr
+      end
+
+      def run(argv)
+        options = parse_options(argv)
+        validate(options) || dispatch(options)
+      rescue OptionParser::ParseError => e
+        parser_error(e)
+      end
+
+      private
+
+      attr_reader :stdout, :stderr
+
+      def parse_options(argv)
+        flags = { format: DEFAULT_FORMAT, auto_fix: false, unsafe: false, dry_run: false }
+        paths = OptionParser.new { |opts| configure_parser(opts, flags) }.parse(argv)
+        Options.new(**flags, paths: paths)
+      end
+
+      def configure_parser(opts, flags)
+        opts.banner = USAGE
+        opts.on("--format FORMAT", "Output format: text (default), json, sarif") { |f| flags[:format] = f }
+        opts.on("--auto-fix", "Apply RuboCop's safe fixes (delegates to rubocop -a)") { flags[:auto_fix] = true }
+        opts.on("--unsafe", "With --auto-fix, also apply unsafe fixes (rubocop -A)") { flags[:unsafe] = true }
+        opts.on("--dry-run", "With --auto-fix, print diff without modifying files") { flags[:dry_run] = true }
+      end
+
+      def validate(options)
+        return missing_path_arg if options.paths.empty?
+        return missing_paths(options.paths) unless options.paths.all? { |p| File.exist?(p) }
+        return nil if options.auto_fix
+
+        invalid_format(options.format) unless VALID_FORMATS.include?(options.format)
+      end
+
+      def dispatch(options)
+        return AutoFix.new(stdout: stdout, stderr: stderr).run(options) if options.auto_fix
+
+        scan(options)
+      end
+
+      def scan(options)
+        parsed = Runner.invoke(options.paths)
+        render(parsed, options.format)
+        Runner.exit_code_for(parsed)
+      end
+
+      def render(parsed, format)
+        case format
+        when "json"  then stdout.puts JSON.generate(parsed)
+        when "sarif" then SarifRenderer.new(stdout, parsed).render
+        else              TextRenderer.new(stdout, parsed).render
+        end
+      end
+
+      def parser_error(err)
+        stderr.puts "metz-scan scan: #{err.message}"
+        stderr.puts USAGE
+        1
+      end
+
+      def missing_path_arg
+        stderr.puts "metz-scan scan: missing PATH argument."
+        stderr.puts USAGE
+        1
+      end
+
+      def missing_paths(paths)
+        paths.reject { |p| File.exist?(p) }.each { |p| stderr.puts "metz-scan scan: no such file or directory: #{p}" }
+        1
+      end
+
+      def invalid_format(fmt)
+        stderr.puts "metz-scan scan: invalid --format '#{fmt}'. Valid formats: text, json, sarif."
+        1
+      end
+    end
+  end
+end
