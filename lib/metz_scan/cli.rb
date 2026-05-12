@@ -65,11 +65,15 @@ module MetzScan
       handler ? handler.run(args, stdout: stdout, stderr: stderr) : stub_subcommand(name)
     end
 
-    def subcommand_handler(name)
-      return unless name == "rules"
+    SUBCOMMAND_HANDLERS = { "rules" => "Rules", "explain" => "Explain" }.freeze
+    private_constant :SUBCOMMAND_HANDLERS
 
-      require_relative "commands/rules"
-      Commands::Rules
+    def subcommand_handler(name)
+      klass_name = SUBCOMMAND_HANDLERS[name]
+      return unless klass_name
+
+      require_relative "commands/#{name}"
+      Commands.const_get(klass_name)
     end
 
     def stub_subcommand(name)

@@ -50,11 +50,12 @@ module MetzScan
       assert_subcommands_in @stderr.string
     end
 
-    def test_explain_subcommand_is_still_an_unimplemented_stub
-      code = MetzScan::CLI.start(["explain"], stdout: @stdout, stderr: @stderr)
+    def test_explain_subcommand_dispatches_to_handler_and_exits_zero
+      code = MetzScan::CLI.start(["explain", "Metz/DemeterTrainWreck"], stdout: @stdout, stderr: @stderr)
 
-      refute_equal 0, code
-      assert_match(/not yet implemented/, @stderr.string)
+      assert_equal 0, code
+      assert_includes @stdout.string, "Metz/DemeterTrainWreck"
+      assert_empty @stderr.string
     end
 
     def test_rules_subcommand_dispatches_to_handler_and_exits_zero
