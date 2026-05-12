@@ -10,7 +10,7 @@ module MetzScan
       "rules" => "List all Metz/* cops with their one-line rationale",
       "explain" => "Print full metadata for a single Metz cop",
       "scan" => "Run rubocop-metz against PATH and render a report",
-      "report" => "Re-render an existing rubocop JSON report"
+      "report" => "Re-render an existing rubocop-metz JSON report"
     }.freeze
 
     SUBCOMMANDS = SUBCOMMAND_SUMMARIES.keys.freeze
@@ -65,7 +65,8 @@ module MetzScan
       handler ? handler.run(args, stdout: stdout, stderr: stderr) : stub_subcommand(name)
     end
 
-    SUBCOMMAND_HANDLERS = { "rules" => "Rules", "explain" => "Explain", "scan" => "Scan" }.freeze
+    SUBCOMMAND_HANDLERS = { "rules" => "Rules", "explain" => "Explain", "scan" => "Scan",
+                            "report" => "Report" }.freeze
     private_constant :SUBCOMMAND_HANDLERS
 
     def subcommand_handler(name)
