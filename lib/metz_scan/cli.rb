@@ -61,6 +61,18 @@ module MetzScan
       name = args.shift
       return unknown_subcommand(name) unless SUBCOMMANDS.include?(name)
 
+      handler = subcommand_handler(name)
+      handler ? handler.run(args, stdout: stdout, stderr: stderr) : stub_subcommand(name)
+    end
+
+    def subcommand_handler(name)
+      return unless name == "rules"
+
+      require_relative "commands/rules"
+      Commands::Rules
+    end
+
+    def stub_subcommand(name)
       stderr.puts "metz-scan: subcommand '#{name}' is not yet implemented at this milestone."
       1
     end
