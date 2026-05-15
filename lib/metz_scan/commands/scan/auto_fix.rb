@@ -26,7 +26,26 @@ module MetzScan
         attr_reader :stdout, :stderr
 
         def run_in_place(options)
-          RuboCop::CLI.new.run(rubocop_argv(options))
+          with_redirected_io { RuboCop::CLI.new.run(rubocop_argv(options)) }
+        end
+
+        def with_redirected_io
+          previous = redirect_to(stdout, stderr)
+          yield
+        ensure
+          restore_io(previous) if previous
+        end
+
+        def redirect_to(out, err)
+          previous = [$stdout, $stderr]
+          $stdout = out
+          $stderr = err
+          previous
+        end
+
+        def restore_io(previous)
+          $stdout = previous[0]
+          $stderr = previous[1]
         end
 
         def run_dry(options)
