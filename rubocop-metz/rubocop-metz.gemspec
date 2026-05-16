@@ -2,8 +2,6 @@
 
 require_relative "lib/rubocop/metz/version"
 
-Dir.chdir(__dir__)
-
 Gem::Specification.new do |spec|
   spec.name        = "rubocop-metz"
   spec.version     = RuboCop::Metz::VERSION
@@ -18,7 +16,6 @@ Gem::Specification.new do |spec|
 
   spec.required_ruby_version = ">= 3.3"
 
-  spec.metadata["homepage_uri"]                = spec.homepage
   spec.metadata["source_code_uri"]             = spec.homepage
   spec.metadata["default_lint_roller_plugin"]  = "RuboCop::Metz::Plugin"
 
