@@ -46,12 +46,7 @@ module MetzScan
 
       def load_cops
         require "rubocop-metz"
-        base = RuboCop::Cop::Metz::Base
-        RuboCop::Cop::Registry.global.cops.select { |cop| metz_cop?(cop, base) }.sort_by(&:cop_name)
-      end
-
-      def metz_cop?(cop, base)
-        cop.cop_name.start_with?("Metz/") && cop != base && cop < base
+        RuboCop::Cop::Registry.global.cops.select { |cop| cop.cop_name.start_with?("Metz/") }.sort_by(&:cop_name)
       end
 
       def emit_json(cops)

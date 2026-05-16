@@ -10,6 +10,8 @@ module RuboCop
       # transparently aliases `on_csend` to whatever `on_send` a subclass
       # defines, satisfying the project-wide csend invariant.
       class Base < RuboCop::Cop::Base
+        exclude_from_registry
+
         include ::Metz::CopMetadata
 
         class << self
