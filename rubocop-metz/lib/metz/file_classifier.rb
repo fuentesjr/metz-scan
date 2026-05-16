@@ -25,15 +25,22 @@ module Metz
     module_function
 
     def controller?(path)
-      path.to_s.match?(CONTROLLER_PATTERN)
+      normalize(path).match?(CONTROLLER_PATTERN)
     end
 
     def view?(path)
-      path.to_s.match?(VIEW_PATTERN)
+      normalize(path).match?(VIEW_PATTERN)
     end
 
     def model?(path)
-      path.to_s.match?(MODEL_PATTERN)
+      normalize(path).match?(MODEL_PATTERN)
+    end
+
+    # Windows-style paths arrive with backslash separators when the caller is
+    # an editor running on Windows or a CI step that shells out via `cmd.exe`.
+    # Normalize to forward slashes so the regexes below stay POSIX-shaped.
+    def normalize(path)
+      path.to_s.tr("\\", "/")
     end
   end
 end

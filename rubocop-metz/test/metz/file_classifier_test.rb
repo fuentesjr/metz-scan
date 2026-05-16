@@ -112,6 +112,50 @@ class MetzFileClassifierTest < Minitest::Test
            "expected absolute model path to be classified as model"
   end
 
+  def test_windows_style_separators_classify_identically_to_posix
+    {
+      controller?: [
+        "app/controllers/users_controller.rb",
+        "app/controllers/admin/users_controller.rb"
+      ],
+      view?: [
+        "app/views/users/index.html.erb",
+        "app/views/admin/users/_form.html.slim"
+      ],
+      model?: [
+        "app/models/user.rb",
+        "app/models/concerns/searchable.rb"
+      ]
+    }.each do |predicate, posix_paths|
+      posix_paths.each do |posix|
+        windows = posix.tr("/", "\\")
+        relative_windows = windows.sub(/\Aapp/, "app")
+        absolute_windows = "C:\\Users\\dev\\project\\#{windows}"
+
+        assert Metz::FileClassifier.public_send(predicate, posix),
+               "#{predicate} expected to be true for POSIX #{posix.inspect}"
+        assert_equal Metz::FileClassifier.public_send(predicate, posix),
+                     Metz::FileClassifier.public_send(predicate, relative_windows),
+                     "#{predicate} differs between POSIX #{posix.inspect} " \
+                     "and Windows-relative #{relative_windows.inspect}"
+        assert_equal Metz::FileClassifier.public_send(predicate, File.expand_path(posix)),
+                     Metz::FileClassifier.public_send(predicate, absolute_windows),
+                     "#{predicate} differs between POSIX absolute and Windows-absolute for #{posix.inspect}"
+      end
+    end
+  end
+
+  def test_windows_negative_paths_are_consistent_with_posix
+    {
+      controller?: "lib\\foo.rb",
+      view?: "lib\\template.erb",
+      model?: "app\\views\\users\\index.html.erb"
+    }.each do |predicate, windows_path|
+      refute Metz::FileClassifier.public_send(predicate, windows_path),
+             "#{predicate} expected false for Windows path #{windows_path.inspect}"
+    end
+  end
+
   def test_predicates_are_disjoint_for_canonical_paths
     {
       "app/controllers/users_controller.rb" => :controller?,
