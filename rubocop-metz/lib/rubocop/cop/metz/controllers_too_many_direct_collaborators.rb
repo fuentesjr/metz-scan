@@ -33,7 +33,6 @@ module RuboCop
 
           report_offense(node, collaborators)
         end
-        alias on_defs on_def
 
         def relevant_file?(file)
           return super if file.nil? || file.empty? || file == "(string)"

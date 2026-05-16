@@ -144,6 +144,20 @@ class CopMetzControllersTooManyDirectCollaboratorsTest < Minitest::Test
     assert_operator line, :>, 1, "Offense should be inside an action body"
   end
 
+  def test_silent_on_class_methods_even_when_they_touch_many_collaborators
+    source = <<~RUBY
+      class UsersController < ApplicationController
+        def self.background_refresh
+          User.refresh_all
+          AuditLog.purge
+          Notifier.broadcast
+        end
+      end
+    RUBY
+
+    refute_offense(source, file: CONTROLLER_PATH)
+  end
+
   def test_resolves_namespaced_constants_as_single_collaborators
     source = <<~RUBY
       class WidgetsController < ApplicationController
