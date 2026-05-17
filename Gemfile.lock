@@ -2,14 +2,15 @@ PATH
   remote: .
   specs:
     metz-scan (0.1.0)
+      rubocop-metz (~> 0.1.0)
 
 PATH
   remote: rubocop-metz
   specs:
     rubocop-metz (0.1.0)
       lint_roller (~> 1.1)
-      rubocop (>= 1.80)
-      rubocop-ast
+      rubocop (~> 1.80)
+      rubocop-ast (~> 1.49)
 
 GEM
   remote: https://rubygems.org/

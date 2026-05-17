@@ -10,6 +10,7 @@ module MetzScan
       class AutoFix
         SAFE_FLAG = "-a"
         UNSAFE_FLAG = "-A"
+        CommandResult = Struct.new(:status, :stdout, :stderr, keyword_init: true)
 
         def initialize(stdout:, stderr:)
           @stdout = stdout
@@ -50,10 +51,14 @@ module MetzScan
 
         def run_dry(options)
           snapshot = capture_files(options.paths)
-          silent_rubocop(rubocop_argv(options))
-          print_diffs(snapshot) and 0
+          dry_run_result(snapshot, capture_rubocop(rubocop_argv(options)))
         ensure
           restore_files(snapshot)
+        end
+
+        def dry_run_result(snapshot, result)
+          result.status.zero? ? print_diffs(snapshot) : print_rubocop_failure(result)
+          result.status
         end
 
         def rubocop_argv(options)
@@ -61,12 +66,18 @@ module MetzScan
           ["--plugin", "rubocop-metz", flag, *options.paths]
         end
 
-        def silent_rubocop(argv)
-          previous = $stdout
-          $stdout = StringIO.new
-          RuboCop::CLI.new.run(argv)
+        def capture_rubocop(argv)
+          out = StringIO.new
+          err = StringIO.new
+          status = with_captured_io(out, err) { RuboCop::CLI.new.run(argv) }
+          CommandResult.new(status: status, stdout: out.string, stderr: err.string)
+        end
+
+        def with_captured_io(out, err)
+          previous = redirect_to(out, err)
+          yield
         ensure
-          $stdout = previous
+          restore_io(previous) if previous
         end
 
         def capture_files(paths)
@@ -83,6 +94,11 @@ module MetzScan
 
         def print_diffs(snapshot)
           snapshot.each { |path, original| print_file_diff(path, original) }
+        end
+
+        def print_rubocop_failure(result)
+          stderr.print(result.stderr) unless result.stderr.empty?
+          stderr.print(result.stdout) unless result.stdout.empty?
         end
 
         def print_file_diff(path, original)

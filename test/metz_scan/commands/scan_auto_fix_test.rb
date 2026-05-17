@@ -78,6 +78,19 @@ module MetzScan
         assert_equal before, File.binread(path)
       end
 
+      def test_dry_run_returns_rubocop_status_when_rubocop_fails
+        path = write_fixture("syntax_error.rb", "def broken(\n")
+        assert_failed_dry_run_preserves(path)
+      end
+
+      def assert_failed_dry_run_preserves(path)
+        before = File.binread(path)
+        code = run_cli(["scan", @tmpdir, "--auto-fix", "--dry-run"])
+        refute_equal 0, code
+        assert_equal before, File.binread(path)
+        assert_match(%r{Lint/Syntax|unexpected|unterminated}i, @stderr.string)
+      end
+
       private
 
       def write_fixture(name, content)

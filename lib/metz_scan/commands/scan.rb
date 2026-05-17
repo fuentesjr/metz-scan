@@ -28,15 +28,20 @@ module MetzScan
       end
 
       def run(argv)
-        options = parse_options(argv)
-        validate(options) || dispatch(options)
+        handle_options(parse_options(argv))
       rescue OptionParser::ParseError => e
         parser_error(e)
+      rescue Runner::Error => e
+        runner_error(e)
       end
 
       private
 
       attr_reader :stdout, :stderr
+
+      def handle_options(options)
+        validate(options) || dispatch(options)
+      end
 
       def parse_options(argv)
         flags = { format: DEFAULT_FORMAT, auto_fix: false, unsafe: false, dry_run: false }
@@ -100,6 +105,11 @@ module MetzScan
       def invalid_format(fmt)
         stderr.puts "metz-scan scan: invalid --format '#{fmt}'. Valid formats: text, json, sarif."
         1
+      end
+
+      def runner_error(err)
+        stderr.puts "metz-scan scan: RuboCop failed: #{err.message}"
+        2
       end
     end
   end

@@ -3,8 +3,8 @@
 
 $LOAD_PATH.unshift(File.expand_path("../lib", __dir__))
 
-require "metz_scan"
-
 Signal.trap("INT") { exit 130 }
+
+require "metz_scan"
 
 exit MetzScan::CLI.start(ARGV)

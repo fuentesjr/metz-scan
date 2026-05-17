@@ -25,4 +25,6 @@ Gem::Specification.new do |spec|
   spec.bindir        = "bin"
   spec.executables   = ["metz-scan"]
   spec.require_paths = ["lib"]
+
+  spec.add_dependency "rubocop-metz", "~> #{MetzScan::VERSION}"
 end
