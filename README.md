@@ -81,7 +81,7 @@ Use the RuboCop plugin directly:
 bundle exec rubocop --plugin rubocop-metz
 ```
 
-For the release checklist, see [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md).
+For common questions and adoption guidance, see [docs/faq.md](docs/faq.md). For release checks, see [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md).
 
 ## Configuration
 
