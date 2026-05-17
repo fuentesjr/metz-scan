@@ -102,6 +102,36 @@ class CopMetzViewsDeepNavigationTest < Minitest::Test
     end
   end
 
+  def test_control_flow_erb_tag_with_deep_chain_fires_via_rubocop
+    Dir.mktmpdir do |dir|
+      view = File.join(dir, "app/views/x/show.html.erb")
+      FileUtils.mkdir_p(File.dirname(view))
+      File.write(view, "<% if current_user.account.subscription.plan.name.present? %>\n")
+
+      assert_operator rubocop_offense_count(view, force_exclusion: true), :>=, 1
+    end
+  end
+
+  def test_trim_mode_control_flow_erb_tag_with_deep_chain_fires_via_rubocop
+    Dir.mktmpdir do |dir|
+      view = File.join(dir, "app/views/x/show.html.erb")
+      FileUtils.mkdir_p(File.dirname(view))
+      File.write(view, "<%- if current_user.account.subscription.plan.name.present? %>\n")
+
+      assert_operator rubocop_offense_count(view, force_exclusion: true), :>=, 1
+    end
+  end
+
+  def test_control_flow_erb_tag_does_not_emit_synthetic_core_offenses
+    Dir.mktmpdir do |dir|
+      view = File.join(dir, "app/views/x/show.html.erb")
+      FileUtils.mkdir_p(File.dirname(view))
+      File.write(view, "<% if current_user.account.subscription.plan.name.present? %>\n")
+
+      assert_empty non_metz_offenses(view)
+    end
+  end
+
   def test_erb_outside_app_views_does_not_fire_via_rubocop
     Dir.mktmpdir do |dir|
       view = File.join(dir, "lib/template.erb")
@@ -169,9 +199,18 @@ class CopMetzViewsDeepNavigationTest < Minitest::Test
            "--only", "Metz/ViewsDeepNavigation", "--format", "json"]
     cmd << "--force-exclusion" if force_exclusion
     cmd << path
+    rubocop_offenses(cmd)
+      .count { |o| o["cop_name"] == "Metz/ViewsDeepNavigation" }
+  end
+
+  def non_metz_offenses(path)
+    cmd = ["bundle", "exec", "rubocop", "--plugin", "rubocop-metz",
+           "--force-exclusion", "--format", "json", path]
+    rubocop_offenses(cmd).reject { |o| o["cop_name"].to_s.start_with?("Metz/") }
+  end
+
+  def rubocop_offenses(cmd)
     out, = Open3.capture3(*cmd, chdir: REPO_ROOT)
-    JSON.parse(out).fetch("files", [])
-        .flat_map { |f| f["offenses"] }
-        .count { |o| o["cop_name"] == "Metz/ViewsDeepNavigation" }
+    JSON.parse(out).fetch("files", []).flat_map { |f| f["offenses"] }
   end
 end

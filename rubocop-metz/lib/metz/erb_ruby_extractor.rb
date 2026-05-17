@@ -15,12 +15,14 @@ module Metz
   # to every offense location, so reported line / column numbers point at
   # the original `.erb` file -- not the synthetic snippet.
   #
-  # Tags whose body is not valid Ruby on its own (the open half of a
-  # `<% if ... %> ... <% end %>` pair, for example) are silently skipped:
-  # we do not want them to fire `Lint/Syntax`. ERB comments (`<%# ... %>`)
-  # are skipped as well.
+  # Control-flow openers such as `<% if ... %>` are reduced to the condition
+  # expression. Other invalid fragments are skipped to avoid `Lint/Syntax`
+  # noise. ERB comments (`<%# ... %>`) are skipped as well.
   module ErbRubyExtractor
     ERB_TAG = /<%(?<kind>[-=#]?)(?<body>.*?)-?%>/m
+    CONTROL_CONDITION = /\A(?<prefix>\s*(?:if|unless|while|until|elsif|case)\b\s*)(?<expr>.*?)(?:\s+then)?\s*\z/m
+    TRAILING_DO_BLOCK = /\A(?<expr>.*?)(?<suffix>\s+do\b(?:\s*\|[^|]*\|)?\s*)\z/m
+    MAGIC_COMMENT = "# frozen_string_literal: true\n\n"
 
     module_function
 
@@ -61,10 +63,39 @@ module Metz
       return if match[:kind] == "#"
 
       ruby_version = processed_source.ruby_version || RUBY_VERSION.to_f
-      ps = RuboCop::ProcessedSource.new(match[:body], ruby_version, processed_source.path)
-      return unless ps.valid_syntax?
+      ps, offset = source_and_offset(match, ruby_version, processed_source.path)
+      return unless ps
 
-      { offset: match.begin(:body), processed_source: ps }
+      { offset: offset, processed_source: ps }
+    end
+
+    def source_and_offset(match, ruby_version, path)
+      body = match[:body]
+      ps = RuboCop::ProcessedSource.new(body, ruby_version, path)
+      return [ps, match.begin(:body)] if ps.valid_syntax?
+      return unless code_tag?(match[:kind])
+
+      expression_source(body, ruby_version, path, match.begin(:body))
+    end
+
+    def code_tag?(kind)
+      kind.empty? || kind == "-"
+    end
+
+    def expression_source(body, ruby_version, path, body_offset)
+      match = body.match(CONTROL_CONDITION) || body.match(TRAILING_DO_BLOCK)
+      return unless match
+
+      ps = RuboCop::ProcessedSource.new(control_expression(match[:expr]), ruby_version, path)
+      [ps, expression_offset(body_offset, match)] if ps.valid_syntax?
+    end
+
+    def control_expression(expr)
+      "#{MAGIC_COMMENT}#{expr}\n"
+    end
+
+    def expression_offset(body_offset, match)
+      body_offset + match.begin(:expr) - MAGIC_COMMENT.bytesize
     end
 
     def empty_snippet(processed_source)
