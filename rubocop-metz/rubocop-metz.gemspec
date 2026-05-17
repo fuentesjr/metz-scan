@@ -11,7 +11,7 @@ Gem::Specification.new do |spec|
   spec.summary     = "Sandi-Metz-inspired RuboCop cops."
   spec.description = "A RuboCop plugin that ships custom cops capturing " \
                      "Sandi-Metz-style design heuristics for Ruby and Rails code."
-  spec.homepage    = "https://github.com/salfuentes/metz_scan"
+  spec.homepage    = "https://github.com/fuentesjr/metz-scan"
   spec.license     = "MIT"
 
   spec.required_ruby_version = ">= 3.3"

@@ -12,7 +12,7 @@ Gem::Specification.new do |spec|
   spec.description = "metz-scan is the user-facing CLI for the Sandi-Metz-inspired " \
                      "code-quality toolchain. It runs RuboCop with the rubocop-metz " \
                      "plugin and renders developer-friendly reports."
-  spec.homepage    = "https://github.com/salfuentes/metz_scan"
+  spec.homepage    = "https://github.com/fuentesjr/metz-scan"
   spec.license     = "MIT"
 
   spec.required_ruby_version = ">= 3.3"
