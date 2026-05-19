@@ -96,15 +96,19 @@ git diff --quiet
 - [ ] Confirm this is the version you want to publish publicly.
 - [ ] Confirm you are authenticated to GitHub Packages.
 
-GitHub Packages' RubyGems registry requires a personal access token (classic).
-Use a token with `write:packages` for publishing. Add `repo` if publishing a
-package associated with a private repository.
+GitHub Packages' RubyGems registry needs a token with `write:packages`.
+Use the token already managed by `gh`; if it is missing that scope, refresh it
+first. These commands write the token to `~/.gem/credentials` and do not print
+it.
 
 ```bash
-export GITHUB_PACKAGES_TOKEN=YOUR_TOKEN
+gh auth status
+gh auth refresh -h github.com -s write:packages
+GITHUB_PACKAGES_TOKEN="$(gh auth token)"
 mkdir -p ~/.gem
 printf -- "---\n:github: Bearer ${GITHUB_PACKAGES_TOKEN}\n" > ~/.gem/credentials
 chmod 0600 ~/.gem/credentials
+unset GITHUB_PACKAGES_TOKEN
 ```
 
 - [ ] Publish `rubocop-metz` first to GitHub Packages.
