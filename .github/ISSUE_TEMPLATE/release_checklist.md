@@ -1,16 +1,16 @@
-# Release Checklist
+---
+name: Release checklist
+about: Track a metz-scan and rubocop-metz release
+title: "Release vX.Y.Z"
+labels: release
+assignees: ""
+---
 
-Use this checklist before publishing `metz-scan` and `rubocop-metz`.
+Tracking issue generated from `RELEASE_CHECKLIST.md`.
 
-For a clickable GitHub checklist, create a tracking issue from this file:
-
-```bash
-bin/create_release_issue
-```
-
-Or use GitHub's "Release checklist" issue template. GitHub's rendered file view
-is read-only, so checkboxes in `blob/main/RELEASE_CHECKLIST.md` cannot be
-clicked directly.
+Versions:
+- `metz-scan`: `X.Y.Z`
+- `rubocop-metz`: `X.Y.Z`
 
 ## Verification
 

@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+# Creates a GitHub issue whose task list can be checked off during release.
+
+set -euo pipefail
+
+repo="fuentesjr/metz-scan"
+repo_root="$(cd "$(dirname "$0")/.." && pwd)"
+checklist="$repo_root/RELEASE_CHECKLIST.md"
+dry_run=0
+title_arg=""
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --dry-run)
+      dry_run=1
+      ;;
+    -h|--help)
+      printf 'Usage: bin/create_release_issue [--dry-run] [TITLE]\n'
+      exit 0
+      ;;
+    *)
+      if [ -n "$title_arg" ]; then
+        printf 'create_release_issue: unexpected argument: %s\n' "$1" >&2
+        exit 2
+      fi
+      title_arg="$1"
+      ;;
+  esac
+
+  shift
+done
+
+if ! command -v gh >/dev/null 2>&1; then
+  printf 'create_release_issue: gh CLI is required.\n' >&2
+  exit 2
+fi
+
+if [ ! -f "$checklist" ]; then
+  printf 'create_release_issue: missing %s\n' "$checklist" >&2
+  exit 2
+fi
+
+metz_scan_version="$(
+  cd "$repo_root"
+  ruby -Ilib -e 'require "metz_scan/version"; print MetzScan::VERSION'
+)"
+
+rubocop_metz_version="$(
+  cd "$repo_root"
+  ruby -Irubocop-metz/lib -e 'require "rubocop/metz/version"; print RuboCop::Metz::VERSION'
+)"
+
+if [ "$metz_scan_version" = "$rubocop_metz_version" ]; then
+  title="${title_arg:-Release v$metz_scan_version}"
+else
+  title="${title_arg:-Release metz-scan v$metz_scan_version / rubocop-metz v$rubocop_metz_version}"
+fi
+
+body_file="$(mktemp "${TMPDIR:-/tmp}/metz-release-issue.XXXXXX.md")"
+trap 'rm -f "$body_file"' EXIT
+
+{
+  printf 'Tracking issue generated from `RELEASE_CHECKLIST.md`.\n\n'
+  printf 'Versions:\n'
+  printf '%s\n' "- \`metz-scan\`: \`$metz_scan_version\`"
+  printf '%s\n\n' "- \`rubocop-metz\`: \`$rubocop_metz_version\`"
+  awk 'BEGIN { emit = 0 } /^## Verification$/ { emit = 1 } emit { print }' "$checklist"
+} >"$body_file"
+
+if [ "$dry_run" -eq 1 ]; then
+  printf '# %s\n\n' "$title"
+  cat "$body_file"
+  exit 0
+fi
+
+gh issue create \
+  --repo "$repo" \
+  --title "$title" \
+  --body-file "$body_file"
