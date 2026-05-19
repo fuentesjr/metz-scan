@@ -1,4 +1,6 @@
 *.gem
+.bundle/
+tmp/
 
 # Local mission/support artifacts.
 factory-ai-artifacts

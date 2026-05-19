@@ -10,3 +10,7 @@ group :development, :test do
   gem "minitest", "~> 5.25"
   gem "rake", "~> 13.2"
 end
+
+group :rubydex, optional: true do
+  gem "rubydex", "~> 0.2.3"
+end

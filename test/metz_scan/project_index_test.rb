@@ -1,0 +1,143 @@
+# frozen_string_literal: true
+
+require "minitest/autorun"
+require "tmpdir"
+
+require "metz_scan/project_index"
+
+module MetzScan
+  class ProjectIndexTest < Minitest::Test
+    def test_null_backend_is_explicitly_available_for_disabled_project_analysis
+      index = ProjectIndex.build(["."], backend: :null)
+
+      assert_equal :null, index.backend_name
+      refute index.available?
+      assert_equal "project index disabled", index.reason
+      assert_empty_index(index)
+    end
+
+    def test_auto_backend_falls_back_to_null_when_rubydex_is_unavailable
+      skip "rubydex is available in this bundle" if ProjectIndex::RubydexBackend.available?
+
+      index = ProjectIndex.build(["."], backend: :auto)
+
+      assert_equal :null, index.backend_name
+      refute index.available?
+      assert_match(/rubydex is not installed/, index.reason)
+    end
+
+    def test_requesting_rubydex_backend_fails_clearly_when_unavailable
+      skip "rubydex is available in this bundle" if ProjectIndex::RubydexBackend.available?
+
+      error = assert_raises(ProjectIndex::UnavailableBackendError) do
+        ProjectIndex.build(["."], backend: :rubydex)
+      end
+
+      assert_match(/rubydex is not installed/, error.message)
+    end
+
+    def test_unknown_backend_is_rejected
+      assert_raises(ProjectIndex::UnknownBackendError) do
+        ProjectIndex.build(["."], backend: :missing)
+      end
+    end
+
+    def test_rubydex_backend_discovers_ruby_files_under_paths
+      Dir.mktmpdir do |dir|
+        files = ProjectIndex::RubydexBackend.ruby_files_for(write_ruby_file_tree(dir))
+
+        assert_equal expected_ruby_files(dir), files
+      end
+    end
+
+    def test_rubydex_backend_indexes_when_available
+      skip "rubydex is not installed" unless ProjectIndex::RubydexBackend.available?
+
+      Dir.mktmpdir do |dir|
+        assert_rubydex_index(index_inheritance_fixture(dir))
+      end
+    end
+
+    private
+
+    def assert_empty_index(index)
+      assert_empty index.declarations
+      assert_empty index.documents
+      assert_empty index.descendants_of("Minitest::Test")
+      assert_empty index.constant_references_to("RuboCop::Cop::Metz::Base")
+      assert_empty index.search("Metz")
+    end
+
+    def write_ruby_file_tree(dir)
+      nested = File.join(dir, "nested").tap { |path| Dir.mkdir(path) }
+      write_ruby_file_tree_files(dir, nested)
+      [dir, File.join(dir, "notes.txt")]
+    end
+
+    def write_ruby_file_tree_files(dir, nested)
+      File.write(File.join(dir, "one.rb"), "class One; end\n")
+      File.write(File.join(dir, "notes.txt"), "ignore me\n")
+      File.write(File.join(nested, "two.rb"), "class Two; end\n")
+    end
+
+    def expected_ruby_files(dir)
+      [File.join(dir, "nested", "two.rb"), File.join(dir, "one.rb")].sort
+    end
+
+    def write_inheritance_fixture(dir)
+      File.write(File.join(dir, "inheritance.rb"), "class Parent; end\nclass Child < Parent; end\n")
+    end
+
+    def index_inheritance_fixture(dir)
+      write_inheritance_fixture(dir)
+      ProjectIndex.build([dir], backend: :rubydex)
+    end
+
+    def assert_rubydex_index(index)
+      assert_equal :rubydex, index.backend_name
+      assert index.available?
+      assert_includes index.descendants_of("Parent"), "Child"
+      assert_includes index.search("Parent"), "Parent"
+    end
+  end
+
+  class ProjectIndexWorkspaceTest < Minitest::Test
+    def test_workspace_index_uses_requested_path_instead_of_current_directory
+      skip "rubydex is not installed" unless ProjectIndex::RubydexBackend.available?
+
+      with_workspace_fixture do |workspace|
+        index = ProjectIndex.build([workspace], backend: :rubydex, workspace: true)
+        assert_workspace_marker_index(index)
+      end
+    end
+
+    private
+
+    def with_workspace_fixture
+      Dir.mktmpdir { |workspace| with_other_fixture(workspace) { yield workspace } }
+    end
+
+    def with_other_fixture(workspace, &)
+      Dir.mktmpdir { |other_dir| use_other_fixture(workspace, other_dir, &) }
+    end
+
+    def use_other_fixture(workspace, other_dir, &)
+      write_workspace_root_fixture(workspace)
+      write_other_root_fixture(other_dir)
+      Dir.chdir(other_dir, &)
+    end
+
+    def write_workspace_root_fixture(dir)
+      File.write(File.join(dir, "workspace_root_marker.rb"), "class WorkspaceRootMarker; end\n")
+    end
+
+    def write_other_root_fixture(dir)
+      File.write(File.join(dir, "other_root_marker.rb"), "class OtherRootMarker; end\n")
+    end
+
+    def assert_workspace_marker_index(index)
+      assert_includes index.search("WorkspaceRootMarker"), "WorkspaceRootMarker"
+      refute_includes index.search("OtherRootMarker"), "OtherRootMarker"
+    end
+  end
+end

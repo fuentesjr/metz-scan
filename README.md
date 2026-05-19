@@ -81,6 +81,26 @@ Use the RuboCop plugin directly:
 bundle exec rubocop --plugin rubocop-metz
 ```
 
+## Experimental project index
+
+`metz-scan` has an optional Rubydex spike for evaluating project-level design
+analysis. It is not used by normal scans.
+
+Enable the optional bundle group and run the spike:
+
+```bash
+bundle config set --local with rubydex
+bundle install
+bundle exec ruby script/rubydex_spike.rb
+```
+
+The script indexes Ruby files, prints declaration/document counts, reports known
+`Minitest::Test` descendants, lists `RuboCop::Cop::Metz` declarations, and
+counts references to `RuboCop::Cop::Metz::Base`.
+
+See [docs/rubydex-spike.md](docs/rubydex-spike.md) for current results and
+feasibility notes.
+
 For common questions and adoption guidance, see [docs/faq.md](docs/faq.md). For release checks, see [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md).
 
 ## Configuration
