@@ -39,9 +39,9 @@ On this repo with Rubydex `0.2.3`:
 ```text
 backend: rubydex
 workspace: true
-indexed_files: 92
-declarations: 47755
-ruby_documents: 2129
+indexed_files: 95
+declarations: 47808
+ruby_documents: 2132
 references_to RuboCop::Cop::Metz::Base: 12
 diagnostics: 183
 index_errors: 0
@@ -87,3 +87,53 @@ index_errors: 0
   current directory.
 - The first project analyzer should stay optional and explicit until runtime
   cost, diagnostics volume, and native-gem install behavior are better known.
+
+## Experiment 2: Inheritance Descendants
+
+`MetzScan::Analyzers::InheritanceDescendants` is an optional prototype analyzer
+that consumes a `ProjectIndex` and reports descendants of configured base
+classes or modules. It is not wired into `metz-scan scan`.
+
+Run the spike against the current workspace:
+
+```bash
+bundle exec ruby script/inheritance_descendants_spike.rb RuboCop::Cop::Metz::Base
+```
+
+Current output with Rubydex `0.2.3`:
+
+```text
+backend: rubydex
+workspace: true
+base_name: RuboCop::Cop::Metz::Base
+rule_id: MetzProject/DeepInheritanceTree
+descendants: 9
+  - MetzBaseTestCopDefaults
+  - MetzBaseTestCopMetadata
+  - MetzBaseTestCopOnSend
+  - RuboCop::Cop::Metz::ClassesTooLong
+  - RuboCop::Cop::Metz::ControllersTooManyDirectCollaborators
+  - RuboCop::Cop::Metz::DemeterTrainWreck
+  - RuboCop::Cop::Metz::MethodsTooLong
+  - RuboCop::Cop::Metz::MethodsTooManyParameters
+  - RuboCop::Cop::Metz::ViewsDeepNavigation
+```
+
+TDD evidence:
+
+- Red: `bundle exec ruby -Itest
+  test/metz_scan/analyzers/inheritance_descendants_test.rb` initially failed
+  because the analyzer did not exist.
+- Green: fake-index analyzer tests pass without Rubydex, and the Rubydex-backed
+  fixture test passes with `env BUNDLE_WITH=rubydex`.
+- Guard: `bundle exec ruby script/inheritance_descendants_spike.rb
+  RuboCop::Cop::Metz::Base` exits clearly when Rubydex is not enabled.
+
+Limitations:
+
+- Locations currently use declaration paths only; line and column data are not
+  exposed by the adapter yet.
+- Bounded path analysis only reports descendants when the base declaration is
+  indexed too. For example, `spec/fixtures/sample_app` has controllers that
+  inherit from `ApplicationController`, but the fixture does not define
+  `ApplicationController`.
