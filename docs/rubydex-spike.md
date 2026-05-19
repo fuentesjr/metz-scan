@@ -39,9 +39,9 @@ On this repo with Rubydex `0.2.3`:
 ```text
 backend: rubydex
 workspace: true
-indexed_files: 95
-declarations: 47808
-ruby_documents: 2132
+indexed_files: 99
+declarations: 47898
+ruby_documents: 2136
 references_to RuboCop::Cop::Metz::Base: 12
 diagnostics: 183
 index_errors: 0
@@ -137,3 +137,53 @@ Limitations:
   indexed too. For example, `spec/fixtures/sample_app` has controllers that
   inherit from `ApplicationController`, but the fixture does not define
   `ApplicationController`.
+
+## Experiment 3: Repeated Branching
+
+`MetzScan::Analyzers::RepeatedBranching` is an optional prototype analyzer that
+parses indexed or explicit Ruby files and groups repeated `case` decisions and
+`if`/`elsif` predicate chains across files. It is not wired into
+`metz-scan scan`.
+
+Run the spike against the library code:
+
+```bash
+bundle exec ruby script/repeated_branching_spike.rb lib
+```
+
+Current output without Rubydex enabled:
+
+```text
+backend: null
+workspace: false
+rule_id: MetzProject/RepeatedBranching
+findings: 1
+- format repeated across 2 files: json, sarif
+  lib/metz_scan/commands/report.rb:72
+  lib/metz_scan/commands/scan.rb:81
+```
+
+TDD evidence:
+
+- Red: `bundle exec ruby -Itest
+  test/metz_scan/analyzers/repeated_branching_test.rb` initially failed because
+  the analyzer did not exist.
+- Red: real-file script execution exposed ternary `if` nodes without
+  `loc.keyword`; `test_ignores_ternary_if_nodes` reproduced that crash.
+- Red: mixed `if`/`elsif` chains with unsupported conditions were initially
+  reported after dropping the unsupported branch; a regression test now rejects
+  the whole chain.
+- Green: repeated `case`, unrelated-receiver, predicate-chain, explicit-path,
+  ternary, and Rubydex-backed tests pass.
+- Guard: `bundle exec ruby script/repeated_branching_spike.rb lib` runs with
+  `backend: null`, so Rubydex remains optional for this AST-first prototype.
+
+Limitations:
+
+- Receiver grouping is lexical, not type-aware: `order.status`,
+  `@order.status`, and `current_order.status` are treated as separate decisions.
+- Literal branch values are normalized by display value, so `"paid"` and
+  `:paid` may be grouped together in this prototype.
+- The prototype only parses Ruby files, not ERB/HAML/SLIM templates.
+- Rubydex context is advisory here; it supplies backend/index metadata when
+  available but is not required for findings.
