@@ -36,7 +36,11 @@ module MetzScan
           return if why.nil? || why.empty?
 
           stdout.puts "  Why it matters: #{why}"
-          stdout.puts "  Run `metz-scan explain #{cop_name}` for details."
+          stdout.puts "  Run `metz-scan explain #{cop_name}` for details." if explainable?(cop_name)
+        end
+
+        def explainable?(cop_name)
+          cop_name.start_with?("Metz/")
         end
 
         def heading(name)

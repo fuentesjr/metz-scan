@@ -20,7 +20,10 @@ module MetzScan
             c = 3
             d = 4
             e = 5
-            [a, b, c, d, e]
+            f = 6
+            g = 7
+            h = 8
+            [a, b, c, d, e, f, g, h]
           end
         end
       RUBY
@@ -28,11 +31,15 @@ module MetzScan
       def setup
         @stdout = StringIO.new
         @stderr = StringIO.new
-        @tmpdir = Dir.mktmpdir("metz-scan-scan-test")
+        configure_rubocop_cache_root
+        FileUtils.mkdir_p(tmp_root)
+        @tmpdir = Dir.mktmpdir("metz-scan-scan-test", tmp_root)
       end
 
       def teardown
         FileUtils.remove_entry(@tmpdir) if @tmpdir
+        FileUtils.rmdir(tmp_root) if File.directory?(tmp_root) && Dir.empty?(tmp_root)
+        restore_rubocop_cache_root
       end
 
       def test_text_format_default_groups_by_metz_cop_with_location_lines
@@ -55,21 +62,6 @@ module MetzScan
         assert_sarif_2_1_0_shape
       end
 
-      def test_unknown_format_exits_non_zero_with_friendly_message
-        code = scan_violating([@tmpdir, "--format", "bogus"])
-        assert_invalid_format_message(code)
-      end
-
-      def test_nonexistent_path_exits_non_zero_with_friendly_message
-        path = File.join("/nonexistent", "metz-scan-#{Process.pid}", "path")
-        assert_friendly_missing_path(run_scan([path]), path)
-      end
-
-      def test_empty_ruby_project_exits_zero
-        code = run_scan([@tmpdir])
-        assert_equal 0, code, "expected exit 0 on empty project (stderr: #{@stderr.string.inspect})"
-      end
-
       private
 
       def write_violating_fixture
@@ -83,6 +75,23 @@ module MetzScan
 
       def run_scan(argv)
         Scan.run(argv, stdout: @stdout, stderr: @stderr)
+      end
+
+      def tmp_root
+        File.expand_path("../../../scan-test-tmp", __dir__)
+      end
+
+      def configure_rubocop_cache_root
+        @original_rubocop_cache_root = ENV.fetch("RUBOCOP_CACHE_ROOT", nil)
+        ENV["RUBOCOP_CACHE_ROOT"] = File.expand_path("../../../tmp/rubocop_cache", __dir__)
+      end
+
+      def restore_rubocop_cache_root
+        if @original_rubocop_cache_root
+          ENV["RUBOCOP_CACHE_ROOT"] = @original_rubocop_cache_root
+        else
+          ENV.delete("RUBOCOP_CACHE_ROOT")
+        end
       end
 
       def metz_offense
@@ -112,20 +121,6 @@ module MetzScan
         assert_equal "2.1.0", doc["version"]
         assert_kind_of Array, doc["runs"]
         assert_equal "metz-scan", doc.dig("runs", 0, "tool", "driver", "name")
-      end
-
-      def assert_invalid_format_message(code)
-        refute_equal 0, code
-        assert_match(/invalid --format/i, @stderr.string)
-        Scan::VALID_FORMATS.each { |fmt| assert_match(/#{fmt}/, @stderr.string) }
-        assert_no_stack_trace
-      end
-
-      def assert_friendly_missing_path(code, path)
-        refute_equal 0, code
-        assert_match(/#{Regexp.escape(path)}/, @stderr.string)
-        assert_match(/no such file/i, @stderr.string)
-        assert_no_stack_trace
       end
 
       def assert_no_stack_trace

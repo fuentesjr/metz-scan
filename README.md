@@ -61,6 +61,15 @@ bundle exec metz-scan scan . --format json
 bundle exec metz-scan scan . --format sarif
 ```
 
+By default, `scan` reports only RuboCop-backed Metz findings. Opt in to
+experimental cross-file project analyzer findings in the same report:
+
+```bash
+bundle exec metz-scan scan . --project-analyzers
+bundle exec metz-scan scan . --project-analyzers --format json
+bundle exec metz-scan scan . --project-analyzers --format sarif
+```
+
 Run safe auto-correction or preview it first:
 
 ```bash
@@ -84,7 +93,8 @@ bundle exec rubocop --plugin rubocop-metz
 ## Experimental project index
 
 `metz-scan` has an optional Rubydex spike for evaluating project-level design
-analysis. It is not used by normal scans.
+analysis. It is separate from `metz-scan scan --project-analyzers` and is not
+used by normal scans.
 
 Enable the optional bundle group and run the spike:
 
