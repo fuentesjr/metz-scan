@@ -187,3 +187,112 @@ Limitations:
 - The prototype only parses Ruby files, not ERB/HAML/SLIM templates.
 - Rubydex context is advisory here; it supplies backend/index metadata when
   available but is not required for findings.
+
+## Experiment 4: Service-Object Soup
+
+`MetzScan::Analyzers::ServiceSoup` is an optional prototype analyzer that
+parses indexed or explicit Ruby files and reports workflow methods that
+coordinate several service-style calls. It is not wired into
+`metz-scan scan`.
+
+The prototype recognizes constant-backed service calls:
+
+```ruby
+ValidateOrder.call(order)
+CapturePayment.new(order).call
+```
+
+Run the spike against the library code:
+
+```bash
+bundle exec ruby script/service_soup_spike.rb lib
+```
+
+Run it against the tiny service-heavy Rails fixture:
+
+```bash
+bundle exec ruby script/service_soup_spike.rb test/fixtures/service_soup_app
+```
+
+Current output without Rubydex enabled:
+
+```text
+backend: null
+workspace: false
+rule_id: MetzProject/ServiceSoup
+findings: 0
+```
+
+Current output against the service-heavy fixture:
+
+```text
+backend: null
+workspace: false
+rule_id: MetzProject/ServiceSoup
+findings: 1
+- OrdersController#create coordinates 4 services: CapturePayment, ReserveInventory, SendReceipt, ValidateOrder
+  test/fixtures/service_soup_app/app/controllers/orders_controller.rb:5 ValidateOrder.call(order)
+  test/fixtures/service_soup_app/app/controllers/orders_controller.rb:6 ReserveInventory.call(order)
+  test/fixtures/service_soup_app/app/controllers/orders_controller.rb:7 CapturePayment.new(order).call
+  test/fixtures/service_soup_app/app/controllers/orders_controller.rb:8 SendReceipt.call(order)
+```
+
+Current output with Rubydex enabled:
+
+```text
+backend: rubydex
+workspace: false
+rule_id: MetzProject/ServiceSoup
+findings: 0
+```
+
+TDD evidence:
+
+- Red: `bundle exec ruby -Itest -Ilib
+  test/metz_scan/analyzers/service_soup_test.rb` initially failed because the
+  analyzer did not exist.
+- Green: service-style calls, ordinary callable-object rejection,
+  below-threshold filtering, explicit-path fallback, and Rubydex-backed tests
+  pass.
+- Guard: `bundle exec ruby script/service_soup_spike.rb lib` runs with
+  `backend: null`, so Rubydex remains optional for this AST-first prototype.
+
+Limitations:
+
+- Workflow grouping is method-level only; top-level scripts and multi-method
+  workflows are not modeled.
+- Service detection is lexical: only `Constant.call(...)` and
+  `Constant.new(...).call` count. It does not resolve whether the constants are
+  true service objects.
+- The default threshold is three distinct services in one method.
+- The prototype only parses Ruby files, not ERB/HAML/SLIM templates.
+- Rubydex context is advisory here; it supplies backend/index metadata when
+  available but is not required for findings.
+
+Recommendation:
+
+- Keep `MetzScan::Analyzers::ServiceSoup`, but do not wire it into default
+  `metz-scan scan` yet.
+- Prefer an explicit project-analyzer command or opt-in path before making
+  project-level findings part of normal scan output.
+- Test the analyzer against more real Rails applications before promoting it
+  beyond prototype status.
+
+Reasons not to enable it by default yet:
+
+- False-positive risk is still unknown. The analyzer recognizes lexical shapes
+  such as `Constant.call(...)` and `Constant.new(...).call`; it does not prove
+  those constants are true service objects.
+- Fixture coverage is synthetic. The tiny Rails fixture proves the intended
+  signal, but not behavior across jobs, mailers, interactors, query objects,
+  policies, form objects, or application-specific command patterns.
+- Default scan behavior should stay stable. Today `metz-scan scan` is a
+  predictable RuboCop-backed wrapper; project analyzers change scope, runtime,
+  output shape, and possibly exit behavior.
+- Project findings are not normalized into the existing text, JSON, and SARIF
+  report pipeline with RuboCop offenses.
+- Analyzer semantics still need tuning, including threshold, ignored
+  namespaces, repeated service calls, nested workflows, and whether controllers
+  and jobs should be weighted differently.
+- Rubydex's role is unresolved. It may remain an advisory source of file/index
+  metadata, or it may later help classify constants semantically.

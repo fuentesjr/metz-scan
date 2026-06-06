@@ -1,0 +1,166 @@
+# frozen_string_literal: true
+
+require "minitest/autorun"
+require "tmpdir"
+
+require "metz_scan/analyzers/service_soup"
+
+module MetzScan
+  module Analyzers
+    module ServiceSoupFixtureSources
+      def service_soup_source
+        <<~RUBY
+          class OrdersController
+            def create
+              ValidateOrder.call(order)
+              ReserveInventory.call(order)
+              CapturePayment.new(order).call
+            end
+          end
+        RUBY
+      end
+
+      def plain_callable_source
+        <<~RUBY
+          class OrdersController
+            def create
+              validator.call(order)
+              notifier.call(order)
+              presenter.call(order)
+            end
+          end
+        RUBY
+      end
+
+      def below_threshold_source
+        <<~RUBY
+          class OrdersController
+            def create
+              ValidateOrder.call(order)
+              CapturePayment.call(order)
+            end
+          end
+        RUBY
+      end
+    end
+
+    class ServiceSoupTest < Minitest::Test
+      include ServiceSoupFixtureSources
+
+      def test_reports_many_service_style_calls_in_one_workflow
+        with_service_files([service_soup_source]) do |files|
+          finding = analyze(files).first
+
+          assert_service_soup_finding(finding)
+        end
+      end
+
+      def test_ignores_plain_callable_objects
+        with_service_files([plain_callable_source]) do |files|
+          assert_empty analyze(files)
+        end
+      end
+
+      def test_skips_workflows_below_threshold
+        with_service_files([below_threshold_source]) do |files|
+          assert_empty analyze(files)
+        end
+      end
+
+      def test_uses_explicit_paths_when_index_is_unavailable
+        with_service_files([service_soup_source]) do |files|
+          finding = ServiceSoup.new(paths: files, index: fake_index([], available: false)).call.first
+
+          assert_equal "OrdersController#create", finding.workflow
+        end
+      end
+
+      def test_reports_service_soup_from_tiny_rails_fixture
+        finding = ServiceSoup.new(paths: [service_soup_fixture_path]).call.first
+
+        assert_rails_fixture_finding(finding)
+        assert_equal service_soup_fixture_controller, finding.occurrences.first.path
+      end
+
+      private
+
+      def analyze(files)
+        ServiceSoup.new(index: fake_index(files)).call
+      end
+
+      def assert_service_soup_finding(finding)
+        assert_equal "MetzProject/ServiceSoup", finding.rule_id
+        assert_equal "OrdersController#create", finding.workflow
+        assert_equal %w[CapturePayment ReserveInventory ValidateOrder], finding.services
+        assert_equal 3, finding.occurrences.size
+        assert_includes finding.message, "OrdersController#create coordinates 3 service calls"
+      end
+
+      def assert_rails_fixture_finding(finding)
+        assert_equal "MetzProject/ServiceSoup", finding.rule_id
+        assert_equal "OrdersController#create", finding.workflow
+        assert_equal %w[CapturePayment ReserveInventory SendReceipt ValidateOrder], finding.services
+      end
+
+      def with_service_files(contents)
+        Dir.mktmpdir { |dir| yield write_service_files(dir, contents) }
+      end
+
+      def write_service_files(dir, contents)
+        contents.map.with_index { |source, index| write_service_file(dir, index, source) }
+      end
+
+      def write_service_file(dir, index, source)
+        File.join(dir, "workflow_#{index}.rb").tap { |path| File.write(path, source) }
+      end
+
+      def fake_index(files, available: true)
+        FakeServiceIndex.new(available: available, indexed_files: files)
+      end
+
+      def service_soup_fixture_path
+        File.expand_path("../../fixtures/service_soup_app", __dir__)
+      end
+
+      def service_soup_fixture_controller
+        File.join(service_soup_fixture_path, "app/controllers/orders_controller.rb")
+      end
+    end
+
+    class ServiceSoupRubydexTest < Minitest::Test
+      include ServiceSoupFixtureSources
+
+      def test_reports_service_soup_from_project_index
+        skip "rubydex is not installed" unless ProjectIndex::RubydexBackend.available?
+
+        with_rubydex_fixture do |index|
+          finding = ServiceSoup.new(index: index).call.first
+
+          assert_equal "OrdersController#create", finding.workflow
+        end
+      end
+
+      private
+
+      def with_rubydex_fixture
+        Dir.mktmpdir do |dir|
+          File.write(File.join(dir, "workflow.rb"), service_soup_source)
+          yield ProjectIndex.build([dir], backend: :rubydex)
+        end
+      end
+    end
+
+    class FakeServiceIndex
+      def initialize(available:, indexed_files:)
+        @available = available
+        @indexed_files = indexed_files
+      end
+
+      attr_reader :indexed_files
+
+      def backend_name = :fake
+
+      def available? = @available
+    end
+  end
+end
