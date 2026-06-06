@@ -1,0 +1,77 @@
+# frozen_string_literal: true
+
+require_relative "../project_index"
+require_relative "service_soup/workflow_collector"
+
+module MetzScan
+  module Analyzers
+    # Reports workflow methods that coordinate many service-style calls.
+    class ServiceSoup
+      RULE_ID = "MetzProject/ServiceSoup"
+      WHY = "Service-object soup scatters one workflow across many procedural steps " \
+            "and makes orchestration harder to change."
+      RUBY_GLOB = "**/*.rb"
+
+      Finding = Struct.new(:source, :rule_id, :message, :workflow, :services, :occurrences, :why_it_matters,
+                           keyword_init: true)
+
+      def initialize(paths: nil, index: nil, minimum_services: 3)
+        @paths = Array(paths)
+        @index = index
+        @minimum_services = minimum_services
+      end
+
+      def call
+        workflows.filter_map { |workflow| finding_for(workflow) }
+      end
+
+      private
+
+      attr_reader :paths, :index, :minimum_services
+
+      def workflows
+        ruby_files.flat_map { |path| WorkflowCollector.new(path).call }
+      end
+
+      def ruby_files
+        return ruby_files_for(paths) unless paths.empty?
+        return index.indexed_files if index&.available?
+
+        []
+      end
+
+      def ruby_files_for(paths)
+        paths.flat_map { |path| ruby_files_under(path) }.uniq.sort
+      end
+
+      def ruby_files_under(path)
+        expanded = File.expand_path(path)
+        return Dir.glob(File.join(expanded, RUBY_GLOB)) if File.directory?(expanded)
+        return [expanded] if File.file?(expanded) && File.extname(expanded) == ".rb"
+
+        []
+      end
+
+      def finding_for(workflow)
+        services = service_names(workflow)
+        return if services.size < minimum_services
+
+        Finding.new(source: source_name, rule_id: RULE_ID, message: message_for(workflow, services),
+                    workflow: workflow.name, services: services, occurrences: workflow.service_calls,
+                    why_it_matters: WHY)
+      end
+
+      def source_name
+        index ? index.backend_name.to_s : "paths"
+      end
+
+      def service_names(workflow)
+        workflow.service_calls.map(&:service_name).uniq.sort
+      end
+
+      def message_for(workflow, services)
+        "#{workflow.name} coordinates #{services.size} service calls; consider a workflow object that owns the process."
+      end
+    end
+  end
+end

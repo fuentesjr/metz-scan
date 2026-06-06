@@ -26,7 +26,11 @@ module MetzScan
                 "suggested_next_moves" => ["Extract a private method"] },
               { "cop_name" => "Layout/IndentationWidth",
                 "message" => "Use 2 spaces.",
-                "location" => { "start_line" => 3, "start_column" => 1 } }
+                "location" => { "start_line" => 3, "start_column" => 1 } },
+              { "cop_name" => "MetzProject/RepeatedBranching",
+                "message" => "Order#status branches in 2 files.",
+                "location" => { "start_line" => 10, "start_column" => 1 },
+                "why_it_matters" => "Repeated branching spreads one domain decision." }
             ] }
         ]
       }.freeze
@@ -61,6 +65,13 @@ module MetzScan
         Scan::TextRenderer.new(@stdout, PARSED).render
 
         assert_match(%r{Run `metz-scan explain Metz/MethodsTooLong` for details\.}, @stdout.string)
+      end
+
+      def test_project_analyzer_block_does_not_emit_explain_hint
+        Scan::TextRenderer.new(@stdout, PARSED).render
+        project_block = @stdout.string.split("MetzProject/RepeatedBranching", 2).last
+
+        refute_match(%r{metz-scan explain MetzProject/RepeatedBranching}, project_block)
       end
 
       def test_metz_cop_block_renders_why_it_matters_line

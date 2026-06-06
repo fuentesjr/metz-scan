@@ -60,6 +60,10 @@ AllCops:
 <% unless ARGV.any? { |a| a.include?("spec/fixtures/sample_app") } %>
     - spec/fixtures/sample_app/**/*
 <% end %>
+    #
+    # Deliberate service-heavy Rails fixture for the wrapper-level
+    # MetzProject/ServiceSoup prototype.
+    - test/fixtures/service_soup_app/**/*
 
 Style/StringLiterals:
   EnforcedStyle: double_quotes
