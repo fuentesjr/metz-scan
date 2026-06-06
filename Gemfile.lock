@@ -2,7 +2,7 @@ PATH
   remote: .
   specs:
     metz-scan (0.1.0)
-      rubocop-metz (~> 0.1.0)
+      rubocop-metz (= 0.1.0)
 
 PATH
   remote: rubocop-metz
@@ -16,10 +16,13 @@ GEM
   remote: https://rubygems.org/
   specs:
     ast (2.4.3)
+    drb (2.2.3)
     json (2.19.5)
     language_server-protocol (3.17.0.5)
     lint_roller (1.1.0)
-    minitest (5.27.0)
+    minitest (6.0.6)
+      drb (~> 2.0)
+      prism (~> 1.5)
     parallel (2.1.0)
     parser (3.3.11.1)
       ast (~> 2.4.1)
@@ -54,17 +57,19 @@ PLATFORMS
 
 DEPENDENCIES
   metz-scan!
-  minitest (~> 5.25)
+  minitest (~> 6.0)
   rake (~> 13.2)
   rubocop-metz!
 
 CHECKSUMS
   ast (2.4.3) sha256=954615157c1d6a382bc27d690d973195e79db7f55e9765ac7c481c60bdb4d383
+  bundler (4.0.11) sha256=5bcec0fb78302e48d02ee46f10ee6e6942be647ba5b44a6d1ddfda9a240ce785
+  drb (2.2.3) sha256=0b00d6fdb50995fe4a45dea13663493c841112e4068656854646f418fda13373
   json (2.19.5) sha256=218a18553e4801d579ca7e0f5bc72bafd776d7397238a1fb4e74db5b0a812c59
   language_server-protocol (3.17.0.5) sha256=fd1e39a51a28bf3eec959379985a72e296e9f9acfce46f6a79d31ca8760803cc
   lint_roller (1.1.0) sha256=2c0c845b632a7d172cb849cc90c1bce937a28c5c8ccccb50dfd46a485003cc87
   metz-scan (0.1.0)
-  minitest (5.27.0) sha256=2d3b17f8a36fe7801c1adcffdbc38233b938eb0b4966e97a6739055a45fa77d5
+  minitest (6.0.6) sha256=153ea36d1d987a62942382b61075745042a2b3123b1cd48f4c3675af9cc7d6f1
   parallel (2.1.0) sha256=b35258865c2e31134c5ecb708beaaf6772adf9d5efae28e93e99260877b09356
   parser (3.3.11.1) sha256=d17ace7aabe3e72c3cc94043714be27cc6f852f104d81aa284c2281aecc65d54
   prism (1.9.0) sha256=7b530c6a9f92c24300014919c9dcbc055bf4cdf51ec30aed099b06cd6674ef85
