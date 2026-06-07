@@ -33,7 +33,7 @@ bundle install
 ```bash
 bundle exec metz-scan rules
 bundle exec metz-scan explain Metz/DemeterTrainWreck
-bundle exec metz-scan scan spec/fixtures/sample_app --format text || true
+bundle exec metz-scan scan test/fixtures/sample_app --format text || true
 ```
 
 The sample app intentionally contains violations, so the scan command prints findings and exits nonzero.

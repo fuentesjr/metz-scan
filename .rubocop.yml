@@ -30,24 +30,24 @@ AllCops:
   Exclude:
     - rubocop-metz/test/fixtures/**/*
     #
-    # spec/fixtures/sample_app/ is a deliberate-violation Rails fixture for the
+    # test/fixtures/sample_app/ is a deliberate-violation Rails fixture for the
     # M4 cops (Metz/ControllersTooManyDirectCollaborators, Metz/ViewsDeepNavigation).
     # Two conflicting contract assertions point at it:
     #
     #   * VAL-M1-010 — self-host (`bundle exec rubocop` from the repo root) must
     #     exit 0 with no offenses, so the fixture MUST be excluded.
     #   * VAL-M4-013/019/023/024 — directly scanning the fixture
-    #     (`bundle exec rubocop ... spec/fixtures/sample_app/...`) MUST report
+    #     (`bundle exec rubocop ... test/fixtures/sample_app/...`) MUST report
     #     offenses from both M4 cops, so the fixture MUST NOT be excluded.
     #
     # The ERB conditional below toggles the AllCops/Exclude entry based on
     # whether the fixture path appears anywhere in ARGV. When invoked without
     # arguments (self-host) the exclude is active; when the caller names a path
-    # under spec/fixtures/sample_app/ the exclude is dropped so the M4 cops can
+    # under test/fixtures/sample_app/ the exclude is dropped so the M4 cops can
     # fire on the fixture.
     #
     # KNOWN FRAGILITY: this is an ARGV substring match, not a target-file check.
-    # Any caller that names "spec/fixtures/sample_app" in ARGV for an unrelated
+    # Any caller that names "test/fixtures/sample_app" in ARGV for an unrelated
     # reason (a wrapper that prints the path, tooling that passes the path as a
     # comment-only argument, a path that simply contains that substring) will
     # accidentally drop the exclude. Acceptable today because the only two
@@ -57,8 +57,8 @@ AllCops:
     # `relevant_file?` overrides to honor cop-level `Exclude` so per-cop
     # excludes (rather than an AllCops/Exclude flip) can silence them during
     # self-host.
-<% unless ARGV.any? { |a| a.include?("spec/fixtures/sample_app") } %>
-    - spec/fixtures/sample_app/**/*
+<% unless ARGV.any? { |a| a.include?("test/fixtures/sample_app") } %>
+    - test/fixtures/sample_app/**/*
 <% end %>
     #
     # Deliberate service-heavy Rails fixture for the wrapper-level
@@ -92,7 +92,7 @@ Metz/ClassesTooLong:
 
 Metz/DemeterTrainWreck:
   Exclude:
-<%= emit_test_excludes.call(extra: "spec/fixtures/sample_app/**/*") %>
+<%= emit_test_excludes.call(extra: "test/fixtures/sample_app/**/*") %>
 
 Metrics/ModuleLength:
   Exclude:

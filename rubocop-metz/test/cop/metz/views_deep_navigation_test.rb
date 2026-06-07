@@ -9,7 +9,7 @@ class CopMetzViewsDeepNavigationTest < Minitest::Test
 
   VIEW_PATH = "app/views/users/index.html.erb"
   REPO_ROOT = File.expand_path("../../../..", __dir__)
-  FIXTURE_DIR = File.join(REPO_ROOT, "spec/fixtures/sample_app")
+  FIXTURE_DIR = File.join(REPO_ROOT, "test/fixtures/sample_app")
 
   def cop_class
     RuboCop::Cop::Metz::ViewsDeepNavigation

@@ -2,14 +2,14 @@
 # frozen_string_literal: true
 
 # Enforces the M4 sample-app freeze gate: every regular file under
-# spec/fixtures/sample_app/ must match the SHA-256 recorded in
-# spec/fixtures/sample_app/.frozen.sha256. Missing files, modified files,
+# test/fixtures/sample_app/ must match the SHA-256 recorded in
+# test/fixtures/sample_app/.frozen.sha256. Missing files, modified files,
 # and extra files all cause a non-zero exit and an error printed to stderr.
 
 require "digest"
 
 ROOT = File.expand_path("..", __dir__)
-FIXTURE_DIR = File.join(ROOT, "spec/fixtures/sample_app")
+FIXTURE_DIR = File.join(ROOT, "test/fixtures/sample_app")
 MANIFEST = File.join(FIXTURE_DIR, ".frozen.sha256")
 SELF_REF = "__SELF__"
 

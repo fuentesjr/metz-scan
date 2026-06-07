@@ -129,7 +129,7 @@ Baseline `rg` found unit tests, integration tests, config, and string references
 
 ```bash
 rg -n "ViewsDeepNavigation|views_deep_navigation|Metz/ViewsDeepNavigation" \
-  rubocop-metz/test rubocop-metz/config rubocop-metz/lib spec/fixtures
+  rubocop-metz/test rubocop-metz/config rubocop-metz/lib test/fixtures
 ```
 
 Important hits:

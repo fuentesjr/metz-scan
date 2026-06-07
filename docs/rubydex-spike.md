@@ -26,7 +26,7 @@ bundle exec ruby script/rubydex_spike.rb
 Run it against a specific fixture path:
 
 ```bash
-bundle exec ruby script/rubydex_spike.rb spec/fixtures/sample_app
+bundle exec ruby script/rubydex_spike.rb test/fixtures/sample_app
 ```
 
 Without the optional group, the spike exits with a clear message and normal
@@ -51,7 +51,7 @@ The workspace run finds `Minitest::Test` descendants from this repo and from
 indexed dependencies, including `MetzScan::ProjectIndexTest`,
 `MetzScan::Commands::ScanTest`, and the RuboCop cop tests.
 
-The fixture-only run against `spec/fixtures/sample_app` is smaller and clean:
+The fixture-only run against `test/fixtures/sample_app` is smaller and clean:
 
 ```text
 backend: rubydex
@@ -134,7 +134,7 @@ Limitations:
 - Locations currently use declaration paths only; line and column data are not
   exposed by the adapter yet.
 - Bounded path analysis only reports descendants when the base declaration is
-  indexed too. For example, `spec/fixtures/sample_app` has controllers that
+  indexed too. For example, `test/fixtures/sample_app` has controllers that
   inherit from `ApplicationController`, but the fixture does not define
   `ApplicationController`.
 

@@ -7,7 +7,7 @@ require "yaml"
 
 class M4CrossCopFixtureIntegrationTest < Minitest::Test
   REPO_ROOT = File.expand_path("../../..", __dir__)
-  FIXTURE_DIR = "spec/fixtures/sample_app"
+  FIXTURE_DIR = "test/fixtures/sample_app"
   M4_COP_NAMES = %w[
     Metz/ControllersTooManyDirectCollaborators
     Metz/ViewsDeepNavigation
