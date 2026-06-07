@@ -78,16 +78,16 @@ These commands are expected to exit nonzero when findings are reported; confirm
 that the output is well-formed for each format.
 
 ```bash
-bundle exec metz-scan scan spec/fixtures/sample_app --format text
-bundle exec metz-scan scan spec/fixtures/sample_app --format json
-bundle exec metz-scan scan spec/fixtures/sample_app --format sarif
+bundle exec metz-scan scan test/fixtures/sample_app --format text
+bundle exec metz-scan scan test/fixtures/sample_app --format json
+bundle exec metz-scan scan test/fixtures/sample_app --format sarif
 ```
 
 - [ ] Confirm dry-run auto-fix does not modify files.
 
 ```bash
 git diff --quiet
-bundle exec metz-scan scan spec/fixtures/sample_app --auto-fix --dry-run
+bundle exec metz-scan scan test/fixtures/sample_app --auto-fix --dry-run
 git diff --quiet
 ```
 
