@@ -39,6 +39,7 @@ module MetzScan
         assert_equal "MetzProject/DeepInheritanceTree", finding.rule_id
         assert_equal "ApplicationController", finding.base_name
         assert_includes finding.message, "ApplicationController has 2 descendants"
+        refute_empty finding.suggested_next_moves
       end
 
       def assert_finding_descendants(finding)

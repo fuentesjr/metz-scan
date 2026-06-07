@@ -19,12 +19,18 @@ module MetzScan
 
       def test_merges_project_findings_into_rubocop_json_shape
         write_repeated_branching_files
-        parsed = { "files" => [], "summary" => { "offense_count" => 0 } }
-
-        Scan::ProjectAnalyzerRunner.merge(parsed, [@tmpdir])
+        parsed = merge_project_analyzers
 
         assert_repeated_branching_offenses(parsed)
         assert_normalized_locations(parsed)
+        assert_summary_counts_match_merged_files(parsed)
+      end
+
+      def test_active_project_analyzers_are_the_documented_opt_in_set
+        assert_equal(
+          [Analyzers::RepeatedBranching, Analyzers::ServiceSoup],
+          Scan::ProjectAnalyzerRunner::ANALYZERS
+        )
       end
 
       def test_matches_existing_file_entries_by_expanded_path
@@ -37,10 +43,11 @@ module MetzScan
 
       def test_merges_service_soup_findings
         write_service_soup_file
-        parsed = { "files" => [], "summary" => { "offense_count" => 0 } }
+        parsed = merge_project_analyzers
 
-        Scan::ProjectAnalyzerRunner.merge(parsed, [@tmpdir])
         assert_includes cop_names(parsed), "MetzProject/ServiceSoup"
+        refute_empty service_soup_offense(parsed).fetch("suggested_next_moves")
+        assert_summary_counts_match_merged_files(parsed)
       end
 
       def test_uses_rubocop_inspected_files_when_available
@@ -53,6 +60,12 @@ module MetzScan
 
       private
 
+      def merge_project_analyzers
+        { "files" => [], "summary" => { "offense_count" => 0 } }.tap do |parsed|
+          Scan::ProjectAnalyzerRunner.merge(parsed, [@tmpdir])
+        end
+      end
+
       def assert_repeated_branching_offenses(parsed)
         offenses = offenses(parsed)
         assert_equal ["MetzProject/RepeatedBranching"], offenses.map { |o| o["cop_name"] }.uniq
@@ -63,8 +76,17 @@ module MetzScan
         assert offenses(parsed).all? { |o| o.dig("location", "last_column") }, "expected normalized locations"
       end
 
+      def assert_summary_counts_match_merged_files(parsed)
+        assert_equal parsed.fetch("files").size, parsed.dig("summary", "target_file_count")
+        assert_equal parsed.fetch("files").size, parsed.dig("summary", "inspected_file_count")
+      end
+
       def cop_names(parsed)
         offenses(parsed).map { |offense| offense.fetch("cop_name") }
+      end
+
+      def service_soup_offense(parsed)
+        offenses(parsed).find { |offense| offense.fetch("cop_name") == "MetzProject/ServiceSoup" }
       end
 
       def offenses(parsed)
@@ -88,9 +110,7 @@ module MetzScan
       end
 
       def write_repeated_branching_files
-        2.times do |index|
-          File.write(branching_path(index), repeated_branching_source)
-        end
+        2.times { |index| File.write(branching_path(index), repeated_branching_source) }
       end
 
       def branching_path(index)
@@ -98,16 +118,7 @@ module MetzScan
       end
 
       def repeated_branching_source
-        <<~RUBY
-          # frozen_string_literal: true
-
-          case order.status
-          when "pending"
-            nil
-          when "paid", "cancelled"
-            nil
-          end
-        RUBY
+        "case order.status\nwhen \"pending\"\n  nil\nwhen \"paid\", \"cancelled\"\n  nil\nend\n"
       end
 
       def write_service_soup_file

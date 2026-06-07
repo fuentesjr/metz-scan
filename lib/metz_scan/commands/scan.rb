@@ -59,7 +59,7 @@ module MetzScan
       end
 
       def configure_project_analyzer_parser(opts, flags)
-        opts.on("--project-analyzers", "Include experimental cross-file project analyzer findings") do
+        opts.on("--project-analyzers", "Include opt-in project analyzer findings") do
           flags[:project_analyzers] = true
         end
       end

@@ -2,6 +2,8 @@
 
 require "rubocop"
 
+require_relative "branch_value"
+
 module MetzScan
   module Analyzers
     class RepeatedBranching
@@ -25,7 +27,7 @@ module MetzScan
         def branch_nodes
           return [] unless File.file?(path)
 
-          walk_nodes(processed_source.ast).select { |node| branch_node?(node) }
+          walk_nodes(processed_source.ast).select { |node| case_branch?(node) || root_if_branch?(node) }
         rescue Parser::SyntaxError
           []
         end
@@ -40,10 +42,6 @@ module MetzScan
           nodes << node
           node.children.grep(RuboCop::AST::Node).each { |child| walk_nodes(child, nodes) }
           nodes
-        end
-
-        def branch_node?(node)
-          case_branch?(node) || root_if_branch?(node)
         end
 
         def case_branch?(node)
@@ -67,7 +65,8 @@ module MetzScan
         end
 
         def case_values(node)
-          node.children.grep(RuboCop::AST::WhenNode).flat_map { |when_node| when_values(when_node) }.uniq.sort
+          values = node.children.grep(RuboCop::AST::WhenNode).flat_map { |when_node| when_values(when_node) }
+          values.uniq(&:signature).sort_by { |value| [value.text, value.signature] }
         end
 
         def when_values(when_node)
@@ -75,9 +74,7 @@ module MetzScan
         end
 
         def condition_value(condition)
-          return condition.value.to_s if condition.respond_to?(:value)
-
-          condition.source
+          BranchValue.for(condition)
         end
 
         def if_site(node)
@@ -119,11 +116,20 @@ module MetzScan
         end
 
         def build_site(kind, decision, values, node)
-          return if values.empty?
+          branch_values = branch_values_for(values)
+          return if branch_values.empty?
 
-          BranchSite.new(signature: signature_for(kind, decision, values), kind: kind, decision: decision,
-                         branch_values: values, path: path, line: node.loc.expression.line,
+          BranchSite.new(signature: signature_for(kind, decision, signatures_for(values)), kind: kind,
+                         decision: decision, branch_values: branch_values, path: path, line: node.loc.expression.line,
                          expression: first_line(node))
+        end
+
+        def branch_values_for(values)
+          values.map { |value| value.respond_to?(:text) ? value.text : value }
+        end
+
+        def signatures_for(values)
+          values.map { |value| value.respond_to?(:signature) ? value.signature : value }
         end
 
         def signature_for(kind, decision, values)

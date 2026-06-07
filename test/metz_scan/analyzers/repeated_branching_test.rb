@@ -39,6 +39,18 @@ module MetzScan
       def ternary_source
         "value = user.admin? ? \"admin\" : \"member\"\n"
       end
+
+      def repeated_in_one_file_source
+        "#{case_branching_source('order')}\n#{case_branching_source('order')}"
+      end
+
+      def string_status_source
+        "case order.status\nwhen \"paid\"\n  nil\nend\n"
+      end
+
+      def symbol_status_source
+        "case order.status\nwhen :paid\n  nil\nend\n"
+      end
     end
 
     class RepeatedBranchingTest < Minitest::Test
@@ -49,6 +61,7 @@ module MetzScan
           finding = analyze(files).first
 
           assert_case_finding(finding)
+          refute_empty finding.suggested_next_moves
         end
       end
 
@@ -75,6 +88,18 @@ module MetzScan
 
       def test_ignores_ternary_if_nodes
         with_branching_files([ternary_source]) do |files|
+          assert_empty analyze(files)
+        end
+      end
+
+      def test_repeated_branching_must_appear_across_distinct_files
+        with_branching_files([repeated_in_one_file_source]) do |files|
+          assert_empty analyze(files)
+        end
+      end
+
+      def test_case_branch_literals_are_type_aware
+        with_branching_files([string_status_source, symbol_status_source]) do |files|
           assert_empty analyze(files)
         end
       end

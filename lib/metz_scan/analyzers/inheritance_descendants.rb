@@ -8,9 +8,13 @@ module MetzScan
     class InheritanceDescendants
       RULE_ID = "MetzProject/DeepInheritanceTree"
       WHY = "Large inheritance trees hide coupling and make changes expensive."
+      SUGGESTED_NEXT_MOVES = [
+        "Review whether the base class is carrying multiple responsibilities.",
+        "Prefer composition or narrower shared modules when descendants only need part of the base behavior."
+      ].freeze
 
       Finding = Struct.new(:source, :rule_id, :message, :base_name, :descendants, :locations, :why_it_matters,
-                           keyword_init: true)
+                           :suggested_next_moves, keyword_init: true)
       Location = Struct.new(:name, :path, keyword_init: true)
 
       def initialize(index:, base_names:, minimum_descendants: 1)
@@ -43,7 +47,7 @@ module MetzScan
       def build_finding(base_name, descendants)
         Finding.new(source: index.backend_name.to_s, rule_id: RULE_ID, message: message_for(base_name, descendants),
                     base_name: base_name, descendants: descendants, locations: locations_for(descendants),
-                    why_it_matters: WHY)
+                    why_it_matters: WHY, suggested_next_moves: SUGGESTED_NEXT_MOVES)
       end
 
       def message_for(base_name, descendants)

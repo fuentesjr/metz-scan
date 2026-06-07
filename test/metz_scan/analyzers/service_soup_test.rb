@@ -42,6 +42,35 @@ module MetzScan
           end
         RUBY
       end
+
+      def repeated_same_service_source
+        <<~RUBY
+          class OrdersController
+            def create
+              ValidateOrder.call(order)
+              ValidateOrder.call(order)
+              ValidateOrder.new(order).call
+            end
+          end
+        RUBY
+      end
+
+      def nested_scope_source
+        <<~RUBY
+          class OrdersController
+            def create
+              ValidateOrder.call(order)
+
+              helper = Class.new do
+                def call
+                  ReserveInventory.call(order)
+                  CapturePayment.call(order)
+                end
+              end
+            end
+          end
+        RUBY
+      end
     end
 
     class ServiceSoupTest < Minitest::Test
@@ -52,6 +81,7 @@ module MetzScan
           finding = analyze(files).first
 
           assert_service_soup_finding(finding)
+          refute_empty finding.suggested_next_moves
         end
       end
 
@@ -63,6 +93,18 @@ module MetzScan
 
       def test_skips_workflows_below_threshold
         with_service_files([below_threshold_source]) do |files|
+          assert_empty analyze(files)
+        end
+      end
+
+      def test_repeated_calls_to_same_service_do_not_satisfy_threshold
+        with_service_files([repeated_same_service_source]) do |files|
+          assert_empty analyze(files)
+        end
+      end
+
+      def test_nested_workflow_scopes_do_not_leak_into_outer_method
+        with_service_files([nested_scope_source]) do |files|
           assert_empty analyze(files)
         end
       end
@@ -93,7 +135,7 @@ module MetzScan
         assert_equal "OrdersController#create", finding.workflow
         assert_equal %w[CapturePayment ReserveInventory ValidateOrder], finding.services
         assert_equal 3, finding.occurrences.size
-        assert_includes finding.message, "OrdersController#create coordinates 3 service calls"
+        assert_includes finding.message, "OrdersController#create coordinates 3 distinct services"
       end
 
       def assert_rails_fixture_finding(finding)

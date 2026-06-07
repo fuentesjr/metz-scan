@@ -9,10 +9,14 @@ module MetzScan
     class RepeatedBranching
       RULE_ID = "MetzProject/RepeatedBranching"
       WHY = "Repeated branching spreads one domain decision across files and makes change ripple outward."
+      SUGGESTED_NEXT_MOVES = [
+        "Name the domain decision once and reuse it instead of repeating the same branch table.",
+        "Consider polymorphism, a strategy object, or a small lookup object when the branch represents type behavior."
+      ].freeze
       RUBY_GLOB = "**/*.rb"
 
       Finding = Struct.new(:source, :rule_id, :message, :decision, :kind, :branch_values, :occurrences,
-                           :why_it_matters, keyword_init: true)
+                           :why_it_matters, :suggested_next_moves, keyword_init: true)
 
       def initialize(paths: nil, index: nil, minimum_occurrences: 2)
         @paths = Array(paths)
@@ -61,7 +65,7 @@ module MetzScan
         first = sites.first
         Finding.new(source: source_name, rule_id: RULE_ID, message: message_for(first, sites),
                     decision: first.decision, kind: first.kind, branch_values: first.branch_values,
-                    occurrences: sites, why_it_matters: WHY)
+                    occurrences: sites, why_it_matters: WHY, suggested_next_moves: SUGGESTED_NEXT_MOVES)
       end
 
       def source_name

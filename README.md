@@ -61,14 +61,27 @@ bundle exec metz-scan scan . --format json
 bundle exec metz-scan scan . --format sarif
 ```
 
-By default, `scan` reports only RuboCop-backed Metz findings. Opt in to
-experimental cross-file project analyzer findings in the same report:
+By default, `scan` reports only RuboCop-backed Metz findings. Opt in to project
+analyzer findings in the same report:
 
 ```bash
 bundle exec metz-scan scan . --project-analyzers
 bundle exec metz-scan scan . --project-analyzers --format json
 bundle exec metz-scan scan . --project-analyzers --format sarif
 ```
+
+Current project analyzer status:
+
+| Analyzer | Status | Expected findings |
+| --- | --- | --- |
+| `MetzProject/ServiceSoup` | Candidate | Methods that coordinate at least three distinct service constants, such as `ValidateOrder.call(...)` or `CapturePayment.new(...).call`. |
+| `MetzProject/RepeatedBranching` | Experimental | Repeated `case` expressions with the same lexical decision and branch-value set, or repeated `if`/`elsif` predicate chains with the same receiver and predicate set, across distinct Ruby files. |
+| `MetzProject/DeepInheritanceTree` | Deferred | Implemented as a prototype analyzer, but not run by `--project-analyzers` because it still needs explicit inheritance roots and index-backed semantics. |
+
+Project analyzers parse Ruby files only. They do not inspect ERB/HAML/SLIM
+templates, and they avoid semantic claims that require resolving runtime types.
+For example, `ServiceSoup` counts distinct constant-backed `.call` shapes but does not
+prove that a constant is truly a service object.
 
 Run safe auto-correction or preview it first:
 

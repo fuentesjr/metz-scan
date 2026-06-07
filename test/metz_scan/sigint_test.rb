@@ -32,7 +32,7 @@ module MetzScan
 
     def run_scan_and_interrupt
       Open3.popen3(scan_env, *scan_cmd, chdir: REPO_ROOT) do |_in, _out, err, wait_thr|
-        sleep 0.6
+        sleep 2.0
         Process.kill("INT", wait_thr.pid)
         capture_then_finish(err, wait_thr)
       end

@@ -10,10 +10,14 @@ module MetzScan
       RULE_ID = "MetzProject/ServiceSoup"
       WHY = "Service-object soup scatters one workflow across many procedural steps " \
             "and makes orchestration harder to change."
+      SUGGESTED_NEXT_MOVES = [
+        "Introduce a workflow object that owns the multi-step process.",
+        "Keep the controller or job action at one high-level command when possible."
+      ].freeze
       RUBY_GLOB = "**/*.rb"
 
       Finding = Struct.new(:source, :rule_id, :message, :workflow, :services, :occurrences, :why_it_matters,
-                           keyword_init: true)
+                           :suggested_next_moves, keyword_init: true)
 
       def initialize(paths: nil, index: nil, minimum_services: 3)
         @paths = Array(paths)
@@ -58,7 +62,7 @@ module MetzScan
 
         Finding.new(source: source_name, rule_id: RULE_ID, message: message_for(workflow, services),
                     workflow: workflow.name, services: services, occurrences: workflow.service_calls,
-                    why_it_matters: WHY)
+                    why_it_matters: WHY, suggested_next_moves: SUGGESTED_NEXT_MOVES)
       end
 
       def source_name
@@ -70,7 +74,8 @@ module MetzScan
       end
 
       def message_for(workflow, services)
-        "#{workflow.name} coordinates #{services.size} service calls; consider a workflow object that owns the process."
+        "#{workflow.name} coordinates #{services.size} distinct services; " \
+          "consider a workflow object that owns the process."
       end
     end
   end

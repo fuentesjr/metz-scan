@@ -81,7 +81,13 @@ module MetzScan
           { "cop_name" => finding.rule_id, "message" => finding.message,
             "severity" => "refactor", "corrected" => false, "correctable" => false,
             "why_it_matters" => finding.why_it_matters,
-            "fix_safety" => "manual", "suggested_next_moves" => [] }
+            "fix_safety" => "manual", "suggested_next_moves" => suggested_next_moves_for(finding) }
+        end
+
+        def suggested_next_moves_for(finding)
+          return [] unless finding.respond_to?(:suggested_next_moves)
+
+          Array(finding.suggested_next_moves).map(&:to_s)
         end
 
         def location_hash(line)
@@ -92,7 +98,14 @@ module MetzScan
 
         def update_summary(parsed)
           summary = parsed["summary"] ||= {}
-          summary["offense_count"] = parsed["files"].sum { |file| Array(file["offenses"]).size }
+          files = Array(parsed["files"])
+          summary["offense_count"] = files.sum { |file| Array(file["offenses"]).size }
+          update_file_counts(summary, files.size)
+        end
+
+        def update_file_counts(summary, file_count)
+          summary["target_file_count"] = [summary["target_file_count"].to_i, file_count].max
+          summary["inspected_file_count"] = [summary["inspected_file_count"].to_i, file_count].max
         end
       end
     end

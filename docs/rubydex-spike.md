@@ -141,9 +141,11 @@ Limitations:
 ## Experiment 3: Repeated Branching
 
 `MetzScan::Analyzers::RepeatedBranching` is an optional prototype analyzer that
-parses indexed or explicit Ruby files and groups repeated `case` decisions and
-`if`/`elsif` predicate chains across files. It is not wired into
-`metz-scan scan`.
+parses indexed or explicit Ruby files and groups repeated `case` expressions
+with the same lexical decision and branch-value set, or repeated `if`/`elsif`
+predicate chains with the same receiver and predicate set, across distinct Ruby
+files. It is wired into
+`metz-scan scan --project-analyzers` and remains experimental.
 
 Run the spike against the library code:
 
@@ -160,7 +162,7 @@ rule_id: MetzProject/RepeatedBranching
 findings: 1
 - format repeated across 2 files: json, sarif
   lib/metz_scan/commands/report.rb:72
-  lib/metz_scan/commands/scan.rb:81
+  lib/metz_scan/commands/scan.rb:95
 ```
 
 TDD evidence:
@@ -182,8 +184,8 @@ Limitations:
 
 - Receiver grouping is lexical, not type-aware: `order.status`,
   `@order.status`, and `current_order.status` are treated as separate decisions.
-- Literal branch values are normalized by display value, so `"paid"` and
-  `:paid` may be grouped together in this prototype.
+- Literal branch values keep their literal type in the grouping signature, so
+  `"paid"` and `:paid` are not treated as the same branch value.
 - The prototype only parses Ruby files, not ERB/HAML/SLIM templates.
 - Rubydex context is advisory here; it supplies backend/index metadata when
   available but is not required for findings.
@@ -192,8 +194,8 @@ Limitations:
 
 `MetzScan::Analyzers::ServiceSoup` is an optional prototype analyzer that
 parses indexed or explicit Ruby files and reports workflow methods that
-coordinate several service-style calls. It is not wired into
-`metz-scan scan`.
+coordinate several service-style calls. It is wired into
+`metz-scan scan --project-analyzers` as the first candidate for graduation.
 
 The prototype recognizes constant-backed service calls:
 
@@ -265,18 +267,22 @@ Limitations:
   `Constant.new(...).call` count. It does not resolve whether the constants are
   true service objects.
 - The default threshold is three distinct services in one method.
+- Repeated calls to the same service do not satisfy the threshold by themselves.
+- Service calls in nested class, module, or method scopes do not count toward
+  the outer workflow.
 - The prototype only parses Ruby files, not ERB/HAML/SLIM templates.
 - Rubydex context is advisory here; it supplies backend/index metadata when
   available but is not required for findings.
 
 Recommendation:
 
-- Keep `MetzScan::Analyzers::ServiceSoup`, but do not wire it into default
-  `metz-scan scan` yet.
-- Prefer an explicit project-analyzer command or opt-in path before making
-  project-level findings part of normal scan output.
-- Test the analyzer against more real Rails applications before promoting it
-  beyond prototype status.
+- Keep `MetzScan::Analyzers::ServiceSoup` behind the explicit
+  `--project-analyzers` opt-in flag.
+- Treat it as the first graduation candidate because the finding maps cleanly
+  to method-level workflow orchestration and has a concrete Rails-shaped
+  fixture.
+- Test the analyzer against more real Rails applications before making it part
+  of default scan output.
 
 Reasons not to enable it by default yet:
 
@@ -289,10 +295,23 @@ Reasons not to enable it by default yet:
 - Default scan behavior should stay stable. Today `metz-scan scan` is a
   predictable RuboCop-backed wrapper; project analyzers change scope, runtime,
   output shape, and possibly exit behavior.
-- Project findings are not normalized into the existing text, JSON, and SARIF
-  report pipeline with RuboCop offenses.
-- Analyzer semantics still need tuning, including threshold, ignored
-  namespaces, repeated service calls, nested workflows, and whether controllers
-  and jobs should be weighted differently.
+- Analyzer semantics still need tuning, including ignored namespaces and whether
+  controllers and jobs should be weighted differently.
 - Rubydex's role is unresolved. It may remain an advisory source of file/index
   metadata, or it may later help classify constants semantically.
+
+## Project analyzer status
+
+`metz-scan scan --project-analyzers` currently runs:
+
+- `MetzProject/ServiceSoup` — candidate. Reports methods with at least three
+  distinct service constants. This is the first analyzer to
+  graduate from pure prototype status, while remaining opt-in.
+- `MetzProject/RepeatedBranching` — experimental. Reports repeated lexical
+  `case` decisions with the same branch-value set, or repeated `if`/`elsif`
+  predicate chains with the same receiver and predicate set, across distinct
+  Ruby files.
+
+`MetzProject/DeepInheritanceTree` remains deferred. It requires explicit
+inheritance roots and index-backed semantics, so it is not part of the current
+`--project-analyzers` surface.
