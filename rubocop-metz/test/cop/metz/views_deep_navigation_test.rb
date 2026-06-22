@@ -73,6 +73,18 @@ class CopMetzViewsDeepNavigationTest < Minitest::Test
     refute_offense("a.b.c.d.e.f", file: "app/models/user.rb")
   end
 
+  def test_relevant_file_respects_cop_exclude
+    config = RuboCop::Config.new(
+      "Metz/ViewsDeepNavigation" => {
+        "Enabled" => true,
+        "MaxChainLength" => 3,
+        "Exclude" => [VIEW_PATH]
+      }
+    )
+
+    refute cop_class.new(config).relevant_file?(VIEW_PATH)
+  end
+
   def test_violating_view_fixtures_fire_at_least_one_offense
     violating = manifest.fetch("views").fetch("violating")
     refute_empty violating

@@ -57,7 +57,8 @@ module MetzScan
         end
 
         def dry_run_result(snapshot, result)
-          result.status.zero? ? print_diffs(snapshot) : print_rubocop_failure(result)
+          print_diffs(snapshot)
+          print_rubocop_failure(result) unless result.status.zero?
           result.status
         end
 

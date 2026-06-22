@@ -30,7 +30,8 @@ module RuboCop
         def relevant_file?(file)
           return super if file.nil? || file.empty? || file == "(string)"
 
-          ::Metz::FileClassifier.view?(file)
+          !file_name_matches_any?(file, "Exclude", false) &&
+            ::Metz::FileClassifier.view?(file)
         end
 
         private
