@@ -78,7 +78,7 @@ module MetzScan
     end
 
     def stub_subcommand(name)
-      stderr.puts "metz-scan: subcommand '#{name}' is not yet implemented at this milestone."
+      stderr.puts "metz-scan: subcommand '#{name}' is not yet implemented."
       1
     end
 

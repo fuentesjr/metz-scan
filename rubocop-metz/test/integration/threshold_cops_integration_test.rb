@@ -2,7 +2,7 @@
 
 require_relative "../test_helper"
 
-class M2ThresholdCopsIntegrationTest < Minitest::Test
+class ThresholdCopsIntegrationTest < Minitest::Test
   COP_CLASSES = [
     RuboCop::Cop::Metz::ClassesTooLong,
     RuboCop::Cop::Metz::MethodsTooLong,
@@ -28,7 +28,7 @@ class M2ThresholdCopsIntegrationTest < Minitest::Test
     offenses = run_team_against(combined_fixture_source)
 
     assert_equal COP_NAMES.sort, offenses.map(&:cop_name).sort,
-                 "Combined fixture should produce one offense per M2 cop, got: " \
+                 "Combined fixture should produce one offense per threshold cop, got: " \
                  "#{offenses.map(&:cop_name).inspect}"
   end
 

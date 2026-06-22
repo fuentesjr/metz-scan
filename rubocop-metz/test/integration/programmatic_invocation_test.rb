@@ -20,7 +20,7 @@ class ProgrammaticInvocationTest < Minitest::Test
     refute_empty metz_offenses,
                  "Expected at least one Metz/* offense from #{FIXTURE_PATH}"
     assert metz_offenses.any? { |o| o["cop_name"].start_with?("Metz/") && o.key?("why_it_matters") },
-           "VAL-M5-008: programmatic invocation must yield at least one Metz offense with why_it_matters"
+           "programmatic plugin invocation must yield at least one Metz offense with why_it_matters"
 
     assert_enriched_metz_offenses(metz_offenses)
   end
@@ -36,7 +36,7 @@ class ProgrammaticInvocationTest < Minitest::Test
 
     metz_offenses = collect_metz_offenses(parsed)
     refute_empty metz_offenses,
-                 "VAL-M5-007: legacy --require path must still produce Metz offenses"
+                 "legacy --require path must still produce Metz offenses"
     assert_enriched_metz_offenses(metz_offenses)
   end
 
