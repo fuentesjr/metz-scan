@@ -35,10 +35,10 @@ Result: keep as **Candidate**, behind `--project-analyzers`.
 The analyzer produced no findings across the five sampled applications. That is
 useful evidence that the default threshold of three distinct service constants
 is conservative, but it is not evidence that the analyzer is ready for default
-scan output. The current detector only recognizes method-level workflows made of
-`Constant.call(...)` and `Constant.new(...).call`; the sampled applications often
-used other service styles or had isolated service calls rather than three in one
-method.
+scan output. The current detector recognizes method-level workflows made of
+`Constant.call(...)`, `Constant.new(...).call`, and their namespaced constant
+variants; the sampled applications often used other service styles or had
+isolated service calls rather than three in one method.
 
 Decision:
 
@@ -50,8 +50,10 @@ Decision:
   worth supporting, such as `perform`, `execute`, `run`, or framework-specific
   command/interactor APIs. Add these only with fixtures from real examples.
 
-No fixture or test changes were made because calibration did not change analyzer
-behavior.
+Follow-up context pass on 2026-06-23: counts stayed at zero across the same
+sample. No new service invocation shapes were added because the calibration did
+not produce fixture-backed evidence for `perform`, `execute`, `run`, or a
+framework-specific command API.
 
 ## `MetzProject/RepeatedBranching`
 
@@ -70,25 +72,35 @@ repeated domain decisions:
 - `maybe` repeats safe `per_page` range handling in two API controllers.
 - `chatwoot` repeats typing-status branching in a public controller and service.
 
+Follow-up context pass on 2026-06-23: counts were unchanged across the same
+sample, and each finding now reports enclosing class/module and method context.
+That made generic receiver findings faster to triage, for example:
+
+- `lobsters`: `k` in `Comment#as_json` and `Story#as_json`.
+- `rubygems.org`: `range` in `Avo::Cards::RubygemsMetric#query` and
+  `Avo::Cards::VersionsMetric#query`.
+- `huginn`: `backend = faraday_backend` in
+  `OpenaiConcern#build_openai_connection` and `WebRequestConcern#faraday`.
+- `maybe`: `per_page` in `Api::V1::AccountsController#safe_per_page_param` and
+  `Api::V1::TransactionsController#safe_per_page_param`.
+- `chatwoot`: `params[:typing_status]` in
+  `Public::Api::V1::Inboxes::ConversationsController#toggle_typing` and
+  `Conversations::TypingStatusManager#toggle_typing_status`.
+
 Ambiguities and risk:
 
-- The analyzer groups by lexical decision text and branch values only. Generic
-  receiver names such as `value` or `k` can be useful when the duplicated code is
-  genuinely the same helper logic, but they can also over-group unrelated code in
-  larger samples.
+- The analyzer groups by lexical decision text and branch values only. Context
+  is reported for triage but is intentionally not part of the grouping
+  signature, so generic receiver names such as `value` or `k` can still
+  over-group unrelated code in larger samples.
 - Single explicit `when` branches plus `else` can still reveal duplicated type
   checks, but they are weaker evidence than multi-branch tables.
-- The report does not include surrounding class or method names yet, which makes
-  manual triage slower than it needs to be.
 
 Decision:
 
 - Keep the minimum occurrence rule at two distinct files for now.
 - Do not require more than one explicit branch value yet; doing so would hide
   potentially useful duplicated range/type checks seen in this pass.
-- Keep the analyzer experimental until the report includes enough context for
-  fast triage and has been sampled on more applications.
+- Keep the analyzer experimental until the context-enriched report has been
+  sampled on more applications.
 - Prefer adding context to findings before adding ignore lists or more knobs.
-
-No fixture or test changes were made because calibration did not change analyzer
-behavior.
