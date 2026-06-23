@@ -123,6 +123,18 @@ class CopMetzControllersTooManyDirectCollaboratorsTest < Minitest::Test
     refute_offense(source, file: "lib/script.rb")
   end
 
+  def test_relevant_file_respects_cop_exclude
+    config = RuboCop::Config.new(
+      "Metz/ControllersTooManyDirectCollaborators" => {
+        "Enabled" => true,
+        "MaxCollaborators" => 1,
+        "Exclude" => [CONTROLLER_PATH]
+      }
+    )
+
+    refute cop_class.new(config).relevant_file?(CONTROLLER_PATH)
+  end
+
   def test_offense_location_lands_inside_action_body_not_class_line
     source = <<~RUBY
       class UsersController < ApplicationController

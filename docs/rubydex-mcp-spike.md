@@ -135,7 +135,7 @@ rg -n "ViewsDeepNavigation|views_deep_navigation|Metz/ViewsDeepNavigation" \
 Important hits:
 
 - `rubocop-metz/test/cop/metz/views_deep_navigation_test.rb`
-- `rubocop-metz/test/integration/m4_cross_cop_fixture_integration_test.rb`
+- `rubocop-metz/test/integration/rails_aware_cops_fixture_integration_test.rb`
 - `rubocop-metz/config/default.yml`
 - `rubocop-metz/test/fixtures/views/*`
 

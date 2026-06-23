@@ -11,6 +11,15 @@ module ::RuboCop
         exclude_from_registry
         MSG = "metadata-less probe"
       end
+
+      class MetadataBoomProbe < ::RuboCop::Cop::Base
+        exclude_from_registry
+        MSG = "metadata boom probe"
+
+        def self.metz_metadata
+          raise "metadata exploded"
+        end
+      end
     end
   end
 end
@@ -40,6 +49,16 @@ class MetzJsonFormatterMissingMetadataTest < Minitest::Test
       assert_nil hash[:fix_safety], "Metadata-less cop should yield nil fix_safety"
       assert_equal [], hash[:suggested_next_moves],
                    "Metadata-less cop should yield empty suggested_next_moves array"
+    end
+  end
+
+  def test_hash_for_offense_surfaces_unexpected_metadata_errors
+    with_probe_enlisted(RuboCop::Cop::Metz::MetadataBoomProbe) do
+      error = assert_raises(RuntimeError) do
+        formatter.hash_for_offense(build_offense(cop_name: "Metz/MetadataBoomProbe"))
+      end
+
+      assert_match(/metadata exploded/, error.message)
     end
   end
 
@@ -83,9 +102,9 @@ class MetzJsonFormatterMissingMetadataTest < Minitest::Test
 
   private
 
-  def with_probe_enlisted(&block)
+  def with_probe_enlisted(cop_class = @cop_class, &block)
     RuboCop::Cop::Registry.with_temporary_global do
-      RuboCop::Cop::Registry.global.enlist(@cop_class)
+      RuboCop::Cop::Registry.global.enlist(cop_class)
       block.call
     end
   end

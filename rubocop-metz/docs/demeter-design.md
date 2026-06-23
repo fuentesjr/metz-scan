@@ -146,9 +146,8 @@ takes over from there.
 This matches the rationale in `demeter-static-typing.md` §6 Q3: there is
 no static way to know what `self` is in a refactored method body, and
 splitting the two cases would surprise users without buying any
-precision. It is also the assertion in `validation-contract.md`
-VAL-M3-014: `self.thing.foo.bar.baz.qux` (5 links, all unknown → 5 hops)
-fires once at `Max: 4`.
+precision. The explicit-self case `self.thing.foo.bar.baz.qux` (5 links, all
+unknown -> 5 hops) fires once at `Max: 4`.
 
 ---
 
@@ -178,10 +177,9 @@ configurable would invite accidental drift. If a real demand surfaces,
 v0.2 can promote it to `AllowedPassThroughMethods` without breaking
 anyone.
 
-This realises `demeter-static-typing.md` §6 Q4 directly. It also produces
-the contract behaviour for VAL-M3-015: `obj.tap { _1.log }.foo.bar.itself.baz`
-collapses to four unknown-graph hops (`obj`, `foo`, `bar`, `baz`) and
-does NOT fire at `Max: 4`.
+This realises `demeter-static-typing.md` §6 Q4 directly. The chain
+`obj.tap { _1.log }.foo.bar.itself.baz` collapses to four unknown-graph hops
+(`obj`, `foo`, `bar`, `baz`) and does NOT fire at `Max: 4`.
 
 ---
 
@@ -257,10 +255,9 @@ Why identical, not different:
   flags the *correctness* problem of mixing them; our cop flags the
   *depth* problem on whichever style is used.
 
-This matches `validation-contract.md` VAL-M3-011: a 5-link chain in
-safe-nav style fires exactly one offense, the same as VAL-M3-007 for the
-non-safe-nav version. It also satisfies the project-wide
-`VAL-CROSS-004`/`VAL-CROSS-005` csend invariant audit.
+This means a 5-link chain in safe-nav style fires exactly one offense, the
+same as the non-safe-nav version. It also satisfies the project-wide csend
+invariant audit.
 
 ---
 
@@ -304,8 +301,7 @@ Future work: a separate `AllowedReceiverChains` knob (e.g.
 prefix on the chain and exempt downstream links. This is deliberately
 deferred to v0.2 to keep the v0.1 surface tight.
 
-This matches `validation-contract.md` VAL-M3-008: a chain rooted at
-`Rails` produces zero offenses with the default config.
+A chain rooted at `Rails` produces zero offenses with the default config.
 
 ---
 
@@ -341,9 +337,8 @@ end
 Operator sends have a different syntactic shape (binary infix in source,
 nested `send` in AST) and a different semantic — they do not traverse an
 object graph. Treating them as Demeter violations would produce noise
-and confuse users. This matches `demeter-static-typing.md` §6 Q8 and
-`validation-contract.md` VAL-M3-012: `a + b + c + d + e` produces zero
-offenses.
+and confuse users. This matches `demeter-static-typing.md` §6 Q8:
+`a + b + c + d + e` produces zero offenses.
 
 ---
 
@@ -433,8 +428,7 @@ Concrete behaviour at this severity:
 
 This is the right default for an advisory cop on a chain pattern that
 has legitimate cases. Users who want stricter behaviour use their own
-`.rubocop.yml` to override. The setting is exercised by
-`validation-contract.md` VAL-M3-018 and VAL-M3-019.
+`.rubocop.yml` to override.
 
 ---
 
@@ -532,9 +526,8 @@ mission documents:
 - Type map source: `demeter-static-typing.md` §3
 - Open questions resolved: `demeter-static-typing.md` §6 (this document
   closes Q1–Q12)
-- Validation contract: `validation-contract.md` Area M3 (VAL-M3-001
-  through VAL-M3-022)
+- Historical validation IDs: [milestone-history.md](../../docs/milestone-history.md)
 - csend invariant (project-wide): `AGENTS.md` "csend invariant"
-- Cop base class and metadata DSL: M2 sealed work
+- Cop base class and metadata DSL:
   (`rubocop-metz/lib/rubocop/cop/metz/base.rb`,
   `rubocop-metz/lib/metz/cop_metadata.rb`)
