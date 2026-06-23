@@ -6,7 +6,8 @@ module MetzScan
   module Analyzers
     class ServiceSoup
       class WorkflowCollector
-        Workflow = Struct.new(:name, :path, :line, :service_calls, keyword_init: true)
+        Workflow = Struct.new(:name, :enclosing_name, :method_name, :path, :line, :expression, :service_calls,
+                              keyword_init: true)
         ServiceCall = Struct.new(:service_name, :path, :line, :expression, :style, keyword_init: true)
 
         def initialize(path)
@@ -65,8 +66,10 @@ module MetzScan
         end
 
         def workflow_for(namespace, method_suffix, node, service_calls)
-          Workflow.new(name: "#{namespace.join('::')}#{method_suffix}", path: path, line: node.loc.expression.line,
-                       service_calls: service_calls)
+          enclosing_name = namespace.join("::")
+          Workflow.new(name: "#{enclosing_name}#{method_suffix}", enclosing_name: optional_name(enclosing_name),
+                       method_name: method_suffix, path: path, line: node.loc.expression.line,
+                       expression: first_line(node), service_calls: service_calls)
         end
 
         def service_calls_under(node, service_calls = [])
@@ -121,6 +124,10 @@ module MetzScan
 
         def constant_name(node)
           node.source if constant_receiver?(node)
+        end
+
+        def optional_name(name)
+          name unless name.empty?
         end
 
         def first_line(node)

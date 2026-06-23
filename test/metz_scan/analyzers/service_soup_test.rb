@@ -80,8 +80,7 @@ module MetzScan
         with_service_files([service_soup_source]) do |files|
           finding = analyze(files).first
 
-          assert_service_soup_finding(finding)
-          refute_empty finding.suggested_next_moves
+          assert_reported_service_soup_finding(finding)
         end
       end
 
@@ -130,12 +129,39 @@ module MetzScan
         ServiceSoup.new(index: fake_index(files)).call
       end
 
+      def assert_reported_service_soup_finding(finding)
+        assert_service_soup_finding(finding)
+        assert_service_soup_metadata(finding)
+        refute_empty finding.suggested_next_moves
+      end
+
       def assert_service_soup_finding(finding)
         assert_equal "MetzProject/ServiceSoup", finding.rule_id
         assert_equal "OrdersController#create", finding.workflow
         assert_equal %w[CapturePayment ReserveInventory ValidateOrder], finding.services
         assert_equal 3, finding.occurrences.size
         assert_includes finding.message, "OrdersController#create coordinates 3 distinct services"
+      end
+
+      def assert_service_soup_metadata(finding)
+        metadata = finding.project_analyzer_metadata
+
+        assert_workflow_metadata(metadata.fetch("workflow"))
+        assert_service_call_metadata(metadata.fetch("services"))
+      end
+
+      def assert_workflow_metadata(workflow)
+        assert_equal "OrdersController#create", workflow.fetch("context")
+        assert_equal "OrdersController", workflow.fetch("enclosing")
+        assert_equal "#create", workflow.fetch("method")
+        assert_equal "def create", workflow.fetch("expression")
+      end
+
+      def assert_service_call_metadata(services)
+        assert_equal(
+          ["ValidateOrder.call(order)", "ReserveInventory.call(order)", "CapturePayment.new(order).call"],
+          services.map { |service| service.fetch("expression") }
+        )
       end
 
       def assert_rails_fixture_finding(finding)

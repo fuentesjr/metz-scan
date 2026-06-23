@@ -16,8 +16,9 @@ module MetzScan
       ].freeze
       RUBY_GLOB = "**/*.rb"
 
-      Finding = Struct.new(:source, :rule_id, :message, :workflow, :services, :occurrences, :why_it_matters,
-                           :suggested_next_moves, keyword_init: true)
+      Finding = Struct.new(:source, :rule_id, :message, :workflow, :services, :occurrences,
+                           :project_analyzer_metadata, :why_it_matters, :suggested_next_moves,
+                           keyword_init: true)
 
       def initialize(paths: nil, index: nil, minimum_services: 3)
         @paths = Array(paths)
@@ -60,9 +61,14 @@ module MetzScan
         services = service_names(workflow)
         return if services.size < minimum_services
 
-        Finding.new(source: source_name, rule_id: RULE_ID, message: message_for(workflow, services),
-                    workflow: workflow.name, services: services, occurrences: workflow.service_calls,
-                    why_it_matters: WHY, suggested_next_moves: SUGGESTED_NEXT_MOVES)
+        Finding.new(finding_attributes(workflow, services))
+      end
+
+      def finding_attributes(workflow, services)
+        { source: source_name, rule_id: RULE_ID, message: message_for(workflow, services),
+          workflow: workflow.name, services: services, occurrences: workflow.service_calls,
+          project_analyzer_metadata: project_analyzer_metadata_for(workflow),
+          why_it_matters: WHY, suggested_next_moves: SUGGESTED_NEXT_MOVES }
       end
 
       def source_name
@@ -76,6 +82,23 @@ module MetzScan
       def message_for(workflow, services)
         "#{workflow.name} coordinates #{services.size} distinct services; " \
           "consider a workflow object that owns the process."
+      end
+
+      def project_analyzer_metadata_for(workflow)
+        { "workflow" => workflow_metadata(workflow),
+          "services" => workflow.service_calls.map { |service_call| service_call_metadata(service_call) } }
+      end
+
+      def workflow_metadata(workflow)
+        { "context" => workflow.name, "enclosing" => workflow.enclosing_name,
+          "method" => workflow.method_name, "line" => workflow.line,
+          "expression" => workflow.expression }.compact
+      end
+
+      def service_call_metadata(service_call)
+        { "service" => service_call.service_name, "path" => service_call.path,
+          "line" => service_call.line, "expression" => service_call.expression,
+          "style" => service_call.style.to_s }.compact
       end
     end
   end

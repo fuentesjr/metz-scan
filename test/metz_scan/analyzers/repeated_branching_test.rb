@@ -12,12 +12,26 @@ module MetzScan
         [case_branching_source("order"), case_branching_source("order")]
       end
 
+      def contextual_case_branching_files
+        [
+          contextual_case_branching_source("OrdersPresenter", "status_badge"),
+          contextual_case_branching_source("InvoicesPresenter", "status_badge")
+        ]
+      end
+
       def unrelated_receiver_files
         [case_branching_source("order"), case_branching_source("invoice")]
       end
 
       def predicate_branching_files
         [predicate_branching_source, predicate_branching_source]
+      end
+
+      def contextual_predicate_branching_files
+        [
+          contextual_predicate_branching_source("AdminPolicy", "allowed?"),
+          contextual_predicate_branching_source("StaffPolicy", "allowed?")
+        ]
       end
 
       def mixed_predicate_branching_files
@@ -28,8 +42,37 @@ module MetzScan
         "case #{receiver}.status\nwhen \"pending\"\n  nil\nwhen \"paid\", \"cancelled\"\n  nil\nend\n"
       end
 
+      def contextual_case_branching_source(class_name, method_name)
+        <<~RUBY
+          class #{class_name}
+            def #{method_name}(order)
+              case order.status
+              when "pending"
+                nil
+              when "paid", "cancelled"
+                nil
+              end
+            end
+          end
+        RUBY
+      end
+
       def predicate_branching_source
         "if user.admin?\n  nil\nelsif user.manager?\n  nil\nend\n"
+      end
+
+      def contextual_predicate_branching_source(class_name, method_name)
+        <<~RUBY
+          class #{class_name}
+            def #{method_name}(user)
+              if user.admin?
+                nil
+              elsif user.manager?
+                nil
+              end
+            end
+          end
+        RUBY
       end
 
       def mixed_predicate_branching_source
@@ -80,6 +123,23 @@ module MetzScan
         end
       end
 
+      def test_reports_case_branching_method_context
+        with_branching_files(contextual_case_branching_files) do |files|
+          finding = analyze(files).first
+
+          assert_case_context(finding)
+          assert_case_context_metadata(finding)
+        end
+      end
+
+      def test_reports_if_predicate_chain_method_context
+        with_branching_files(contextual_predicate_branching_files) do |files|
+          finding = analyze(files).first
+
+          assert_predicate_context(finding)
+        end
+      end
+
       def test_does_not_drop_unsupported_conditions_from_predicate_chain
         with_branching_files(mixed_predicate_branching_files) do |files|
           assert_empty analyze(files)
@@ -124,6 +184,28 @@ module MetzScan
         assert_equal %w[cancelled paid pending], finding.branch_values
         assert_equal 2, finding.occurrences.size
         assert_includes finding.message, "order.status branches in 2 files"
+      end
+
+      def assert_case_context(finding)
+        assert_includes finding.message, "OrdersPresenter#status_badge"
+        assert_includes finding.message, "InvoicesPresenter#status_badge"
+        assert_equal "OrdersPresenter", finding.occurrences.first.enclosing_name
+        assert_equal "#status_badge", finding.occurrences.first.method_name
+        assert_equal "case order.status", finding.occurrences.first.expression
+      end
+
+      def assert_case_context_metadata(finding)
+        contexts = finding.project_analyzer_metadata.fetch("occurrences").map do |occurrence|
+          occurrence.fetch("context")
+        end
+
+        assert_equal ["OrdersPresenter#status_badge", "InvoicesPresenter#status_badge"], contexts
+      end
+
+      def assert_predicate_context(finding)
+        assert_equal "user", finding.decision
+        assert_includes finding.message, "AdminPolicy#allowed?"
+        assert_includes finding.message, "StaffPolicy#allowed?"
       end
 
       def with_branching_files(contents)

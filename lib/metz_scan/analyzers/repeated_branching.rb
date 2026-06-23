@@ -16,7 +16,8 @@ module MetzScan
       RUBY_GLOB = "**/*.rb"
 
       Finding = Struct.new(:source, :rule_id, :message, :decision, :kind, :branch_values, :occurrences,
-                           :why_it_matters, :suggested_next_moves, keyword_init: true)
+                           :project_analyzer_metadata, :why_it_matters, :suggested_next_moves,
+                           keyword_init: true)
 
       def initialize(paths: nil, index: nil, minimum_occurrences: 2)
         @paths = Array(paths)
@@ -63,9 +64,14 @@ module MetzScan
         return if distinct_paths(sites).size < minimum_occurrences
 
         first = sites.first
-        Finding.new(source: source_name, rule_id: RULE_ID, message: message_for(first, sites),
-                    decision: first.decision, kind: first.kind, branch_values: first.branch_values,
-                    occurrences: sites, why_it_matters: WHY, suggested_next_moves: SUGGESTED_NEXT_MOVES)
+        Finding.new(finding_attributes(first, sites))
+      end
+
+      def finding_attributes(first, sites)
+        { source: source_name, rule_id: RULE_ID, message: message_for(first, sites),
+          decision: first.decision, kind: first.kind, branch_values: first.branch_values,
+          occurrences: sites, project_analyzer_metadata: project_analyzer_metadata_for(first, sites),
+          why_it_matters: WHY, suggested_next_moves: SUGGESTED_NEXT_MOVES }
       end
 
       def source_name
@@ -77,7 +83,35 @@ module MetzScan
       end
 
       def message_for(site, sites)
-        "#{site.decision} branches in #{distinct_paths(sites).size} files; consider consolidating the decision."
+        "#{site.decision} branches in #{distinct_paths(sites).size} files#{context_suffix(sites)}; " \
+          "consider consolidating the decision."
+      end
+
+      def context_suffix(sites)
+        names = context_names(sites)
+        return "" if names.empty?
+
+        ": #{names.join(', ')}"
+      end
+
+      def context_names(sites)
+        sites.filter_map { |site| context_name(site) }.uniq.sort
+      end
+
+      def context_name(site)
+        [site.enclosing_name, site.method_name].compact.join.then { |name| name unless name.empty? }
+      end
+
+      def project_analyzer_metadata_for(site, sites)
+        { "decision" => site.decision, "kind" => site.kind.to_s,
+          "branch_values" => site.branch_values,
+          "occurrences" => sites.map { |occurrence| occurrence_metadata(occurrence) } }
+      end
+
+      def occurrence_metadata(site)
+        { "context" => context_name(site), "enclosing" => site.enclosing_name,
+          "method" => site.method_name, "path" => site.path, "line" => site.line,
+          "expression" => site.expression }.compact
       end
     end
   end

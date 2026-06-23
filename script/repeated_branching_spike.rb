@@ -19,13 +19,19 @@ rescue ArgumentError
   path
 end
 
+def context_suffix(occurrence)
+  context = [occurrence.enclosing_name, occurrence.method_name].compact.join
+  context.empty? ? "" : " #{context}"
+end
+
 puts "backend: #{index.backend_name}"
 puts "workspace: #{workspace}"
 puts "rule_id: #{MetzScan::Analyzers::RepeatedBranching::RULE_ID}"
 puts "findings: #{findings.size}"
 
 findings.each do |finding|
-  puts "- #{finding.decision} repeated across #{finding.occurrences.map(&:path).uniq.size} files: " \
-       "#{finding.branch_values.join(', ')}"
-  finding.occurrences.each { |occurrence| puts "  #{display_path(occurrence.path)}:#{occurrence.line}" }
+  puts "- #{finding.message}"
+  finding.occurrences.each do |occurrence|
+    puts "  #{display_path(occurrence.path)}:#{occurrence.line}#{context_suffix(occurrence)}"
+  end
 end

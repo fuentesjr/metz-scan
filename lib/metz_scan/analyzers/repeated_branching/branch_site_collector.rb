@@ -3,45 +3,40 @@
 require "rubocop"
 
 require_relative "branch_value"
+require_relative "contextual_node_walker"
+require_relative "predicate_chain"
 
 module MetzScan
   module Analyzers
     class RepeatedBranching
       class BranchSiteCollector
-        BranchSite = Struct.new(:signature, :kind, :decision, :branch_values, :path, :line, :expression,
-                                keyword_init: true)
-        Predicate = Struct.new(:receiver, :method_name, keyword_init: true)
+        BranchSite = Struct.new(:signature, :kind, :decision, :branch_values, :enclosing_name, :method_name,
+                                :path, :line, :expression, keyword_init: true)
+        SiteDraft = Struct.new(:kind, :decision, :branch_conditions, :branch_values, :contextual_node,
+                               keyword_init: true)
 
         def initialize(path)
           @path = path
         end
 
         def call
-          branch_nodes.filter_map { |node| branch_site_for(node) }
+          return [] unless File.file?(path)
+
+          contextual_nodes.filter_map { |contextual_node| branch_site_for(contextual_node) }
+        rescue Parser::SyntaxError
+          []
         end
 
         private
 
         attr_reader :path
 
-        def branch_nodes
-          return [] unless File.file?(path)
-
-          walk_nodes(processed_source.ast).select { |node| case_branch?(node) || root_if_branch?(node) }
-        rescue Parser::SyntaxError
-          []
-        end
-
         def processed_source
           RuboCop::ProcessedSource.new(File.read(path), RUBY_VERSION.to_f)
         end
 
-        def walk_nodes(node, nodes = [])
-          return nodes unless node
-
-          nodes << node
-          node.children.grep(RuboCop::AST::Node).each { |child| walk_nodes(child, nodes) }
-          nodes
+        def contextual_nodes
+          ContextualNodeWalker.new(processed_source.ast).nodes
         end
 
         def case_branch?(node)
@@ -52,16 +47,19 @@ module MetzScan
           node.type == :if && node.loc.respond_to?(:keyword) && node.loc.keyword.source == "if"
         end
 
-        def branch_site_for(node)
-          return case_site(node) if case_branch?(node)
+        def branch_site_for(contextual_node)
+          node = contextual_node.node
+          return case_site(contextual_node) if case_branch?(node)
+          return if_site(contextual_node) if root_if_branch?(node)
 
-          if_site(node)
+          nil
         end
 
-        def case_site(node)
+        def case_site(contextual_node)
+          node = contextual_node.node
           decision = node.children.first.source
           values = case_values(node)
-          build_site(:case, decision, values, node)
+          build_site(:case, decision, values, contextual_node)
         end
 
         def case_values(node)
@@ -77,51 +75,46 @@ module MetzScan
           BranchValue.for(condition)
         end
 
-        def if_site(node)
-          predicates = predicate_chain(node)
-          return unless same_receiver_chain?(predicates)
+        def if_site(contextual_node)
+          predicate_chain = PredicateChain.new(contextual_node.node).call
+          return unless predicate_chain
 
-          build_site(:if, predicates.first.receiver, predicate_values(predicates), node)
+          build_site(:if, predicate_chain.decision, predicate_chain.branch_values, contextual_node)
         end
 
-        def predicate_chain(node)
-          if_chain(node).map { |if_node| predicate_for(if_node.children.first) }
+        def build_site(kind, decision, values, contextual_node)
+          draft = site_draft(kind, decision, values, contextual_node)
+          return if draft.branch_values.empty?
+
+          BranchSite.new(site_attributes(draft))
         end
 
-        def if_chain(node)
-          chain = []
-          chain_if_nodes(node, chain)
-          chain
+        def site_draft(kind, decision, values, contextual_node)
+          SiteDraft.new(kind: kind, decision: decision, branch_conditions: values,
+                        branch_values: branch_values_for(values), contextual_node: contextual_node)
         end
 
-        def chain_if_nodes(node, chain)
-          return unless node&.type == :if
-
-          chain << node
-          chain_if_nodes(node.children[2], chain)
+        def site_attributes(draft)
+          context_attributes(draft.contextual_node).merge(site_signature_attributes(draft))
+                                                   .merge(site_location_attributes(draft))
         end
 
-        def predicate_for(node)
-          return unless node&.type == :send && node.receiver && node.method_name.to_s.end_with?("?")
-
-          Predicate.new(receiver: node.receiver.source, method_name: node.method_name.to_s)
+        def signature_for_draft(draft)
+          signature_for(draft.kind, draft.decision, signatures_for(draft.branch_conditions))
         end
 
-        def same_receiver_chain?(predicates)
-          predicates.size > 1 && predicates.all? && predicates.map(&:receiver).uniq.one?
+        def site_signature_attributes(draft)
+          { signature: signature_for_draft(draft), kind: draft.kind,
+            decision: draft.decision, branch_values: draft.branch_values }
         end
 
-        def predicate_values(predicates)
-          predicates.map(&:method_name).uniq.sort
+        def site_location_attributes(draft)
+          node = draft.contextual_node.node
+          { path: path, line: node.loc.expression.line, expression: first_line(node) }
         end
 
-        def build_site(kind, decision, values, node)
-          branch_values = branch_values_for(values)
-          return if branch_values.empty?
-
-          BranchSite.new(signature: signature_for(kind, decision, signatures_for(values)), kind: kind,
-                         decision: decision, branch_values: branch_values, path: path, line: node.loc.expression.line,
-                         expression: first_line(node))
+        def context_attributes(contextual_node)
+          { enclosing_name: contextual_node.enclosing_name, method_name: contextual_node.method_name }
         end
 
         def branch_values_for(values)

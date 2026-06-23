@@ -78,10 +78,34 @@ module MetzScan
         end
 
         def offense_metadata(finding)
+          add_project_analyzer_metadata(common_offense_metadata(finding), finding)
+        end
+
+        def common_offense_metadata(finding)
+          basic_offense_metadata(finding).merge(explanation_metadata(finding))
+        end
+
+        def basic_offense_metadata(finding)
           { "cop_name" => finding.rule_id, "message" => finding.message,
-            "severity" => "refactor", "corrected" => false, "correctable" => false,
-            "why_it_matters" => finding.why_it_matters,
-            "fix_safety" => "manual", "suggested_next_moves" => suggested_next_moves_for(finding) }
+            "severity" => "refactor", "corrected" => false, "correctable" => false }
+        end
+
+        def explanation_metadata(finding)
+          { "why_it_matters" => finding.why_it_matters, "fix_safety" => "manual",
+            "suggested_next_moves" => suggested_next_moves_for(finding) }
+        end
+
+        def add_project_analyzer_metadata(metadata, finding)
+          project_metadata = project_analyzer_metadata_for(finding)
+          return metadata if project_metadata.empty?
+
+          metadata.merge("project_analyzer" => project_metadata)
+        end
+
+        def project_analyzer_metadata_for(finding)
+          return {} unless finding.respond_to?(:project_analyzer_metadata)
+
+          finding.project_analyzer_metadata || {}
         end
 
         def suggested_next_moves_for(finding)

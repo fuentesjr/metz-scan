@@ -8,6 +8,18 @@ require "metz_scan/commands/scan/project_analyzer_runner"
 
 module MetzScan
   module Commands
+    PROJECT_ANALYZER_BRANCHING_SOURCE = "case order.status\nwhen \"pending\"\n  nil\n" \
+                                        "when \"paid\", \"cancelled\"\n  nil\nend\n"
+    PROJECT_ANALYZER_SERVICE_SOUP_SOURCE = <<~RUBY
+      class OrdersController
+        def create
+          ValidateOrder.call(order)
+          ReserveInventory.call(order)
+          CapturePayment.new(order).call
+        end
+      end
+    RUBY
+
     class ScanProjectAnalyzerRunnerTest < Minitest::Test
       def setup
         @tmpdir = Dir.mktmpdir("metz-scan-project-analyzer-runner-test")
@@ -46,7 +58,7 @@ module MetzScan
         parsed = merge_project_analyzers
 
         assert_includes cop_names(parsed), "MetzProject/ServiceSoup"
-        refute_empty service_soup_offense(parsed).fetch("suggested_next_moves")
+        assert_service_soup_metadata(parsed)
         assert_summary_counts_match_merged_files(parsed)
       end
 
@@ -89,6 +101,12 @@ module MetzScan
         offenses(parsed).find { |offense| offense.fetch("cop_name") == "MetzProject/ServiceSoup" }
       end
 
+      def assert_service_soup_metadata(parsed)
+        offense = service_soup_offense(parsed)
+        refute_empty offense.fetch("suggested_next_moves")
+        assert_equal "OrdersController#create", offense.dig("project_analyzer", "workflow", "context")
+      end
+
       def offenses(parsed)
         parsed["files"].flat_map { |file| file["offenses"] }
       end
@@ -110,31 +128,15 @@ module MetzScan
       end
 
       def write_repeated_branching_files
-        2.times { |index| File.write(branching_path(index), repeated_branching_source) }
+        2.times { |index| File.write(branching_path(index), PROJECT_ANALYZER_BRANCHING_SOURCE) }
       end
 
       def branching_path(index)
         File.join(@tmpdir, "branching_#{index}.rb")
       end
 
-      def repeated_branching_source
-        "case order.status\nwhen \"pending\"\n  nil\nwhen \"paid\", \"cancelled\"\n  nil\nend\n"
-      end
-
       def write_service_soup_file
-        File.write(File.join(@tmpdir, "service_soup.rb"), service_soup_source)
-      end
-
-      def service_soup_source
-        <<~RUBY
-          class OrdersController
-            def create
-              ValidateOrder.call(order)
-              ReserveInventory.call(order)
-              CapturePayment.new(order).call
-            end
-          end
-        RUBY
+        File.write(File.join(@tmpdir, "service_soup.rb"), PROJECT_ANALYZER_SERVICE_SOUP_SOURCE)
       end
     end
   end
