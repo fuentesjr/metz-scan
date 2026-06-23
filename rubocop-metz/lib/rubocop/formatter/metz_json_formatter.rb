@@ -32,8 +32,6 @@ module RuboCop
         return EMPTY_METADATA.dup unless cop_class.respond_to?(:metz_metadata)
 
         format_metadata(cop_class.metz_metadata)
-      rescue StandardError
-        EMPTY_METADATA.dup
       end
 
       def format_metadata(meta)

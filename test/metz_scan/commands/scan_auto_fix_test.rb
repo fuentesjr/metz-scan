@@ -10,7 +10,36 @@ require "metz_scan/commands/scan"
 
 module MetzScan
   module Commands
+    module ScanAutoFixFixtures
+      PARTIAL_FIXTURE = <<~RUBY
+        # frozen_string_literal: true
+
+        class Sample
+          def long_method
+            x =  1
+            a = 1
+            b = 2
+            c = 3
+            d = 4
+            e = 5
+            f = 6
+            [x, a, b, c, d, e, f]
+          end
+        end
+      RUBY
+
+      def assert_partial_dry_run_result(code, path, before)
+        refute_equal 0, code
+        assert_equal before, File.binread(path)
+        assert_match(/^-    x =  1$/, @stdout.string)
+        assert_match(/^\+    x = 1$/, @stdout.string)
+        assert_match(%r{Metz/MethodsTooLong|Style/Documentation}, @stderr.string)
+      end
+    end
+
     class ScanAutoFixTest < Minitest::Test
+      include ScanAutoFixFixtures
+
       SAFE_FIXTURE = <<~RUBY
         # frozen_string_literal: true
 
@@ -76,6 +105,14 @@ module MetzScan
         before = File.binread(path)
         run_cli(["scan", @tmpdir, "--auto-fix", "--dry-run"])
         assert_equal before, File.binread(path)
+      end
+
+      def test_dry_run_prints_diff_when_corrected_file_still_has_offenses
+        path = write_fixture("partial.rb", PARTIAL_FIXTURE)
+        before = File.binread(path)
+        code = run_cli(["scan", @tmpdir, "--auto-fix", "--dry-run"])
+
+        assert_partial_dry_run_result(code, path, before)
       end
 
       def test_dry_run_returns_rubocop_status_when_rubocop_fails

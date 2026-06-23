@@ -1,5 +1,4 @@
 # Default configuration for the rubocop-metz plugin.
-# Cop entries are added in subsequent milestones.
 
 Metz/ClassesTooLong:
   Description: 'Flags classes longer than the configured Max line count; the Metz default is stricter than core RuboCop.'
