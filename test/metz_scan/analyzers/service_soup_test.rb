@@ -55,6 +55,22 @@ module MetzScan
         RUBY
       end
 
+      def perform_service_source
+        <<~RUBY
+          class Inboxes::FetchImapEmailsJob
+            def process_email_for_channel(channel, interval)
+              if channel.microsoft?
+                Imap::MicrosoftFetchEmailService.new(channel: channel, interval: interval).perform
+              elsif channel.google?
+                Imap::GoogleFetchEmailService.new(channel: channel, interval: interval).perform
+              else
+                Imap::FetchEmailService.new(channel: channel, interval: interval).perform
+              end
+            end
+          end
+        RUBY
+      end
+
       def nested_scope_source
         <<~RUBY
           class OrdersController
@@ -192,6 +208,40 @@ module MetzScan
 
       def service_soup_fixture_controller
         File.join(service_soup_fixture_path, "app/controllers/orders_controller.rb")
+      end
+    end
+
+    class ServiceSoupPerformTest < Minitest::Test
+      include ServiceSoupFixtureSources
+
+      def test_reports_namespaced_perform_service_workflow
+        with_service_files([perform_service_source]) do |files|
+          assert_perform_service_finding(ServiceSoup.new(index: fake_index(files)).call.first)
+        end
+      end
+
+      private
+
+      def assert_perform_service_finding(finding)
+        assert_equal "Inboxes::FetchImapEmailsJob#process_email_for_channel", finding.workflow
+        assert_equal expected_services, finding.services
+        assert_equal %i[new_perform], finding.occurrences.map(&:style).uniq
+      end
+
+      def expected_services
+        %w[Imap::FetchEmailService Imap::GoogleFetchEmailService Imap::MicrosoftFetchEmailService]
+      end
+
+      def with_service_files(contents)
+        Dir.mktmpdir { |dir| yield contents.map.with_index { |source, index| write_file(dir, index, source) } }
+      end
+
+      def write_file(dir, index, source)
+        File.join(dir, "workflow_#{index}.rb").tap { |path| File.write(path, source) }
+      end
+
+      def fake_index(files)
+        FakeServiceIndex.new(available: true, indexed_files: files)
       end
     end
 

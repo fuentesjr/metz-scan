@@ -2,6 +2,8 @@
 
 require "rubocop"
 
+require_relative "service_call_pattern"
+
 module MetzScan
   module Analyzers
     class ServiceSoup
@@ -98,24 +100,13 @@ module MetzScan
         end
 
         def service_call_for(node)
-          return unless node.type == :send && node.method_name == :call
+          return unless node.type == :send
 
-          service_name, style = service_receiver(node.receiver)
-          return unless service_name
+          pattern = ServiceCallPattern.new(node).match
+          return unless pattern
 
-          ServiceCall.new(service_name: service_name, path: path, line: node.loc.expression.line,
-                          expression: first_line(node), style: style)
-        end
-
-        def service_receiver(receiver)
-          return [receiver.source, :class_call] if constant_receiver?(receiver)
-          return [receiver.receiver.source, :new_call] if new_service_call?(receiver)
-
-          nil
-        end
-
-        def new_service_call?(node)
-          node&.type == :send && node.method_name == :new && constant_receiver?(node.receiver)
+          ServiceCall.new(service_name: pattern.service_name, path: path, line: node.loc.expression.line,
+                          expression: first_line(node), style: pattern.style)
         end
 
         def constant_receiver?(node)

@@ -37,15 +37,16 @@ useful evidence that the default threshold of three distinct service constants
 is conservative, but it is not evidence that the analyzer is ready for default
 scan output. The current detector recognizes method-level workflows made of
 `Constant.call(...)`, `Constant.new(...).call`, and their namespaced constant
-variants; the sampled applications often used other service styles or had
-isolated service calls rather than three in one method.
+variants, plus `Constant.new(...).perform` and its namespaced variants; the
+sampled applications often used other service styles or had isolated service
+calls rather than three in one method.
 
 Decision:
 
 - Keep the threshold at three distinct services for now.
 - Keep the analyzer opt-in.
-- Do not graduate it until it sees useful true positives in service-heavy Rails
-  codebases.
+- Do not graduate it until it sees useful true positives in more service-heavy
+  Rails codebases.
 - Before graduation, consider whether additional service invocation shapes are
   worth supporting, such as `perform`, `execute`, `run`, or framework-specific
   command/interactor APIs. Add these only with fixtures from real examples.
@@ -54,6 +55,29 @@ Follow-up context pass on 2026-06-23: counts stayed at zero across the same
 sample. No new service invocation shapes were added because the calibration did
 not produce fixture-backed evidence for `perform`, `execute`, `run`, or a
 framework-specific command API.
+
+Follow-up ServiceSoup pass on 2026-06-23: adding support for
+`Constant.new(...).perform` and namespaced variants changed only Chatwoot, from
+0 to 3 findings. The other four sampled applications remained at 0.
+
+| Project | ServiceSoup findings after `perform` support |
+| --- | ---: |
+| `lobsters/lobsters` | 0 |
+| `rubygems/rubygems.org` | 0 |
+| `huginn/huginn` | 0 |
+| `maybe-finance/maybe` | 0 |
+| `chatwoot/chatwoot` | 3 |
+
+The three Chatwoot findings look like plausible true positives:
+
+- `Inboxes::FetchImapEmailsJob#process_email_for_channel` coordinates three
+  IMAP fetch services.
+- `Campaign#execute_campaign` coordinates three campaign delivery services.
+- `MessageTemplates::HookExecutionService#trigger_templates` coordinates three
+  message-template services.
+
+Static `Constant.perform`, `execute`, and `run` were not added because this pass
+did not show three-service workflows using those shapes.
 
 ## `MetzProject/RepeatedBranching`
 
