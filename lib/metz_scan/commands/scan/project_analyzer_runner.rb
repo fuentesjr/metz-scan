@@ -2,6 +2,7 @@
 
 require_relative "../../analyzers/repeated_branching"
 require_relative "../../analyzers/service_soup"
+require_relative "project_analyzer_metadata"
 
 module MetzScan
   module Commands
@@ -20,9 +21,14 @@ module MetzScan
           findings = project_findings(analyzer_paths(parsed, paths))
           return parsed if findings.empty?
 
-          merge_offenses(parsed, offenses_by_path(findings))
-          update_summary(parsed)
+          merge_findings(parsed, findings)
           parsed
+        end
+
+        def merge_findings(parsed, findings)
+          entries = offense_entries_for(findings)
+          merge_offenses(parsed, offenses_by_path(entries))
+          update_summary(parsed, findings, entries.map { |entry| entry.fetch(:offense) })
         end
 
         def project_findings(paths)
@@ -53,10 +59,13 @@ module MetzScan
           { "path" => path, "offenses" => [] }.tap { |file| files << file }
         end
 
-        def offenses_by_path(findings)
+        def offenses_by_path(entries)
+          entries.group_by { |entry| entry.fetch(:path) }
+                 .transform_values { |grouped_entries| grouped_entries.map { |entry| entry.fetch(:offense) } }
+        end
+
+        def offense_entries_for(findings)
           findings.flat_map { |finding| offenses_for(finding) }
-                  .group_by { |entry| entry.fetch(:path) }
-                  .transform_values { |entries| entries.map { |entry| entry.fetch(:offense) } }
         end
 
         def offenses_for(finding)
@@ -96,16 +105,10 @@ module MetzScan
         end
 
         def add_project_analyzer_metadata(metadata, finding)
-          project_metadata = project_analyzer_metadata_for(finding)
+          project_metadata = ProjectAnalyzerMetadata.offense_metadata(finding)
           return metadata if project_metadata.empty?
 
           metadata.merge("project_analyzer" => project_metadata)
-        end
-
-        def project_analyzer_metadata_for(finding)
-          return {} unless finding.respond_to?(:project_analyzer_metadata)
-
-          finding.project_analyzer_metadata || {}
         end
 
         def suggested_next_moves_for(finding)
@@ -120,11 +123,12 @@ module MetzScan
             "last_column" => 1, "length" => 1, "line" => line, "column" => 1 }
         end
 
-        def update_summary(parsed)
+        def update_summary(parsed, findings, project_offenses)
           summary = parsed["summary"] ||= {}
           files = Array(parsed["files"])
           summary["offense_count"] = files.sum { |file| Array(file["offenses"]).size }
           update_file_counts(summary, files.size)
+          summary["project_analyzers"] = ProjectAnalyzerMetadata.summary(findings, project_offenses)
         end
 
         def update_file_counts(summary, file_count)

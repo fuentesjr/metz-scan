@@ -8,6 +8,10 @@ module MetzScan
     # Reports workflow methods that coordinate many service-style calls.
     class ServiceSoup
       RULE_ID = "MetzProject/ServiceSoup"
+      PROJECT_ANALYZER_STATUS = "candidate"
+      CONFIDENCE = "medium"
+      TRIAGE_SEVERITY = "design pressure"
+      TRIAGE_SUMMARY = "Candidate workflow signal; review methods that coordinate several distinct services."
       WHY = "Service-object soup scatters one workflow across many procedural steps " \
             "and makes orchestration harder to change."
       SUGGESTED_NEXT_MOVES = [
@@ -17,6 +21,7 @@ module MetzScan
       RUBY_GLOB = "**/*.rb"
 
       Finding = Struct.new(:source, :rule_id, :message, :workflow, :services, :occurrences,
+                           :project_analyzer_status, :confidence, :triage_severity, :triage_summary,
                            :project_analyzer_metadata, :why_it_matters, :suggested_next_moves,
                            keyword_init: true)
 
@@ -65,10 +70,21 @@ module MetzScan
       end
 
       def finding_attributes(workflow, services)
-        { source: source_name, rule_id: RULE_ID, message: message_for(workflow, services),
-          workflow: workflow.name, services: services, occurrences: workflow.service_calls,
+        workflow_attributes(workflow, services).merge(
+          project_analyzer_triage_attributes,
           project_analyzer_metadata: project_analyzer_metadata_for(workflow),
-          why_it_matters: WHY, suggested_next_moves: SUGGESTED_NEXT_MOVES }
+          why_it_matters: WHY, suggested_next_moves: SUGGESTED_NEXT_MOVES
+        )
+      end
+
+      def workflow_attributes(workflow, services)
+        { source: source_name, rule_id: RULE_ID, message: message_for(workflow, services),
+          workflow: workflow.name, services: services, occurrences: workflow.service_calls }
+      end
+
+      def project_analyzer_triage_attributes
+        { project_analyzer_status: PROJECT_ANALYZER_STATUS, confidence: CONFIDENCE,
+          triage_severity: TRIAGE_SEVERITY, triage_summary: TRIAGE_SUMMARY }
       end
 
       def source_name

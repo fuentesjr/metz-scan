@@ -117,6 +117,7 @@ module MetzScan
         assert_mixed_offenses
         assert_unique_file_paths
         assert_summary_count_matches
+        assert_project_analyzer_summary
       end
 
       def rubocop_cop_names
@@ -125,6 +126,15 @@ module MetzScan
 
       def assert_summary_count_matches
         assert_equal json_offenses.size, parsed_json.dig("summary", "offense_count")
+      end
+
+      def assert_project_analyzer_summary
+        summary = parsed_json.dig("summary", "project_analyzers")
+
+        assert_equal 1, summary.fetch("finding_count")
+        assert_equal 2, summary.fetch("offense_count")
+        assert_equal "experimental", summary.dig("rules", 0, "status")
+        assert_equal "early", summary.dig("rules", 0, "confidence")
       end
 
       def assert_unique_file_paths

@@ -28,6 +28,7 @@ AllCops:
     - "**/*.haml"
     - "**/*.slim"
   Exclude:
+    - tmp/**/*
     - rubocop-metz/test/fixtures/**/*
     # Deliberate Rails fixture for the Rails-aware cops; integration tests that
     # scan it intentionally provide their own config instead of changing global

@@ -40,6 +40,10 @@ scanned with the same commands:
 | `openfoodfoundation/openfoodnetwork` | `be9d51ab32a6` | 0 | 1 |
 | `solidusio/solidus` | `8d781ac742e3` | 0 | 0 |
 
+Triage-output follow-up on 2026-06-23: adding project-analyzer status,
+confidence, triage severity, triage summary, and `summary.project_analyzers`
+output metadata did not change the expanded calibration counts above.
+
 ## `MetzProject/ServiceSoup`
 
 Result: keep as **Candidate**, behind `--project-analyzers`.

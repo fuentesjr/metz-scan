@@ -8,6 +8,10 @@ module MetzScan
     # Groups repeated case/if branching decisions across indexed Ruby files.
     class RepeatedBranching
       RULE_ID = "MetzProject/RepeatedBranching"
+      PROJECT_ANALYZER_STATUS = "experimental"
+      CONFIDENCE = "early"
+      TRIAGE_SEVERITY = "manual review"
+      TRIAGE_SUMMARY = "Useful signal, not proof; review repeated decisions in context."
       WHY = "Repeated branching spreads one domain decision across files and makes change ripple outward."
       SUGGESTED_NEXT_MOVES = [
         "Name the domain decision once and reuse it instead of repeating the same branch table.",
@@ -16,6 +20,7 @@ module MetzScan
       RUBY_GLOB = "**/*.rb"
 
       Finding = Struct.new(:source, :rule_id, :message, :decision, :kind, :branch_values, :occurrences,
+                           :project_analyzer_status, :confidence, :triage_severity, :triage_summary,
                            :project_analyzer_metadata, :why_it_matters, :suggested_next_moves,
                            keyword_init: true)
 
@@ -70,8 +75,14 @@ module MetzScan
       def finding_attributes(first, sites)
         { source: source_name, rule_id: RULE_ID, message: message_for(first, sites),
           decision: first.decision, kind: first.kind, branch_values: first.branch_values,
-          occurrences: sites, project_analyzer_metadata: project_analyzer_metadata_for(first, sites),
-          why_it_matters: WHY, suggested_next_moves: SUGGESTED_NEXT_MOVES }
+          occurrences: sites }.merge(project_analyzer_triage_attributes,
+                                     project_analyzer_metadata: project_analyzer_metadata_for(first, sites),
+                                     why_it_matters: WHY, suggested_next_moves: SUGGESTED_NEXT_MOVES)
+      end
+
+      def project_analyzer_triage_attributes
+        { project_analyzer_status: PROJECT_ANALYZER_STATUS, confidence: CONFIDENCE,
+          triage_severity: TRIAGE_SEVERITY, triage_summary: TRIAGE_SUMMARY }
       end
 
       def source_name

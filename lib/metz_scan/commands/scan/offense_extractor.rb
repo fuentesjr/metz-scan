@@ -18,7 +18,8 @@ module MetzScan
           loc = offense["location"] || {}
           { path: path, cop_name: offense["cop_name"], severity: offense["severity"],
             line: loc["start_line"] || loc["line"], column: loc["start_column"] || loc["column"],
-            message: offense["message"], why_it_matters: offense["why_it_matters"] }
+            message: offense["message"], why_it_matters: offense["why_it_matters"],
+            project_analyzer: offense["project_analyzer"] }
         end
       end
     end

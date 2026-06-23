@@ -114,6 +114,11 @@ does not prove that a constant is truly a service object. See
 [docs/project-analyzer-calibration.md](docs/project-analyzer-calibration.md) for
 current calibration notes.
 
+Project analyzer output includes status, confidence, triage severity, and triage
+summary metadata. Text output shows a project-analyzer summary before rule
+blocks; JSON output includes the same rollup under `summary.project_analyzers`
+and per-finding triage details under `project_analyzer`.
+
 Run safe auto-correction or preview it first:
 
 ```bash
