@@ -8,14 +8,16 @@ require_relative "scan/runner"
 require_relative "scan/project_analyzer_runner"
 require_relative "scan/text_renderer"
 require_relative "scan/sarif_renderer"
+require_relative "scan/github_annotations_renderer"
 require_relative "scan/auto_fix"
 
 module MetzScan
   module Commands
     class Scan
-      USAGE = "Usage: metz-scan scan PATH... [--format text|json|sarif] [--project-analyzers] " \
-              "[--auto-fix [--unsafe] [--dry-run]]"
-      VALID_FORMATS = %w[text json sarif].freeze
+      USAGE = "Usage: metz-scan scan PATH... [--format text|json|sarif|gh-annotations] " \
+              "[--project-analyzers] [--auto-fix [--unsafe] [--dry-run]]"
+      VALID_FORMATS = %w[text json sarif gh-annotations].freeze
+      RENDERERS = { "sarif" => SarifRenderer, "gh-annotations" => GithubAnnotationsRenderer }.freeze
       DEFAULT_FORMAT = "text"
 
       Options = Struct.new(:format, :paths, :project_analyzers, :auto_fix, :unsafe, :dry_run, keyword_init: true)
@@ -53,9 +55,15 @@ module MetzScan
 
       def configure_parser(opts, flags)
         opts.banner = USAGE
-        opts.on("--format FORMAT", "Output format: text (default), json, sarif") { |f| flags[:format] = f }
+        configure_format_parser(opts, flags)
         configure_project_analyzer_parser(opts, flags)
         configure_auto_fix_parser(opts, flags)
+      end
+
+      def configure_format_parser(opts, flags)
+        opts.on("--format FORMAT", "Output format: text (default), json, sarif, gh-annotations") do |format|
+          flags[:format] = format
+        end
       end
 
       def configure_project_analyzer_parser(opts, flags)
@@ -92,11 +100,9 @@ module MetzScan
       end
 
       def render(parsed, format)
-        case format
-        when "json"  then stdout.puts JSON.generate(parsed)
-        when "sarif" then SarifRenderer.new(stdout, parsed).render
-        else              TextRenderer.new(stdout, parsed).render
-        end
+        return stdout.puts JSON.generate(parsed) if format == "json"
+
+        RENDERERS.fetch(format, TextRenderer).new(stdout, parsed).render
       end
 
       def parser_error(err)
@@ -117,7 +123,7 @@ module MetzScan
       end
 
       def invalid_format(fmt)
-        stderr.puts "metz-scan scan: invalid --format '#{fmt}'. Valid formats: text, json, sarif."
+        stderr.puts "metz-scan scan: invalid --format '#{fmt}'. Valid formats: text, json, sarif, gh-annotations."
         1
       end
 

@@ -59,6 +59,7 @@ Scan paths:
 bundle exec metz-scan scan app/models app/controllers
 bundle exec metz-scan scan . --format json
 bundle exec metz-scan scan . --format sarif
+bundle exec metz-scan scan . --format gh-annotations
 ```
 
 By default, `scan` reports only RuboCop-backed Metz findings. Opt in to project
@@ -89,6 +90,9 @@ Run safe auto-correction or preview it first:
 bundle exec metz-scan scan . --auto-fix --dry-run
 bundle exec metz-scan scan . --auto-fix
 ```
+
+Use `--format gh-annotations` in GitHub Actions to emit workflow command
+annotations that appear inline on pull requests.
 
 Re-render a saved JSON report:
 
@@ -144,7 +148,7 @@ Metz/DemeterTrainWreck:
 | Setting | Where | Notes |
 | --- | --- | --- |
 | Enabled cops | `.rubocop.yml` | Standard RuboCop plugin configuration. |
-| Output format | `metz-scan scan --format text\|json\|sarif` | `text` is for humans; `json` and `sarif` are for tools. |
+| Output format | `metz-scan scan --format text\|json\|sarif\|gh-annotations` | `text` is for humans; `json`/`sarif` are for tools; `gh-annotations` emits GitHub Actions workflow annotations. |
 | Auto-fix safety | `--auto-fix`, `--unsafe`, `--dry-run` | Safe fixes use RuboCop `-a`; unsafe fixes use RuboCop `-A`. |
 | Environment variables | N/A | `metz-scan` does not require environment variables. |
 
@@ -174,7 +178,7 @@ gem build metz-scan.gemspec
 cd rubocop-metz && gem build rubocop-metz.gemspec && cd ..
 ```
 
-File bugs and feature work in GitHub issues: https://github.com/fuentesjr/metz-scan/issues
+File bugs and feature work in GitHub issues: <https://github.com/fuentesjr/metz-scan/issues>
 
 ## License
 

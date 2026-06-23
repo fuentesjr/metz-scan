@@ -81,6 +81,7 @@ that the output is well-formed for each format.
 bundle exec metz-scan scan test/fixtures/sample_app --format text
 bundle exec metz-scan scan test/fixtures/sample_app --format json
 bundle exec metz-scan scan test/fixtures/sample_app --format sarif
+bundle exec metz-scan scan test/fixtures/sample_app --format gh-annotations
 ```
 
 - [ ] Confirm dry-run auto-fix does not modify files.

@@ -16,7 +16,7 @@ module MetzScan
 
         def offense_struct(path, offense)
           loc = offense["location"] || {}
-          { path: path, cop_name: offense["cop_name"],
+          { path: path, cop_name: offense["cop_name"], severity: offense["severity"],
             line: loc["start_line"] || loc["line"], column: loc["start_column"] || loc["column"],
             message: offense["message"], why_it_matters: offense["why_it_matters"] }
         end

@@ -6,12 +6,14 @@ require "optparse"
 require_relative "scan/runner"
 require_relative "scan/text_renderer"
 require_relative "scan/sarif_renderer"
+require_relative "scan/github_annotations_renderer"
 
 module MetzScan
   module Commands
     class Report
-      USAGE = "Usage: metz-scan report PATH/TO/JSON [--format text|json|sarif]"
-      VALID_FORMATS = %w[text json sarif].freeze
+      USAGE = "Usage: metz-scan report PATH/TO/JSON [--format text|json|sarif|gh-annotations]"
+      VALID_FORMATS = %w[text json sarif gh-annotations].freeze
+      RENDERERS = { "sarif" => Scan::SarifRenderer, "gh-annotations" => Scan::GithubAnnotationsRenderer }.freeze
       DEFAULT_FORMAT = "text"
 
       Options = Struct.new(:format, :path, keyword_init: true)
@@ -44,7 +46,9 @@ module MetzScan
 
       def configure_parser(opts, flags)
         opts.banner = USAGE
-        opts.on("--format FORMAT", "Output format: text (default), json, sarif") { |f| flags[:format] = f }
+        opts.on("--format FORMAT", "Output format: text (default), json, sarif, gh-annotations") do |format|
+          flags[:format] = format
+        end
       end
 
       def validate(options)
@@ -69,11 +73,9 @@ module MetzScan
       end
 
       def render(parsed, format)
-        case format
-        when "json"  then stdout.puts JSON.generate(parsed)
-        when "sarif" then Scan::SarifRenderer.new(stdout, parsed).render
-        else              Scan::TextRenderer.new(stdout, parsed).render
-        end
+        return stdout.puts JSON.generate(parsed) if format == "json"
+
+        RENDERERS.fetch(format, Scan::TextRenderer).new(stdout, parsed).render
       end
 
       def parser_error(err)
@@ -94,7 +96,7 @@ module MetzScan
       end
 
       def invalid_format(fmt)
-        stderr.puts "metz-scan report: invalid --format '#{fmt}'. Valid formats: text, json, sarif."
+        stderr.puts "metz-scan report: invalid --format '#{fmt}'. Valid formats: text, json, sarif, gh-annotations."
         1
       end
 
