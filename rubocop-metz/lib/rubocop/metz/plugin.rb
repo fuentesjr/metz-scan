@@ -11,7 +11,7 @@ module RuboCop
       ABOUT = LintRoller::About.new(
         name: "rubocop-metz",
         version: RuboCop::Metz::VERSION,
-        homepage: "https://rubygems.org/gems/rubocop-metz",
+        homepage: "https://github.com/users/fuentesjr/packages/rubygems/package/rubocop-metz",
         description: "Sandi-Metz-inspired RuboCop cops."
       ).freeze
       private_constant :ABOUT

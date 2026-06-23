@@ -21,6 +21,33 @@ The repo contains two gems:
 
 ## Install
 
+`metz-scan` is currently published to GitHub Packages. Configure Bundler with a
+GitHub token that can read packages, then add the GitHub Packages source to your
+Gemfile:
+
+```bash
+gh auth refresh -h github.com -s read:packages
+GITHUB_PACKAGES_TOKEN="$(gh auth token)"
+bundle config set --global https://rubygems.pkg.github.com/fuentesjr \
+  "fuentesjr:${GITHUB_PACKAGES_TOKEN}"
+unset GITHUB_PACKAGES_TOKEN
+```
+
+```ruby
+source "https://rubygems.org"
+
+source "https://rubygems.pkg.github.com/fuentesjr" do
+  gem "metz-scan", "~> 0.2.0"
+end
+```
+
+```bash
+bundle install
+bundle exec metz-scan --version
+```
+
+For local development:
+
 ```bash
 git clone https://github.com/fuentesjr/metz-scan.git
 cd metz-scan
@@ -93,7 +120,12 @@ bundle exec metz-scan scan . --auto-fix
 ```
 
 Use `--format gh-annotations` in GitHub Actions to emit workflow command
-annotations that appear inline on pull requests.
+annotations that appear inline on pull requests:
+
+```yaml
+- name: Run metz-scan annotations
+  run: bundle exec metz-scan scan . --format gh-annotations
+```
 
 Re-render a saved JSON report:
 

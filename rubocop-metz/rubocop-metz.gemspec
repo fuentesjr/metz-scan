@@ -16,9 +16,10 @@ Gem::Specification.new do |spec|
 
   spec.required_ruby_version = ">= 3.3"
 
-  spec.metadata["source_code_uri"]             = spec.homepage
-  spec.metadata["github_repo"]                 = "ssh://github.com/fuentesjr/metz-scan"
-  spec.metadata["default_lint_roller_plugin"]  = "RuboCop::Metz::Plugin"
+  spec.metadata["source_code_uri"] = spec.homepage
+  spec.metadata["github_repo"] = "ssh://github.com/fuentesjr/metz-scan"
+  spec.metadata["github_package_uri"] = "https://github.com/users/fuentesjr/packages/rubygems/package/rubocop-metz"
+  spec.metadata["default_lint_roller_plugin"] = "RuboCop::Metz::Plugin"
 
   spec.files = Dir.glob("{lib,config}/**/*", File::FNM_DOTMATCH).reject { |f| File.directory?(f) } +
                ["rubocop-metz.gemspec"]

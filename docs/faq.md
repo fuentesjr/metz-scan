@@ -113,8 +113,13 @@ Adopt them as shared language first. Discuss a few findings in code review, agre
 A practical rollout is:
 
 1. Run `metz-scan` locally on changed files.
-2. Add CI reporting without failing the build, such as
-   `--format gh-annotations` in GitHub Actions.
+2. Add CI reporting without failing the build, such as this GitHub Actions step:
+
+   ```yaml
+   - name: Run metz-scan annotations
+     run: bundle exec metz-scan scan . --format gh-annotations
+   ```
+
 3. Tune thresholds and exclusions.
 4. Fail CI only on new findings or on the cops your team agrees are valuable.
 

@@ -92,6 +92,31 @@ bundle exec metz-scan scan test/fixtures/sample_app --auto-fix --dry-run
 git diff --quiet
 ```
 
+## Source Tag and GitHub Release
+
+- [ ] Confirm the release tag does not already exist.
+
+```bash
+git fetch --tags
+git tag --list "vX.Y.Z"
+```
+
+- [ ] Create and push an annotated tag for the commit being published.
+
+```bash
+git tag -a vX.Y.Z -m "Release vX.Y.Z"
+git push origin vX.Y.Z
+```
+
+- [ ] Create a GitHub Release with package links and the green CI run.
+
+```bash
+gh release create vX.Y.Z \
+  --repo fuentesjr/metz-scan \
+  --title "vX.Y.Z" \
+  --notes-file /path/to/release-notes.md
+```
+
 ## Publish Decision
 
 - [ ] Confirm this is the version you want to publish publicly.

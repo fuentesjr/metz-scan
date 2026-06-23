@@ -26,6 +26,19 @@ jobs:
       - name: Run RuboCop
         run: bundle exec rubocop
 
+      - name: Smoke GitHub annotations output
+        run: |
+          set +e
+          bundle exec metz-scan scan test/fixtures/service_soup_app \
+            --project-analyzers \
+            --format gh-annotations > /tmp/metz-gh-annotations.out
+          status=$?
+          set -e
+
+          cat /tmp/metz-gh-annotations.out
+          test "$status" -eq 1
+          grep -q '^::warning file=.*MetzProject/ServiceSoup' /tmp/metz-gh-annotations.out
+
       - name: Check dependency direction
         run: bin/check_dependency_direction
 

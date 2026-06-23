@@ -118,9 +118,10 @@ module MetzScan
 
       def assert_sarif_2_1_0_shape
         doc = JSON.parse(@stdout.string)
-        assert_equal "2.1.0", doc["version"]
         assert_kind_of Array, doc["runs"]
+        assert_equal "2.1.0", doc["version"]
         assert_equal "metz-scan", doc.dig("runs", 0, "tool", "driver", "name")
+        assert_equal "https://github.com/fuentesjr/metz-scan", doc.dig("runs", 0, "tool", "driver", "informationUri")
       end
 
       def assert_no_stack_trace

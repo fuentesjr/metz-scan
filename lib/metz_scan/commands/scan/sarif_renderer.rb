@@ -10,7 +10,7 @@ module MetzScan
     class Scan
       class SarifRenderer
         SCHEMA = "https://json.schemastore.org/sarif-2.1.0.json"
-        TOOL_URI = "https://rubygems.org/gems/metz-scan"
+        TOOL_URI = "https://github.com/fuentesjr/metz-scan"
 
         def initialize(stdout, parsed)
           @stdout = stdout
