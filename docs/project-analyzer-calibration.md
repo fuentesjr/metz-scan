@@ -2,8 +2,8 @@
 
 Last updated: 2026-06-23.
 
-This note records a small real-world calibration pass for the opt-in analyzers
-behind `metz-scan scan --project-analyzers`. The goal was to decide whether
+This note records real-world calibration passes for the opt-in analyzers behind
+`metz-scan scan --project-analyzers`. The goal was to decide whether
 `MetzProject/ServiceSoup` or `MetzProject/RepeatedBranching` is ready to move
 closer to default scan output.
 
@@ -18,7 +18,7 @@ bundle exec ruby script/service_soup_spike.rb /tmp/<repo>/app /tmp/<repo>/lib
 bundle exec ruby script/repeated_branching_spike.rb /tmp/<repo>/app /tmp/<repo>/lib
 ```
 
-Targets:
+Initial targets:
 
 | Project | Revision | ServiceSoup findings | RepeatedBranching findings |
 | --- | --- | ---: | ---: |
@@ -27,6 +27,18 @@ Targets:
 | `huginn/huginn` | `2607e5894689` | 0 | 2 |
 | `maybe-finance/maybe` | `77b546983275` | 0 | 2 |
 | `chatwoot/chatwoot` | `e86222034e39` | 0 | 1 |
+
+Expanded targets, checked out sparsely under ignored local scratch space and
+scanned with the same commands:
+
+| Project | Revision | ServiceSoup findings | RepeatedBranching findings |
+| --- | --- | ---: | ---: |
+| `discourse/discourse` | `2115f1cac5f9` | 1 | 5 |
+| `mastodon/mastodon` | `34bbb4748223` | 3 | 14 |
+| `forem/forem` | `d9a393f1d502` | 2 | 4 |
+| `decidim/decidim` | `b2001fa7c9d2` | 0 | 0 |
+| `openfoodfoundation/openfoodnetwork` | `be9d51ab32a6` | 0 | 1 |
+| `solidusio/solidus` | `8d781ac742e3` | 0 | 0 |
 
 ## `MetzProject/ServiceSoup`
 
@@ -76,8 +88,33 @@ The three Chatwoot findings look like plausible true positives:
 - `MessageTemplates::HookExecutionService#trigger_templates` coordinates three
   message-template services.
 
+Expanded calibration on 2026-06-23 found six more plausible true positives with
+the existing supported invocation styles:
+
+- `discourse`: `CategoriesController#manage_category_types` coordinates site
+  setting updates plus category type configure/unconfigure services.
+- `forem`: `Feeds::Import#create_articles_from_feed_source` coordinates feed
+  import checks, author resolution, and article markdown assembly.
+- `forem`: `Users::DeleteArticles#call` coordinates multiple edge-cache busting
+  services while deleting article and comment state.
+- `mastodon`: `BulkImportRowService#call` coordinates account/status lookup plus
+  follow, block, mute, and related import actions.
+- `mastodon`: `ResolveURLService#process_url` coordinates remote actor, status,
+  and featured collection lookup services.
+- `mastodon`: `UpdateStatusService#update_metadata!` coordinates hashtag,
+  mention, and link processing services.
+
 Static `Constant.perform`, `execute`, and `run` were not added because this pass
 did not show three-service workflows using those shapes.
+
+Expanded decision:
+
+- Keep ServiceSoup as **Candidate** and still opt-in. The expanded sample shows
+  useful true positives in service-heavy applications, but the evidence is not
+  broad enough for default scan output.
+- Do not add more invocation styles until calibration finds repeated,
+  fixture-backed examples. The current expanded findings all came from
+  `Constant.call(...)` or `Constant.new(...).call`.
 
 ## `MetzProject/RepeatedBranching`
 
@@ -128,3 +165,33 @@ Decision:
 - Keep the analyzer experimental until the context-enriched report has been
   sampled on more applications.
 - Prefer adding context to findings before adding ignore lists or more knobs.
+
+Expanded calibration on 2026-06-23 found twenty-four findings across four of six
+additional applications. The stronger examples still look like repeated domain
+decisions:
+
+- `discourse` repeats `action`, `exception.wrapped`, `period`,
+  `File.extname(URI(url).path || "")`, and `status` decisions across
+  controllers, jobs, models, services, and filters.
+- `forem` repeats page template fallback, Liquid tag date parsing and sorting,
+  and AI locale instruction decisions across parallel components.
+- `mastodon` repeats ActivityPub add/remove and accept/reject decisions, trend
+  filter scope tables, batch action dispatch, storage backend handling, follow
+  request handling, and merge/unmerge worker dispatch.
+- `openfoodnetwork` repeats the same enterprise authorization action table
+  across three API controllers.
+
+The expanded sample also confirms the main remaining risk: generic decision
+subjects such as `value`, `type`, `action`, and `key.to_s` need context before
+triage. In this pass, context made most of those examples understandable rather
+than noisy, but Mastodon's fourteen findings show that volume can become high in
+projects with many parallel domain objects.
+
+Expanded decision:
+
+- Keep RepeatedBranching as **Experimental** and still opt-in.
+- Keep the current grouping rules for now. The expanded sample did not justify
+  ignore lists or stricter branch-value requirements.
+- Before moving closer to default output, add either clearer severity/confidence
+  language or a project-analyzer report summary that helps users triage high
+  volumes by context.
