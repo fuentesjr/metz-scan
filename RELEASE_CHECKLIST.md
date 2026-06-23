@@ -78,10 +78,10 @@ These commands are expected to exit nonzero when findings are reported; confirm
 that the output is well-formed for each format.
 
 ```bash
-bundle exec metz-scan scan test/fixtures/sample_app --format text
-bundle exec metz-scan scan test/fixtures/sample_app --format json
-bundle exec metz-scan scan test/fixtures/sample_app --format sarif
-bundle exec metz-scan scan test/fixtures/sample_app --format gh-annotations
+bundle exec metz-scan scan test/fixtures/service_soup_app --project-analyzers --format text
+bundle exec metz-scan scan test/fixtures/service_soup_app --project-analyzers --format json
+bundle exec metz-scan scan test/fixtures/service_soup_app --project-analyzers --format sarif
+bundle exec metz-scan scan test/fixtures/service_soup_app --project-analyzers --format gh-annotations
 ```
 
 - [ ] Confirm dry-run auto-fix does not modify files.

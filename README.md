@@ -33,10 +33,11 @@ bundle install
 ```bash
 bundle exec metz-scan rules
 bundle exec metz-scan explain Metz/DemeterTrainWreck
-bundle exec metz-scan scan test/fixtures/sample_app --format text || true
+bundle exec metz-scan scan test/fixtures/service_soup_app --project-analyzers --format text || true
 ```
 
-The sample app intentionally contains violations, so the scan command prints findings and exits nonzero.
+The service-soup fixture intentionally contains a project-analyzer finding, so
+the scan command prints findings and exits nonzero.
 
 ## Usage
 
