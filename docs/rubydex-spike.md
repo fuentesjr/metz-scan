@@ -5,8 +5,8 @@ project-level analyzers. It does not affect normal `metz-scan scan` behavior.
 
 Source context:
 
-- Rubydex repo: https://github.com/Shopify/rubydex
-- Rubydex announcement: https://railsatscale.com/2026-05-12-one-engine-many-tools/
+- Rubydex repo: <https://github.com/Shopify/rubydex>
+- Rubydex announcement: <https://railsatscale.com/2026-05-12-one-engine-many-tools/>
 
 ## Setup
 
@@ -281,8 +281,8 @@ Recommendation:
 - Treat it as the first graduation candidate because the finding maps cleanly
   to method-level workflow orchestration and has a concrete Rails-shaped
   fixture.
-- Test the analyzer against more real Rails applications before making it part
-  of default scan output.
+- Keep using real Rails calibration before making it part of default scan
+  output; see [project-analyzer-calibration.md](project-analyzer-calibration.md).
 
 Reasons not to enable it by default yet:
 

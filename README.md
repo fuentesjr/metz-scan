@@ -109,8 +109,10 @@ Current project analyzer status:
 
 Project analyzers parse Ruby files only. They do not inspect ERB/HAML/SLIM
 templates, and they avoid semantic claims that require resolving runtime types.
-For example, `ServiceSoup` counts distinct constant-backed `.call` shapes but does not
-prove that a constant is truly a service object.
+For example, `ServiceSoup` counts distinct constant-backed `.call` shapes but
+does not prove that a constant is truly a service object. See
+[docs/project-analyzer-calibration.md](docs/project-analyzer-calibration.md) for
+current calibration notes.
 
 Run safe auto-correction or preview it first:
 
