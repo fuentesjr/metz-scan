@@ -4,3 +4,4 @@ tmp/
 
 # Local mission/support artifacts.
 factory-ai-artifacts
+.context/

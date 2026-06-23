@@ -2,7 +2,7 @@
 
 module Metz
   # Path-based classifier for Rails-shaped source files. Used by the
-  # M4 Rails-aware cops (`Metz/ControllersTooManyDirectCollaborators`,
+  # Rails-aware cops (`Metz/ControllersTooManyDirectCollaborators`,
   # `Metz/ViewsDeepNavigation`) to decide whether a file is in scope for
   # those cops. Predicates accept either a relative or an absolute path and
   # always return a strict boolean.

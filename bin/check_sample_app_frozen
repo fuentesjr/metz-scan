@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Enforces the M4 sample-app freeze gate: every regular file under
+# Enforces the sample Rails fixture freeze gate: every regular file under
 # test/fixtures/sample_app/ must match the SHA-256 recorded in
 # test/fixtures/sample_app/.frozen.sha256. Missing files, modified files,
 # and extra files all cause a non-zero exit and an error printed to stderr.

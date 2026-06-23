@@ -6,7 +6,7 @@ require "json"
 require "open3"
 require "tmpdir"
 
-class M3DemeterSeverityExcludeIntegrationTest < Minitest::Test
+class DemeterSeverityExcludeIntegrationTest < Minitest::Test
   REPO_ROOT = File.expand_path("../../..", __dir__)
   GRAPH_VIOLATION = "def m; user.account.subscription.plan.name; end\n"
 
