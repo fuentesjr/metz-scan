@@ -83,19 +83,58 @@ def sorted_json(value)
   JSON.pretty_generate(value.sort_by { |entry| entry.values_at("cop_name", "path", "message").join("\0") })
 end
 
+def non_project_detail(entries)
+  ["Fix these regular scan offenses before updating the dogfood baseline.",
+   sorted_json(entries)].join("\n")
+end
+
+def baseline_drift?(project_entries)
+  sorted_json(project_entries) != sorted_json(BASELINE)
+end
+
+def project_drift_detail(project_entries)
+  [*project_drift_sections(project_entries),
+   expected_baseline_section,
+   actual_project_section(project_entries),
+   project_next_action].join("\n\n")
+end
+
+def project_drift_sections(project_entries)
+  removed = BASELINE - project_entries
+  added = project_entries - BASELINE
+  [entry_section("Removed accepted project-analyzer finding", removed),
+   entry_section("Added project-analyzer finding", added)].compact
+end
+
+def entry_section(label, entries)
+  return if entries.empty?
+
+  "#{label}:\n#{sorted_json(entries)}"
+end
+
+def expected_baseline_section
+  "Expected baseline:\n#{sorted_json(BASELINE)}"
+end
+
+def actual_project_section(entries)
+  "Actual project-analyzer findings:\n#{sorted_json(entries)}"
+end
+
+def project_next_action
+  "Next action: inspect `bin/check_dogfood` output, fix unintended findings, " \
+    "or intentionally update the accepted baseline and docs."
+end
+
 ensure_rubydex_available
 stdout, stderr, status = run_scan
 parsed = parse_json(stdout, stderr, status)
 actual = offenses(parsed)
 non_project = actual.reject { |entry| project_analyzer?(entry) }
-fail_with("non-project-analyzer offenses found", sorted_json(non_project)) unless non_project.empty?
+fail_with("non-project-analyzer offenses found", non_project_detail(non_project)) unless non_project.empty?
 
 project = actual.select { |entry| project_analyzer?(entry) }
-unless sorted_json(project) == sorted_json(BASELINE)
-  fail_with(
-    "project-analyzer findings differ from accepted baseline",
-    "Expected:\n#{sorted_json(BASELINE)}\nActual:\n#{sorted_json(project)}"
-  )
+if baseline_drift?(project)
+  fail_with("project-analyzer findings differ from accepted baseline", project_drift_detail(project))
 end
 
 puts "check_dogfood: PASS (accepted project-analyzer baseline: #{BASELINE.size} finding)"
