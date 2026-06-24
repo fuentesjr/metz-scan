@@ -75,6 +75,34 @@ built-in filter removes Ruby core roots and Rubydex synthetic declaration names
 from both base candidates and descendant counts. On the expanded local target
 set, no filtered core or synthetic names remained in the captured findings.
 
+## Default output readiness
+
+Current decision: do not graduate any project analyzer into default
+`metz-scan scan` output yet. `metz-scan scan --project-analyzers` remains the
+right boundary for these findings because they change scan scope, runtime, and
+triage semantics beyond the default RuboCop-backed cops.
+
+Readiness by analyzer:
+
+- `MetzProject/ServiceSoup` is the strongest graduation candidate. The latest
+  repo-local rerun confirmed sparse, reviewable findings that still look like
+  plausible true positives in service-heavy Rails applications. It should stay
+  opt-in until calibration shows broader evidence across more service,
+  interactor, job, mailer, and command-object styles.
+- `MetzProject/RepeatedBranching` remains experimental. The counts are stable
+  and context-enriched findings are readable, but generic decision subjects
+  still need clearer user-facing confidence and severity language before this
+  belongs in default output.
+- `MetzProject/DeepInheritanceTree` remains experimental. Grouped output,
+  class-only auto-discovery, and located-root filtering fixed the largest
+  mechanical output problems, but broad framework-style roots still need better
+  semantic labeling or filtering before this analyzer should appear by default.
+
+Next non-release action: improve project-analyzer report language before
+changing detector mechanics again. The calibration evidence now points more to
+confidence, severity, and summary wording than to another immediate analyzer
+rule change.
+
 ## `MetzProject/ServiceSoup`
 
 Result: keep as **Candidate**, behind `--project-analyzers`.
