@@ -104,10 +104,19 @@ heading explicitly calls these findings opt-in advisory signals. Text and
 GitHub annotation triage lines now label the same status, confidence, and
 severity fields before the analyzer-specific triage summary.
 
-Next non-release action: sample the updated report language on real project
-output before changing detector mechanics again. The calibration evidence now
-points more to confidence, severity, and summary interpretation than to another
-immediate analyzer rule change.
+Real-output sampling follow-up on 2026-06-24: direct `ProjectAnalyzerRunner`
+text rendering against the repo-local Discourse checkout produced 53 findings
+and 60 offenses, split clearly across DeepInheritanceTree, RepeatedBranching,
+and ServiceSoup. The summary wording was readable at this volume. A full
+`metz-scan scan` sample against the same paths was blocked by Discourse's
+RuboCop plugin dependency (`rubocop-discourse`), so external-target
+report-language calibration should use the direct project-analyzer runner when
+the target repo's RuboCop config is not installed locally.
+
+Next non-release action: compare the updated report language against one
+higher-volume target, such as Mastodon, before changing detector mechanics
+again. The calibration evidence now points more to confidence, severity, and
+summary interpretation than to another immediate analyzer rule change.
 
 ## `MetzProject/ServiceSoup`
 
