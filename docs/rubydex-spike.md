@@ -155,8 +155,9 @@ Limitations:
 - Auto-discovered candidates now filter Ruby core declarations and Rubydex
   synthetic declarations such as `Object` or `ApplicationRecord::<ApplicationRecord>`.
   When Rubydex exposes declaration kind, auto-discovery also limits roots to
-  known class declarations. Grouped output emits one offense at the base
-  declaration and preserves descendant paths in project-analyzer metadata.
+  known class declarations. Auto-discovered roots must have a declaration path.
+  Grouped output emits one offense at the base declaration and preserves
+  descendant paths in project-analyzer metadata.
 - Post-class-filter calibration still shows some framework-style roots that need
   triage before this analyzer can move closer to default output.
 - Bounded path analysis only reports descendants when the base declaration is
@@ -345,7 +346,7 @@ Reasons not to enable it by default yet:
   optional Rubydex-backed project index, so it contributes no findings when
   Rubydex is not enabled. Ruby core and Rubydex synthetic declarations are
   filtered from auto-discovered candidates. When declaration kind is available,
-  auto-discovered roots are limited to classes; explicit configured roots can
-  still inspect modules. Findings emit one primary offense at the base
+  auto-discovered roots are limited to classes and must have declaration paths;
+  explicit configured roots can still inspect modules. Findings emit one primary offense at the base
   declaration while preserving descendant paths in metadata; the remaining
   calibration concern is framework-style root-selection quality.

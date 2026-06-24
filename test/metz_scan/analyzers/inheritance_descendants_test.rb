@@ -147,6 +147,12 @@ module MetzScan
         assert_equal ["ApplicationController"], findings.map(&:base_name)
       end
 
+      def test_auto_discovery_ignores_roots_without_declaration_paths
+        findings = InheritanceDescendants.new(index: unlocated_root_index, minimum_descendants: 2).call
+
+        assert_equal ["ApplicationController"], findings.map(&:base_name)
+      end
+
       def test_configured_base_names_can_still_report_known_non_class_roots
         finding = InheritanceDescendants.new(index: kinded_index, base_names: "RequestTimeouts",
                                              minimum_descendants: 2).call.first
@@ -170,6 +176,19 @@ module MetzScan
          declaration("RequestTimeouts", "/app/controllers/concerns/request_timeouts.rb", :module),
          declaration("AdminController", "/app/admin_controller.rb", :class),
          declaration("OrdersController", "/app/orders_controller.rb", :class)]
+      end
+
+      def unlocated_root_index
+        FakeIndex.new(available: true, descendants: unlocated_root_descendants,
+                      declarations: unlocated_root_declarations)
+      end
+
+      def unlocated_root_descendants
+        kinded_descendants.merge("ViteRails::TagHelpers" => %w[AdminController OrdersController])
+      end
+
+      def unlocated_root_declarations
+        kinded_declarations + [declaration("ViteRails::TagHelpers", nil, nil)]
       end
 
       def declaration(name, path, kind = nil)

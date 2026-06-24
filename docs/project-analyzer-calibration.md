@@ -398,3 +398,28 @@ Class-root decision:
   question is whether to label or filter framework-style roots separately.
 - Keep explicit configured roots unrestricted so spike scripts and focused
   investigations can still inspect module spread when that is the user’s goal.
+
+Located-root follow-up on 2026-06-24: auto-discovered
+`MetzProject/DeepInheritanceTree` roots now also require a declaration path.
+Explicit configured roots still fall back to the first descendant path when the
+base declaration is unavailable. This removes roots like `ViteRails::TagHelpers`
+where Rubydex can see descendant spread but cannot point to a local root
+declaration.
+
+| Project | Revision | Grouped findings after class filter | Grouped findings after located-root filter | Descendant locations after located-root filter |
+| --- | --- | ---: | ---: | ---: |
+| `test/fixtures/sample_app` | local fixture | 1 | 1 | 6 |
+| `discourse/discourse` | `2115f1cac5f9` | 47 | 47 | 1288 |
+| `mastodon/mastodon` | `34bbb4748223` | 41 | 40 | 1089 |
+| `forem/forem` | `d9a393f1d502` | 26 | 26 | 608 |
+| `decidim/decidim` | `b2001fa7c9d2` | 0 | 0 | 0 |
+| `openfoodfoundation/openfoodnetwork` | `be9d51ab32a6` | 29 | 29 | 500 |
+| `solidusio/solidus` | `8d781ac742e3` | 0 | 0 | 0 |
+
+Located-root decision:
+
+- Keep the located-root auto-discovery filter. A finding without a base
+  declaration path cannot anchor a useful primary offense automatically.
+- Treat this as a small quality cleanup, not a major calibration shift. The
+  remaining large roots are mostly located local classes and should be assessed
+  by semantic category rather than by location availability.

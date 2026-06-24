@@ -56,7 +56,8 @@ module MetzScan
       end
 
       def auto_discovered_base_candidate?(declaration)
-        declaration.name && class_candidate?(declaration) && !ignored_declaration_name?(declaration.name)
+        declaration.name && declaration.path && class_candidate?(declaration) &&
+          !ignored_declaration_name?(declaration.name)
       end
 
       def class_candidate?(declaration)
