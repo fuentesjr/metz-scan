@@ -231,6 +231,29 @@ Expanded decision:
   language or a project-analyzer report summary that helps users triage high
   volumes by context.
 
+Repo-local rerun on 2026-06-24 used the same local fixture and sparse target
+checkouts under `tmp/project-analyzer-calibration/apps/`. Counts matched the
+expanded calibration, and the context-enriched findings remained low volume
+enough for manual review.
+
+| Project | Revision | RepeatedBranching findings | Occurrences |
+| --- | --- | ---: | ---: |
+| `test/fixtures/sample_app` | local fixture | 0 | 0 |
+| `discourse/discourse` | `2115f1cac5f9` | 5 | 10 |
+| `mastodon/mastodon` | `34bbb4748223` | 14 | 31 |
+| `forem/forem` | `d9a393f1d502` | 4 | 9 |
+| `decidim/decidim` | `b2001fa7c9d2` | 0 | 0 |
+| `openfoodfoundation/openfoodnetwork` | `be9d51ab32a6` | 1 | 3 |
+| `solidusio/solidus` | `8d781ac742e3` | 0 | 0 |
+
+Rerun decision:
+
+- No implementation change is warranted from this pass. The generic-looking
+  decisions such as `value`, `action`, and `key.to_s` are understandable because
+  each finding reports enclosing class/module and method context.
+- Keep RepeatedBranching **Experimental** until users have more explicit
+  confidence/severity language for interpreting repeated branch tables.
+
 ## `MetzProject/DeepInheritanceTree`
 
 Result: keep as **Experimental**, behind `--project-analyzers`.
