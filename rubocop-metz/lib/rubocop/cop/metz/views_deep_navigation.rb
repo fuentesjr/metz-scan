@@ -13,6 +13,8 @@ module RuboCop
       # recognised value-object call) stays silent. Path-classified through
       # `Metz::FileClassifier.view?`: a deep chain inside an `.erb` file
       # outside `app/views/` will not fire.
+      # DDR: docs/ddrs/2026-06-24-views-deep-navigation-inherits-demeter.md
+      # explains why this specialization uses inheritance instead of composition.
       class ViewsDeepNavigation < DemeterTrainWreck
         MSG = "View object-graph traversal of %<count>d exceeds MaxChainLength (%<max>d). " \
               "Push the lookup into the controller or expose it via a presenter."

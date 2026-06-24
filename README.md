@@ -208,6 +208,10 @@ If your shell resolves to macOS system Ruby, switch to a Ruby `>= 3.3` before ru
 
 ## Contributing / Development
 
+For durable code-level design exceptions, write a lightweight Design Decision
+Record before finalizing the exception. See
+[docs/design-decision-records.md](docs/design-decision-records.md).
+
 Run the local checks:
 
 ```bash
