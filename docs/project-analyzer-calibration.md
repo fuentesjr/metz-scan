@@ -1,11 +1,12 @@
 # Project analyzer calibration
 
-Last updated: 2026-06-23.
+Last updated: 2026-06-24.
 
 This note records real-world calibration passes for the opt-in analyzers behind
 `metz-scan scan --project-analyzers`. The goal was to decide whether
-`MetzProject/ServiceSoup` or `MetzProject/RepeatedBranching` is ready to move
-closer to default scan output.
+`MetzProject/ServiceSoup`, `MetzProject/RepeatedBranching`, or
+`MetzProject/DeepInheritanceTree` is ready to move closer to default scan
+output.
 
 ## Method
 
@@ -17,6 +18,12 @@ Only `app/` and `lib/` were scanned.
 bundle exec ruby script/service_soup_spike.rb /tmp/<repo>/app /tmp/<repo>/lib
 bundle exec ruby script/repeated_branching_spike.rb /tmp/<repo>/app /tmp/<repo>/lib
 ```
+
+The DeepInheritanceTree pass used a one-off Rubydex-backed harness that built a
+`ProjectIndex` for each target's `app/` and `lib/` paths, ran
+`MetzScan::Analyzers::InheritanceDescendants` with its default threshold, and
+recorded both raw findings and a manually triaged count excluding Ruby core and
+Rubydex synthetic declarations.
 
 Initial targets:
 
@@ -47,7 +54,14 @@ output metadata did not change the expanded calibration counts above.
 Output-format follow-up on 2026-06-23: JSON, SARIF, text, and GitHub annotation
 output now preserve project-analyzer triage context. `MetzProject/DeepInheritanceTree`
 has been revived behind `--project-analyzers` as an experimental,
-Rubydex-backed analyzer; broader calibration is still pending.
+Rubydex-backed analyzer.
+
+DeepInheritanceTree calibration follow-up on 2026-06-24: Rubydex-backed runs on
+the five initial targets show useful inheritance signals, but raw output is too
+noisy for default output. Ruby core declarations such as `BasicObject`,
+`Object`, `Kernel`, `Module`, and `Class`, plus Rubydex synthetic declaration
+names like `ApplicationRecord::<ApplicationRecord>`, dominate raw counts unless
+filtered during triage.
 
 ## `MetzProject/ServiceSoup`
 
@@ -204,3 +218,68 @@ Expanded decision:
 - Before moving closer to default output, add either clearer severity/confidence
   language or a project-analyzer report summary that helps users triage high
   volumes by context.
+
+## `MetzProject/DeepInheritanceTree`
+
+Result: keep as **Experimental**, behind `--project-analyzers`.
+
+The analyzer depends on the optional Rubydex-backed project index. Without the
+optional bundle group enabled, it contributes no findings. With Rubydex enabled,
+the focused spike on this repository still reports `RuboCop::Cop::Metz::Base`
+with nine descendants, which is a plausible true positive for an intentionally
+shared cop base class.
+
+Initial Rubydex-backed calibration used the same five real applications as the
+first project-analyzer pass, scanning only `app/` and `lib/`. The raw count is
+what the analyzer currently emits. The triaged count removes Ruby core roots and
+Rubydex synthetic declaration names by hand, to show the size of the useful
+candidate set.
+
+| Project | Revision | Raw findings | Triaged findings |
+| --- | --- | ---: | ---: |
+| `test/fixtures/sample_app` | local fixture | 9 | 1 |
+| `lobsters/lobsters` | `4b78f3d7fdbd` | 24 | 12 |
+| `rubygems/rubygems.org` | `757047af5070` | 62 | 41 |
+| `huginn/huginn` | `2607e5894689` | 38 | 24 |
+| `maybe-finance/maybe` | `77b546983275` | 54 | 35 |
+| `chatwoot/chatwoot` | `e86222034e39` | 111 | 76 |
+
+The strongest useful examples were broad application bases and widely included
+concerns:
+
+- `sample_app`: `ApplicationRecord` has six model descendants.
+- `lobsters`: `ApplicationController`, `ApplicationRecord`,
+  `Mod::ModController`, `ApplicationJob`, and `ApplicationMailer` identify
+  broad Rails inheritance or shared module surfaces.
+- `rubygems.org`: `ApplicationController`, `ApplicationRecord`,
+  `Admin::ApplicationPolicy`, `Admin::ApplicationPolicy::Scope`,
+  `Api::BaseController`, `ApplicationJob`, and `ApplicationComponent` identify
+  meaningful large family roots.
+- `huginn`: `Agent` has 75 descendants, and shared modules such as
+  `DryRunnable`, `LiquidInterpolatable`, and `WorkingHelpers` span most agent
+  subclasses.
+- `maybe`: controller concerns such as `Authentication`, `AutoSync`,
+  `FeatureGuardable`, and `StoreLocation` each reach 73 descendants.
+- `chatwoot`: `ApplicationController`, `Api::BaseController`,
+  `Api::V1::Accounts::BaseController`, `ApplicationJob`,
+  `ApplicationRecord`, and concerns like `RequestExceptionHandler` and
+  `SwitchLocale` show very broad descendant spread.
+
+Risks:
+
+- The current auto-discovery path reports Ruby core declarations and Rubydex
+  synthetic declarations, which creates obvious false positives in user-facing
+  `scan --project-analyzers` output.
+- Findings expand to one offense per descendant location, so noisy roots can
+  create high offense counts even when the underlying finding count is smaller.
+- Location fidelity remains file-level; Rubydex exposes declaration paths here,
+  but the adapter does not provide precise class-definition line/column data.
+
+Decision:
+
+- Keep DeepInheritanceTree **Experimental** and opt-in.
+- Before any move toward default output, filter Ruby core roots and synthetic
+  declaration names from auto-discovered candidates.
+- Consider grouping output by base declaration, or otherwise reducing
+  per-descendant offense expansion, before calibrating high-volume applications
+  again.

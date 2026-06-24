@@ -34,22 +34,38 @@ checks continue to run without Rubydex.
 
 ## Current Results
 
-On this repo with Rubydex `0.2.3`:
+On this repo with Rubydex `0.2.5`:
 
 ```text
 backend: rubydex
 workspace: true
-indexed_files: 99
-declarations: 47898
-ruby_documents: 2136
+indexed_files: 5425
+declarations: 49105
+ruby_documents: 2190
+minitest_test_descendants:
+  - CopHelperTest
+  - CopMetzControllersTooManyDirectCollaboratorsTest
+  - ...
+  - MetzScan::Commands::ScanProjectAnalyzerRunnerDeepInheritanceTest
+  - MetzScan::ProjectIndexWorkspaceTest
+  - RuboCopCopMetzMethodsTooManyParametersTest
+metz_cop_declarations:
+  - RuboCop::Cop::Metz::Base
+  - RuboCop::Cop::Metz::ClassesTooLong
+  - RuboCop::Cop::Metz::ControllersTooManyDirectCollaborators
+  - RuboCop::Cop::Metz::DemeterTrainWreck
+  - RuboCop::Cop::Metz::MethodsTooLong
+  - RuboCop::Cop::Metz::MethodsTooManyParameters
+  - RuboCop::Cop::Metz::ViewsDeepNavigation
 references_to RuboCop::Cop::Metz::Base: 12
-diagnostics: 183
+diagnostics: 187
 index_errors: 0
 ```
 
 The workspace run finds `Minitest::Test` descendants from this repo and from
-indexed dependencies, including `MetzScan::ProjectIndexTest`,
-`MetzScan::Commands::ScanTest`, and the RuboCop cop tests.
+indexed dependencies, including the `MetzScan::Commands::*` tests and the
+RuboCop cop tests. The large `indexed_files` count is expected for workspace
+indexing because Rubydex includes dependencies.
 
 The fixture-only run against `test/fixtures/sample_app` is smaller and clean:
 
@@ -85,8 +101,8 @@ index_errors: 0
   and resolved constant references.
 - Workspace indexing uses the requested project path rather than the process
   current directory.
-- The first project analyzer should stay optional and explicit until runtime
-  cost, diagnostics volume, and native-gem install behavior are better known.
+- Rubydex-backed project analyzers should stay opt-in until runtime cost,
+  diagnostics volume, and native-gem install behavior are better known.
 
 ## Experiment 2: Inheritance Descendants
 
@@ -136,6 +152,9 @@ Limitations:
 
 - Locations currently use declaration paths only; line and column data are not
   exposed by the adapter yet.
+- Auto-discovered candidates include Ruby core declarations and Rubydex
+  synthetic declarations such as `Object` or `ApplicationRecord::<ApplicationRecord>`.
+  Those are useful calibration evidence but too noisy for default scan output.
 - Bounded path analysis only reports descendants when the base declaration is
   indexed too. For example, `test/fixtures/sample_app` has controllers that
   inherit from `ApplicationController`, but the fixture does not define
@@ -317,7 +336,7 @@ Reasons not to enable it by default yet:
   `case` decisions with the same branch-value set, or repeated `if`/`elsif`
   predicate chains with the same receiver and predicate set, across distinct
   Ruby files.
-- `MetzProject/DeepInheritanceTree` — experimental. Reports indexed inheritance
-  roots with at least three known descendants. It depends on the optional
-  Rubydex-backed project index, so it contributes no findings when Rubydex is
-  not enabled.
+- `MetzProject/DeepInheritanceTree` — experimental. Reports indexed base
+  classes or modules with at least three known descendants. It depends on the
+  optional Rubydex-backed project index, so it contributes no findings when
+  Rubydex is not enabled.
