@@ -152,9 +152,10 @@ Limitations:
 
 - Locations currently use declaration paths only; line and column data are not
   exposed by the adapter yet.
-- Auto-discovered candidates include Ruby core declarations and Rubydex
+- Auto-discovered candidates now filter Ruby core declarations and Rubydex
   synthetic declarations such as `Object` or `ApplicationRecord::<ApplicationRecord>`.
-  Those are useful calibration evidence but too noisy for default scan output.
+  Post-filter calibration still shows too much output because large local roots
+  expand into one offense per descendant location.
 - Bounded path analysis only reports descendants when the base declaration is
   indexed too. For example, `test/fixtures/sample_app` has controllers that
   inherit from `ApplicationController`, but the fixture does not define
@@ -339,4 +340,6 @@ Reasons not to enable it by default yet:
 - `MetzProject/DeepInheritanceTree` — experimental. Reports indexed base
   classes or modules with at least three known descendants. It depends on the
   optional Rubydex-backed project index, so it contributes no findings when
-  Rubydex is not enabled.
+  Rubydex is not enabled. Ruby core and Rubydex synthetic declarations are
+  filtered from auto-discovered candidates; the remaining calibration blocker is
+  high-volume per-descendant output for broad local roots.

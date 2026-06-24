@@ -25,6 +25,12 @@ The DeepInheritanceTree pass used a one-off Rubydex-backed harness that built a
 recorded both raw findings and a manually triaged count excluding Ruby core and
 Rubydex synthetic declarations.
 
+Historical target-location note: early calibration runs used scratch checkouts
+under `/private/tmp/metz-calibration`. Those paths are historical context only.
+Current and future calibration runs should use repo-local ignored scratch space
+under `tmp/project-analyzer-calibration/`, including
+`tmp/project-analyzer-calibration/apps/` for approved sparse target checkouts.
+
 Initial targets:
 
 | Project | Revision | ServiceSoup findings | RepeatedBranching findings |
@@ -35,8 +41,8 @@ Initial targets:
 | `maybe-finance/maybe` | `77b546983275` | 0 | 2 |
 | `chatwoot/chatwoot` | `e86222034e39` | 0 | 1 |
 
-Expanded targets, checked out sparsely under ignored local scratch space and
-scanned with the same commands:
+Expanded targets, checked out sparsely under ignored repo-local scratch space
+and scanned with the same commands:
 
 | Project | Revision | ServiceSoup findings | RepeatedBranching findings |
 | --- | --- | ---: | ---: |
@@ -62,6 +68,12 @@ noisy for default output. Ruby core declarations such as `BasicObject`,
 `Object`, `Kernel`, `Module`, and `Class`, plus Rubydex synthetic declaration
 names like `ApplicationRecord::<ApplicationRecord>`, dominate raw counts unless
 filtered during triage.
+
+Post-filter DeepInheritanceTree follow-up on 2026-06-24: current runs use
+repo-local scratch checkouts under `tmp/project-analyzer-calibration/`. The
+built-in filter removes Ruby core roots and Rubydex synthetic declaration names
+from both base candidates and descendant counts. On the expanded local target
+set, no filtered core or synthetic names remained in the captured findings.
 
 ## `MetzProject/ServiceSoup`
 
@@ -278,8 +290,52 @@ Risks:
 Decision:
 
 - Keep DeepInheritanceTree **Experimental** and opt-in.
-- Before any move toward default output, filter Ruby core roots and synthetic
-  declaration names from auto-discovered candidates.
+- Keep filtering Ruby core roots and synthetic declaration names from
+  auto-discovered candidates.
 - Consider grouping output by base declaration, or otherwise reducing
   per-descendant offense expansion, before calibrating high-volume applications
   again.
+
+Post-filter expanded calibration on 2026-06-24 used only the local fixture and
+repo-local sparse checkouts under `tmp/project-analyzer-calibration/apps/`. The
+filter removed the obvious Ruby core and Rubydex synthetic false-positive bucket,
+but high-volume applications still produce too many user-facing offenses because
+each base finding expands to one offense per descendant location.
+
+| Project | Revision | Base findings | Descendant-location offenses | Largest descendant count |
+| --- | --- | ---: | ---: | ---: |
+| `test/fixtures/sample_app` | local fixture | 1 | 6 | 6 |
+| `discourse/discourse` | `2115f1cac5f9` | 98 | 2837 | 230 |
+| `mastodon/mastodon` | `34bbb4748223` | 95 | 6157 | 337 |
+| `forem/forem` | `d9a393f1d502` | 41 | 1556 | 155 |
+| `decidim/decidim` | `b2001fa7c9d2` | 0 | 0 | 0 |
+| `openfoodfoundation/openfoodnetwork` | `be9d51ab32a6` | 62 | 2036 | 119 |
+| `solidusio/solidus` | `8d781ac742e3` | 0 | 0 | 0 |
+
+Useful examples remain local and meaningful:
+
+- `discourse`: `Jobs::Base`, `ApplicationSerializer`, and
+  `ActiveModel::Serializer` each identify large job or serializer families.
+- `mastodon`: broad helpers and controller concerns such as
+  `AuthorizedFetchHelper`, `DomainControlHelper`, `Localized`, and
+  `CacheConcern` span hundreds of indexed declarations.
+- `forem`: controller concerns such as `ValidRequest`, `SessionCurrentUser`,
+  `ImageUploads`, and `CachingHeaders` span most controllers.
+- `openfoodnetwork`: `ApplicationRecord`, `Spree::Preferences::Preferable`,
+  `Spree::Core::ControllerHelpers::Auth`, and `RequestTimeouts` identify broad
+  model, controller, and framework-extension surfaces.
+
+Post-filter decision:
+
+- The core/synthetic filter is worth keeping; the corrected run found zero
+  remaining `BasicObject`, `Object`, `Kernel`, `Module`, `Class`, or `::<`
+  synthetic declaration names in findings.
+- The next implementation target should be grouping DeepInheritanceTree output
+  by base declaration, or otherwise emitting one primary finding per broad root
+  with descendant examples in metadata. Per-descendant offense expansion is the
+  main blocker now.
+- Do not narrow auto-discovered roots yet. The largest remaining roots are local
+  application declarations rather than obvious external noise, and they contain
+  useful signal once grouped.
+- Location fidelity remains secondary. File-level descendant paths are enough to
+  identify the output-volume problem and the broad roots causing it.
