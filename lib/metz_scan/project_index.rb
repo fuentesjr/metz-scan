@@ -6,7 +6,7 @@ require_relative "project_index/rubydex_backend"
 module MetzScan
   # Thin facade over optional project-wide indexes used by future analyzers.
   class ProjectIndex
-    Declaration = Struct.new(:name, :path, keyword_init: true)
+    Declaration = Struct.new(:name, :path, :kind, keyword_init: true)
     Reference = Struct.new(:name, :path, :line, :column, keyword_init: true)
 
     class UnknownBackendError < StandardError; end

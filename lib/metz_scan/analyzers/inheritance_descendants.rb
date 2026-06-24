@@ -47,7 +47,20 @@ module MetzScan
       def base_candidates
         return base_names unless base_names.empty?
 
-        index.declarations.map(&:name).compact.uniq.reject { |name| ignored_declaration_name?(name) }.sort
+        auto_discovered_base_candidates
+      end
+
+      def auto_discovered_base_candidates
+        index.declarations.select { |declaration| auto_discovered_base_candidate?(declaration) }
+                          .map(&:name).compact.uniq.sort
+      end
+
+      def auto_discovered_base_candidate?(declaration)
+        declaration.name && class_candidate?(declaration) && !ignored_declaration_name?(declaration.name)
+      end
+
+      def class_candidate?(declaration)
+        !declaration.respond_to?(:kind) || declaration.kind.nil? || declaration.kind == :class
       end
 
       def finding_for(base_name)

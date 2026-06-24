@@ -106,17 +106,15 @@ module MetzScan
       end
 
       def fake_declarations
-        [ProjectIndex::Declaration.new(name: "ApplicationController", path: "/app/application_controller.rb")] +
-          fake_paths.map { |path| ProjectIndex::Declaration.new(name: declaration_name(path), path: path) }
+        [declaration("ApplicationController", "/app/application_controller.rb")] +
+          fake_paths.map { |path| declaration(declaration_name(path), path) }
       end
 
       def fake_paths
         ["/app/admin_controller.rb", "/app/orders_controller.rb"]
       end
 
-      def declaration_name(path)
-        path.include?("admin") ? "AdminController" : "OrdersController"
-      end
+      def declaration_name(path) = path.include?("admin") ? "AdminController" : "OrdersController"
 
       def unavailable_index
         FakeIndex.new(available: false, descendants: {}, declarations: [])
@@ -132,11 +130,50 @@ module MetzScan
       end
 
       def noisy_declarations
-        noisy_names.map { |name| ProjectIndex::Declaration.new(name: name, path: "/app/#{name}.rb") }
+        noisy_names.map { |name| declaration(name, "/app/#{name}.rb") }
       end
 
       def noisy_names
         %w[BasicObject Class Module Object ApplicationRecord ApplicationRecord::<ApplicationRecord> Order Account]
+      end
+
+      def declaration(name, path, kind = nil) = ProjectIndex::Declaration.new(name: name, path: path, kind: kind)
+    end
+
+    class InheritanceDescendantsRootSelectionTest < Minitest::Test
+      def test_auto_discovery_ignores_known_non_class_roots
+        findings = InheritanceDescendants.new(index: kinded_index, minimum_descendants: 2).call
+
+        assert_equal ["ApplicationController"], findings.map(&:base_name)
+      end
+
+      def test_configured_base_names_can_still_report_known_non_class_roots
+        finding = InheritanceDescendants.new(index: kinded_index, base_names: "RequestTimeouts",
+                                             minimum_descendants: 2).call.first
+
+        assert_equal "RequestTimeouts", finding.base_name
+      end
+
+      private
+
+      def kinded_index
+        FakeIndex.new(available: true, descendants: kinded_descendants, declarations: kinded_declarations)
+      end
+
+      def kinded_descendants
+        { "ApplicationController" => %w[AdminController OrdersController],
+          "RequestTimeouts" => %w[AdminController OrdersController] }
+      end
+
+      def kinded_declarations
+        [declaration("ApplicationController", "/app/application_controller.rb", :class),
+         declaration("RequestTimeouts", "/app/controllers/concerns/request_timeouts.rb", :module),
+         declaration("AdminController", "/app/admin_controller.rb", :class),
+         declaration("OrdersController", "/app/orders_controller.rb", :class)]
+      end
+
+      def declaration(name, path, kind = nil)
+        ProjectIndex::Declaration.new(name: name, path: path, kind: kind)
       end
     end
 

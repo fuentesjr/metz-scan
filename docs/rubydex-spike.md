@@ -154,10 +154,11 @@ Limitations:
   exposed by the adapter yet.
 - Auto-discovered candidates now filter Ruby core declarations and Rubydex
   synthetic declarations such as `Object` or `ApplicationRecord::<ApplicationRecord>`.
-  Grouped output emits one offense at the base declaration and preserves
-  descendant paths in project-analyzer metadata.
-- Post-grouping calibration still shows broad local roots that need triage before
-  this analyzer can move closer to default output.
+  When Rubydex exposes declaration kind, auto-discovery also limits roots to
+  known class declarations. Grouped output emits one offense at the base
+  declaration and preserves descendant paths in project-analyzer metadata.
+- Post-class-filter calibration still shows some framework-style roots that need
+  triage before this analyzer can move closer to default output.
 - Bounded path analysis only reports descendants when the base declaration is
   indexed too. For example, `test/fixtures/sample_app` has controllers that
   inherit from `ApplicationController`, but the fixture does not define
@@ -343,6 +344,8 @@ Reasons not to enable it by default yet:
   classes or modules with at least three known descendants. It depends on the
   optional Rubydex-backed project index, so it contributes no findings when
   Rubydex is not enabled. Ruby core and Rubydex synthetic declarations are
-  filtered from auto-discovered candidates. Findings emit one primary offense at
-  the base declaration while preserving descendant paths in metadata; the
-  remaining calibration concern is broad local root-selection quality.
+  filtered from auto-discovered candidates. When declaration kind is available,
+  auto-discovered roots are limited to classes; explicit configured roots can
+  still inspect modules. Findings emit one primary offense at the base
+  declaration while preserving descendant paths in metadata; the remaining
+  calibration concern is framework-style root-selection quality.

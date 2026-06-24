@@ -78,7 +78,10 @@ module MetzScan
       end
 
       def deep_inheritance_index
-        ProjectAnalyzerRunnerFakeIndex.new("ApplicationController" => expected_descendants)
+        ProjectAnalyzerRunnerFakeIndex.new(
+          "ApplicationController" => expected_descendants,
+          "RequestTimeouts" => expected_descendants
+        )
       end
     end
 
@@ -95,12 +98,16 @@ module MetzScan
 
       def declarations
         names = @descendants.flat_map { |base, descendants| [base, *descendants] }.uniq
-        names.map { |name| ProjectIndex::Declaration.new(name: name, path: path_for(name)) }
+        names.map { |name| ProjectIndex::Declaration.new(name: name, path: path_for(name), kind: kind_for(name)) }
       end
 
       def descendants_of(name) = @descendants.fetch(name, [])
 
       private
+
+      def kind_for(name)
+        name == "RequestTimeouts" ? :module : :class
+      end
 
       def path_for(name)
         "/app/#{name.gsub(/([a-z])([A-Z])/, '\\1_\\2').downcase}.rb"

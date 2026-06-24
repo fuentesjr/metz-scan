@@ -8,6 +8,7 @@ module MetzScan
       include LocationFormatting
 
       RUBY_GLOB = "**/*.rb"
+      DECLARATION_KINDS = { "Rubydex::Class" => :class, "Rubydex::Module" => :module }.freeze
       private_constant :RUBY_GLOB
 
       def self.available?
@@ -79,7 +80,8 @@ module MetzScan
 
       def declarations
         entries = graph.declarations.map do |declaration|
-          Declaration.new(name: declaration.name, path: definition_path(declaration))
+          Declaration.new(name: declaration.name, path: definition_path(declaration),
+                          kind: declaration_kind(declaration))
         end
 
         entries.sort_by { |declaration| [declaration.name.to_s, declaration.path.to_s] }
@@ -115,6 +117,8 @@ module MetzScan
         definition = declaration.definitions.first if declaration.respond_to?(:definitions)
         path_from_location(definition&.location)
       end
+
+      def declaration_kind(declaration) = DECLARATION_KINDS[declaration.class.name]
 
       def normalized_reference(reference)
         location = reference.location.to_display

@@ -368,3 +368,33 @@ Grouped-output decision:
 - Investigate root-selection quality before graduation. The remaining signal is
   local, but many high-count roots are broad concerns and helpers rather than
   conventional inheritance bases.
+
+Class-root follow-up on 2026-06-24: auto-discovered
+`MetzProject/DeepInheritanceTree` roots now use Rubydex declaration kind when
+available and skip known non-class declarations. Explicit `base_names:` still
+allow focused module or concern inspection. The rerun used the same local
+fixture and repo-local sparse checkouts under
+`tmp/project-analyzer-calibration/apps/`.
+
+| Project | Revision | Grouped findings before class filter | Grouped findings after class filter | Descendant locations after class filter | Largest descendant count after class filter |
+| --- | --- | ---: | ---: | ---: | ---: |
+| `test/fixtures/sample_app` | local fixture | 1 | 1 | 6 | 6 |
+| `discourse/discourse` | `2115f1cac5f9` | 98 | 47 | 1288 | 230 |
+| `mastodon/mastodon` | `34bbb4748223` | 95 | 41 | 1248 | 293 |
+| `forem/forem` | `d9a393f1d502` | 41 | 26 | 608 | 150 |
+| `decidim/decidim` | `b2001fa7c9d2` | 0 | 0 | 0 | 0 |
+| `openfoodfoundation/openfoodnetwork` | `be9d51ab32a6` | 62 | 29 | 500 | 100 |
+| `solidusio/solidus` | `8d781ac742e3` | 0 | 0 | 0 | 0 |
+
+Class-root decision:
+
+- Keep the class-only auto-discovery filter. It removes the largest helper,
+  concern, mixin, and controller-helper buckets while preserving conventional
+  Rails bases such as `ApplicationController`, `ApplicationRecord`, jobs,
+  serializers, policies, and service bases.
+- Do not graduate DeepInheritanceTree yet. Some framework or module-like roots
+  still remain, for example `ActiveModel::Serializer`,
+  `ViteRails::TagHelpers`, and `ActivityPub::Serializer`; the next calibration
+  question is whether to label or filter framework-style roots separately.
+- Keep explicit configured roots unrestricted so spike scripts and focused
+  investigations can still inspect module spread when that is the user’s goal.

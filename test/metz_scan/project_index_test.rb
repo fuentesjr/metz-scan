@@ -85,7 +85,8 @@ module MetzScan
     end
 
     def write_inheritance_fixture(dir)
-      File.write(File.join(dir, "inheritance.rb"), "class Parent; end\nclass Child < Parent; end\n")
+      File.write(File.join(dir, "inheritance.rb"),
+                 "module SharedBehavior; end\nclass Parent; end\nclass Child < Parent; end\n")
     end
 
     def index_inheritance_fixture(dir)
@@ -98,6 +99,16 @@ module MetzScan
       assert index.available?
       assert_includes index.descendants_of("Parent"), "Child"
       assert_includes index.search("Parent"), "Parent"
+      assert_declaration_kinds(index)
+    end
+
+    def assert_declaration_kinds(index)
+      assert_equal :class, declaration(index, "Parent").kind
+      assert_equal :module, declaration(index, "SharedBehavior").kind
+    end
+
+    def declaration(index, name)
+      index.declarations.find { |candidate| candidate.name == name }
     end
   end
 
