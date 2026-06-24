@@ -35,6 +35,13 @@ module MetzScan
         assert_empty analyzer.call
       end
 
+      def test_filters_core_and_synthetic_declarations_from_auto_discovered_candidates
+        finding = InheritanceDescendants.new(index: noisy_index, minimum_descendants: 2).call.first
+
+        assert_equal "ApplicationRecord", finding.base_name
+        assert_equal %w[Account Order], finding.descendants
+      end
+
       private
 
       def analyze_fake_index
@@ -91,6 +98,23 @@ module MetzScan
       def unavailable_index
         FakeIndex.new(available: false, descendants: {}, declarations: [])
       end
+
+      def noisy_index
+        FakeIndex.new(available: true, descendants: noisy_descendants, declarations: noisy_declarations)
+      end
+
+      def noisy_descendants
+        { "BasicObject" => %w[Class Module Object],
+          "ApplicationRecord" => ["ApplicationRecord::<ApplicationRecord>", "Order", "Account"] }
+      end
+
+      def noisy_declarations
+        noisy_names.map { |name| ProjectIndex::Declaration.new(name: name, path: "/app/#{name}.rb") }
+      end
+
+      def noisy_names
+        %w[BasicObject Class Module Object ApplicationRecord ApplicationRecord::<ApplicationRecord> Order Account]
+      end
     end
 
     class InheritanceDescendantsRubydexTest < Minitest::Test
@@ -109,7 +133,7 @@ module MetzScan
       def rubydex_finding_for(dir)
         write_inheritance_fixture(dir)
         index = ProjectIndex.build([dir], backend: :rubydex)
-        InheritanceDescendants.new(index: index, base_names: "ProjectBase").call.first
+        InheritanceDescendants.new(index: index, base_names: "ProjectBase", minimum_descendants: 1).call.first
       end
 
       def write_inheritance_fixture(dir)

@@ -16,6 +16,9 @@ module MetzScan
         "Review whether the base class is carrying multiple responsibilities.",
         "Prefer composition or narrower shared modules when descendants only need part of the base behavior."
       ].freeze
+      IGNORED_DECLARATION_NAMES = %w[BasicObject Class Kernel Module Object].freeze
+      SYNTHETIC_DECLARATION_MARKER = "::<"
+      private_constant :IGNORED_DECLARATION_NAMES, :SYNTHETIC_DECLARATION_MARKER
 
       Finding = Struct.new(:source, :rule_id, :message, :base_name, :descendants, :locations, :why_it_matters,
                            :project_analyzer_status, :confidence, :triage_severity, :triage_summary,
@@ -44,7 +47,7 @@ module MetzScan
       def base_candidates
         return base_names unless base_names.empty?
 
-        index.declarations.map(&:name).compact.uniq.sort
+        index.declarations.map(&:name).compact.uniq.reject { |name| ignored_declaration_name?(name) }.sort
       end
 
       def finding_for(base_name)
@@ -55,7 +58,7 @@ module MetzScan
       end
 
       def sorted_descendants(base_name)
-        index.descendants_of(base_name).sort
+        index.descendants_of(base_name).reject { |name| ignored_declaration_name?(name) }.sort
       end
 
       def build_finding(base_name, descendants)
@@ -91,6 +94,10 @@ module MetzScan
 
       def declarations_by_name
         @declarations_by_name ||= index.declarations.to_h { |declaration| [declaration.name, declaration] }
+      end
+
+      def ignored_declaration_name?(name)
+        IGNORED_DECLARATION_NAMES.include?(name) || name.include?(SYNTHETIC_DECLARATION_MARKER)
       end
     end
   end
