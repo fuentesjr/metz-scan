@@ -62,9 +62,13 @@ module MetzScan
         Finding.new(source: index.backend_name.to_s, rule_id: RULE_ID, message: message_for(base_name, descendants),
                     base_name: base_name, descendants: descendants, locations: locations_for(descendants),
                     why_it_matters: WHY, suggested_next_moves: SUGGESTED_NEXT_MOVES,
-                    project_analyzer_status: PROJECT_ANALYZER_STATUS, confidence: CONFIDENCE,
-                    triage_severity: TRIAGE_SEVERITY, triage_summary: TRIAGE_SUMMARY,
-                    project_analyzer_metadata: project_analyzer_metadata_for(base_name, descendants))
+                    **triage_for(base_name, descendants))
+      end
+
+      def triage_for(base_name, descendants)
+        { project_analyzer_status: PROJECT_ANALYZER_STATUS, confidence: CONFIDENCE,
+          triage_severity: TRIAGE_SEVERITY, triage_summary: TRIAGE_SUMMARY,
+          project_analyzer_metadata: project_analyzer_metadata_for(base_name, descendants) }
       end
 
       def message_for(base_name, descendants)

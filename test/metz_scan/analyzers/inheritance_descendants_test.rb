@@ -43,15 +43,23 @@ module MetzScan
       end
 
       def assert_finding_metadata(finding)
+        assert_finding_identity(finding)
+        assert_finding_triage(finding)
+        refute_empty finding.suggested_next_moves
+      end
+
+      def assert_finding_identity(finding)
         assert_equal "MetzProject/DeepInheritanceTree", finding.rule_id
         assert_equal "ApplicationController", finding.base_name
         assert_includes finding.message, "ApplicationController has 2 descendants"
+      end
+
+      def assert_finding_triage(finding)
         assert_equal "experimental", finding.project_analyzer_status
         assert_equal "early", finding.confidence
         assert_equal "manual review", finding.triage_severity
         assert_match(/inheritance/i, finding.triage_summary)
         assert_equal "ApplicationController", finding.project_analyzer_metadata.fetch("base_name")
-        refute_empty finding.suggested_next_moves
       end
 
       def assert_finding_descendants(finding)

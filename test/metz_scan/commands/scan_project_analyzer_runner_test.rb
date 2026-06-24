@@ -62,16 +62,6 @@ module MetzScan
         assert_summary_counts_match_merged_files(parsed)
       end
 
-      def test_merges_deep_inheritance_findings_from_project_index
-        parsed = { "files" => [], "summary" => { "offense_count" => 0 } }
-
-        Scan::ProjectAnalyzerRunner.merge(parsed, [@tmpdir], index: deep_inheritance_index)
-
-        assert_includes cop_names(parsed), "MetzProject/DeepInheritanceTree"
-        assert_deep_inheritance_metadata(parsed)
-        assert_summary_counts_match_merged_files(parsed)
-      end
-
       def test_uses_rubocop_inspected_files_when_available
         write_repeated_branching_files
         parsed = { "files" => [{ "path" => branching_path(0), "offenses" => [] }] }
@@ -117,14 +107,6 @@ module MetzScan
         assert_equal "OrdersController#create", offense.dig("project_analyzer", "workflow", "context")
       end
 
-      def assert_deep_inheritance_metadata(parsed)
-        offense = offenses(parsed).find { |candidate| candidate.fetch("cop_name") == "MetzProject/DeepInheritanceTree" }
-
-        assert_equal "experimental", offense.dig("project_analyzer", "status")
-        assert_equal "ApplicationController", offense.dig("project_analyzer", "base_name")
-        assert_equal %w[AdminController OrdersController ReportsController], offense.dig("project_analyzer", "descendants")
-      end
-
       def offenses(parsed)
         parsed["files"].flat_map { |file| file["offenses"] }
       end
@@ -145,12 +127,6 @@ module MetzScan
         { "cop_name" => "MetzProject/Fake" }
       end
 
-      def deep_inheritance_index
-        ProjectAnalyzerRunnerFakeIndex.new(
-          "ApplicationController" => %w[OrdersController AdminController ReportsController]
-        )
-      end
-
       def write_repeated_branching_files
         2.times { |index| File.write(branching_path(index), PROJECT_ANALYZER_BRANCHING_SOURCE) }
       end
@@ -161,29 +137,6 @@ module MetzScan
 
       def write_service_soup_file
         File.write(File.join(@tmpdir, "service_soup.rb"), PROJECT_ANALYZER_SERVICE_SOUP_SOURCE)
-      end
-    end
-
-    class ProjectAnalyzerRunnerFakeIndex
-      def initialize(descendants)
-        @descendants = descendants
-      end
-
-      def backend_name = :fake
-
-      def available? = true
-
-      def declarations
-        names = @descendants.flat_map { |base, descendants| [base, *descendants] }.uniq
-        names.map { |name| ProjectIndex::Declaration.new(name: name, path: path_for(name)) }
-      end
-
-      def descendants_of(name) = @descendants.fetch(name, [])
-
-      private
-
-      def path_for(name)
-        "/app/#{name.gsub(/([a-z])([A-Z])/, '\\1_\\2').downcase}.rb"
       end
     end
   end

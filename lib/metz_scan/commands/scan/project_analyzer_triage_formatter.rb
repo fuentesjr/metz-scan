@@ -9,8 +9,10 @@ module MetzScan
         def line(metadata)
           return unless metadata
 
-          details = triage_details(metadata)
-          summary = metadata["triage_summary"]
+          line_for(triage_details(metadata), metadata["triage_summary"])
+        end
+
+        def line_for(details, summary)
           return unless details.any? || !blank?(summary)
           return summary.to_s if details.empty?
 
