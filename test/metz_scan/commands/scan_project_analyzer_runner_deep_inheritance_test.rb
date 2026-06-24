@@ -12,9 +12,23 @@ module MetzScan
 
         Scan::ProjectAnalyzerRunner.merge(parsed, [], index: deep_inheritance_index)
 
-        assert_includes cop_names(parsed), "MetzProject/DeepInheritanceTree"
+        assert_deep_inheritance_output(parsed)
+      end
+
+      def assert_deep_inheritance_output(parsed)
+        assert_deep_inheritance_count(parsed)
+        assert_deep_inheritance_path(parsed)
         assert_deep_inheritance_metadata(parsed)
+        assert_project_analyzer_summary(parsed)
         assert_summary_counts_match_merged_files(parsed)
+      end
+
+      def assert_deep_inheritance_count(parsed)
+        assert_equal 1, deep_inheritance_offenses(parsed).size
+      end
+
+      def assert_deep_inheritance_path(parsed)
+        assert_equal "/app/application_controller.rb", deep_inheritance_file(parsed).fetch("path")
       end
 
       private
@@ -30,18 +44,33 @@ module MetzScan
         assert_equal "experimental", offense.dig("project_analyzer", "status")
         assert_equal "ApplicationController", offense.dig("project_analyzer", "base_name")
         assert_equal expected_descendants, offense.dig("project_analyzer", "descendants")
+        assert_equal expected_descendants.size, offense.dig("project_analyzer", "descendant_count")
+      end
+
+      def assert_project_analyzer_summary(parsed)
+        summary = parsed.fetch("summary").fetch("project_analyzers")
+
+        assert_equal 1, summary.fetch("finding_count")
+        assert_equal 1, summary.fetch("offense_count")
+        assert_equal 1, summary.fetch("rules").first.fetch("offense_count")
       end
 
       def deep_inheritance_offense(parsed)
-        offenses(parsed).find { |candidate| candidate.fetch("cop_name") == "MetzProject/DeepInheritanceTree" }
+        deep_inheritance_offenses(parsed).first
+      end
+
+      def deep_inheritance_offenses(parsed)
+        offenses(parsed).select { |candidate| candidate.fetch("cop_name") == "MetzProject/DeepInheritanceTree" }
+      end
+
+      def deep_inheritance_file(parsed)
+        parsed.fetch("files").find do |file|
+          file.fetch("offenses").any? { |offense| offense.fetch("cop_name") == "MetzProject/DeepInheritanceTree" }
+        end
       end
 
       def expected_descendants
         %w[AdminController OrdersController ReportsController]
-      end
-
-      def cop_names(parsed)
-        offenses(parsed).map { |offense| offense.fetch("cop_name") }
       end
 
       def offenses(parsed)

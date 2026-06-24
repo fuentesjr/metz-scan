@@ -20,10 +20,10 @@ module MetzScan
       SYNTHETIC_DECLARATION_MARKER = "::<"
       private_constant :IGNORED_DECLARATION_NAMES, :SYNTHETIC_DECLARATION_MARKER
 
-      Finding = Struct.new(:source, :rule_id, :message, :base_name, :descendants, :locations, :why_it_matters,
-                           :project_analyzer_status, :confidence, :triage_severity, :triage_summary,
+      Finding = Struct.new(:source, :rule_id, :message, :base_name, :descendants, :locations, :primary_location,
+                           :why_it_matters, :project_analyzer_status, :confidence, :triage_severity, :triage_summary,
                            :project_analyzer_metadata, :suggested_next_moves, keyword_init: true) do
-        def occurrences = locations
+        def occurrences = [primary_location].compact
       end
       Location = Struct.new(:name, :path, keyword_init: true)
 
@@ -62,16 +62,21 @@ module MetzScan
       end
 
       def build_finding(base_name, descendants)
-        Finding.new(source: index.backend_name.to_s, rule_id: RULE_ID, message: message_for(base_name, descendants),
-                    base_name: base_name, descendants: descendants, locations: locations_for(descendants),
-                    why_it_matters: WHY, suggested_next_moves: SUGGESTED_NEXT_MOVES,
-                    **triage_for(base_name, descendants))
+        descendant_locations = locations_for(descendants)
+        Finding.new(finding_attributes(base_name, descendants, descendant_locations))
       end
 
-      def triage_for(base_name, descendants)
+      def finding_attributes(base_name, descendants, descendant_locations)
+        { source: index.backend_name.to_s, rule_id: RULE_ID, message: message_for(base_name, descendants),
+          base_name: base_name, descendants: descendants, locations: descendant_locations,
+          primary_location: primary_location_for(base_name, descendant_locations), why_it_matters: WHY,
+          suggested_next_moves: SUGGESTED_NEXT_MOVES }.merge(triage_for(base_name, descendants, descendant_locations))
+      end
+
+      def triage_for(base_name, descendants, descendant_locations)
         { project_analyzer_status: PROJECT_ANALYZER_STATUS, confidence: CONFIDENCE,
           triage_severity: TRIAGE_SEVERITY, triage_summary: TRIAGE_SUMMARY,
-          project_analyzer_metadata: project_analyzer_metadata_for(base_name, descendants) }
+          project_analyzer_metadata: project_analyzer_metadata_for(base_name, descendants, descendant_locations) }
       end
 
       def message_for(base_name, descendants)
@@ -82,9 +87,18 @@ module MetzScan
         descendants.filter_map { |name| location_for(name) }
       end
 
-      def project_analyzer_metadata_for(base_name, descendants)
+      def primary_location_for(base_name, descendant_locations)
+        location_for(base_name) || descendant_locations.first
+      end
+
+      def project_analyzer_metadata_for(base_name, descendants, descendant_locations)
         { "base_name" => base_name, "descendants" => descendants,
-          "descendant_count" => descendants.size, "source" => index.backend_name.to_s }
+          "descendant_count" => descendants.size, "descendant_locations" => location_metadata(descendant_locations),
+          "source" => index.backend_name.to_s }
+      end
+
+      def location_metadata(locations)
+        locations.map { |location| { "name" => location.name, "path" => location.path } }
       end
 
       def location_for(name)

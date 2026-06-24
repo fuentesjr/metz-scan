@@ -282,8 +282,9 @@ Risks:
 - The current auto-discovery path reports Ruby core declarations and Rubydex
   synthetic declarations, which creates obvious false positives in user-facing
   `scan --project-analyzers` output.
-- Findings expand to one offense per descendant location, so noisy roots can
-  create high offense counts even when the underlying finding count is smaller.
+- Before grouped output, findings expanded to one offense per descendant
+  location, so noisy roots could create high offense counts even when the
+  underlying finding count was smaller.
 - Location fidelity remains file-level; Rubydex exposes declaration paths here,
   but the adapter does not provide precise class-definition line/column data.
 
@@ -292,9 +293,8 @@ Decision:
 - Keep DeepInheritanceTree **Experimental** and opt-in.
 - Keep filtering Ruby core roots and synthetic declaration names from
   auto-discovered candidates.
-- Consider grouping output by base declaration, or otherwise reducing
-  per-descendant offense expansion, before calibrating high-volume applications
-  again.
+- Group output by base declaration, or otherwise reduce per-descendant offense
+  expansion, before calibrating high-volume applications again.
 
 Post-filter expanded calibration on 2026-06-24 used only the local fixture and
 repo-local sparse checkouts under `tmp/project-analyzer-calibration/apps/`. The
@@ -330,12 +330,41 @@ Post-filter decision:
 - The core/synthetic filter is worth keeping; the corrected run found zero
   remaining `BasicObject`, `Object`, `Kernel`, `Module`, `Class`, or `::<`
   synthetic declaration names in findings.
-- The next implementation target should be grouping DeepInheritanceTree output
-  by base declaration, or otherwise emitting one primary finding per broad root
-  with descendant examples in metadata. Per-descendant offense expansion is the
-  main blocker now.
+- Grouping DeepInheritanceTree output by base declaration is the next
+  implementation target. It should emit one primary finding per broad root with
+  descendant examples in metadata. Per-descendant offense expansion is the main
+  blocker now.
 - Do not narrow auto-discovered roots yet. The largest remaining roots are local
   application declarations rather than obvious external noise, and they contain
   useful signal once grouped.
 - Location fidelity remains secondary. File-level descendant paths are enough to
   identify the output-volume problem and the broad roots causing it.
+
+Grouped-output follow-up on 2026-06-24: `MetzProject/DeepInheritanceTree` now
+emits one primary offense at the base declaration for each finding. Descendant
+declaration paths remain available in `project_analyzer.descendant_locations`,
+and findings without a base declaration path fall back to the first descendant
+path so the finding stays visible. The grouped run reused only the local fixture
+and repo-local sparse checkouts under `tmp/project-analyzer-calibration/apps/`.
+
+| Project | Revision | Base findings | Grouped offenses | Descendant locations | Largest descendant count |
+| --- | --- | ---: | ---: | ---: | ---: |
+| `test/fixtures/sample_app` | local fixture | 1 | 1 | 6 | 6 |
+| `discourse/discourse` | `2115f1cac5f9` | 98 | 98 | 2837 | 230 |
+| `mastodon/mastodon` | `34bbb4748223` | 95 | 95 | 6157 | 337 |
+| `forem/forem` | `d9a393f1d502` | 41 | 41 | 1556 | 155 |
+| `decidim/decidim` | `b2001fa7c9d2` | 0 | 0 | 0 | 0 |
+| `openfoodfoundation/openfoodnetwork` | `be9d51ab32a6` | 62 | 62 | 2036 | 119 |
+| `solidusio/solidus` | `8d781ac742e3` | 0 | 0 | 0 | 0 |
+
+Grouped-output decision:
+
+- Keep DeepInheritanceTree **Experimental** and opt-in. The output volume is now
+  reviewable by finding count, but Discourse, Mastodon, and Open Food Network
+  still produce enough broad-root findings that default output would be too
+  assertive.
+- Keep descendant-location metadata. It preserves review context without
+  multiplying RuboCop/SARIF/GitHub annotation volume.
+- Investigate root-selection quality before graduation. The remaining signal is
+  local, but many high-count roots are broad concerns and helpers rather than
+  conventional inheritance bases.

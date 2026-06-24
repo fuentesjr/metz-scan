@@ -42,6 +42,13 @@ module MetzScan
         assert_equal %w[Account Order], finding.descendants
       end
 
+      def test_uses_first_descendant_location_when_base_declaration_has_no_path
+        finding = InheritanceDescendants.new(index: missing_base_path_index, base_names: "ApplicationController",
+                                             minimum_descendants: 2).call.first
+
+        assert_equal ["/app/admin_controller.rb"], finding.occurrences.map(&:path)
+      end
+
       private
 
       def analyze_fake_index
@@ -66,16 +73,32 @@ module MetzScan
         assert_equal "early", finding.confidence
         assert_equal "manual review", finding.triage_severity
         assert_match(/inheritance/i, finding.triage_summary)
+        assert_project_analyzer_metadata(finding)
+      end
+
+      def assert_project_analyzer_metadata(finding)
         assert_equal "ApplicationController", finding.project_analyzer_metadata.fetch("base_name")
+        assert_equal expected_descendant_locations, finding.project_analyzer_metadata.fetch("descendant_locations")
       end
 
       def assert_finding_descendants(finding)
         assert_equal %w[AdminController OrdersController], finding.descendants
         assert_equal fake_paths, finding.locations.map(&:path)
+        assert_equal ["/app/application_controller.rb"], finding.occurrences.map(&:path)
+      end
+
+      def expected_descendant_locations
+        [{ "name" => "AdminController", "path" => "/app/admin_controller.rb" },
+         { "name" => "OrdersController", "path" => "/app/orders_controller.rb" }]
       end
 
       def fake_index
         FakeIndex.new(available: true, descendants: fake_descendants, declarations: fake_declarations)
+      end
+
+      def missing_base_path_index
+        declarations = fake_declarations.reject { |declaration| declaration.name == "ApplicationController" }
+        FakeIndex.new(available: true, descendants: fake_descendants, declarations: declarations)
       end
 
       def fake_descendants

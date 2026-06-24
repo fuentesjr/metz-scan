@@ -119,7 +119,7 @@ Run the spike against the current workspace:
 bundle exec ruby script/inheritance_descendants_spike.rb RuboCop::Cop::Metz::Base
 ```
 
-Current output with Rubydex `0.2.3`:
+Current output with Rubydex `0.2.5`:
 
 ```text
 backend: rubydex
@@ -154,8 +154,10 @@ Limitations:
   exposed by the adapter yet.
 - Auto-discovered candidates now filter Ruby core declarations and Rubydex
   synthetic declarations such as `Object` or `ApplicationRecord::<ApplicationRecord>`.
-  Post-filter calibration still shows too much output because large local roots
-  expand into one offense per descendant location.
+  Grouped output emits one offense at the base declaration and preserves
+  descendant paths in project-analyzer metadata.
+- Post-grouping calibration still shows broad local roots that need triage before
+  this analyzer can move closer to default output.
 - Bounded path analysis only reports descendants when the base declaration is
   indexed too. For example, `test/fixtures/sample_app` has controllers that
   inherit from `ApplicationController`, but the fixture does not define
@@ -341,5 +343,6 @@ Reasons not to enable it by default yet:
   classes or modules with at least three known descendants. It depends on the
   optional Rubydex-backed project index, so it contributes no findings when
   Rubydex is not enabled. Ruby core and Rubydex synthetic declarations are
-  filtered from auto-discovered candidates; the remaining calibration blocker is
-  high-volume per-descendant output for broad local roots.
+  filtered from auto-discovered candidates. Findings emit one primary offense at
+  the base declaration while preserving descendant paths in metadata; the
+  remaining calibration concern is broad local root-selection quality.
