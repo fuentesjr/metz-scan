@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "rubocop"
+
 require_relative "../../analyzers/repeated_branching"
 require_relative "../../analyzers/service_soup"
 require_relative "../../analyzers/inheritance_descendants"
@@ -22,12 +24,18 @@ module MetzScan
         module_function
 
         def merge(parsed, paths, index: nil)
-          paths = analyzer_paths(parsed, paths)
-          findings = project_findings(paths, index: index)
+          findings = project_findings_for(paths, index: index)
           return parsed if findings.empty?
 
           merge_findings(parsed, findings)
           parsed
+        end
+
+        def project_findings_for(paths, index: nil)
+          paths = analyzer_paths(paths, index: index)
+          return [] if paths.empty? && !index
+
+          project_findings(paths, index: index)
         end
 
         def merge_findings(parsed, findings)
@@ -41,9 +49,14 @@ module MetzScan
           ANALYZERS.flat_map { |analyzer| analyzer.new(paths: paths, index: index).call }
         end
 
-        def analyzer_paths(parsed, paths)
-          inspected_paths = Array(parsed["files"]).filter_map { |file| file["path"] }
-          inspected_paths.empty? ? paths : inspected_paths
+        def analyzer_paths(paths, index: nil)
+          return Array(paths) if index
+
+          rubocop_target_files(paths)
+        end
+
+        def rubocop_target_files(paths)
+          RuboCop::TargetFinder.new(RuboCop::ConfigStore.new, {}).find(paths, :all_file_types)
         end
 
         def merge_offenses(parsed, grouped_offenses)
@@ -62,7 +75,15 @@ module MetzScan
         end
 
         def append_file(files, path)
-          { "path" => path, "offenses" => [] }.tap { |file| files << file }
+          { "path" => display_path(path), "offenses" => [] }.tap { |file| files << file }
+        end
+
+        def display_path(path)
+          expanded_path = File.expand_path(path)
+          cwd = "#{File.expand_path(Dir.pwd)}#{File::SEPARATOR}"
+          return expanded_path.delete_prefix(cwd) if expanded_path.start_with?(cwd)
+
+          path
         end
 
         def update_summary(parsed, findings, project_offenses)

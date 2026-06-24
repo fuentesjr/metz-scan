@@ -211,11 +211,19 @@ If your shell resolves to macOS system Ruby, switch to a Ruby `>= 3.3` before ru
 Run the local checks:
 
 ```bash
+bin/check_dogfood
 bundle exec rake
 bundle exec rubocop
 bin/check_dependency_direction
 bin/check_sample_app_frozen
 ```
+
+`bin/check_dogfood` runs `metz-scan` against this repository with
+`--project-analyzers` enabled and requires the optional `rubydex` bundle group.
+It accepts only the current exact `MetzProject/DeepInheritanceTree` offense on
+`rubocop-metz/lib/rubocop/cop/metz/base.rb` (`RuboCop::Cop::Metz::Base` has
+nine descendants). It fails if any non-project-analyzer offense appears or if
+that project-analyzer signature changes.
 
 Build both gems:
 

@@ -62,12 +62,12 @@ module MetzScan
         assert_summary_counts_match_merged_files(parsed)
       end
 
-      def test_uses_rubocop_inspected_files_when_available
+      def test_uses_rubocop_target_files_when_json_files_are_partial
         write_repeated_branching_files
         parsed = { "files" => [{ "path" => branching_path(0), "offenses" => [] }] }
 
         Scan::ProjectAnalyzerRunner.merge(parsed, [@tmpdir])
-        refute_includes cop_names(parsed), "MetzProject/RepeatedBranching"
+        assert_includes cop_names(parsed), "MetzProject/RepeatedBranching"
       end
 
       private
@@ -137,6 +137,71 @@ module MetzScan
 
       def write_service_soup_file
         File.write(File.join(@tmpdir, "service_soup.rb"), PROJECT_ANALYZER_SERVICE_SOUP_SOURCE)
+      end
+    end
+
+    class ScanProjectAnalyzerRunnerDisplayPathTest < Minitest::Test
+      def teardown
+        FileUtils.rmdir(tmp_root) if File.directory?(tmp_root) && Dir.empty?(tmp_root)
+      end
+
+      def test_appends_project_local_files_with_relative_paths
+        with_project_local_branching_files do |relative_path|
+          parsed = merge_project_analyzers(relative_path)
+          assert_relative_project_path(parsed, relative_path)
+        end
+      end
+
+      private
+
+      def with_project_local_branching_files
+        FileUtils.mkdir_p(tmp_root)
+        Dir.mktmpdir("metz-scan-project-analyzer-runner-test", tmp_root) { |dir| yield prepare_branching_dir(dir) }
+      end
+
+      def prepare_branching_dir(dir)
+        write_repeated_branching_files(dir)
+        dir.delete_prefix("#{Dir.pwd}/")
+      end
+
+      def write_repeated_branching_files(dir)
+        2.times { |index| File.write(File.join(dir, "branching_#{index}.rb"), PROJECT_ANALYZER_BRANCHING_SOURCE) }
+      end
+
+      def merge_project_analyzers(path)
+        { "files" => [], "summary" => { "offense_count" => 0 } }.tap do |parsed|
+          Scan::ProjectAnalyzerRunner.merge(parsed, [path])
+        end
+      end
+
+      def assert_relative_project_path(parsed, relative_path)
+        assert_includes file_paths(parsed), File.join(relative_path, "branching_0.rb")
+        refute(file_paths(parsed).any? { |path| path.start_with?(Dir.pwd) })
+      end
+
+      def file_paths(parsed)
+        parsed.fetch("files").map { |file| file.fetch("path") }
+      end
+
+      def tmp_root
+        File.expand_path("../../../scan-test-tmp", __dir__)
+      end
+    end
+
+    class ScanProjectAnalyzerRunnerExclusionTest < Minitest::Test
+      def test_project_analyzers_honor_rubocop_excluded_directories
+        parsed = merge_project_analyzers("test/fixtures/service_soup_app")
+
+        assert_empty parsed.fetch("files")
+        refute parsed.fetch("summary").key?("project_analyzers")
+      end
+
+      private
+
+      def merge_project_analyzers(path)
+        { "files" => [], "summary" => { "offense_count" => 0 } }.tap do |parsed|
+          Scan::ProjectAnalyzerRunner.merge(parsed, [path])
+        end
       end
     end
   end

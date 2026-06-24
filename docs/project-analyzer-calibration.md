@@ -118,6 +118,26 @@ higher-volume target, such as Mastodon, before changing detector mechanics
 again. The calibration evidence now points more to confidence, severity, and
 summary interpretation than to another immediate analyzer rule change.
 
+High-volume sampling follow-up on 2026-06-24: direct `ProjectAnalyzerRunner`
+text rendering against the repo-local Mastodon checkout produced 57 findings
+and 83 offenses. The summary remained readable, but the first pass exposed
+overly long absolute paths for project-analyzer-only file entries. The runner
+now displays appended project-local files relative to the current working
+directory while preserving absolute paths outside the project. After that
+normalization, the Mastodon sample used readable `tmp/...` paths without
+changing finding counts.
+
+Dogfood follow-up on 2026-06-24: project analyzers now use RuboCop target-file
+selection for normal scans, so `AllCops: Exclude` applies to project-analyzer
+input as well as RuboCop-backed cops. `bin/check_dogfood` runs
+`metz-scan scan . --project-analyzers --format json`, requires the optional
+Rubydex bundle group, and accepts only the current exact
+`MetzProject/DeepInheritanceTree` offense on
+`rubocop-metz/lib/rubocop/cop/metz/base.rb` where `RuboCop::Cop::Metz::Base`
+has nine descendants. That makes the dogfood gate fail when any
+non-project-analyzer offense appears or when the accepted project-analyzer
+signature changes.
+
 ## `MetzProject/ServiceSoup`
 
 Result: keep as **Candidate**, behind `--project-analyzers`.

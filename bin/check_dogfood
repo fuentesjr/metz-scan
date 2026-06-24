@@ -1,0 +1,101 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "json"
+require "open3"
+
+ROOT = File.expand_path("..", __dir__)
+COMMAND = ["bundle", "exec", "bin/metz-scan", "scan", ".", "--project-analyzers", "--format", "json"].freeze
+RUBYDEX_CHECK = ["bundle", "exec", "ruby", "-e", "require 'rubydex'"].freeze
+PROJECT_ANALYZER_PREFIX = "MetzProject/"
+BASELINE = [
+  {
+    "cop_name" => "MetzProject/DeepInheritanceTree",
+    "path" => "rubocop-metz/lib/rubocop/cop/metz/base.rb",
+    "message" => "RuboCop::Cop::Metz::Base has 9 descendants; " \
+                 "consider whether shared behavior is becoming too broad.",
+    "base_name" => "RuboCop::Cop::Metz::Base",
+    "descendant_count" => 9
+  }
+].freeze
+
+def fail_with(message, detail = nil)
+  warn "check_dogfood: #{message}"
+  warn detail if detail && !detail.empty?
+  exit 1
+end
+
+def run_scan
+  Open3.capture3(*COMMAND, chdir: ROOT)
+end
+
+def ensure_rubydex_available
+  _stdout, stderr, status = Open3.capture3(*RUBYDEX_CHECK, chdir: ROOT)
+  return if status.success?
+
+  fail_with("rubydex is required for the dogfood baseline", rubydex_setup_message(stderr))
+end
+
+def rubydex_setup_message(stderr)
+  ["Enable the optional bundle group:",
+   "  bundle config set --local with rubydex",
+   "  bundle install",
+   stderr].join("\n")
+end
+
+def parse_json(stdout, stderr, status)
+  JSON.parse(stdout)
+rescue JSON::ParserError
+  detail = [stderr, stdout].reject(&:empty?).join("\n")
+  fail_with("metz-scan did not produce JSON output (status #{status.exitstatus})", detail)
+end
+
+def offenses(parsed)
+  Array(parsed["files"]).flat_map do |file|
+    Array(file["offenses"]).map { |offense| signature(file, offense) }
+  end
+end
+
+def signature(file, offense)
+  signature_fields(file, offense).merge(project_signature_fields(offense)).compact
+end
+
+def signature_fields(file, offense)
+  {
+    "cop_name" => offense.fetch("cop_name"),
+    "path" => file.fetch("path"),
+    "message" => offense.fetch("message")
+  }
+end
+
+def project_signature_fields(offense)
+  {
+    "base_name" => offense.dig("project_analyzer", "base_name"),
+    "descendant_count" => offense.dig("project_analyzer", "descendant_count")
+  }
+end
+
+def project_analyzer?(signature)
+  signature.fetch("cop_name").start_with?(PROJECT_ANALYZER_PREFIX)
+end
+
+def sorted_json(value)
+  JSON.pretty_generate(value.sort_by { |entry| entry.values_at("cop_name", "path", "message").join("\0") })
+end
+
+ensure_rubydex_available
+stdout, stderr, status = run_scan
+parsed = parse_json(stdout, stderr, status)
+actual = offenses(parsed)
+non_project = actual.reject { |entry| project_analyzer?(entry) }
+fail_with("non-project-analyzer offenses found", sorted_json(non_project)) unless non_project.empty?
+
+project = actual.select { |entry| project_analyzer?(entry) }
+unless sorted_json(project) == sorted_json(BASELINE)
+  fail_with(
+    "project-analyzer findings differ from accepted baseline",
+    "Expected:\n#{sorted_json(BASELINE)}\nActual:\n#{sorted_json(project)}"
+  )
+end
+
+puts "check_dogfood: PASS (accepted project-analyzer baseline: #{BASELINE.size} finding)"
