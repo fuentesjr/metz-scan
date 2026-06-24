@@ -54,7 +54,8 @@ module MetzScan
 
         def emit_project_analyzer_summary_heading(summary)
           stdout.puts "Project analyzers: #{count_label(summary.fetch('finding_count'), 'finding')}, " \
-                      "#{count_label(summary.fetch('offense_count'), 'offense')}"
+                      "#{count_label(summary.fetch('offense_count'), 'offense')} " \
+                      "(opt-in advisory signals; review in context)"
         end
 
         def emit_project_analyzer_rule_summaries(summary)
@@ -63,8 +64,8 @@ module MetzScan
 
         def project_analyzer_rule_summary(rule)
           "#{rule.fetch('cop_name')}: #{count_label(rule.fetch('finding_count'), 'finding')}, " \
-            "#{count_label(rule.fetch('offense_count'), 'offense')}, #{rule.fetch('status')}, " \
-            "#{rule.fetch('confidence')} confidence, #{rule.fetch('triage_severity')}"
+            "#{count_label(rule.fetch('offense_count'), 'offense')}, status: #{rule.fetch('status')}, " \
+            "confidence: #{rule.fetch('confidence')}, severity: #{rule.fetch('triage_severity')}"
         end
 
         def emit_why_block(cop_name, why)

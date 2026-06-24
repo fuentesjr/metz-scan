@@ -74,7 +74,8 @@ module MetzScan
         render_project_analyzer_annotations
 
         assert_match(/::Order#status branches in 2 files\./, annotation_lines.first)
-        assert_includes annotation_lines.first, "Triage: Experimental, early confidence, manual review."
+        assert_includes annotation_lines.first,
+                        "Triage: status: experimental; confidence: early; severity: manual review."
         assert_includes annotation_lines.first, "Useful signal, not proof; review repeated decisions in context."
       end
 

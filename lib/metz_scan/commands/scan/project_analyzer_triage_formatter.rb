@@ -16,23 +16,19 @@ module MetzScan
           return unless details.any? || !blank?(summary)
           return summary.to_s if details.empty?
 
-          ["Triage: #{details.join(', ')}.", summary].compact.join(" ")
+          ["Triage: #{details.join('; ')}.", summary].compact.join(" ")
         end
 
         def triage_details(metadata)
           [
-            capitalized(metadata["status"]),
-            confidence(metadata["confidence"]),
-            metadata["triage_severity"]
+            labeled("status", metadata["status"]),
+            labeled("confidence", metadata["confidence"]),
+            labeled("severity", metadata["triage_severity"])
           ].compact
         end
 
-        def capitalized(value)
-          value.to_s.capitalize unless blank?(value)
-        end
-
-        def confidence(value)
-          "#{value} confidence" unless blank?(value)
+        def labeled(name, value)
+          "#{name}: #{value}" unless blank?(value)
         end
 
         def blank?(value)

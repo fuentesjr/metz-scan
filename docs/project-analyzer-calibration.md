@@ -98,10 +98,16 @@ Readiness by analyzer:
   mechanical output problems, but broad framework-style roots still need better
   semantic labeling or filtering before this analyzer should appear by default.
 
-Next non-release action: improve project-analyzer report language before
-changing detector mechanics again. The calibration evidence now points more to
-confidence, severity, and summary wording than to another immediate analyzer
-rule change.
+Reporting-language follow-up on 2026-06-24: text output now labels each
+project-analyzer summary with status, confidence, and severity, and the summary
+heading explicitly calls these findings opt-in advisory signals. Text and
+GitHub annotation triage lines now label the same status, confidence, and
+severity fields before the analyzer-specific triage summary.
+
+Next non-release action: sample the updated report language on real project
+output before changing detector mechanics again. The calibration evidence now
+points more to confidence, severity, and summary interpretation than to another
+immediate analyzer rule change.
 
 ## `MetzProject/ServiceSoup`
 

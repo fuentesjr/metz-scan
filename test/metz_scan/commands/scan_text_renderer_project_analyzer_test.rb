@@ -38,12 +38,15 @@ module MetzScan
       }.freeze
 
       def test_project_analyzer_summary_renders_before_rule_blocks
-        assert_match(/\AProject analyzers: 1 finding, 1 offense/, rendered)
-        assert_includes rendered, "MetzProject/RepeatedBranching: 1 finding, 1 offense, experimental"
+        assert_match(/\AProject analyzers: 1 finding, 1 offense \(opt-in advisory signals; review in context\)/,
+                     rendered)
+        assert_includes rendered,
+                        "MetzProject/RepeatedBranching: 1 finding, 1 offense, status: experimental, " \
+                        "confidence: early, severity: manual review"
       end
 
       def test_project_analyzer_block_renders_triage_line
-        assert_includes rendered, "Triage: Experimental, early confidence, manual review."
+        assert_includes rendered, "Triage: status: experimental; confidence: early; severity: manual review."
         assert_includes rendered, "Useful signal, not proof; review repeated decisions in context."
       end
 
