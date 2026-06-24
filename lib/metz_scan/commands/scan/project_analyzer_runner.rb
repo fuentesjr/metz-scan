@@ -2,6 +2,8 @@
 
 require_relative "../../analyzers/repeated_branching"
 require_relative "../../analyzers/service_soup"
+require_relative "../../analyzers/inheritance_descendants"
+require_relative "../../project_index"
 require_relative "project_analyzer_metadata"
 
 module MetzScan
@@ -12,13 +14,15 @@ module MetzScan
       module ProjectAnalyzerRunner
         ANALYZERS = [
           Analyzers::RepeatedBranching,
-          Analyzers::ServiceSoup
+          Analyzers::ServiceSoup,
+          Analyzers::InheritanceDescendants
         ].freeze
 
         module_function
 
-        def merge(parsed, paths)
-          findings = project_findings(analyzer_paths(parsed, paths))
+        def merge(parsed, paths, index: nil)
+          paths = analyzer_paths(parsed, paths)
+          findings = project_findings(paths, index: index)
           return parsed if findings.empty?
 
           merge_findings(parsed, findings)
@@ -31,8 +35,9 @@ module MetzScan
           update_summary(parsed, findings, entries.map { |entry| entry.fetch(:offense) })
         end
 
-        def project_findings(paths)
-          ANALYZERS.flat_map { |analyzer| analyzer.new(paths: paths).call }
+        def project_findings(paths, index: nil)
+          index ||= ProjectIndex.build(paths)
+          ANALYZERS.flat_map { |analyzer| analyzer.new(paths: paths, index: index).call }
         end
 
         def analyzer_paths(parsed, paths)

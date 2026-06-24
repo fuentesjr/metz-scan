@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "offense_extractor"
+require_relative "project_analyzer_triage_formatter"
 
 module MetzScan
   module Commands
@@ -22,7 +23,7 @@ module MetzScan
         attr_reader :stdout
 
         def annotation_for(offense)
-          "::#{level_for(offense)} #{properties_for(offense)}::#{escape_data(offense[:message])}"
+          "::#{level_for(offense)} #{properties_for(offense)}::#{escape_data(message_for(offense))}"
         end
 
         def level_for(offense)
@@ -35,6 +36,10 @@ module MetzScan
 
         def annotation_properties(offense)
           { file: offense[:path], line: offense[:line], col: offense[:column], title: offense[:cop_name] }.compact
+        end
+
+        def message_for(offense)
+          [offense[:message], ProjectAnalyzerTriageFormatter.line(offense[:project_analyzer])].compact.join("\n")
         end
 
         def escape_property(value)

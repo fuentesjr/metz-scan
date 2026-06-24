@@ -105,7 +105,7 @@ Current project analyzer status:
 | --- | --- | --- |
 | `MetzProject/ServiceSoup` | Candidate | Methods that coordinate at least three distinct service constants, such as `ValidateOrder.call(...)` or `CapturePayment.new(...).call`. |
 | `MetzProject/RepeatedBranching` | Experimental | Repeated `case` expressions with the same lexical decision and branch-value set, or repeated `if`/`elsif` predicate chains with the same receiver and predicate set, across distinct Ruby files. |
-| `MetzProject/DeepInheritanceTree` | Deferred | Implemented as a prototype analyzer, but not run by `--project-analyzers` because it still needs explicit inheritance roots and index-backed semantics. |
+| `MetzProject/DeepInheritanceTree` | Experimental | Indexed inheritance roots with at least three known descendants, when the optional Rubydex-backed project index is available. |
 
 Project analyzers parse Ruby files only. They do not inspect ERB/HAML/SLIM
 templates, and they avoid semantic claims that require resolving runtime types.
@@ -114,10 +114,15 @@ does not prove that a constant is truly a service object. See
 [docs/project-analyzer-calibration.md](docs/project-analyzer-calibration.md) for
 current calibration notes.
 
+`DeepInheritanceTree` uses the optional Rubydex-backed project index. Without
+that optional bundle group enabled, `--project-analyzers` still runs and this
+analyzer simply contributes no findings.
+
 Project analyzer output includes status, confidence, triage severity, and triage
 summary metadata. Text output shows a project-analyzer summary before rule
-blocks; JSON output includes the same rollup under `summary.project_analyzers`
-and per-finding triage details under `project_analyzer`.
+blocks; JSON and SARIF output include machine-readable project-analyzer
+metadata, and GitHub annotations append the same triage context to the
+annotation message.
 
 Run safe auto-correction or preview it first:
 
@@ -149,9 +154,10 @@ bundle exec rubocop --plugin rubocop-metz
 
 ## Experimental project index
 
-`metz-scan` has an optional Rubydex spike for evaluating project-level design
-analysis. It is separate from `metz-scan scan --project-analyzers` and is not
-used by normal scans.
+`metz-scan` has an optional Rubydex-backed project index for evaluating
+project-level design analysis. Normal scans do not use it; `scan
+--project-analyzers` uses it opportunistically for `DeepInheritanceTree` when
+the optional bundle group is available.
 
 Enable the optional bundle group and run the spike:
 

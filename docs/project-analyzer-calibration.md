@@ -44,6 +44,11 @@ Triage-output follow-up on 2026-06-23: adding project-analyzer status,
 confidence, triage severity, triage summary, and `summary.project_analyzers`
 output metadata did not change the expanded calibration counts above.
 
+Output-format follow-up on 2026-06-23: JSON, SARIF, text, and GitHub annotation
+output now preserve project-analyzer triage context. `MetzProject/DeepInheritanceTree`
+has been revived behind `--project-analyzers` as an experimental,
+Rubydex-backed analyzer; broader calibration is still pending.
+
 ## `MetzProject/ServiceSoup`
 
 Result: keep as **Candidate**, behind `--project-analyzers`.

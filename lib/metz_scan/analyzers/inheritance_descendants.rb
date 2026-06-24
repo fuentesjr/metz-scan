@@ -7,6 +7,10 @@ module MetzScan
     # Reports configured inheritance roots with enough known descendants.
     class InheritanceDescendants
       RULE_ID = "MetzProject/DeepInheritanceTree"
+      PROJECT_ANALYZER_STATUS = "experimental"
+      CONFIDENCE = "early"
+      TRIAGE_SEVERITY = "manual review"
+      TRIAGE_SUMMARY = "Experimental inheritance signal; review broad base classes and descendant spread in context."
       WHY = "Large inheritance trees hide coupling and make changes expensive."
       SUGGESTED_NEXT_MOVES = [
         "Review whether the base class is carrying multiple responsibilities.",
@@ -14,24 +18,34 @@ module MetzScan
       ].freeze
 
       Finding = Struct.new(:source, :rule_id, :message, :base_name, :descendants, :locations, :why_it_matters,
-                           :suggested_next_moves, keyword_init: true)
+                           :project_analyzer_status, :confidence, :triage_severity, :triage_summary,
+                           :project_analyzer_metadata, :suggested_next_moves, keyword_init: true) do
+        def occurrences = locations
+      end
       Location = Struct.new(:name, :path, keyword_init: true)
 
-      def initialize(index:, base_names:, minimum_descendants: 1)
-        @index = index
-        @base_names = Array(base_names)
+      def initialize(paths: nil, index: nil, base_names: nil, minimum_descendants: 3)
+        @paths = Array(paths)
+        @index = index || ProjectIndex.build(@paths)
+        @base_names = Array(base_names).compact
         @minimum_descendants = minimum_descendants
       end
 
       def call
         return [] unless index.available?
 
-        base_names.filter_map { |base_name| finding_for(base_name) }
+        base_candidates.filter_map { |base_name| finding_for(base_name) }
       end
 
       private
 
-      attr_reader :index, :base_names, :minimum_descendants
+      attr_reader :paths, :index, :base_names, :minimum_descendants
+
+      def base_candidates
+        return base_names unless base_names.empty?
+
+        index.declarations.map(&:name).compact.uniq.sort
+      end
 
       def finding_for(base_name)
         descendants = sorted_descendants(base_name)
@@ -47,7 +61,10 @@ module MetzScan
       def build_finding(base_name, descendants)
         Finding.new(source: index.backend_name.to_s, rule_id: RULE_ID, message: message_for(base_name, descendants),
                     base_name: base_name, descendants: descendants, locations: locations_for(descendants),
-                    why_it_matters: WHY, suggested_next_moves: SUGGESTED_NEXT_MOVES)
+                    why_it_matters: WHY, suggested_next_moves: SUGGESTED_NEXT_MOVES,
+                    project_analyzer_status: PROJECT_ANALYZER_STATUS, confidence: CONFIDENCE,
+                    triage_severity: TRIAGE_SEVERITY, triage_summary: TRIAGE_SUMMARY,
+                    project_analyzer_metadata: project_analyzer_metadata_for(base_name, descendants))
       end
 
       def message_for(base_name, descendants)
@@ -56,6 +73,11 @@ module MetzScan
 
       def locations_for(descendants)
         descendants.filter_map { |name| location_for(name) }
+      end
+
+      def project_analyzer_metadata_for(base_name, descendants)
+        { "base_name" => base_name, "descendants" => descendants,
+          "descendant_count" => descendants.size, "source" => index.backend_name.to_s }
       end
 
       def location_for(name)

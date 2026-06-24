@@ -15,6 +15,13 @@ module MetzScan
         assert_finding_descendants(finding)
       end
 
+      def test_uses_index_declarations_as_base_candidates_when_unconfigured
+        finding = InheritanceDescendants.new(index: fake_index, minimum_descendants: 2).call.first
+
+        assert_equal "ApplicationController", finding.base_name
+        assert_equal %w[AdminController OrdersController], finding.descendants
+      end
+
       def test_skips_configured_base_below_threshold
         analyzer = InheritanceDescendants.new(index: fake_index, base_names: "ApplicationController",
                                               minimum_descendants: 3)
@@ -39,6 +46,11 @@ module MetzScan
         assert_equal "MetzProject/DeepInheritanceTree", finding.rule_id
         assert_equal "ApplicationController", finding.base_name
         assert_includes finding.message, "ApplicationController has 2 descendants"
+        assert_equal "experimental", finding.project_analyzer_status
+        assert_equal "early", finding.confidence
+        assert_equal "manual review", finding.triage_severity
+        assert_match(/inheritance/i, finding.triage_summary)
+        assert_equal "ApplicationController", finding.project_analyzer_metadata.fetch("base_name")
         refute_empty finding.suggested_next_moves
       end
 
@@ -56,7 +68,8 @@ module MetzScan
       end
 
       def fake_declarations
-        fake_paths.map { |path| ProjectIndex::Declaration.new(name: declaration_name(path), path: path) }
+        [ProjectIndex::Declaration.new(name: "ApplicationController", path: "/app/application_controller.rb")] +
+          fake_paths.map { |path| ProjectIndex::Declaration.new(name: declaration_name(path), path: path) }
       end
 
       def fake_paths

@@ -22,6 +22,23 @@ module MetzScan
                              "location" => { "line" => 7, "column" => 1 } }] }
         ]
       }.freeze
+      PROJECT_ANALYZER_PARSED = {
+        "files" => [
+          { "path" => "lib/foo.rb",
+            "offenses" => [
+              { "cop_name" => "MetzProject/RepeatedBranching",
+                "message" => "Order#status branches in 2 files.",
+                "severity" => "refactor",
+                "location" => { "start_line" => 10, "start_column" => 1 },
+                "project_analyzer" => {
+                  "status" => "experimental",
+                  "confidence" => "early",
+                  "triage_severity" => "manual review",
+                  "triage_summary" => "Useful signal, not proof; review repeated decisions in context."
+                } }
+            ] }
+        ]
+      }.freeze
 
       def setup
         @stdout = StringIO.new
@@ -53,10 +70,22 @@ module MetzScan
         assert_match(/::Use 100%25%0Anow%0Dplease\z/, annotation_lines.first)
       end
 
+      def test_project_analyzer_annotations_include_readable_triage_context
+        render_project_analyzer_annotations
+
+        assert_match(/::Order#status branches in 2 files\./, annotation_lines.first)
+        assert_includes annotation_lines.first, "Triage: Experimental, early confidence, manual review."
+        assert_includes annotation_lines.first, "Useful signal, not proof; review repeated decisions in context."
+      end
+
       private
 
       def render_annotations
         Scan::GithubAnnotationsRenderer.new(@stdout, PARSED).render
+      end
+
+      def render_project_analyzer_annotations
+        Scan::GithubAnnotationsRenderer.new(@stdout, PROJECT_ANALYZER_PARSED).render
       end
 
       def annotation_lines

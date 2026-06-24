@@ -90,9 +90,12 @@ index_errors: 0
 
 ## Experiment 2: Inheritance Descendants
 
-`MetzScan::Analyzers::InheritanceDescendants` is an optional prototype analyzer
-that consumes a `ProjectIndex` and reports descendants of configured base
-classes or modules. It is not wired into `metz-scan scan`.
+`MetzScan::Analyzers::InheritanceDescendants` is an optional project analyzer
+that consumes a `ProjectIndex` and reports descendants of configured or
+auto-discovered base classes or modules. It is wired into
+`metz-scan scan --project-analyzers` as `MetzProject/DeepInheritanceTree`, but
+only produces findings when the optional Rubydex-backed project index is
+available.
 
 Run the spike against the current workspace:
 
@@ -137,6 +140,9 @@ Limitations:
   indexed too. For example, `test/fixtures/sample_app` has controllers that
   inherit from `ApplicationController`, but the fixture does not define
   `ApplicationController`.
+- The scan integration uses auto-discovered indexed declarations as candidate
+  roots with a conservative descendant threshold; the spike script still accepts
+  an explicit base name for focused experiments.
 
 ## Experiment 3: Repeated Branching
 
@@ -311,7 +317,7 @@ Reasons not to enable it by default yet:
   `case` decisions with the same branch-value set, or repeated `if`/`elsif`
   predicate chains with the same receiver and predicate set, across distinct
   Ruby files.
-
-`MetzProject/DeepInheritanceTree` remains deferred. It requires explicit
-inheritance roots and index-backed semantics, so it is not part of the current
-`--project-analyzers` surface.
+- `MetzProject/DeepInheritanceTree` — experimental. Reports indexed inheritance
+  roots with at least three known descendants. It depends on the optional
+  Rubydex-backed project index, so it contributes no findings when Rubydex is
+  not enabled.

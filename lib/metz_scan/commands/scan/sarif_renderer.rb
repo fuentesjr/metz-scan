@@ -39,7 +39,15 @@ module MetzScan
 
         def result_for(offense)
           { "ruleId" => offense[:cop_name], "message" => { "text" => offense[:message] },
-            "locations" => [physical_location(offense)] }
+            "locations" => [physical_location(offense)] }.tap do |result|
+              add_project_analyzer_properties(result, offense)
+            end
+        end
+
+        def add_project_analyzer_properties(result, offense)
+          return unless offense[:project_analyzer]
+
+          result["properties"] = { "project_analyzer" => offense[:project_analyzer] }
         end
 
         def physical_location(offense)

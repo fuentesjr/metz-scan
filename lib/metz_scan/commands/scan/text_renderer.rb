@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "offense_extractor"
+require_relative "project_analyzer_triage_formatter"
 
 module MetzScan
   module Commands
@@ -74,11 +75,10 @@ module MetzScan
         end
 
         def emit_project_analyzer_triage(metadata)
-          return unless metadata
+          line = ProjectAnalyzerTriageFormatter.line(metadata)
+          return unless line
 
-          stdout.puts "  Triage: #{metadata.fetch('status').capitalize}, " \
-                      "#{metadata.fetch('confidence')} confidence, #{metadata.fetch('triage_severity')}. " \
-                      "#{metadata.fetch('triage_summary')}"
+          stdout.puts "  #{line}"
         end
 
         def count_label(count, noun)
