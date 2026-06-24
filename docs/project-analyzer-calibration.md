@@ -151,6 +151,29 @@ Expanded decision:
   fixture-backed examples. The current expanded findings all came from
   `Constant.call(...)` or `Constant.new(...).call`.
 
+Repo-local rerun on 2026-06-24 used the local service-soup fixture and sparse
+target checkouts under `tmp/project-analyzer-calibration/apps/`. Counts matched
+the expanded calibration and continued to look like plausible true positives.
+
+| Project | Revision | ServiceSoup findings | Distinct services |
+| --- | --- | ---: | ---: |
+| `test/fixtures/service_soup_app` | local fixture | 1 | 4 |
+| `discourse/discourse` | `2115f1cac5f9` | 1 | 3 |
+| `mastodon/mastodon` | `34bbb4748223` | 3 | 11 |
+| `forem/forem` | `d9a393f1d502` | 2 | 7 |
+| `decidim/decidim` | `b2001fa7c9d2` | 0 | 0 |
+| `openfoodfoundation/openfoodnetwork` | `be9d51ab32a6` | 0 | 0 |
+| `solidusio/solidus` | `8d781ac742e3` | 0 | 0 |
+
+Rerun decision:
+
+- No implementation change is warranted from this pass. The findings remain
+  sparse and reviewable, and the current supported call shapes are sufficient
+  for the observed examples.
+- Keep ServiceSoup **Candidate** and opt-in. It has the strongest true-positive
+  evidence of the three project analyzers, but not enough breadth yet for
+  default output.
+
 ## `MetzProject/RepeatedBranching`
 
 Result: keep as **Experimental**, behind `--project-analyzers`.
