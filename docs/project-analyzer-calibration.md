@@ -179,6 +179,17 @@ the larger experimental inheritance and repeated-branching sections. This
 confirms the Mastodon-driven priority change helps on a second high-volume
 target rather than only on the original sample.
 
+Readiness decision after second-target validation: keep all project analyzers
+behind `--project-analyzers`. The priority-ordered text report now makes the
+sparse `ServiceSoup` candidate visible even when `DeepInheritanceTree` dominates
+finding volume, but this improves triage rather than default-output readiness.
+`ServiceSoup` remains the strongest candidate and needs broader service-style
+coverage before graduation. `RepeatedBranching` remains experimental until its
+generic branch-subject findings have clearer confidence/severity interpretation.
+`DeepInheritanceTree` remains the main blocker for default project-analyzer
+output because large Rails and framework roots still require semantic labeling
+or filtering before they are safe to show by default.
+
 ## `MetzProject/ServiceSoup`
 
 Result: keep as **Candidate**, behind `--project-analyzers`.
