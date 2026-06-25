@@ -1,6 +1,6 @@
 # Project analyzer calibration
 
-Last updated: 2026-06-24.
+Last updated: 2026-06-25.
 
 This note records real-world calibration passes for the opt-in analyzers behind
 `metz-scan scan --project-analyzers`. The goal was to decide whether
@@ -134,6 +134,30 @@ input as well as RuboCop-backed cops. `bin/check_dogfood` runs
 Rubydex bundle group, and accepts zero project-analyzer findings. That makes
 the dogfood gate fail when any non-project-analyzer offense or project-analyzer
 finding appears.
+
+Report-priority follow-up on 2026-06-25: direct `ProjectAnalyzerRunner`
+sampling against the repo-local Mastodon checkout at `34bbb4748223` captured
+JSON, SARIF, text, and GitHub annotation output for `app/` and `lib/`. The
+sample used an ignored temporary harness:
+
+```bash
+bundle exec ruby tmp/project-analyzer-calibration/runs/20260625-140109/render_project_analyzer_sample.rb \
+  tmp/project-analyzer-calibration/runs/20260625-140109/mastodon \
+  mastodon \
+  tmp/project-analyzer-calibration/apps/mastodon/app \
+  tmp/project-analyzer-calibration/apps/mastodon/lib
+```
+
+It still produced 57 findings and 83 offenses: `ServiceSoup` had 3 findings
+and 12 offenses, `DeepInheritanceTree` had 40 findings and 40 offenses, and
+`RepeatedBranching` had 14 findings and 31 offenses. JSON, SARIF, and GitHub
+annotations preserved the triage metadata needed by downstream tools. Text
+output was readable but sorted project-analyzer blocks alphabetically, which
+buried the higher-confidence `ServiceSoup` candidate after the high-volume
+experimental inheritance and repeated-branching sections. Text output now
+keeps normal RuboCop cops first, then orders project-analyzer summary rows and
+blocks by triage priority so candidate/design-pressure signals surface before
+experimental/manual-review signals.
 
 ## `MetzProject/ServiceSoup`
 

@@ -10,6 +10,9 @@ module MetzScan
         ANSI_RESET = "\e[0m"
         ANSI_BOLD = "\e[1m"
         ANSI_CYAN = "\e[36m"
+        STATUS_PRIORITY = { "candidate" => 0, "experimental" => 1 }.freeze
+        CONFIDENCE_PRIORITY = { "high" => 0, "medium" => 1, "early" => 2 }.freeze
+        TRIAGE_SEVERITY_PRIORITY = { "design pressure" => 0, "manual review" => 1 }.freeze
 
         def initialize(stdout, parsed)
           @stdout = stdout
@@ -18,7 +21,7 @@ module MetzScan
 
         def render
           emit_project_analyzer_summary
-          OffenseExtractor.offenses(@parsed).group_by { |o| o[:cop_name] }.sort.each do |cop_name, list|
+          sorted_offense_blocks.each do |cop_name, list|
             render_block(cop_name, list)
           end
         end
@@ -59,13 +62,44 @@ module MetzScan
         end
 
         def emit_project_analyzer_rule_summaries(summary)
-          Array(summary["rules"]).each { |rule| stdout.puts "  #{project_analyzer_rule_summary(rule)}" }
+          sorted_project_analyzer_rules(summary).each { |rule| stdout.puts "  #{project_analyzer_rule_summary(rule)}" }
         end
 
         def project_analyzer_rule_summary(rule)
           "#{rule.fetch('cop_name')}: #{count_label(rule.fetch('finding_count'), 'finding')}, " \
             "#{count_label(rule.fetch('offense_count'), 'offense')}, status: #{rule.fetch('status')}, " \
             "confidence: #{rule.fetch('confidence')}, severity: #{rule.fetch('triage_severity')}"
+        end
+
+        def sorted_offense_blocks
+          OffenseExtractor.offenses(parsed)
+                          .group_by { |offense| offense[:cop_name] }
+                          .sort_by { |cop_name, list| offense_block_sort_key(cop_name, list.first) }
+        end
+
+        def offense_block_sort_key(cop_name, offense)
+          metadata = offense[:project_analyzer]
+          return [0, cop_name] unless metadata
+
+          [1, *project_analyzer_priority(metadata), cop_name]
+        end
+
+        def sorted_project_analyzer_rules(summary)
+          Array(summary["rules"]).sort_by do |rule|
+            [*project_analyzer_priority(rule), rule.fetch("cop_name")]
+          end
+        end
+
+        def project_analyzer_priority(metadata)
+          [
+            priority_for(STATUS_PRIORITY, metadata["status"]),
+            priority_for(CONFIDENCE_PRIORITY, metadata["confidence"]),
+            priority_for(TRIAGE_SEVERITY_PRIORITY, metadata["triage_severity"])
+          ]
+        end
+
+        def priority_for(priority_table, value)
+          priority_table.fetch(value, priority_table.size)
         end
 
         def emit_why_block(cop_name, why)
