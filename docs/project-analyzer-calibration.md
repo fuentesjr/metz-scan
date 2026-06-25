@@ -159,6 +159,26 @@ keeps normal RuboCop cops first, then orders project-analyzer summary rows and
 blocks by triage priority so candidate/design-pressure signals surface before
 experimental/manual-review signals.
 
+Second-target validation on 2026-06-25: direct `ProjectAnalyzerRunner`
+sampling against the repo-local Discourse checkout at `2115f1cac5f9` captured
+JSON, SARIF, text, and GitHub annotation output for `app/` and `lib/` using:
+
+```bash
+bundle exec ruby tmp/project-analyzer-calibration/runs/20260625-140109/render_project_analyzer_sample.rb \
+  tmp/project-analyzer-calibration/runs/20260625-143504/discourse \
+  discourse \
+  tmp/project-analyzer-calibration/apps/discourse/app \
+  tmp/project-analyzer-calibration/apps/discourse/lib
+```
+
+The sample produced 53 findings and 60 offenses: `ServiceSoup` had 1 finding
+and 3 offenses, `DeepInheritanceTree` had 47 findings and 47 offenses, and
+`RepeatedBranching` had 5 findings and 10 offenses. The text report now lists
+the `ServiceSoup` candidate/design-pressure summary and block first, ahead of
+the larger experimental inheritance and repeated-branching sections. This
+confirms the Mastodon-driven priority change helps on a second high-volume
+target rather than only on the original sample.
+
 ## `MetzProject/ServiceSoup`
 
 Result: keep as **Candidate**, behind `--project-analyzers`.
