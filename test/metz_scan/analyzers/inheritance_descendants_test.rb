@@ -65,7 +65,8 @@ module MetzScan
       def assert_finding_identity(finding)
         assert_equal "MetzProject/DeepInheritanceTree", finding.rule_id
         assert_equal "ApplicationController", finding.base_name
-        assert_includes finding.message, "ApplicationController has 2 descendants"
+        assert_includes finding.message, "ApplicationController"
+        assert_includes finding.message, "has 2 descendants"
       end
 
       def assert_finding_triage(finding)
@@ -189,6 +190,57 @@ module MetzScan
 
       def unlocated_root_declarations
         kinded_declarations + [declaration("ViteRails::TagHelpers", nil, nil)]
+      end
+
+      def declaration(name, path, kind = nil)
+        ProjectIndex::Declaration.new(name: name, path: path, kind: kind)
+      end
+    end
+
+    class InheritanceDescendantsRootKindTest < Minitest::Test
+      def test_labels_known_framework_style_roots
+        findings = InheritanceDescendants.new(index: root_kind_index, base_names: root_names,
+                                              minimum_descendants: 2).call
+
+        expected_root_kinds.each { |base_name, root_kind| assert_root_kind(findings, base_name, root_kind) }
+      end
+
+      private
+
+      def expected_root_kinds
+        { "ApplicationController" => "rails application base", "ActiveModel::Serializer" => "framework root",
+          "Api::BaseController" => "controller base", "ActivityPub::Serializer" => "serializer base",
+          "BaseService" => "application service base", "Jobs::Base" => "application job base" }
+      end
+
+      def assert_root_kind(findings, base_name, root_kind)
+        finding = findings.find { |candidate| candidate.base_name == base_name }
+
+        assert_equal root_kind, finding.project_analyzer_metadata.fetch("root_kind")
+        assert_includes finding.message, "#{base_name} (#{root_kind}) has 2 descendants"
+      end
+
+      def root_kind_index
+        FakeIndex.new(available: true, descendants: root_kind_descendants, declarations: root_kind_declarations)
+      end
+
+      def root_kind_descendants
+        root_names.to_h { |name| [name, descendants_for(name)] }
+      end
+
+      def root_kind_declarations
+        (root_names + root_names.flat_map { |name| descendants_for(name) }).map do |name|
+          declaration(name, "/app/#{name.downcase.tr(':', '_')}.rb", :class)
+        end
+      end
+
+      def root_names
+        ["ApplicationController", "ActiveModel::Serializer", "Api::BaseController", "ActivityPub::Serializer",
+         "BaseService", "Jobs::Base"]
+      end
+
+      def descendants_for(name)
+        ["#{name}ChildOne", "#{name}ChildTwo"]
       end
 
       def declaration(name, path, kind = nil)

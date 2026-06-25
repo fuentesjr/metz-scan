@@ -187,8 +187,8 @@ finding volume, but this improves triage rather than default-output readiness.
 coverage before graduation. `RepeatedBranching` remains experimental until its
 generic branch-subject findings have clearer confidence/severity interpretation.
 `DeepInheritanceTree` remains the main blocker for default project-analyzer
-output because large Rails and framework roots still require semantic labeling
-or filtering before they are safe to show by default. Follow-up tracking:
+output because large Rails and framework roots need more calibration after
+semantic labeling before they are safe to show by default. Follow-up tracking:
 GitHub issue #27 covers DeepInheritanceTree framework-root noise, and GitHub
 issue #28 covers RepeatedBranching generic branch-subject triage.
 
@@ -586,3 +586,36 @@ Located-root decision:
 - Treat this as a small quality cleanup, not a major calibration shift. The
   remaining large roots are mostly located local classes and should be assessed
   by semantic category rather than by location availability.
+
+Root-kind labeling follow-up on 2026-06-25: `MetzProject/DeepInheritanceTree`
+now labels common broad roots in both the visible message and
+`project_analyzer.root_kind` metadata. The first supported labels are
+`framework root`, `rails application base`, `controller base`,
+`serializer base`, `application service base`, and `application job base`.
+Direct `ProjectAnalyzerRunner` reruns against Mastodon `34bbb4748223` and
+Discourse `2115f1cac5f9` used the same `app/` and `lib/` paths as the
+report-priority samples. Finding counts did not change: Mastodon still produced
+40 DeepInheritanceTree findings, and Discourse still produced 47.
+
+Examples from the rerun:
+
+- `discourse`: `ActiveModel::Serializer (framework root)`,
+  `ApplicationController (rails application base)`,
+  `ApplicationSerializer (serializer base)`, and
+  `Jobs::Base (application job base)`.
+- `mastodon`: `ApplicationController (rails application base)`,
+  `ApplicationRecord (rails application base)`,
+  `Api::BaseController (controller base)`,
+  `ActivityPub::Serializer (serializer base)`, and
+  `BaseService (application service base)`.
+
+Root-kind decision:
+
+- Keep DeepInheritanceTree **Experimental** and opt-in. Root-kind labels make
+  broad-root findings more interpretable, but they are a triage aid rather than
+  a default-output signal.
+- Keep the labels as metadata as well as text. JSON, SARIF, and downstream
+  consumers can use `project_analyzer.root_kind` without parsing messages.
+- Do not filter root kinds yet. The labeled categories still need calibration
+  across more projects before deciding whether any category should be hidden,
+  downgraded, or summarized separately.

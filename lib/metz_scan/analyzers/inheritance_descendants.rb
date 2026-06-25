@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require_relative "../project_index"
+require_relative "inheritance_descendants/finding"
+require_relative "inheritance_descendants/root_kind"
 require_relative "occurrence"
 
 module MetzScan
@@ -20,17 +22,6 @@ module MetzScan
       IGNORED_DECLARATION_NAMES = %w[BasicObject Class Kernel Module Object].freeze
       SYNTHETIC_DECLARATION_MARKER = "::<"
       private_constant :IGNORED_DECLARATION_NAMES, :SYNTHETIC_DECLARATION_MARKER
-
-      Finding = Struct.new(:source, :rule_id, :message, :base_name, :descendants, :locations, :primary_location,
-                           :why_it_matters, :project_analyzer_status, :confidence, :triage_severity, :triage_summary,
-                           :project_analyzer_metadata, :suggested_next_moves, keyword_init: true) do
-        def occurrences = [primary_location].compact
-
-        def report_occurrences
-          occurrences.map { |occurrence| Occurrence.from(occurrence, context: base_name) }
-        end
-      end
-      Location = Struct.new(:name, :path, keyword_init: true)
 
       def initialize(paths: nil, index: nil, base_names: nil, minimum_descendants: 3)
         @paths = Array(paths)
@@ -86,20 +77,29 @@ module MetzScan
       end
 
       def finding_attributes(base_name, descendants, descendant_locations)
-        { source: index.backend_name.to_s, rule_id: RULE_ID, message: message_for(base_name, descendants),
+        root_kind = RootKind.for(base_name)
+        core_finding_attributes(base_name, descendants, descendant_locations, root_kind)
+          .merge(triage_for(base_name, descendants, descendant_locations, root_kind))
+      end
+
+      def core_finding_attributes(base_name, descendants, descendant_locations, root_kind)
+        { source: index.backend_name.to_s, rule_id: RULE_ID, message: message_for(base_name, descendants, root_kind),
           base_name: base_name, descendants: descendants, locations: descendant_locations,
           primary_location: primary_location_for(base_name, descendant_locations), why_it_matters: WHY,
-          suggested_next_moves: SUGGESTED_NEXT_MOVES }.merge(triage_for(base_name, descendants, descendant_locations))
+          suggested_next_moves: SUGGESTED_NEXT_MOVES }
       end
 
-      def triage_for(base_name, descendants, descendant_locations)
+      def triage_for(base_name, descendants, descendant_locations, root_kind)
         { project_analyzer_status: PROJECT_ANALYZER_STATUS, confidence: CONFIDENCE,
           triage_severity: TRIAGE_SEVERITY, triage_summary: TRIAGE_SUMMARY,
-          project_analyzer_metadata: project_analyzer_metadata_for(base_name, descendants, descendant_locations) }
+          project_analyzer_metadata: project_analyzer_metadata_for(base_name, descendants, descendant_locations,
+                                                                   root_kind) }
       end
 
-      def message_for(base_name, descendants)
-        "#{base_name} has #{descendants.size} descendants; consider whether shared behavior is becoming too broad."
+      def message_for(base_name, descendants, root_kind)
+        label = root_kind ? " (#{root_kind})" : ""
+        "#{base_name}#{label} has #{descendants.size} descendants; " \
+          "consider whether shared behavior is becoming too broad."
       end
 
       def locations_for(descendants)
@@ -110,10 +110,10 @@ module MetzScan
         location_for(base_name) || descendant_locations.first
       end
 
-      def project_analyzer_metadata_for(base_name, descendants, descendant_locations)
+      def project_analyzer_metadata_for(base_name, descendants, descendant_locations, root_kind)
         { "base_name" => base_name, "descendants" => descendants,
           "descendant_count" => descendants.size, "descendant_locations" => location_metadata(descendant_locations),
-          "source" => index.backend_name.to_s }
+          "root_kind" => root_kind, "source" => index.backend_name.to_s }.compact
       end
 
       def location_metadata(locations)
