@@ -60,11 +60,15 @@ bundle install
 ```bash
 bundle exec metz-scan rules
 bundle exec metz-scan explain Metz/DemeterTrainWreck
-bundle exec metz-scan scan test/fixtures/service_soup_app --project-analyzers --format text || true
+fixture_dir="$(mktemp -d)"
+cp -R test/fixtures/service_soup_app "$fixture_dir/service_soup_app"
+bundle exec metz-scan scan "$fixture_dir/service_soup_app" --project-analyzers --format text || true
+rm -rf "$fixture_dir"
 ```
 
-The service-soup fixture intentionally contains a project-analyzer finding, so
-the scan command prints findings and exits nonzero.
+The service-soup fixture intentionally contains a project-analyzer finding. The
+copy keeps the scan target outside this repository's fixture exclusions, so the
+scan command prints findings and exits nonzero.
 
 ## Usage
 

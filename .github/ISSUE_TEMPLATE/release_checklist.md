@@ -79,10 +79,13 @@ These commands are expected to exit nonzero when findings are reported; confirm
 that the output is well-formed for each format.
 
 ```bash
-bundle exec metz-scan scan test/fixtures/service_soup_app --project-analyzers --format text
-bundle exec metz-scan scan test/fixtures/service_soup_app --project-analyzers --format json
-bundle exec metz-scan scan test/fixtures/service_soup_app --project-analyzers --format sarif
-bundle exec metz-scan scan test/fixtures/service_soup_app --project-analyzers --format gh-annotations
+fixture_dir="$(mktemp -d)"
+cp -R test/fixtures/service_soup_app "$fixture_dir/service_soup_app"
+bundle exec metz-scan scan "$fixture_dir/service_soup_app" --project-analyzers --format text
+bundle exec metz-scan scan "$fixture_dir/service_soup_app" --project-analyzers --format json
+bundle exec metz-scan scan "$fixture_dir/service_soup_app" --project-analyzers --format sarif
+bundle exec metz-scan scan "$fixture_dir/service_soup_app" --project-analyzers --format gh-annotations
+rm -rf "$fixture_dir"
 ```
 
 - [ ] Confirm dry-run auto-fix does not modify files.

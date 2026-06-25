@@ -28,12 +28,16 @@ jobs:
 
       - name: Smoke GitHub annotations output
         run: |
+          fixture_dir="$(mktemp -d)"
+          cp -R test/fixtures/service_soup_app "$fixture_dir/service_soup_app"
+
           set +e
-          bundle exec metz-scan scan test/fixtures/service_soup_app \
+          bundle exec metz-scan scan "$fixture_dir/service_soup_app" \
             --project-analyzers \
             --format gh-annotations > /tmp/metz-gh-annotations.out
           status=$?
           set -e
+          rm -rf "$fixture_dir"
 
           cat /tmp/metz-gh-annotations.out
           test "$status" -eq 1
