@@ -56,13 +56,12 @@ module MetzScan
         assert_match(/\e\[/, tty_stdout.string)
       end
 
-      def test_json_flag_emits_array_of_six_entries
+      def test_json_flag_emits_entry_for_each_registered_metz_cop
         Rules.run(["--json"], stdout: @stdout, stderr: @stderr)
 
         parsed = JSON.parse(@stdout.string)
 
         assert_kind_of Array, parsed
-        assert_equal 6, parsed.size
         assert_equal ALL_METZ_COPS.sort, parsed.map { |entry| entry.fetch("name") }.sort
       end
 

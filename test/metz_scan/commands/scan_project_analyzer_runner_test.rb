@@ -39,10 +39,9 @@ module MetzScan
       end
 
       def test_active_project_analyzers_are_the_documented_opt_in_set
-        assert_equal(
-          [Analyzers::RepeatedBranching, Analyzers::ServiceSoup, Analyzers::InheritanceDescendants],
-          Scan::ProjectAnalyzerRunner::ANALYZERS
-        )
+        expected = [Analyzers::RepeatedBranching, Analyzers::ServiceSoup, Analyzers::InheritanceDescendants]
+
+        assert_equal expected.map(&:name).sort, Scan::ProjectAnalyzerRunner::ANALYZERS.map(&:name).sort
       end
 
       def test_matches_existing_file_entries_by_expanded_path
@@ -66,7 +65,7 @@ module MetzScan
         write_repeated_branching_files
         parsed = { "files" => [{ "path" => branching_path(0), "offenses" => [] }] }
 
-        Scan::ProjectAnalyzerRunner.merge(parsed, [@tmpdir])
+        Scan::ProjectAnalyzerRunner.merge!(parsed, [@tmpdir])
         assert_includes cop_names(parsed), "MetzProject/RepeatedBranching"
       end
 
@@ -74,7 +73,7 @@ module MetzScan
 
       def merge_project_analyzers
         { "files" => [], "summary" => { "offense_count" => 0 } }.tap do |parsed|
-          Scan::ProjectAnalyzerRunner.merge(parsed, [@tmpdir])
+          Scan::ProjectAnalyzerRunner.merge!(parsed, [@tmpdir])
         end
       end
 
@@ -170,7 +169,7 @@ module MetzScan
 
       def merge_project_analyzers(path)
         { "files" => [], "summary" => { "offense_count" => 0 } }.tap do |parsed|
-          Scan::ProjectAnalyzerRunner.merge(parsed, [path])
+          Scan::ProjectAnalyzerRunner.merge!(parsed, [path])
         end
       end
 
@@ -200,7 +199,7 @@ module MetzScan
 
       def merge_project_analyzers(path)
         { "files" => [], "summary" => { "offense_count" => 0 } }.tap do |parsed|
-          Scan::ProjectAnalyzerRunner.merge(parsed, [path])
+          Scan::ProjectAnalyzerRunner.merge!(parsed, [path])
         end
       end
     end

@@ -1,12 +1,17 @@
 # frozen_string_literal: true
 
 require_relative "../project_index"
+require_relative "occurrence"
+require_relative "project_analyzer_triage"
+require_relative "ruby_file_enumerator"
 require_relative "service_soup/workflow_collector"
 
 module MetzScan
   module Analyzers
     # Reports workflow methods that coordinate many service-style calls.
     class ServiceSoup
+      include ProjectAnalyzerTriage
+
       RULE_ID = "MetzProject/ServiceSoup"
       PROJECT_ANALYZER_STATUS = "candidate"
       CONFIDENCE = "medium"
@@ -18,12 +23,14 @@ module MetzScan
         "Introduce a workflow object that owns the multi-step process.",
         "Keep the controller or job action at one high-level command when possible."
       ].freeze
-      RUBY_GLOB = "**/*.rb"
-
       Finding = Struct.new(:source, :rule_id, :message, :workflow, :services, :occurrences,
                            :project_analyzer_status, :confidence, :triage_severity, :triage_summary,
                            :project_analyzer_metadata, :why_it_matters, :suggested_next_moves,
-                           keyword_init: true)
+                           keyword_init: true) do
+        def report_occurrences
+          occurrences.map { |occurrence| Occurrence.from(occurrence, context: workflow) }
+        end
+      end
 
       def initialize(paths: nil, index: nil, minimum_services: 3)
         @paths = Array(paths)
@@ -44,22 +51,7 @@ module MetzScan
       end
 
       def ruby_files
-        return ruby_files_for(paths) unless paths.empty?
-        return index.indexed_files if index&.available?
-
-        []
-      end
-
-      def ruby_files_for(paths)
-        paths.flat_map { |path| ruby_files_under(path) }.uniq.sort
-      end
-
-      def ruby_files_under(path)
-        expanded = File.expand_path(path)
-        return Dir.glob(File.join(expanded, RUBY_GLOB)) if File.directory?(expanded)
-        return [expanded] if File.file?(expanded) && File.extname(expanded) == ".rb"
-
-        []
+        RubyFileEnumerator.new(paths: paths, index: index).call
       end
 
       def finding_for(workflow)
@@ -80,15 +72,6 @@ module MetzScan
       def workflow_attributes(workflow, services)
         { source: source_name, rule_id: RULE_ID, message: message_for(workflow, services),
           workflow: workflow.name, services: services, occurrences: workflow.service_calls }
-      end
-
-      def project_analyzer_triage_attributes
-        { project_analyzer_status: PROJECT_ANALYZER_STATUS, confidence: CONFIDENCE,
-          triage_severity: TRIAGE_SEVERITY, triage_summary: TRIAGE_SUMMARY }
-      end
-
-      def source_name
-        index ? index.backend_name.to_s : "paths"
       end
 
       def service_names(workflow)

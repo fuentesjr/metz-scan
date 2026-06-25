@@ -12,6 +12,10 @@ module RuboCop
         # the operator method set, and the reverse-lookup table that powers
         # the unknown-receiver heuristic from §1 of the design doc.
         module TypeInference # rubocop:disable Metrics/ModuleLength
+          # The inference tables are conservative: unknown or missing return-type
+          # data is treated as advisory noise reduction (`nil`/`:unknown`) so
+          # the cop stays quiet when certainty is incomplete.
+
           PASS_THROUGH = %i[tap then yield_self itself dup clone freeze].to_set.freeze
 
           OPERATOR_METHODS = (

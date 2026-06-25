@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "../project_index"
+require_relative "occurrence"
 
 module MetzScan
   module Analyzers
@@ -24,6 +25,10 @@ module MetzScan
                            :why_it_matters, :project_analyzer_status, :confidence, :triage_severity, :triage_summary,
                            :project_analyzer_metadata, :suggested_next_moves, keyword_init: true) do
         def occurrences = [primary_location].compact
+
+        def report_occurrences
+          occurrences.map { |occurrence| Occurrence.from(occurrence, context: base_name) }
+        end
       end
       Location = Struct.new(:name, :path, keyword_init: true)
 

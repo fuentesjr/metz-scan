@@ -10,7 +10,7 @@ module MetzScan
       def test_merges_deep_inheritance_findings_from_project_index
         parsed = { "files" => [], "summary" => { "offense_count" => 0 } }
 
-        Scan::ProjectAnalyzerRunner.merge(parsed, [], index: deep_inheritance_index)
+        Scan::ProjectAnalyzerRunner.merge!(parsed, [], index: deep_inheritance_index)
 
         assert_deep_inheritance_output(parsed)
       end
@@ -43,8 +43,18 @@ module MetzScan
 
         assert_equal "experimental", offense.dig("project_analyzer", "status")
         assert_equal "ApplicationController", offense.dig("project_analyzer", "base_name")
+        assert_descendant_metadata(offense)
+        assert_report_location_metadata(offense)
+      end
+
+      def assert_descendant_metadata(offense)
         assert_equal expected_descendants, offense.dig("project_analyzer", "descendants")
         assert_equal expected_descendants.size, offense.dig("project_analyzer", "descendant_count")
+      end
+
+      def assert_report_location_metadata(offense)
+        assert_equal "fallback", offense.dig("project_analyzer", "report_location", "line_source")
+        assert_equal "ApplicationController", offense.dig("project_analyzer", "report_location", "context")
       end
 
       def assert_project_analyzer_summary(parsed)

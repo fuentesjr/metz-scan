@@ -1,5 +1,10 @@
 # `rubocop-metz` + `metz-scan` architecture
 
+> Historical note (2026-06-24): this document records the original design intent.
+> Some paths and proposed components below predate the current implementation. The current tree uses
+> `rubocop-metz/` at the repository root, `bin/metz-scan` for the CLI, scan renderers under
+> `lib/metz_scan/commands/scan/`, and project analyzers under `lib/metz_scan/analyzers/`.
+
 This design uses a **RuboCop extension gem** for file-local rule detection and correction, plus a thin wrapper CLI for richer reporting and project-level heuristics. That split matches RuboCop’s plugin model, custom cop APIs, formatter support, and safe versus unsafe autocorrect behavior, while leaving room for higher-order checks that do not map cleanly to a single cop.[web:32][web:26][web:37][web:7]
 
 ## Why this shape

@@ -78,7 +78,7 @@ module MetzScan
 
       def merge_project_analyzers
         { "files" => [], "summary" => { "offense_count" => 0 } }.tap do |parsed|
-          Scan::ProjectAnalyzerRunner.merge(parsed, [@tmpdir])
+          Scan::ProjectAnalyzerRunner.merge!(parsed, [@tmpdir])
         end
       end
 

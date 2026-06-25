@@ -23,7 +23,7 @@ module MetzScan
 
         module_function
 
-        def merge(parsed, paths, index: nil)
+        def merge!(parsed, paths, index: nil)
           findings = project_findings_for(paths, index: index)
           return parsed if findings.empty?
 

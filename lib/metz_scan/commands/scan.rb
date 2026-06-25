@@ -94,7 +94,7 @@ module MetzScan
 
       def scan(options)
         parsed = Runner.invoke(options.paths)
-        ProjectAnalyzerRunner.merge(parsed, options.paths) if options.project_analyzers
+        ProjectAnalyzerRunner.merge!(parsed, options.paths) if options.project_analyzers
         render(parsed, options.format)
         Runner.exit_code_for(parsed)
       end

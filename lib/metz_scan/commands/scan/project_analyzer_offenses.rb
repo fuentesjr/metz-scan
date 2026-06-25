@@ -21,24 +21,20 @@ module MetzScan
 
         def offenses_for(finding)
           locations_for(finding).map do |location|
-            { path: location.fetch(:path), offense: offense_for(finding, location.fetch(:line)) }
+            { path: location.path, offense: offense_for(finding, location) }
           end
         end
 
         def locations_for(finding)
-          Array(finding.occurrences).filter_map do |occurrence|
-            next unless occurrence.respond_to?(:path) && occurrence.path
-
-            { path: occurrence.path, line: occurrence.respond_to?(:line) ? occurrence.line : 1 }
-          end.uniq
+          Array(finding.report_occurrences).compact.uniq
         end
 
-        def offense_for(finding, line)
-          offense_metadata(finding).merge("location" => location_hash(line))
+        def offense_for(finding, occurrence)
+          offense_metadata(finding, occurrence).merge("location" => location_hash(occurrence.report_line))
         end
 
-        def offense_metadata(finding)
-          add_project_analyzer_metadata(common_offense_metadata(finding), finding)
+        def offense_metadata(finding, occurrence)
+          add_project_analyzer_metadata(common_offense_metadata(finding), finding, occurrence)
         end
 
         def common_offense_metadata(finding)
@@ -55,11 +51,16 @@ module MetzScan
             "suggested_next_moves" => suggested_next_moves_for(finding) }
         end
 
-        def add_project_analyzer_metadata(metadata, finding)
+        def add_project_analyzer_metadata(metadata, finding, occurrence)
           project_metadata = ProjectAnalyzerMetadata.offense_metadata(finding)
           return metadata if project_metadata.empty?
 
-          metadata.merge("project_analyzer" => project_metadata)
+          metadata.merge("project_analyzer" => project_metadata.merge(report_location_metadata(occurrence)))
+        end
+
+        def report_location_metadata(occurrence)
+          { "report_location" => { "line_source" => occurrence.line_source,
+                                   "context" => occurrence.context }.compact }
         end
 
         def suggested_next_moves_for(finding)

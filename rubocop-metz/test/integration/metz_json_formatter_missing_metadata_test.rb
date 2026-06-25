@@ -3,6 +3,7 @@
 require_relative "../test_helper"
 require "json"
 require "stringio"
+require "tmpdir"
 
 module ::RuboCop
   module Cop
@@ -66,12 +67,15 @@ class MetzJsonFormatterMissingMetadataTest < Minitest::Test
     with_probe_enlisted do
       output = StringIO.new
       fmt = RuboCop::Formatter::MetzJsonFormatter.new(output)
-      fixture_path = "/tmp/metz-missing-metadata-probe.rb"
-      File.write(fixture_path, "def f; end\n")
+      fixture_path = nil
 
-      fmt.started([fixture_path])
-      fmt.file_finished(fixture_path, [build_offense(cop_name: COP_NAME)])
-      fmt.finished([fixture_path])
+      Dir.mktmpdir do |dir|
+        fixture_path = File.join(dir, "metz-missing-metadata-probe.rb")
+        File.write(fixture_path, "def f; end\n")
+        fmt.started([fixture_path])
+        fmt.file_finished(fixture_path, [build_offense(cop_name: COP_NAME)])
+        fmt.finished([fixture_path])
+      end
 
       parsed = JSON.parse(output.string)
       assert parsed.key?("metadata"), "Top-level :metadata missing"
@@ -85,8 +89,6 @@ class MetzJsonFormatterMissingMetadataTest < Minitest::Test
       assert_nil offense["why_it_matters"]
       assert_nil offense["fix_safety"]
       assert_equal [], offense["suggested_next_moves"]
-    ensure
-      File.delete(fixture_path) if fixture_path && File.exist?(fixture_path)
     end
   end
 
