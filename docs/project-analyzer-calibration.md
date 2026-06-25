@@ -188,7 +188,9 @@ coverage before graduation. `RepeatedBranching` remains experimental until its
 generic branch-subject findings have clearer confidence/severity interpretation.
 `DeepInheritanceTree` remains the main blocker for default project-analyzer
 output because large Rails and framework roots still require semantic labeling
-or filtering before they are safe to show by default.
+or filtering before they are safe to show by default. Follow-up tracking:
+GitHub issue #27 covers DeepInheritanceTree framework-root noise, and GitHub
+issue #28 covers RepeatedBranching generic branch-subject triage.
 
 ## `MetzProject/ServiceSoup`
 
