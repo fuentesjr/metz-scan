@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
-require_relative "base"
+require "rubocop"
+require_relative "../../../metz/cop_metadata"
 
 module RuboCop
   module Cop
@@ -8,10 +9,11 @@ module RuboCop
       # Flags methods whose body exceeds the configured `Max` line count.
       # Wraps the semantics of core's `Metrics/MethodLength` with a stricter
       # default of 5 lines.
-      class MethodsTooLong < Base
+      class MethodsTooLong < RuboCop::Cop::Base
         include RuboCop::Cop::CodeLength
         include RuboCop::Cop::AllowedMethods
         include RuboCop::Cop::AllowedPattern
+        extend ::Metz::CopMetadata
 
         why_it_matters "Long methods hide multiple responsibilities and resist understanding at a glance."
         fix_safety :manual

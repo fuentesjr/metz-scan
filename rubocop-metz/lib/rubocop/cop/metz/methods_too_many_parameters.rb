@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
-require_relative "base"
+require "rubocop"
+require_relative "../../../metz/cop_metadata"
 
 module RuboCop
   module Cop
@@ -9,8 +10,9 @@ module RuboCop
       # Counts positional, optional, rest, keyword, and keyword-rest
       # parameters using the same rule as core's `Metrics/ParameterLists`,
       # with a stricter Metz default of 4.
-      class MethodsTooManyParameters < Base
+      class MethodsTooManyParameters < RuboCop::Cop::Base
         extend RuboCop::ExcludeLimit
+        extend ::Metz::CopMetadata
 
         why_it_matters "Long parameter lists hide coupling and make callers responsible for too many decisions."
         fix_safety :manual

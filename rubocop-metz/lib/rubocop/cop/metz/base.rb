@@ -2,24 +2,19 @@
 
 require "rubocop"
 require_relative "../../../metz/cop_metadata"
+require_relative "on_send_csend_bridge"
 
 module RuboCop
   module Cop
     module Metz
-      # Shared superclass for every Metz cop. Adds the metadata DSL and
-      # transparently aliases `on_csend` to whatever `on_send` a subclass
-      # defines, satisfying the project-wide csend invariant.
+      # Compatibility shim for downstream custom cops. First-party Metz cops
+      # inherit directly from RuboCop::Cop::Base and compose Metz helpers
+      # explicitly.
       class Base < RuboCop::Cop::Base
         exclude_from_registry
 
         include ::Metz::CopMetadata
-
-        class << self
-          def method_added(name)
-            super
-            alias_method(:on_csend, :on_send) if name == :on_send
-          end
-        end
+        include OnSendCsendBridge
       end
     end
   end

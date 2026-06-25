@@ -1,13 +1,10 @@
 # frozen_string_literal: true
 
-require_relative "../base"
+require_relative "../demeter_train_wreck" unless defined?(RuboCop::Cop::Metz::DemeterTrainWreck)
 
 module RuboCop
   module Cop
     module Metz
-      class DemeterTrainWreck < Base
-      end
-
       class DemeterTrainWreck
         # Static type-inference data for `Metz/DemeterTrainWreck`. Hosts the
         # `METHOD_RETURN_TYPES` map (per `docs/demeter-design.md` §5), the

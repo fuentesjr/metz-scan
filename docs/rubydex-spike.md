@@ -39,9 +39,9 @@ On this repo with Rubydex `0.2.5`:
 ```text
 backend: rubydex
 workspace: true
-indexed_files: 5425
-declarations: 49105
-ruby_documents: 2190
+indexed_files: 5433
+declarations: 49187
+ruby_documents: 2192
 minitest_test_descendants:
   - CopHelperTest
   - CopMetzControllersTooManyDirectCollaboratorsTest
@@ -54,10 +54,13 @@ metz_cop_declarations:
   - RuboCop::Cop::Metz::ClassesTooLong
   - RuboCop::Cop::Metz::ControllersTooManyDirectCollaborators
   - RuboCop::Cop::Metz::DemeterTrainWreck
+  - RuboCop::Cop::Metz::MetadataBoomProbe
+  - RuboCop::Cop::Metz::MetadataLessProbe
   - RuboCop::Cop::Metz::MethodsTooLong
   - RuboCop::Cop::Metz::MethodsTooManyParameters
+  - RuboCop::Cop::Metz::OnSendCsendBridge
   - RuboCop::Cop::Metz::ViewsDeepNavigation
-references_to RuboCop::Cop::Metz::Base: 12
+references_to RuboCop::Cop::Metz::Base: 3
 diagnostics: 187
 index_errors: 0
 ```
@@ -126,17 +129,13 @@ backend: rubydex
 workspace: true
 base_name: RuboCop::Cop::Metz::Base
 rule_id: MetzProject/DeepInheritanceTree
-descendants: 9
-  - MetzBaseTestCopDefaults
-  - MetzBaseTestCopMetadata
-  - MetzBaseTestCopOnSend
-  - RuboCop::Cop::Metz::ClassesTooLong
-  - RuboCop::Cop::Metz::ControllersTooManyDirectCollaborators
-  - RuboCop::Cop::Metz::DemeterTrainWreck
-  - RuboCop::Cop::Metz::MethodsTooLong
-  - RuboCop::Cop::Metz::MethodsTooManyParameters
-  - RuboCop::Cop::Metz::ViewsDeepNavigation
+descendants: 0
+  (none)
 ```
+
+The first-party cops now inherit directly from `RuboCop::Cop::Base` and compose
+Metz helpers explicitly, so `RuboCop::Cop::Metz::Base` remains only as a
+compatibility shim and no longer produces the dogfood inheritance finding.
 
 TDD evidence:
 

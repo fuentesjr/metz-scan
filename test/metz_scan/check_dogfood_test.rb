@@ -13,6 +13,13 @@ module MetzScan
       def success? = status.success?
     end
 
+    def test_no_offenses_passes
+      result = run_check_dogfood(scan_json: report([]))
+
+      assert result.success?
+      assert_includes result.stdout, "accepted project-analyzer baseline: 0 findings"
+    end
+
     def test_non_project_offenses_get_actionable_failure_output
       result = run_check_dogfood(scan_json: report([regular_offense]))
 
@@ -33,7 +40,6 @@ module MetzScan
 
     def assert_project_drift_output(stderr)
       assert_includes stderr, "project-analyzer findings differ from accepted baseline"
-      assert_includes stderr, "Removed accepted project-analyzer finding"
       assert_includes stderr, "Added project-analyzer finding"
       assert_includes stderr, "Next action: inspect `bin/check_dogfood` output"
     end

@@ -106,6 +106,10 @@ Verdict: `rg` wins for this exact method-call-reference query.
 
 ### Which cops inherit from `RuboCop::Cop::Metz::Base`?
 
+Historical note: this section predates the refactor that moved first-party cops
+off `RuboCop::Cop::Metz::Base`. The local base now remains only as a
+compatibility shim.
+
 Baseline `rg` found direct subclass syntax quickly, but indirect descendants
 require manual interpretation:
 

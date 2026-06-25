@@ -169,7 +169,7 @@ bundle exec ruby script/rubydex_spike.rb
 
 The script indexes Ruby files, prints declaration/document counts, reports known
 `Minitest::Test` descendants, lists `RuboCop::Cop::Metz` declarations, and
-counts references to `RuboCop::Cop::Metz::Base`.
+counts references to the `RuboCop::Cop::Metz::Base` compatibility shim.
 
 See [docs/rubydex-spike.md](docs/rubydex-spike.md) for current results and
 feasibility notes.
@@ -224,10 +224,8 @@ bin/check_sample_app_frozen
 
 `bin/check_dogfood` runs `metz-scan` against this repository with
 `--project-analyzers` enabled and requires the optional `rubydex` bundle group.
-It accepts only the current exact `MetzProject/DeepInheritanceTree` offense on
-`rubocop-metz/lib/rubocop/cop/metz/base.rb` (`RuboCop::Cop::Metz::Base` has
-nine descendants). It fails if any non-project-analyzer offense appears or if
-that project-analyzer signature changes.
+It accepts zero project-analyzer findings. It fails if any
+non-project-analyzer offense appears or if a project-analyzer finding appears.
 
 Build both gems:
 

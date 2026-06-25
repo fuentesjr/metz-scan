@@ -49,8 +49,7 @@ module MetzScan
       end
 
       def metz_cop?(cop)
-        base = RuboCop::Cop::Metz::Base
-        cop != base && cop < base
+        cop.cop_name.start_with?("Metz/") && cop.respond_to?(:metz_metadata)
       end
 
       def missing_argument_error

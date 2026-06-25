@@ -8,16 +8,7 @@ ROOT = File.expand_path("..", __dir__)
 COMMAND = ["bundle", "exec", "bin/metz-scan", "scan", ".", "--project-analyzers", "--format", "json"].freeze
 RUBYDEX_CHECK = ["bundle", "exec", "ruby", "-e", "require 'rubydex'"].freeze
 PROJECT_ANALYZER_PREFIX = "MetzProject/"
-BASELINE = [
-  {
-    "cop_name" => "MetzProject/DeepInheritanceTree",
-    "path" => "rubocop-metz/lib/rubocop/cop/metz/base.rb",
-    "message" => "RuboCop::Cop::Metz::Base has 9 descendants; " \
-                 "consider whether shared behavior is becoming too broad.",
-    "base_name" => "RuboCop::Cop::Metz::Base",
-    "descendant_count" => 9
-  }
-].freeze
+BASELINE = [].freeze
 
 def fail_with(message, detail = nil)
   warn "check_dogfood: #{message}"
@@ -137,4 +128,5 @@ if baseline_drift?(project)
   fail_with("project-analyzer findings differ from accepted baseline", project_drift_detail(project))
 end
 
-puts "check_dogfood: PASS (accepted project-analyzer baseline: #{BASELINE.size} finding)"
+finding_label = BASELINE.size == 1 ? "finding" : "findings"
+puts "check_dogfood: PASS (accepted project-analyzer baseline: #{BASELINE.size} #{finding_label})"

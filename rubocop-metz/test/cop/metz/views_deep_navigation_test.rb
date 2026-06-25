@@ -208,7 +208,7 @@ class CopMetzViewsDeepNavigationTest < Minitest::Test
 
   def rubocop_offense_count(path, force_exclusion: false)
     cmd = ["bundle", "exec", "rubocop", "--plugin", "rubocop-metz",
-           "--only", "Metz/ViewsDeepNavigation", "--format", "json"]
+           "--cache", "false", "--only", "Metz/ViewsDeepNavigation", "--format", "json"]
     cmd << "--force-exclusion" if force_exclusion
     cmd << path
     rubocop_offenses(cmd)
@@ -217,7 +217,7 @@ class CopMetzViewsDeepNavigationTest < Minitest::Test
 
   def non_metz_offenses(path)
     cmd = ["bundle", "exec", "rubocop", "--plugin", "rubocop-metz",
-           "--force-exclusion", "--format", "json", path]
+           "--cache", "false", "--force-exclusion", "--format", "json", path]
     rubocop_offenses(cmd).reject { |o| o["cop_name"].to_s.start_with?("Metz/") }
   end
 

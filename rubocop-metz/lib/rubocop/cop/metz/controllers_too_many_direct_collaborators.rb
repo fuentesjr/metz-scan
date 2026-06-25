@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
-require_relative "base"
+require "rubocop"
 require_relative "../../../metz/file_classifier"
+require_relative "../../../metz/cop_metadata"
 
 module RuboCop
   module Cop
@@ -14,7 +15,9 @@ module RuboCop
       # Multiple references to the same constant count once. The cop is
       # path-classified through `Metz::FileClassifier.controller?` and is
       # silent on any file that is not under `app/controllers/`.
-      class ControllersTooManyDirectCollaborators < Base
+      class ControllersTooManyDirectCollaborators < RuboCop::Cop::Base
+        extend ::Metz::CopMetadata
+
         MSG = "Action `%<action>s` reaches into %<count>d direct collaborators (%<list>s); " \
               "Max is %<max>d. Reduce by funneling work through a single coordinator."
 

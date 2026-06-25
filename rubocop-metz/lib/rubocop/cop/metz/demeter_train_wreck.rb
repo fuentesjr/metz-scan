@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
-require_relative "demeter_train_wreck/type_inference"
+require "rubocop"
+require_relative "../../../metz/cop_metadata"
+require_relative "on_send_csend_bridge"
 
 module RuboCop
   module Cop
@@ -12,7 +14,10 @@ module RuboCop
       # value-object methods through `TypeInference::METHOD_RETURN_TYPES`
       # and uses a reverse-lookup heuristic on the method name to escape
       # an unknown innermost receiver.
-      class DemeterTrainWreck < Base
+      class DemeterTrainWreck < RuboCop::Cop::Base
+        extend ::Metz::CopMetadata
+        include OnSendCsendBridge
+
         MSG = "Object-graph traversal of %<count>d exceeds Max (%<max>d). " \
               "Consider delegating or wrapping intermediate calls."
 
@@ -135,3 +140,5 @@ module RuboCop
     end
   end
 end
+
+require_relative "demeter_train_wreck/type_inference"

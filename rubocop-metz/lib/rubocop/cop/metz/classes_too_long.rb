@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
-require_relative "base"
+require "rubocop"
+require_relative "../../../metz/cop_metadata"
 
 module RuboCop
   module Cop
@@ -8,8 +9,9 @@ module RuboCop
       # Flags classes whose body exceeds the configured `Max` line count.
       # Wraps the semantics of core's `Metrics/ClassLength` with a stricter
       # default of 100 lines.
-      class ClassesTooLong < Base
+      class ClassesTooLong < RuboCop::Cop::Base
         include RuboCop::Cop::CodeLength
+        extend ::Metz::CopMetadata
 
         why_it_matters "Long classes accumulate responsibilities and become hard to change safely."
         fix_safety :manual

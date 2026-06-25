@@ -131,12 +131,9 @@ Dogfood follow-up on 2026-06-24: project analyzers now use RuboCop target-file
 selection for normal scans, so `AllCops: Exclude` applies to project-analyzer
 input as well as RuboCop-backed cops. `bin/check_dogfood` runs
 `metz-scan scan . --project-analyzers --format json`, requires the optional
-Rubydex bundle group, and accepts only the current exact
-`MetzProject/DeepInheritanceTree` offense on
-`rubocop-metz/lib/rubocop/cop/metz/base.rb` where `RuboCop::Cop::Metz::Base`
-has nine descendants. That makes the dogfood gate fail when any
-non-project-analyzer offense appears or when the accepted project-analyzer
-signature changes.
+Rubydex bundle group, and accepts zero project-analyzer findings. That makes
+the dogfood gate fail when any non-project-analyzer offense or project-analyzer
+finding appears.
 
 ## `MetzProject/ServiceSoup`
 
@@ -346,9 +343,9 @@ Result: keep as **Experimental**, behind `--project-analyzers`.
 
 The analyzer depends on the optional Rubydex-backed project index. Without the
 optional bundle group enabled, it contributes no findings. With Rubydex enabled,
-the focused spike on this repository still reports `RuboCop::Cop::Metz::Base`
-with nine descendants, which is a plausible true positive for an intentionally
-shared cop base class.
+the focused spike on this repository no longer reports
+`RuboCop::Cop::Metz::Base`: first-party cops now compose Metz helpers directly,
+and the local base remains only as a compatibility shim.
 
 Initial Rubydex-backed calibration used the same five real applications as the
 first project-analyzer pass, scanning only `app/` and `lib/`. The raw count is
