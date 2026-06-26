@@ -6,8 +6,8 @@ This note records real-world calibration passes for the opt-in analyzers behind
 `metz-scan scan --project-analyzers`. The goal was to decide whether
 `MetzProject/ServiceSoup`, `MetzProject/RepeatedBranching`, or
 `MetzProject/DeepInheritanceTree` is ready to move closer to default scan
-output. `MetzProject/PackageDependencyPressure` was added later and still needs
-real-project calibration before any readiness decision.
+output. `MetzProject/PackageDependencyPressure` was added later and now has an
+initial real-project calibration pass, but remains experimental.
 
 ## Method
 
@@ -101,11 +101,12 @@ Readiness by analyzer:
   class-only auto-discovery, and located-root filtering fixed the largest
   mechanical output problems, but broad framework-style roots still need better
   semantic labeling or filtering before this analyzer should appear by default.
-- `MetzProject/PackageDependencyPressure` is newly experimental. It reports
-  indexed namespaced declarations referenced from several files across multiple
-  coarse packages outside their declaration package. It has fixture coverage
-  only and should not move toward default output until real-project calibration
-  measures volume, false positives, and package-boundary usefulness.
+- `MetzProject/PackageDependencyPressure` remains experimental. The first
+  repo-local calibration pass found useful pressure candidates, but the output
+  is still dominated by broad public APIs, shared configuration, framework
+  extension points, and exception/utility hubs. It should not move toward
+  default output until those categories are filtered, downranked, or described
+  with stronger triage language.
 
 Reporting-language follow-up on 2026-06-24: text output now labels each
 project-analyzer summary with status, confidence, and severity, and the summary
@@ -370,23 +371,69 @@ Result: keep as **Experimental**, behind `--project-analyzers`.
 
 This analyzer was added after the initial calibration passes. It uses the
 optional project index to report classes or modules referenced from at least
-four files across at least two coarse packages outside the declaration's own
+12 files across at least 5 coarse packages outside the declaration's own
 package. The first slice requires a namespaced declaration so broad root
 namespaces and top-level Rails model constants do not dominate early output.
 Findings emit one primary offense at the declaration path and preserve the
 referring files and packages in project-analyzer metadata.
 The first slice only counts declarations under `app/` and `lib/` packages, and
-it ignores references from `spec/` and `test/` when measuring cross-package
-pressure.
+it ignores references from `spec/`, `test/`, `lib/tasks/`, `lib/seeders/`,
+`lib/seed_data/`, `lib/test_data/`, and `lib/generators/` when measuring
+cross-package pressure.
 
-Initial decision:
+Initial real-project calibration before threshold tuning used 4 files across 2
+packages. It produced high-volume output on most full applications:
+
+| Project | Revision | Findings before tuning |
+| --- | --- | ---: |
+| `chatwoot/chatwoot` | `e86222034e39` | 30 |
+| `discourse/discourse` | `2115f1cac5f9` | 38 |
+| `forem/forem` | `d9a393f1d502` | 32 |
+| `mastodon/mastodon` | `34bbb4748223` | 33 |
+| `openfoodfoundation/openfoodnetwork` | `be9d51ab32a6` | 34 |
+| `spree/spree` | `7752652ef4ea` | 75 |
+| `solidusio/solidus` | `8d781ac742e3` | 0 |
+| `decidim/decidim` | `b2001fa7c9d2` | 0 |
+
+Pass/fail threshold for promotion review:
+
+- Pass only if a rerun across at least five real Rails applications produces
+  reviewable volume and a majority of inspected findings look like concrete
+  package-boundary pressure.
+- Fail if the sample is mostly broad public APIs, shared configuration,
+  framework extension points, exceptions, utility hubs, setup/support paths, or
+  intentional platform-wide model references.
+- Treat 10-15 findings in any one full application as the upper reviewable
+  range. Higher volume needs stronger filtering before validation.
+
+Repo-local calibration rerun after threshold tuning and setup/support path
+suppression:
+
+| Project | Revision | Tuned findings | Result |
+| --- | --- | ---: | --- |
+| `chatwoot/chatwoot` | `e86222034e39` | 2 | fail for validation; mixed event/Redis hubs |
+| `discourse/discourse` | `2115f1cac5f9` | 10 | fail for validation; exceptions, utilities, framework hooks |
+| `forem/forem` | `d9a393f1d502` | 5 | fail for validation; shared settings dominate |
+| `mastodon/mastodon` | `34bbb4748223` | 3 | fail for validation; ActivityPub/errors dominate |
+| `openfoodfoundation/openfoodnetwork` | `be9d51ab32a6` | 10 | fail for validation; broad Spree/OpenFoodNetwork APIs |
+| `spree/spree` | `7752652ef4ea` | 10 | fail for validation; broad commerce models/config |
+| `solidusio/solidus` | `8d781ac742e3` | 0 | neutral |
+| `decidim/decidim` | `b2001fa7c9d2` | 0 | neutral |
+
+Threshold result: **fail for validated opt-in status**. The tuning made output
+reviewable by volume, but the leading categories are still too broad for a
+validated analyzer. The next improvement should classify or suppress global
+configuration, public namespace APIs, framework extension points, and exception
+families before another promotion attempt.
+
+Current decision:
 
 - Keep PackageDependencyPressure **Experimental** and opt-in.
 - Treat findings as dependency-pressure prompts, not dependency-direction
   violations. The first slice deliberately does not infer whether a reference
   is architecturally wrong.
-- Calibrate on real Rails applications before changing thresholds or adding
-  package-specific direction rules.
+- Do not graduate until another real-application pass shows mostly concrete
+  boundary-pressure examples after broad public/infra categories are handled.
 
 ## `MetzProject/RepeatedBranching`
 

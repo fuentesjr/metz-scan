@@ -353,6 +353,9 @@ Reasons not to enable it by default yet:
   namespaced classes or modules referenced from several files across multiple
   coarse packages outside their declaration package. It depends on the optional
   project index and emits one primary offense at the declaration path while
-  preserving referring files and packages in metadata. The first slice only
-  counts declarations under `app/` and `lib/`, ignores `spec/` and `test/`
-  references, and skips broad top-level declarations when measuring pressure.
+  preserving referring files and packages in metadata. The calibrated default
+  threshold is 12 referring files across 5 packages. The first slice only
+  counts declarations under `app/` and `lib/`, ignores test/setup/support paths
+  such as `spec/`, `test/`, `lib/tasks/`, `lib/seeders/`, `lib/seed_data/`,
+  `lib/test_data/`, and `lib/generators/`, and skips broad top-level
+  declarations when measuring pressure.

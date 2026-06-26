@@ -127,7 +127,9 @@ analyzer simply contributes no findings.
 `PackageDependencyPressure` also requires the optional project index and
 contributes no findings when the index is unavailable. It currently only counts
 declarations under `app/` and `lib/` packages, and it ignores references from
-`spec/` and `test/` when measuring cross-package pressure.
+`spec/`, `test/`, `lib/tasks/`, `lib/seeders/`, `lib/seed_data/`,
+`lib/test_data/`, and `lib/generators/` when measuring cross-package pressure.
+Its default threshold is at least 12 referring files across at least 5 packages.
 
 Project analyzer output includes status, confidence, triage severity, and triage
 summary metadata. Text output shows a project-analyzer summary before rule

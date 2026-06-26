@@ -28,7 +28,7 @@ module MetzScan
       SUPPORTED_KINDS = [nil, :class, :module].freeze
       private_constant :IGNORED_DECLARATION_NAMES, :SYNTHETIC_DECLARATION_MARKER, :SUPPORTED_KINDS
 
-      def initialize(paths: nil, index: nil, minimum_referring_files: 4, minimum_referring_packages: 2)
+      def initialize(paths: nil, index: nil, minimum_referring_files: 12, minimum_referring_packages: 5)
         @paths = Array(paths)
         @index = index || ProjectIndex.build(@paths)
         @minimum_referring_files = minimum_referring_files
@@ -52,7 +52,8 @@ module MetzScan
 
       def declaration_candidate?(declaration)
         declaration.name&.include?("::") && declaration.path && supported_kind?(declaration) &&
-          !ignored_declaration_name?(declaration.name) && PackageMap.package_for(declaration.path)
+          !ignored_declaration_name?(declaration.name) && !PackageMap.ignored_path?(declaration.path) &&
+          PackageMap.package_for(declaration.path)
       end
 
       def supported_kind?(declaration)
@@ -75,7 +76,7 @@ module MetzScan
 
       def counted_reference_for(reference, declaration_path, declared_package)
         return if same_path?(reference.path, declaration_path)
-        return if PackageMap.ignored_reference_path?(reference.path)
+        return if PackageMap.ignored_path?(reference.path)
 
         package = PackageMap.package_for(reference.path)
         return if !package || package == declared_package

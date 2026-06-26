@@ -11,7 +11,15 @@ module MetzScan
         ["app/controllers/orders_controller.rb", 10],
         ["app/controllers/refunds_controller.rb", 11],
         ["app/jobs/capture_payment_job.rb", 12],
-        ["app/jobs/reconcile_payment_job.rb", 13]
+        ["app/jobs/reconcile_payment_job.rb", 13],
+        ["app/mailers/payment_mailer.rb", 14],
+        ["app/mailers/refund_mailer.rb", 15],
+        ["app/policies/payment_policy.rb", 16],
+        ["app/policies/refund_policy.rb", 17],
+        ["app/serializers/order_serializer.rb", 18],
+        ["app/serializers/refund_serializer.rb", 19],
+        ["app/workers/payment_sync_worker.rb", 20],
+        ["app/workers/refund_sync_worker.rb", 21]
       ].freeze
 
       def test_merges_package_dependency_pressure_findings_from_project_index
@@ -44,8 +52,9 @@ module MetzScan
       end
 
       def assert_package_dependency_reference_metadata(offense)
-        assert_equal 4, offense.dig("project_analyzer", "referring_file_count")
-        assert_equal %w[app/controllers app/jobs], offense.dig("project_analyzer", "referring_packages")
+        assert_equal 12, offense.dig("project_analyzer", "referring_file_count")
+        assert_equal %w[app/controllers app/jobs app/mailers app/policies app/serializers app/workers],
+                     offense.dig("project_analyzer", "referring_packages")
       end
 
       def assert_project_analyzer_summary(parsed)
