@@ -87,7 +87,9 @@ Readiness by analyzer:
 
 - `MetzProject/ServiceSoup` is the strongest graduation candidate. The latest
   repo-local rerun confirmed sparse, reviewable findings that still look like
-  plausible true positives in service-heavy Rails applications. It should stay
+  plausible true positives in service-heavy Rails applications. A follow-up
+  promotion review added one more strong service-workflow target and one
+  setup-orchestration example that should remain low priority. It should stay
   opt-in until calibration shows broader evidence across more service,
   interactor, job, mailer, and command-object styles.
 - `MetzProject/RepeatedBranching` remains experimental. The counts are stable
@@ -296,6 +298,30 @@ Rerun decision:
 - Keep ServiceSoup **Candidate** and opt-in. It has the strongest true-positive
   evidence of the three project analyzers, but not enough breadth yet for
   default output.
+
+Follow-up promotion review reran Chatwoot from repo-local scratch space and
+added Spree as another service-heavy Rails target:
+
+| Project | Revision | ServiceSoup findings | Triage |
+| --- | --- | ---: | --- |
+| `chatwoot/chatwoot` | `e86222034e39` | 3 | Same three plausible workflow true positives from the prior `perform` pass. |
+| `spree/spree` | `7752652ef4ea` | 2 | One strong cart stock-reservation workflow and one low-priority seed setup orchestrator. |
+
+The Spree stock-reservation finding is a useful new true positive:
+`Spree::Carts::Update#sync_stock_reservations` coordinates release, reserve, and
+extend services for the same cart. The Spree seed finding is a weaker signal:
+`Spree::Seeds::All#call` invokes many setup tasks in sequence, which is visible
+coordination but is less likely to represent everyday domain workflow pressure.
+
+Promotion-review decision:
+
+- Keep ServiceSoup **Candidate** and opt-in. The added Spree finding broadens
+  the positive evidence, but the sample is still concentrated in service-heavy
+  Rails codebases and still includes setup-orchestration noise.
+- Before default output, decide whether seed/data-setup orchestrators should be
+  suppressed, downranked, or documented as lower-priority findings.
+- Do not add `execute` or `run` support yet. The new evidence still comes from
+  existing `call` and `new(...).perform` support.
 
 ## `MetzProject/PackageDependencyPressure`
 

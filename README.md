@@ -107,15 +107,16 @@ Current project analyzer status:
 
 | Analyzer | Status | Expected findings |
 | --- | --- | --- |
-| `MetzProject/ServiceSoup` | Candidate | Methods that coordinate at least three distinct service constants, such as `ValidateOrder.call(...)` or `CapturePayment.new(...).call`. |
+| `MetzProject/ServiceSoup` | Candidate | Methods that coordinate at least three distinct service constants, such as `ValidateOrder.call(...)`, `CapturePayment.new(...).call`, or `FetchMessages.new(...).perform`. |
 | `MetzProject/RepeatedBranching` | Experimental | Repeated `case` expressions with the same lexical decision and branch-value set, or repeated `if`/`elsif` predicate chains with the same receiver and predicate set, across distinct Ruby files. |
 | `MetzProject/DeepInheritanceTree` | Experimental | Indexed base classes or modules with at least three known descendants, when the optional Rubydex-backed project index is available. |
 | `MetzProject/PackageDependencyPressure` | Experimental | Indexed namespaced classes or modules referenced from several files across multiple coarse packages outside their declaration package. |
 
 Project analyzers parse Ruby files only. They do not inspect ERB/HAML/SLIM
 templates, and they avoid semantic claims that require resolving runtime types.
-For example, `ServiceSoup` counts distinct constant-backed `.call` shapes but
-does not prove that a constant is truly a service object. See
+For example, `ServiceSoup` counts distinct constant-backed `.call` and
+`.perform` service-call shapes but does not prove that a constant is truly a
+service object. See
 [docs/project-analyzer-calibration.md](docs/project-analyzer-calibration.md) for
 current calibration notes.
 
