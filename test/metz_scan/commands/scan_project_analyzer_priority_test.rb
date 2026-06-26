@@ -66,6 +66,15 @@ module MetzScan
         assert_equal(-1, priority.sort_key(manual) <=> priority.sort_key(shared))
       end
 
+      def test_broad_base_sorts_before_shared_dependency
+        priority = Scan::ProjectAnalyzerTriagePriority
+
+        broad_base = { "status" => "experimental", "confidence" => "low", "triage_severity" => "broad base" }
+        shared = { "status" => "experimental", "confidence" => "low", "triage_severity" => "shared dependency" }
+
+        assert_equal(-1, priority.sort_key(broad_base) <=> priority.sort_key(shared))
+      end
+
       def test_shared_dependency_sorts_before_setup_orchestration
         priority = Scan::ProjectAnalyzerTriagePriority
 

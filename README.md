@@ -109,7 +109,7 @@ Current project analyzer status:
 | --- | --- | --- |
 | `MetzProject/ServiceSoup` | Validated | Methods that coordinate at least three distinct service constants, such as `ValidateOrder.call(...)`, `CapturePayment.new(...).call`, or `FetchMessages.new(...).perform`. |
 | `MetzProject/RepeatedBranching` | Validated | Repeated `case` expressions with the same lexical decision and branch-value set, or repeated `if`/`elsif` predicate chains with the same receiver and predicate set, across distinct Ruby files. |
-| `MetzProject/DeepInheritanceTree` | Experimental | Indexed base classes or modules with at least three known descendants, when the optional Rubydex-backed project index is available. |
+| `MetzProject/DeepInheritanceTree` | Candidate | Indexed base classes or modules with at least three known descendants, when the optional Rubydex-backed project index is available. |
 | `MetzProject/PackageDependencyPressure` | Candidate | Indexed namespaced classes or modules referenced from several files across multiple coarse packages outside their declaration package. |
 
 Project analyzers parse Ruby files only. They do not inspect ERB/HAML/SLIM
@@ -123,7 +123,9 @@ current calibration notes.
 
 `DeepInheritanceTree` uses the optional Rubydex-backed project index. Without
 that optional bundle group enabled, `--project-analyzers` still runs and this
-analyzer simply contributes no findings.
+analyzer simply contributes no findings. Broad framework and Rails application
+bases remain visible, but they are reported with lower confidence and
+`broad base` triage.
 `PackageDependencyPressure` also requires the optional project index and
 contributes no findings when the index is unavailable. It currently only counts
 declarations under `app/` and `lib/` packages, and it ignores references from

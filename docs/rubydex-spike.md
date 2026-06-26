@@ -109,12 +109,14 @@ index_errors: 0
 
 ## Experiment 2: Inheritance Descendants
 
-`MetzScan::Analyzers::InheritanceDescendants` is an optional project analyzer
+`MetzScan::Analyzers::InheritanceDescendants` is an opt-in project analyzer
 that consumes a `ProjectIndex` and reports descendants of configured or
 auto-discovered base classes or modules. It is wired into
 `metz-scan scan --project-analyzers` as `MetzProject/DeepInheritanceTree`, but
 only produces findings when the optional Rubydex-backed project index is
-available.
+available. It is candidate for opt-in output; broad framework and Rails
+application bases are still reported, but with lower-confidence `broad base`
+triage.
 
 Run the spike against the current workspace:
 
@@ -157,8 +159,8 @@ Limitations:
   known class declarations. Auto-discovered roots must have a declaration path.
   Grouped output emits one offense at the base declaration and preserves
   descendant paths in project-analyzer metadata.
-- Post-class-filter calibration still shows some framework-style roots that need
-  triage before this analyzer can move closer to default output.
+- Post-class-filter calibration still shows framework-style roots. These are
+  now downranked with `broad base` triage rather than hidden.
 - Bounded path analysis only reports descendants when the base declaration is
   indexed too. For example, `test/fixtures/sample_app` has controllers that
   inherit from `ApplicationController`, but the fixture does not define
@@ -339,7 +341,7 @@ Reasons not to enable it by default yet:
   `case` decisions with the same branch-value set, or repeated `if`/`elsif`
   predicate chains with the same receiver and predicate set, across distinct
   Ruby files.
-- `MetzProject/DeepInheritanceTree` — experimental. Reports indexed base
+- `MetzProject/DeepInheritanceTree` — candidate. Reports indexed base
   classes or modules with at least three known descendants. It depends on the
   optional Rubydex-backed project index, so it contributes no findings when
   Rubydex is not enabled. Ruby core and Rubydex synthetic declarations are
@@ -347,7 +349,7 @@ Reasons not to enable it by default yet:
   auto-discovered roots are limited to classes and must have declaration paths;
   explicit configured roots can still inspect modules. Findings emit one primary offense at the base
   declaration while preserving descendant paths in metadata; the remaining
-  calibration concern is framework-style root-selection quality.
+  calibration concern is default-output readiness for broad root kinds.
 - `MetzProject/PackageDependencyPressure` — candidate. Reports indexed
   namespaced classes or modules referenced from several files across multiple
   coarse packages outside their declaration package. It depends on the optional

@@ -10,10 +10,14 @@ module MetzScan
     # Reports configured inheritance roots with enough known descendants.
     class InheritanceDescendants
       RULE_ID = "MetzProject/DeepInheritanceTree"
-      PROJECT_ANALYZER_STATUS = "experimental"
-      CONFIDENCE = "early"
+      PROJECT_ANALYZER_STATUS = "candidate"
+      CONFIDENCE = "medium"
       TRIAGE_SEVERITY = "manual review"
-      TRIAGE_SUMMARY = "Experimental inheritance signal; review broad base classes and descendant spread in context."
+      TRIAGE_SUMMARY = "Candidate inheritance signal; review broad base classes and descendant spread in context."
+      BROAD_ROOT_CONFIDENCE = "low"
+      BROAD_ROOT_TRIAGE_SEVERITY = "broad base"
+      BROAD_ROOT_TRIAGE_SUMMARY = "Broad inheritance base; review only when shared behavior changes often " \
+                                  "or descendants diverge."
       WHY = "Large inheritance trees hide coupling and make changes expensive."
       SUGGESTED_NEXT_MOVES = [
         "Review whether the base class is carrying multiple responsibilities.",
@@ -90,10 +94,22 @@ module MetzScan
       end
 
       def triage_for(base_name, descendants, descendant_locations, root_kind)
-        { project_analyzer_status: PROJECT_ANALYZER_STATUS, confidence: CONFIDENCE,
-          triage_severity: TRIAGE_SEVERITY, triage_summary: TRIAGE_SUMMARY,
+        triage_attributes_for(root_kind).merge(
           project_analyzer_metadata: project_analyzer_metadata_for(base_name, descendants, descendant_locations,
-                                                                   root_kind) }
+                                                                   root_kind)
+        )
+      end
+
+      def triage_attributes_for(root_kind)
+        return broad_root_triage_attributes if root_kind
+
+        { project_analyzer_status: PROJECT_ANALYZER_STATUS, confidence: CONFIDENCE,
+          triage_severity: TRIAGE_SEVERITY, triage_summary: TRIAGE_SUMMARY }
+      end
+
+      def broad_root_triage_attributes
+        { project_analyzer_status: PROJECT_ANALYZER_STATUS, confidence: BROAD_ROOT_CONFIDENCE,
+          triage_severity: BROAD_ROOT_TRIAGE_SEVERITY, triage_summary: BROAD_ROOT_TRIAGE_SUMMARY }
       end
 
       def message_for(base_name, descendants, root_kind)

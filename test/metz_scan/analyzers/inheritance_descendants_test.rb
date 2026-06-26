@@ -22,6 +22,17 @@ module MetzScan
         assert_equal %w[AdminController OrdersController], finding.descendants
       end
 
+      def test_reports_candidate_triage_for_unlabeled_base
+        finding = InheritanceDescendants.new(index: custom_base_index, base_names: "DomainWorkflowBase",
+                                             minimum_descendants: 2).call.first
+
+        assert_equal "candidate", finding.project_analyzer_status
+        assert_equal "medium", finding.confidence
+        assert_equal "manual review", finding.triage_severity
+        assert_includes finding.triage_summary, "Candidate inheritance signal"
+        refute finding.project_analyzer_metadata.key?("root_kind")
+      end
+
       def test_skips_configured_base_below_threshold
         analyzer = InheritanceDescendants.new(index: fake_index, base_names: "ApplicationController",
                                               minimum_descendants: 3)
@@ -70,10 +81,10 @@ module MetzScan
       end
 
       def assert_finding_triage(finding)
-        assert_equal "experimental", finding.project_analyzer_status
-        assert_equal "early", finding.confidence
-        assert_equal "manual review", finding.triage_severity
-        assert_match(/inheritance/i, finding.triage_summary)
+        assert_equal "candidate", finding.project_analyzer_status
+        assert_equal "low", finding.confidence
+        assert_equal "broad base", finding.triage_severity
+        assert_match(/broad inheritance base/i, finding.triage_summary)
         assert_project_analyzer_metadata(finding)
       end
 
@@ -95,6 +106,18 @@ module MetzScan
 
       def fake_index
         FakeIndex.new(available: true, descendants: fake_descendants, declarations: fake_declarations)
+      end
+
+      def custom_base_index
+        FakeIndex.new(available: true,
+                      descendants: { "DomainWorkflowBase" => %w[CheckoutWorkflow RefundWorkflow] },
+                      declarations: custom_base_declarations)
+      end
+
+      def custom_base_declarations
+        [declaration("DomainWorkflowBase", "/app/domain_workflow_base.rb"),
+         declaration("CheckoutWorkflow", "/app/checkout_workflow.rb"),
+         declaration("RefundWorkflow", "/app/refund_workflow.rb")]
       end
 
       def missing_base_path_index
@@ -217,6 +240,9 @@ module MetzScan
         finding = findings.find { |candidate| candidate.base_name == base_name }
 
         assert_equal root_kind, finding.project_analyzer_metadata.fetch("root_kind")
+        assert_equal "candidate", finding.project_analyzer_status
+        assert_equal "low", finding.confidence
+        assert_equal "broad base", finding.triage_severity
         assert_includes finding.message, "#{base_name} (#{root_kind}) has 2 descendants"
       end
 

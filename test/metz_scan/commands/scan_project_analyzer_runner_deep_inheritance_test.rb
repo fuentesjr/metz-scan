@@ -41,8 +41,11 @@ module MetzScan
       def assert_deep_inheritance_metadata(parsed)
         offense = deep_inheritance_offense(parsed)
 
-        assert_equal "experimental", offense.dig("project_analyzer", "status")
+        assert_equal "candidate", offense.dig("project_analyzer", "status")
+        assert_equal "low", offense.dig("project_analyzer", "confidence")
+        assert_equal "broad base", offense.dig("project_analyzer", "triage_severity")
         assert_equal "ApplicationController", offense.dig("project_analyzer", "base_name")
+        assert_equal "rails application base", offense.dig("project_analyzer", "root_kind")
         assert_descendant_metadata(offense)
         assert_report_location_metadata(offense)
       end
@@ -63,6 +66,9 @@ module MetzScan
         assert_equal 1, summary.fetch("finding_count")
         assert_equal 1, summary.fetch("offense_count")
         assert_equal 1, summary.fetch("rules").first.fetch("offense_count")
+        assert_equal "candidate", summary.fetch("rules").first.fetch("status")
+        assert_equal "low", summary.fetch("rules").first.fetch("confidence")
+        assert_equal "broad base", summary.fetch("rules").first.fetch("triage_severity")
       end
 
       def deep_inheritance_offense(parsed)

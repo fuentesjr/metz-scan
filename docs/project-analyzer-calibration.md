@@ -97,10 +97,12 @@ Readiness by analyzer:
   Spree follow-up produced only three findings with concrete domain context. It
   should stay out of default output until default project-analyzer findings have
   a settled product boundary.
-- `MetzProject/DeepInheritanceTree` remains experimental. Grouped output,
-  class-only auto-discovery, and located-root filtering fixed the largest
-  mechanical output problems, but broad framework-style roots still need better
-  semantic labeling or filtering before this analyzer should appear by default.
+- `MetzProject/DeepInheritanceTree` is candidate for opt-in project-analyzer
+  output. Grouped output, class-only auto-discovery, located-root filtering,
+  root-kind labels, and broad-root downranking fixed the largest mechanical and
+  triage-language problems. It should not move toward default output until
+  broad framework and Rails application bases are calibrated across more
+  projects.
 - `MetzProject/PackageDependencyPressure` is candidate for opt-in
   project-analyzer output. Threshold tuning and shared-dependency downranking
   reduced broad public APIs, shared configuration, framework extension points,
@@ -198,9 +200,10 @@ At that checkpoint, `ServiceSoup` remained the strongest candidate but still
 needed broader service-style coverage before graduation. `RepeatedBranching`
 remained experimental until its
 generic branch-subject findings have clearer confidence/severity interpretation.
-`DeepInheritanceTree` remains the main blocker for default project-analyzer
-output because large Rails and framework roots need more calibration after
-semantic labeling before they are safe to show by default. Follow-up tracking:
+`DeepInheritanceTree` remained the main blocker for default project-analyzer
+output at this checkpoint because large Rails and framework roots needed more
+calibration after semantic labeling before they were safe to show by default.
+Follow-up tracking:
 GitHub issue #27 covers DeepInheritanceTree framework-root noise, and GitHub
 issue #28 covers RepeatedBranching generic branch-subject triage.
 
@@ -588,7 +591,7 @@ new recurring false-positive category.
 
 ## `MetzProject/DeepInheritanceTree`
 
-Result: keep as **Experimental**, behind `--project-analyzers`.
+Result: **Candidate**, behind `--project-analyzers`.
 
 The analyzer depends on the optional Rubydex-backed project index. Without the
 optional bundle group enabled, it contributes no findings. With Rubydex enabled,
@@ -645,7 +648,7 @@ Risks:
 
 Decision:
 
-- Keep DeepInheritanceTree **Experimental** and opt-in.
+- At this checkpoint, keep DeepInheritanceTree **Experimental** and opt-in.
 - Keep filtering Ruby core roots and synthetic declaration names from
   auto-discovered candidates.
 - Group output by base declaration, or otherwise reduce per-descendant offense
@@ -714,10 +717,10 @@ and repo-local sparse checkouts under `tmp/project-analyzer-calibration/apps/`.
 
 Grouped-output decision:
 
-- Keep DeepInheritanceTree **Experimental** and opt-in. The output volume is now
-  reviewable by finding count, but Discourse, Mastodon, and Open Food Network
-  still produce enough broad-root findings that default output would be too
-  assertive.
+- At this checkpoint, keep DeepInheritanceTree **Experimental** and opt-in. The
+  output volume is now reviewable by finding count, but Discourse, Mastodon,
+  and Open Food Network still produce enough broad-root findings that default
+  output would be too assertive.
 - Keep descendant-location metadata. It preserves review context without
   multiplying RuboCop/SARIF/GitHub annotation volume.
 - Investigate root-selection quality before graduation. The remaining signal is
@@ -803,11 +806,14 @@ Examples from the rerun:
 
 Root-kind decision:
 
-- Keep DeepInheritanceTree **Experimental** and opt-in. Root-kind labels make
-  broad-root findings more interpretable, but they are a triage aid rather than
-  a default-output signal.
+- Promote DeepInheritanceTree to **Candidate** and keep it opt-in. Root-kind
+  labels plus `broad base` downranking make broad-root findings interpretable
+  enough for opt-in review, but they are not a default-output signal.
 - Keep the labels as metadata as well as text. JSON, SARIF, and downstream
   consumers can use `project_analyzer.root_kind` without parsing messages.
 - Do not filter root kinds yet. The labeled categories still need calibration
-  across more projects before deciding whether any category should be hidden,
-  downgraded, or summarized separately.
+  across more projects before deciding whether any category should be hidden or
+  summarized separately.
+- Broad framework and Rails application bases are reported with
+  `confidence: low` and `severity: broad base`. Unlabeled custom inheritance
+  roots keep `confidence: medium` and `severity: manual review`.
