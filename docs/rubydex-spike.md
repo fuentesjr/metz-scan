@@ -349,3 +349,10 @@ Reasons not to enable it by default yet:
   explicit configured roots can still inspect modules. Findings emit one primary offense at the base
   declaration while preserving descendant paths in metadata; the remaining
   calibration concern is framework-style root-selection quality.
+- `MetzProject/PackageDependencyPressure` — experimental. Reports indexed
+  namespaced classes or modules referenced from several files across multiple
+  coarse packages outside their declaration package. It depends on the optional
+  project index and emits one primary offense at the declaration path while
+  preserving referring files and packages in metadata. The first slice only
+  counts declarations under `app/` and `lib/`, ignores `spec/` and `test/`
+  references, and skips broad top-level declarations when measuring pressure.

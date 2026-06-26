@@ -39,9 +39,7 @@ module MetzScan
       end
 
       def test_active_project_analyzers_are_the_documented_opt_in_set
-        expected = [Analyzers::RepeatedBranching, Analyzers::ServiceSoup, Analyzers::InheritanceDescendants]
-
-        assert_equal expected.map(&:name).sort, Scan::ProjectAnalyzerRunner::ANALYZERS.map(&:name).sort
+        assert_equal expected_active_analyzers.map(&:name).sort, Scan::ProjectAnalyzerRunner::ANALYZERS.map(&:name).sort
       end
 
       def test_matches_existing_file_entries_by_expanded_path
@@ -70,6 +68,11 @@ module MetzScan
       end
 
       private
+
+      def expected_active_analyzers
+        [Analyzers::RepeatedBranching, Analyzers::ServiceSoup,
+         Analyzers::InheritanceDescendants, Analyzers::PackageDependencyPressure]
+      end
 
       def merge_project_analyzers
         { "files" => [], "summary" => { "offense_count" => 0 } }.tap do |parsed|

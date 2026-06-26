@@ -1,12 +1,13 @@
 # Project analyzer calibration
 
-Last updated: 2026-06-25.
+Last updated: 2026-06-26.
 
 This note records real-world calibration passes for the opt-in analyzers behind
 `metz-scan scan --project-analyzers`. The goal was to decide whether
 `MetzProject/ServiceSoup`, `MetzProject/RepeatedBranching`, or
 `MetzProject/DeepInheritanceTree` is ready to move closer to default scan
-output.
+output. `MetzProject/PackageDependencyPressure` was added later and still needs
+real-project calibration before any readiness decision.
 
 ## Method
 
@@ -97,6 +98,11 @@ Readiness by analyzer:
   class-only auto-discovery, and located-root filtering fixed the largest
   mechanical output problems, but broad framework-style roots still need better
   semantic labeling or filtering before this analyzer should appear by default.
+- `MetzProject/PackageDependencyPressure` is newly experimental. It reports
+  indexed namespaced declarations referenced from several files across multiple
+  coarse packages outside their declaration package. It has fixture coverage
+  only and should not move toward default output until real-project calibration
+  measures volume, false positives, and package-boundary usefulness.
 
 Reporting-language follow-up on 2026-06-24: text output now labels each
 project-analyzer summary with status, confidence, and severity, and the summary
@@ -290,6 +296,30 @@ Rerun decision:
 - Keep ServiceSoup **Candidate** and opt-in. It has the strongest true-positive
   evidence of the three project analyzers, but not enough breadth yet for
   default output.
+
+## `MetzProject/PackageDependencyPressure`
+
+Result: keep as **Experimental**, behind `--project-analyzers`.
+
+This analyzer was added after the initial calibration passes. It uses the
+optional project index to report classes or modules referenced from at least
+four files across at least two coarse packages outside the declaration's own
+package. The first slice requires a namespaced declaration so broad root
+namespaces and top-level Rails model constants do not dominate early output.
+Findings emit one primary offense at the declaration path and preserve the
+referring files and packages in project-analyzer metadata.
+The first slice only counts declarations under `app/` and `lib/` packages, and
+it ignores references from `spec/` and `test/` when measuring cross-package
+pressure.
+
+Initial decision:
+
+- Keep PackageDependencyPressure **Experimental** and opt-in.
+- Treat findings as dependency-pressure prompts, not dependency-direction
+  violations. The first slice deliberately does not infer whether a reference
+  is architecturally wrong.
+- Calibrate on real Rails applications before changing thresholds or adding
+  package-specific direction rules.
 
 ## `MetzProject/RepeatedBranching`
 

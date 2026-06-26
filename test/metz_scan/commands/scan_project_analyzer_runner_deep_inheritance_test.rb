@@ -113,6 +113,8 @@ module MetzScan
 
       def descendants_of(name) = @descendants.fetch(name, [])
 
+      def constant_references_to(_name) = []
+
       private
 
       def kind_for(name)

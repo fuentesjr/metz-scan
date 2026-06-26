@@ -5,6 +5,7 @@ require "rubocop"
 require_relative "../../analyzers/repeated_branching"
 require_relative "../../analyzers/service_soup"
 require_relative "../../analyzers/inheritance_descendants"
+require_relative "../../analyzers/package_dependency_pressure"
 require_relative "../../project_index"
 require_relative "project_analyzer_metadata"
 require_relative "project_analyzer_offenses"
@@ -18,7 +19,8 @@ module MetzScan
         ANALYZERS = [
           Analyzers::RepeatedBranching,
           Analyzers::ServiceSoup,
-          Analyzers::InheritanceDescendants
+          Analyzers::InheritanceDescendants,
+          Analyzers::PackageDependencyPressure
         ].freeze
 
         module_function
