@@ -110,7 +110,7 @@ Current project analyzer status:
 | `MetzProject/ServiceSoup` | Validated | Methods that coordinate at least three distinct service constants, such as `ValidateOrder.call(...)`, `CapturePayment.new(...).call`, or `FetchMessages.new(...).perform`. |
 | `MetzProject/RepeatedBranching` | Validated | Repeated `case` expressions with the same lexical decision and branch-value set, or repeated `if`/`elsif` predicate chains with the same receiver and predicate set, across distinct Ruby files. |
 | `MetzProject/DeepInheritanceTree` | Experimental | Indexed base classes or modules with at least three known descendants, when the optional Rubydex-backed project index is available. |
-| `MetzProject/PackageDependencyPressure` | Experimental | Indexed namespaced classes or modules referenced from several files across multiple coarse packages outside their declaration package. |
+| `MetzProject/PackageDependencyPressure` | Candidate | Indexed namespaced classes or modules referenced from several files across multiple coarse packages outside their declaration package. |
 
 Project analyzers parse Ruby files only. They do not inspect ERB/HAML/SLIM
 templates, and they avoid semantic claims that require resolving runtime types.

@@ -107,9 +107,10 @@ module MetzScan
       end
 
       def assert_package_triage(finding)
-        assert_equal "experimental", finding.project_analyzer_status
-        assert_equal "early", finding.confidence
+        assert_equal "candidate", finding.project_analyzer_status
+        assert_equal "medium", finding.confidence
         assert_equal "manual review", finding.triage_severity
+        assert_includes finding.triage_summary, "Candidate package-boundary signal"
       end
 
       def assert_package_pressure_metadata(finding)

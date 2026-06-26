@@ -46,7 +46,7 @@ module MetzScan
       end
 
       def assert_package_dependency_declaration_metadata(offense)
-        assert_equal "experimental", offense.dig("project_analyzer", "status")
+        assert_equal "candidate", offense.dig("project_analyzer", "status")
         assert_equal "Billing::Gateway", offense.dig("project_analyzer", "declaration", "name")
         assert_equal "app/services", offense.dig("project_analyzer", "declared_package")
         assert_equal "package_boundary", offense.dig("project_analyzer", "dependency_pressure_category")
@@ -64,6 +64,8 @@ module MetzScan
         assert_equal 1, summary.fetch("finding_count")
         assert_equal 1, summary.fetch("offense_count")
         assert_equal "MetzProject/PackageDependencyPressure", summary.fetch("rules").first.fetch("cop_name")
+        assert_equal "candidate", summary.fetch("rules").first.fetch("status")
+        assert_equal "medium", summary.fetch("rules").first.fetch("confidence")
       end
 
       def package_dependency_offense(parsed)

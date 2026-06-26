@@ -15,10 +15,10 @@ module MetzScan
       include ProjectAnalyzerTriage
 
       RULE_ID = "MetzProject/PackageDependencyPressure"
-      PROJECT_ANALYZER_STATUS = "experimental"
-      CONFIDENCE = "early"
+      PROJECT_ANALYZER_STATUS = "candidate"
+      CONFIDENCE = "medium"
       TRIAGE_SEVERITY = "manual review"
-      TRIAGE_SUMMARY = "Experimental dependency-pressure signal; review broad cross-package references in context."
+      TRIAGE_SUMMARY = "Candidate package-boundary signal; review cross-package reference pressure in context."
       WHY = "Cross-package reference pressure can reveal boundaries that many parts of the system depend on."
       SUGGESTED_NEXT_MOVES = [
         "Review whether callers need the full declaration or a narrower interface.",

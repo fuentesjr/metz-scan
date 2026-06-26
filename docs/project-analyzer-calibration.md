@@ -6,8 +6,8 @@ This note records real-world calibration passes for the opt-in analyzers behind
 `metz-scan scan --project-analyzers`. The goal was to decide whether
 `MetzProject/ServiceSoup`, `MetzProject/RepeatedBranching`, or
 `MetzProject/DeepInheritanceTree` is ready to move closer to default scan
-output. `MetzProject/PackageDependencyPressure` was added later and now has an
-initial real-project calibration pass, but remains experimental.
+output. `MetzProject/PackageDependencyPressure` was added later and now has a
+candidate opt-in calibration pass after shared-dependency downranking.
 
 ## Method
 
@@ -101,12 +101,13 @@ Readiness by analyzer:
   class-only auto-discovery, and located-root filtering fixed the largest
   mechanical output problems, but broad framework-style roots still need better
   semantic labeling or filtering before this analyzer should appear by default.
-- `MetzProject/PackageDependencyPressure` remains experimental. The first
-  repo-local calibration pass found useful pressure candidates, but the output
-  is still dominated by broad public APIs, shared configuration, framework
-  extension points, and exception/utility hubs. It should not move toward
-  default output until those categories are filtered, downranked, or described
-  with stronger triage language.
+- `MetzProject/PackageDependencyPressure` is candidate for opt-in
+  project-analyzer output. Threshold tuning and shared-dependency downranking
+  reduced broad public APIs, shared configuration, framework extension points,
+  and exception/utility hubs to lower-confidence triage, while leaving a
+  smaller set of concrete package-boundary pressure prompts. It should not move
+  toward default output or validated status until broader samples confirm those
+  manual-review findings are consistently useful.
 
 Reporting-language follow-up on 2026-06-24: text output now labels each
 project-analyzer summary with status, confidence, and severity, and the summary
@@ -193,8 +194,9 @@ Readiness decision after second-target validation: keep all project analyzers
 behind `--project-analyzers`. The priority-ordered text report now makes the
 sparse `ServiceSoup` signal visible even when `DeepInheritanceTree` dominates
 finding volume, but this improves triage rather than default-output readiness.
-`ServiceSoup` remained the strongest candidate but still needed broader
-service-style coverage before graduation. `RepeatedBranching` remains experimental until its
+At that checkpoint, `ServiceSoup` remained the strongest candidate but still
+needed broader service-style coverage before graduation. `RepeatedBranching`
+remained experimental until its
 generic branch-subject findings have clearer confidence/severity interpretation.
 `DeepInheritanceTree` remains the main blocker for default project-analyzer
 output because large Rails and framework roots need more calibration after
@@ -204,7 +206,7 @@ issue #28 covers RepeatedBranching generic branch-subject triage.
 
 ## `MetzProject/ServiceSoup`
 
-Result: keep as **Candidate**, behind `--project-analyzers`.
+Result: **Validated**, behind `--project-analyzers`.
 
 The analyzer produced no findings across the five sampled applications. That is
 useful evidence that the default threshold of three distinct service constants
@@ -367,7 +369,7 @@ Promotion-review decision:
 
 ## `MetzProject/PackageDependencyPressure`
 
-Result: keep as **Experimental**, behind `--project-analyzers`.
+Result: **Candidate**, behind `--project-analyzers`.
 
 This analyzer was added after the initial calibration passes. It uses the
 optional project index to report classes or modules referenced from at least
@@ -442,22 +444,24 @@ Repo-local calibration rerun after shared-dependency downranking:
 | `solidusio/solidus` | `8d781ac742e3` | 0 | 0 | neutral |
 | `decidim/decidim` | `b2001fa7c9d2` | 0 | 0 | neutral |
 
-Shared-dependency result: **still fail for validated opt-in status**, but the
-signal is closer. The rerun leaves 14 manual package-boundary findings and 26
-downranked shared-dependency findings across the sample. Spree and
+Shared-dependency result: **pass for candidate opt-in status; still fail for
+validated opt-in status**. The rerun leaves 14 manual package-boundary findings
+and 26 downranked shared-dependency findings across the sample. Spree and
 OpenFoodNetwork retain useful domain-model pressure around `Order`, `Product`,
-`Variant`, `Store`, and related commerce models. The remaining blocker is that
-some broad hubs still appear as manual review, especially
-`ActivityPub::TagManager` and `OpenFoodNetwork::ScopeVariantToHub`.
+`Variant`, `Store`, and related commerce models. The remaining broad manual
+examples, especially `ActivityPub::TagManager` and
+`OpenFoodNetwork::ScopeVariantToHub`, are acceptable candidate-level review
+prompts, but they block validated status.
 
 Current decision:
 
-- Keep PackageDependencyPressure **Experimental** and opt-in.
+- Promote PackageDependencyPressure to **Candidate** and keep it opt-in.
 - Treat findings as dependency-pressure prompts, not dependency-direction
   violations. The first slice deliberately does not infer whether a reference
   is architecturally wrong.
-- Do not graduate until another real-application pass shows mostly concrete
-  boundary-pressure examples after broad public/infra categories are handled.
+- Do not mark it **Validated** or move it toward default output until broader
+  real-application passes show mostly concrete boundary-pressure examples after
+  broad public/infra categories are handled.
 
 ## `MetzProject/RepeatedBranching`
 

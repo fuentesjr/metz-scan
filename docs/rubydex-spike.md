@@ -169,12 +169,12 @@ Limitations:
 
 ## Experiment 3: Repeated Branching
 
-`MetzScan::Analyzers::RepeatedBranching` is an optional prototype analyzer that
+`MetzScan::Analyzers::RepeatedBranching` is an opt-in project analyzer that
 parses indexed or explicit Ruby files and groups repeated `case` expressions
 with the same lexical decision and branch-value set, or repeated `if`/`elsif`
 predicate chains with the same receiver and predicate set, across distinct Ruby
 files. It is wired into
-`metz-scan scan --project-analyzers` and remains experimental.
+`metz-scan scan --project-analyzers` with validated opt-in status.
 
 Run the spike against the library code:
 
@@ -333,10 +333,9 @@ Reasons not to enable it by default yet:
 
 `metz-scan scan --project-analyzers` currently runs:
 
-- `MetzProject/ServiceSoup` — candidate. Reports methods with at least three
-  distinct service constants. This is the first analyzer to
-  graduate from pure prototype status, while remaining opt-in.
-- `MetzProject/RepeatedBranching` — experimental. Reports repeated lexical
+- `MetzProject/ServiceSoup` — validated. Reports methods with at least three
+  distinct service constants, while remaining opt-in.
+- `MetzProject/RepeatedBranching` — validated. Reports repeated lexical
   `case` decisions with the same branch-value set, or repeated `if`/`elsif`
   predicate chains with the same receiver and predicate set, across distinct
   Ruby files.
@@ -349,7 +348,7 @@ Reasons not to enable it by default yet:
   explicit configured roots can still inspect modules. Findings emit one primary offense at the base
   declaration while preserving descendant paths in metadata; the remaining
   calibration concern is framework-style root-selection quality.
-- `MetzProject/PackageDependencyPressure` — experimental. Reports indexed
+- `MetzProject/PackageDependencyPressure` — candidate. Reports indexed
   namespaced classes or modules referenced from several files across multiple
   coarse packages outside their declaration package. It depends on the optional
   project index and emits one primary offense at the declaration path while
