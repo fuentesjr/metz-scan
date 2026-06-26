@@ -20,8 +20,8 @@ module MetzScan
         end
       RUBY
       REPEATED_BRANCHING_SUMMARY = {
-        "cop_name" => "MetzProject/RepeatedBranching", "status" => "experimental",
-        "confidence" => "early", "triage_severity" => "manual review",
+        "cop_name" => "MetzProject/RepeatedBranching", "status" => "validated",
+        "confidence" => "medium", "triage_severity" => "design pressure",
         "finding_count" => 1, "offense_count" => 2
       }.freeze
 

@@ -19,10 +19,10 @@ module MetzScan
                 "severity" => "refactor",
                 "location" => { "start_line" => 10, "start_column" => 1 },
                 "project_analyzer" => {
-                  "status" => "experimental",
-                  "confidence" => "early",
-                  "triage_severity" => "manual review",
-                  "triage_summary" => "Useful signal, not proof; review repeated decisions in context."
+                  "status" => "validated",
+                  "confidence" => "medium",
+                  "triage_severity" => "design pressure",
+                  "triage_summary" => "Validated repeated-decision signal; review repeated decisions in context."
                 } }
             ] }
         ]

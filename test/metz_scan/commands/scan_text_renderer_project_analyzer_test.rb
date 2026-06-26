@@ -24,10 +24,10 @@ module MetzScan
                 "location" => { "start_line" => 10, "start_column" => 1 },
                 "why_it_matters" => "Repeated branching spreads one domain decision.",
                 "project_analyzer" => {
-                  "status" => "experimental",
-                  "confidence" => "early",
-                  "triage_severity" => "manual review",
-                  "triage_summary" => "Useful signal, not proof; review repeated decisions in context."
+                  "status" => "validated",
+                  "confidence" => "medium",
+                  "triage_severity" => "design pressure",
+                  "triage_summary" => "Validated repeated-decision signal; review repeated decisions in context."
                 } }
             ] },
           { "path" => "lib/workflow.rb",
@@ -50,8 +50,8 @@ module MetzScan
             "finding_count" => 2,
             "offense_count" => 2,
             "rules" => [
-              { "cop_name" => "MetzProject/RepeatedBranching", "status" => "experimental",
-                "confidence" => "early", "triage_severity" => "manual review", "finding_count" => 1,
+              { "cop_name" => "MetzProject/RepeatedBranching", "status" => "validated",
+                "confidence" => "medium", "triage_severity" => "design pressure", "finding_count" => 1,
                 "offense_count" => 1 },
               { "cop_name" => "MetzProject/ServiceSoup", "status" => "validated",
                 "confidence" => "medium", "triage_severity" => "design pressure", "finding_count" => 1,
@@ -65,15 +65,15 @@ module MetzScan
         assert_match(/\AProject analyzers: 2 findings, 2 offenses \(opt-in advisory signals; review in context\)/,
                      rendered)
         assert_includes rendered,
-                        "MetzProject/RepeatedBranching: 1 finding, 1 offense, status: experimental, " \
-                        "confidence: early, severity: manual review"
+                        "MetzProject/RepeatedBranching: 1 finding, 1 offense, status: validated, " \
+                        "confidence: medium, severity: design pressure"
       end
 
-      def test_project_analyzer_summary_lists_validated_rules_first
+      def test_project_analyzer_summary_sorts_same_priority_rules_by_name
         service_summary = rendered.index("MetzProject/ServiceSoup: 1 finding")
         repeated_summary = rendered.index("MetzProject/RepeatedBranching: 1 finding")
 
-        assert_operator service_summary, :<, repeated_summary
+        assert_operator repeated_summary, :<, service_summary
       end
 
       def test_project_analyzer_blocks_keep_normal_cops_first_then_triage_priority
@@ -81,13 +81,13 @@ module MetzScan
         service_block = rendered.index("\nMetzProject/ServiceSoup\n")
         repeated_block = rendered.index("\nMetzProject/RepeatedBranching\n")
 
-        assert_operator normal_block, :<, service_block
-        assert_operator service_block, :<, repeated_block
+        assert_operator normal_block, :<, repeated_block
+        assert_operator repeated_block, :<, service_block
       end
 
       def test_project_analyzer_block_renders_triage_line
-        assert_includes rendered, "Triage: status: experimental; confidence: early; severity: manual review."
-        assert_includes rendered, "Useful signal, not proof; review repeated decisions in context."
+        assert_includes rendered, "Triage: status: validated; confidence: medium; severity: design pressure."
+        assert_includes rendered, "Validated repeated-decision signal; review repeated decisions in context."
       end
 
       private

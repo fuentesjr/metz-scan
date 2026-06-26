@@ -92,10 +92,11 @@ Readiness by analyzer:
   one setup-orchestration example that is now downranked with low confidence
   and setup-specific triage language. It should stay out of default output
   until the product boundary for default project-analyzer findings is decided.
-- `MetzProject/RepeatedBranching` remains experimental. The counts are stable
-  and context-enriched findings are readable, but generic decision subjects
-  still need clearer user-facing confidence and severity language before this
-  belongs in default output.
+- `MetzProject/RepeatedBranching` is validated for opt-in project-analyzer
+  output. The counts are stable, context-enriched findings are readable, and a
+  Spree follow-up produced only three findings with concrete domain context. It
+  should stay out of default output until default project-analyzer findings have
+  a settled product boundary.
 - `MetzProject/DeepInheritanceTree` remains experimental. Grouped output,
   class-only auto-discovery, and located-root filtering fixed the largest
   mechanical output problems, but broad framework-style roots still need better
@@ -389,7 +390,7 @@ Initial decision:
 
 ## `MetzProject/RepeatedBranching`
 
-Result: keep as **Experimental**, behind `--project-analyzers`.
+Result: **Validated**, behind `--project-analyzers`.
 
 The analyzer produced nine findings across the five sampled applications. The
 volume was low enough to review manually, and several findings looked like real
@@ -458,7 +459,7 @@ triage. In this pass, context made most of those examples understandable rather
 than noisy, but Mastodon's fourteen findings show that volume can become high in
 projects with many parallel domain objects.
 
-Expanded decision:
+Expanded decision at this point in the calibration history:
 
 - Keep RepeatedBranching as **Experimental** and still opt-in.
 - Keep the current grouping rules for now. The expanded sample did not justify
@@ -487,8 +488,28 @@ Rerun decision:
 - No implementation change is warranted from this pass. The generic-looking
   decisions such as `value`, `action`, and `key.to_s` are understandable because
   each finding reports enclosing class/module and method context.
-- Keep RepeatedBranching **Experimental** until users have more explicit
-  confidence/severity language for interpreting repeated branch tables.
+- At this point in the calibration history, keep RepeatedBranching
+  **Experimental** until users have more explicit confidence/severity language
+  for interpreting repeated branch tables.
+
+Validation follow-up added Spree at `7752652ef4ea` as one more service-heavy
+Rails target. The run produced three findings and six occurrences:
+
+- `error` repeated in `Spree::Api::V3::ErrorHandler#render_service_error` and
+  `Spree::Payment::Processing#gateway_error`.
+- `payment.source_type` repeated in admin and public payment serializers.
+- `code` repeated in country-to-timezone and store-default timezone workflows.
+
+Validation threshold:
+
+- Pass if one more representative Rails target stays below five findings.
+- Pass only if every finding carries enough enclosing class/module and method
+  context to make generic branch subjects reviewable.
+- Pass only if no high-volume outlier appears after context enrichment.
+
+Threshold result: **pass for validated opt-in status**. Spree produced three
+context-readable findings, stayed below the volume threshold, and did not add a
+new recurring false-positive category.
 
 ## `MetzProject/DeepInheritanceTree`
 

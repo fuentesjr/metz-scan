@@ -133,8 +133,8 @@ module MetzScan
 
         assert_equal 1, summary.fetch("finding_count")
         assert_equal 2, summary.fetch("offense_count")
-        assert_equal "experimental", summary.dig("rules", 0, "status")
-        assert_equal "early", summary.dig("rules", 0, "confidence")
+        assert_equal "validated", summary.dig("rules", 0, "status")
+        assert_equal "medium", summary.dig("rules", 0, "confidence")
       end
 
       def assert_unique_file_paths

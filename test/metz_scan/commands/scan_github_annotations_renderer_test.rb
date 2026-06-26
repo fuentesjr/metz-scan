@@ -31,10 +31,10 @@ module MetzScan
                 "severity" => "refactor",
                 "location" => { "start_line" => 10, "start_column" => 1 },
                 "project_analyzer" => {
-                  "status" => "experimental",
-                  "confidence" => "early",
-                  "triage_severity" => "manual review",
-                  "triage_summary" => "Useful signal, not proof; review repeated decisions in context."
+                  "status" => "validated",
+                  "confidence" => "medium",
+                  "triage_severity" => "design pressure",
+                  "triage_summary" => "Validated repeated-decision signal; review repeated decisions in context."
                 } }
             ] }
         ]
@@ -74,12 +74,17 @@ module MetzScan
         render_project_analyzer_annotations
 
         assert_match(/::Order#status branches in 2 files\./, annotation_lines.first)
-        assert_includes annotation_lines.first,
-                        "Triage: status: experimental; confidence: early; severity: manual review."
-        assert_includes annotation_lines.first, "Useful signal, not proof; review repeated decisions in context."
+        assert_project_analyzer_triage_annotation
       end
 
       private
+
+      def assert_project_analyzer_triage_annotation
+        assert_includes annotation_lines.first,
+                        "Triage: status: validated; confidence: medium; severity: design pressure."
+        assert_includes annotation_lines.first,
+                        "Validated repeated-decision signal; review repeated decisions in context."
+      end
 
       def render_annotations
         Scan::GithubAnnotationsRenderer.new(@stdout, PARSED).render

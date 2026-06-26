@@ -14,10 +14,10 @@ module MetzScan
       include ProjectAnalyzerTriage
 
       RULE_ID = "MetzProject/RepeatedBranching"
-      PROJECT_ANALYZER_STATUS = "experimental"
-      CONFIDENCE = "early"
-      TRIAGE_SEVERITY = "manual review"
-      TRIAGE_SUMMARY = "Useful signal, not proof; review repeated decisions in context."
+      PROJECT_ANALYZER_STATUS = "validated"
+      CONFIDENCE = "medium"
+      TRIAGE_SEVERITY = "design pressure"
+      TRIAGE_SUMMARY = "Validated repeated-decision signal; review repeated decisions in context."
       WHY = "Repeated branching spreads one domain decision across files and makes change ripple outward."
       SUGGESTED_NEXT_MOVES = [
         "Name the domain decision once and reuse it instead of repeating the same branch table.",
