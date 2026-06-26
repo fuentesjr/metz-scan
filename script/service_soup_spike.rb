@@ -25,7 +25,8 @@ puts "rule_id: #{MetzScan::Analyzers::ServiceSoup::RULE_ID}"
 puts "findings: #{findings.size}"
 
 findings.each do |finding|
-  puts "- #{finding.workflow} coordinates #{finding.services.size} services: #{finding.services.join(', ')}"
+  puts "- #{finding.workflow} coordinates #{finding.services.size} services: #{finding.services.join(', ')} " \
+       "(confidence: #{finding.confidence}; severity: #{finding.triage_severity})"
   finding.occurrences.each do |occurrence|
     puts "  #{display_path(occurrence.path)}:#{occurrence.line} #{occurrence.expression}"
   end

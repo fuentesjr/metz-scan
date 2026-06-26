@@ -89,9 +89,10 @@ Readiness by analyzer:
   repo-local rerun confirmed sparse, reviewable findings that still look like
   plausible true positives in service-heavy Rails applications. A follow-up
   promotion review added one more strong service-workflow target and one
-  setup-orchestration example that should remain low priority. It should stay
-  opt-in until calibration shows broader evidence across more service,
-  interactor, job, mailer, and command-object styles.
+  setup-orchestration example that is now downranked with low confidence and
+  setup-specific triage language. It now passes the local bar for a validated
+  opt-in analyzer, but it should stay out of default output until the product
+  boundary for default project-analyzer findings is decided.
 - `MetzProject/RepeatedBranching` remains experimental. The counts are stable
   and context-enriched findings are readable, but generic decision subjects
   still need clearer user-facing confidence and severity language before this
@@ -313,15 +314,54 @@ extend services for the same cart. The Spree seed finding is a weaker signal:
 `Spree::Seeds::All#call` invokes many setup tasks in sequence, which is visible
 coordination but is less likely to represent everyday domain workflow pressure.
 
+Seed/setup downranking follow-up:
+
+- ServiceSoup now detects setup-like workflows by path, namespace/class name, or
+  method name terms such as `seed`, `seeds`, `setup`, `install`, and
+  `bootstrap`.
+- Setup-like findings keep `status: candidate` but emit `confidence: low`,
+  `severity: setup orchestration`, setup-specific triage language, and
+  setup-specific next moves.
+- Rule summaries and text-rendered rule blocks choose the highest-priority
+  triage metadata when a rule has mixed normal and setup findings, so one seed
+  finding does not downrank the whole `MetzProject/ServiceSoup` block.
+
+Calibration threshold for opt-in validation:
+
+- Pass if calibration finds at least 10 medium-confidence, design-pressure
+  ServiceSoup findings across at least 5 real Rails repositories.
+- Pass only if no sampled repository has high-volume ServiceSoup output that
+  would bury other findings.
+- Pass only if recurring low-value categories are either downranked,
+  suppressed, or explicitly documented before counting the analyzer as
+  validated.
+
+Repo-local calibration rerun after setup downranking:
+
+| Project | Revision | Medium design-pressure findings | Low setup findings | Result |
+| --- | --- | ---: | ---: | --- |
+| `chatwoot/chatwoot` | `e86222034e39` | 3 | 0 | pass |
+| `discourse/discourse` | `2115f1cac5f9` | 1 | 0 | pass |
+| `forem/forem` | `d9a393f1d502` | 2 | 0 | pass |
+| `mastodon/mastodon` | `34bbb4748223` | 3 | 0 | pass |
+| `spree/spree` | `7752652ef4ea` | 1 | 1 | pass with setup downranked |
+| `decidim/decidim` | `b2001fa7c9d2` | 0 | 0 | neutral |
+| `openfoodfoundation/openfoodnetwork` | `be9d51ab32a6` | 0 | 0 | neutral |
+| `solidusio/solidus` | `8d781ac742e3` | 0 | 0 | neutral |
+
+Threshold result: **pass for validated opt-in status**. The rerun produced 10
+medium-confidence design-pressure findings across 5 repositories, plus 1
+downranked setup finding, and no high-volume ServiceSoup target. This does not
+settle default-output readiness; it only establishes that ServiceSoup is ready
+for a validated opt-in status if the status taxonomy is updated.
+
 Promotion-review decision:
 
-- Keep ServiceSoup **Candidate** and opt-in. The added Spree finding broadens
-  the positive evidence, but the sample is still concentrated in service-heavy
-  Rails codebases and still includes setup-orchestration noise.
-- Before default output, decide whether seed/data-setup orchestrators should be
-  suppressed, downranked, or documented as lower-priority findings.
-- Do not add `execute` or `run` support yet. The new evidence still comes from
-  existing `call` and `new(...).perform` support.
+- Keep ServiceSoup opt-in for now, but treat it as ready for a `validated`
+  opt-in status once the status taxonomy and renderer priority rules include
+  that state.
+- Do not add `execute` or `run` support yet. The passing evidence still comes
+  from existing `call` and `new(...).perform` support.
 
 ## `MetzProject/PackageDependencyPressure`
 

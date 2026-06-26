@@ -93,7 +93,11 @@ module MetzScan
       private
 
       def rendered
-        @rendered ||= StringIO.new.tap { |stdout| Scan::TextRenderer.new(stdout, PARSED).render }.string
+        @rendered ||= rendered_for(PARSED)
+      end
+
+      def rendered_for(parsed)
+        StringIO.new.tap { |stdout| Scan::TextRenderer.new(stdout, parsed).render }.string
       end
     end
   end

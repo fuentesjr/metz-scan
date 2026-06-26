@@ -2,6 +2,7 @@
 
 require_relative "offense_extractor"
 require_relative "project_analyzer_triage_formatter"
+require_relative "project_analyzer_triage_priority"
 
 module MetzScan
   module Commands
@@ -10,9 +11,6 @@ module MetzScan
         ANSI_RESET = "\e[0m"
         ANSI_BOLD = "\e[1m"
         ANSI_CYAN = "\e[36m"
-        STATUS_PRIORITY = { "candidate" => 0, "experimental" => 1 }.freeze
-        CONFIDENCE_PRIORITY = { "high" => 0, "medium" => 1, "early" => 2 }.freeze
-        TRIAGE_SEVERITY_PRIORITY = { "design pressure" => 0, "manual review" => 1 }.freeze
 
         def initialize(stdout, parsed)
           @stdout = stdout
@@ -32,7 +30,7 @@ module MetzScan
 
         def render_block(cop_name, list)
           stdout.puts heading(cop_name)
-          emit_block_metadata(cop_name, list.first)
+          emit_block_metadata(cop_name, representative_offense(list))
           emit_offense_lines(list)
           stdout.puts
         end
@@ -84,6 +82,10 @@ module MetzScan
           [1, *project_analyzer_priority(metadata), cop_name]
         end
 
+        def representative_offense(list)
+          list.min_by { |offense| project_analyzer_priority(offense[:project_analyzer] || {}) }
+        end
+
         def sorted_project_analyzer_rules(summary)
           Array(summary["rules"]).sort_by do |rule|
             [*project_analyzer_priority(rule), rule.fetch("cop_name")]
@@ -91,15 +93,7 @@ module MetzScan
         end
 
         def project_analyzer_priority(metadata)
-          [
-            priority_for(STATUS_PRIORITY, metadata["status"]),
-            priority_for(CONFIDENCE_PRIORITY, metadata["confidence"]),
-            priority_for(TRIAGE_SEVERITY_PRIORITY, metadata["triage_severity"])
-          ]
-        end
-
-        def priority_for(priority_table, value)
-          priority_table.fetch(value, priority_table.size)
+          ProjectAnalyzerTriagePriority.sort_key(metadata)
         end
 
         def emit_why_block(cop_name, why)

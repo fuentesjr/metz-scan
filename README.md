@@ -116,7 +116,8 @@ Project analyzers parse Ruby files only. They do not inspect ERB/HAML/SLIM
 templates, and they avoid semantic claims that require resolving runtime types.
 For example, `ServiceSoup` counts distinct constant-backed `.call` and
 `.perform` service-call shapes but does not prove that a constant is truly a
-service object. See
+service object. Seed and setup orchestrators are reported with lower confidence
+and setup-specific triage language. See
 [docs/project-analyzer-calibration.md](docs/project-analyzer-calibration.md) for
 current calibration notes.
 

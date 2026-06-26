@@ -4,6 +4,7 @@ require_relative "../project_index"
 require_relative "occurrence"
 require_relative "project_analyzer_triage"
 require_relative "ruby_file_enumerator"
+require_relative "service_soup/setup_workflow_triage"
 require_relative "service_soup/workflow_collector"
 
 module MetzScan
@@ -63,10 +64,28 @@ module MetzScan
 
       def finding_attributes(workflow, services)
         workflow_attributes(workflow, services).merge(
-          project_analyzer_triage_attributes,
+          triage_attributes_for(workflow),
           project_analyzer_metadata: project_analyzer_metadata_for(workflow),
-          why_it_matters: WHY, suggested_next_moves: SUGGESTED_NEXT_MOVES
+          why_it_matters: why_for(workflow), suggested_next_moves: suggested_next_moves_for(workflow)
         )
+      end
+
+      def triage_attributes_for(workflow)
+        return setup_triage_attributes if setup_orchestration?(workflow)
+
+        project_analyzer_triage_attributes
+      end
+
+      def setup_triage_attributes
+        SetupWorkflowTriage.attributes(PROJECT_ANALYZER_STATUS)
+      end
+
+      def why_for(workflow)
+        setup_orchestration?(workflow) ? SetupWorkflowTriage::WHY : WHY
+      end
+
+      def suggested_next_moves_for(workflow)
+        setup_orchestration?(workflow) ? SetupWorkflowTriage::SUGGESTED_NEXT_MOVES : SUGGESTED_NEXT_MOVES
       end
 
       def workflow_attributes(workflow, services)
@@ -76,6 +95,10 @@ module MetzScan
 
       def service_names(workflow)
         workflow.service_calls.map(&:service_name).uniq.sort
+      end
+
+      def setup_orchestration?(workflow)
+        SetupWorkflowTriage.setup?(workflow)
       end
 
       def message_for(workflow, services)

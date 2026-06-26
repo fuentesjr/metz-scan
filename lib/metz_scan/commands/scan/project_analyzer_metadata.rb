@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "project_analyzer_triage_priority"
+
 module MetzScan
   module Commands
     class Scan
@@ -37,15 +39,19 @@ module MetzScan
         end
 
         def rule_summary(rule_id, findings, offenses)
-          summary_metadata(findings.first).merge(
+          summary_metadata(findings).merge(
             "cop_name" => rule_id,
             "finding_count" => findings.size,
             "offense_count" => offense_count(rule_id, offenses)
           )
         end
 
-        def summary_metadata(finding)
-          triage_metadata(finding).slice("status", "confidence", "triage_severity")
+        def summary_metadata(findings)
+          triage_metadata(priority_finding(findings)).slice("status", "confidence", "triage_severity")
+        end
+
+        def priority_finding(findings)
+          Array(findings).min_by { |finding| ProjectAnalyzerTriagePriority.sort_key(triage_metadata(finding)) }
         end
 
         def offense_count(rule_id, offenses)

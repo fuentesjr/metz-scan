@@ -220,12 +220,27 @@ module MetzScan
         end
       end
 
+      def test_downranks_seed_setup_orchestration
+        finding = ServiceSoup.new(paths: [service_soup_setup_fixture_path]).call.first
+
+        assert_equal "Spree::Seeds::All#call", finding.workflow
+        assert_setup_orchestration_triage(finding)
+      end
+
       private
 
       def assert_perform_service_finding(finding)
         assert_equal "Inboxes::FetchImapEmailsJob#process_email_for_channel", finding.workflow
         assert_equal expected_services, finding.services
         assert_equal %i[new_perform], finding.occurrences.map(&:style).uniq
+      end
+
+      def assert_setup_orchestration_triage(finding)
+        assert_equal "candidate", finding.project_analyzer_status
+        assert_equal "low", finding.confidence
+        assert_equal "setup orchestration", finding.triage_severity
+        assert_match(/Setup workflow signal/, finding.triage_summary)
+        assert_match(/Setup orchestration/, finding.why_it_matters)
       end
 
       def expected_services
@@ -238,6 +253,10 @@ module MetzScan
 
       def write_file(dir, index, source)
         File.join(dir, "workflow_#{index}.rb").tap { |path| File.write(path, source) }
+      end
+
+      def service_soup_setup_fixture_path
+        File.expand_path("../../fixtures/service_soup_setup_app", __dir__)
       end
 
       def fake_index(files)
