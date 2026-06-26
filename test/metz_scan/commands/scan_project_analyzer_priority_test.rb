@@ -57,6 +57,24 @@ module MetzScan
         assert_equal(-1, priority.sort_key("status" => "validated") <=> priority.sort_key("status" => "candidate"))
       end
 
+      def test_manual_review_sorts_before_shared_dependency
+        priority = Scan::ProjectAnalyzerTriagePriority
+
+        manual = { "status" => "experimental", "confidence" => "low", "triage_severity" => "manual review" }
+        shared = { "status" => "experimental", "confidence" => "low", "triage_severity" => "shared dependency" }
+
+        assert_equal(-1, priority.sort_key(manual) <=> priority.sort_key(shared))
+      end
+
+      def test_shared_dependency_sorts_before_setup_orchestration
+        priority = Scan::ProjectAnalyzerTriagePriority
+
+        shared = { "status" => "experimental", "confidence" => "low", "triage_severity" => "shared dependency" }
+        setup = { "status" => "experimental", "confidence" => "low", "triage_severity" => "setup orchestration" }
+
+        assert_equal(-1, priority.sort_key(shared) <=> priority.sort_key(setup))
+      end
+
       private
 
       def assert_normal_service_soup_summary(summary)

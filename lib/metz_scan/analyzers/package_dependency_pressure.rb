@@ -5,6 +5,7 @@ require_relative "package_dependency_pressure/finding"
 require_relative "package_dependency_pressure/metadata"
 require_relative "package_dependency_pressure/package_map"
 require_relative "package_dependency_pressure/reference_set"
+require_relative "package_dependency_pressure/shared_dependency_triage"
 require_relative "project_analyzer_triage"
 
 module MetzScan
@@ -86,7 +87,7 @@ module MetzScan
 
       def finding_attributes(declaration, reference_set)
         core_finding_attributes(declaration, reference_set)
-          .merge(project_analyzer_triage_attributes,
+          .merge(triage_attributes_for(declaration),
                  project_analyzer_metadata: metadata_for(declaration, reference_set))
       end
 
@@ -107,7 +108,7 @@ module MetzScan
           referring_packages: reference_set.packages,
           references: reference_set.references,
           primary_location: Location.new(name: declaration.name, path: declaration.path),
-          why_it_matters: WHY, suggested_next_moves: SUGGESTED_NEXT_MOVES }
+          why_it_matters: why_for(declaration), suggested_next_moves: suggested_next_moves_for(declaration) }
       end
 
       def message_for(declaration, reference_set, declared_package)
@@ -124,7 +125,8 @@ module MetzScan
         { references: reference_set.references,
           referring_files: reference_set.files,
           referring_packages: reference_set.packages,
-          declared_package: PackageMap.package_for(declaration.path) }
+          declared_package: PackageMap.package_for(declaration.path),
+          dependency_pressure_category: dependency_pressure_category_for(declaration) }
       end
 
       def same_path?(left, right)
@@ -133,6 +135,28 @@ module MetzScan
 
       def ignored_declaration_name?(name)
         IGNORED_DECLARATION_NAMES.include?(name) || name.include?(SYNTHETIC_DECLARATION_MARKER)
+      end
+
+      def triage_attributes_for(declaration)
+        return SharedDependencyTriage.attributes(PROJECT_ANALYZER_STATUS) if shared_dependency?(declaration)
+
+        project_analyzer_triage_attributes
+      end
+
+      def why_for(declaration)
+        shared_dependency?(declaration) ? SharedDependencyTriage::WHY : WHY
+      end
+
+      def suggested_next_moves_for(declaration)
+        shared_dependency?(declaration) ? SharedDependencyTriage::SUGGESTED_NEXT_MOVES : SUGGESTED_NEXT_MOVES
+      end
+
+      def dependency_pressure_category_for(declaration)
+        shared_dependency?(declaration) ? SharedDependencyTriage::CATEGORY : "package_boundary"
+      end
+
+      def shared_dependency?(declaration)
+        SharedDependencyTriage.shared?(declaration)
       end
 
       Reference = Struct.new(:path, :line, :column, :package, keyword_init: true)

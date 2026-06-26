@@ -49,6 +49,7 @@ module MetzScan
         assert_equal "experimental", offense.dig("project_analyzer", "status")
         assert_equal "Billing::Gateway", offense.dig("project_analyzer", "declaration", "name")
         assert_equal "app/services", offense.dig("project_analyzer", "declared_package")
+        assert_equal "package_boundary", offense.dig("project_analyzer", "dependency_pressure_category")
       end
 
       def assert_package_dependency_reference_metadata(offense)

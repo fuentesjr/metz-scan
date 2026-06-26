@@ -379,7 +379,10 @@ referring files and packages in project-analyzer metadata.
 The first slice only counts declarations under `app/` and `lib/` packages, and
 it ignores references from `spec/`, `test/`, `lib/tasks/`, `lib/seeders/`,
 `lib/seed_data/`, `lib/test_data/`, and `lib/generators/` when measuring
-cross-package pressure.
+cross-package pressure. Broad shared dependencies such as configuration,
+settings, event registries, exception families, and infrastructure hubs are
+reported with lower confidence and `shared dependency` triage rather than
+suppressed.
 
 Initial real-project calibration before threshold tuning used 4 files across 2
 packages. It produced high-volume output on most full applications:
@@ -425,6 +428,28 @@ reviewable by volume, but the leading categories are still too broad for a
 validated analyzer. The next improvement should classify or suppress global
 configuration, public namespace APIs, framework extension points, and exception
 families before another promotion attempt.
+
+Repo-local calibration rerun after shared-dependency downranking:
+
+| Project | Revision | Manual package-boundary findings | Shared-dependency findings | Result |
+| --- | --- | ---: | ---: | --- |
+| `chatwoot/chatwoot` | `e86222034e39` | 0 | 2 | neutral after shared-dependency downrank |
+| `discourse/discourse` | `2115f1cac5f9` | 2 | 8 | fail for validation; remaining scheduler/rate-limiter hubs need triage |
+| `forem/forem` | `d9a393f1d502` | 0 | 5 | neutral after shared-settings downrank |
+| `mastodon/mastodon` | `34bbb4748223` | 1 | 2 | fail for validation; `ActivityPub::TagManager` remains broad |
+| `openfoodfoundation/openfoodnetwork` | `be9d51ab32a6` | 7 | 3 | mixed; concrete Spree model pressure remains |
+| `spree/spree` | `7752652ef4ea` | 6 | 4 | mixed; concrete commerce model pressure remains |
+| `solidusio/solidus` | `8d781ac742e3` | 0 | 0 | neutral |
+| `decidim/decidim` | `b2001fa7c9d2` | 0 | 0 | neutral |
+
+Shared-dependency result: **still fail for validated opt-in status**, but the
+signal is closer. The rerun leaves 16 manual package-boundary findings and 24
+downranked shared-dependency findings across the sample. Spree and
+OpenFoodNetwork retain useful domain-model pressure around `Order`, `Product`,
+`Variant`, `Store`, and related commerce models. The remaining blocker is that
+some broad hubs still appear as manual review, especially
+`ActivityPub::TagManager`, `Scheduler::Defer`, `RateLimiter::LimitExceeded`,
+and `OpenFoodNetwork::ScopeVariantToHub`.
 
 Current decision:
 

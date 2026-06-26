@@ -130,6 +130,9 @@ declarations under `app/` and `lib/` packages, and it ignores references from
 `spec/`, `test/`, `lib/tasks/`, `lib/seeders/`, `lib/seed_data/`,
 `lib/test_data/`, and `lib/generators/` when measuring cross-package pressure.
 Its default threshold is at least 12 referring files across at least 5 packages.
+Broad shared dependencies such as configuration, settings, event registries,
+exception families, and infrastructure hubs are still reported, but with lower
+confidence and shared-dependency triage.
 
 Project analyzer output includes status, confidence, triage severity, and triage
 summary metadata. Text output shows a project-analyzer summary before rule

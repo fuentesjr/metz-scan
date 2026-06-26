@@ -10,6 +10,7 @@ module MetzScan
           counts(context.fetch(:referring_files), context.fetch(:referring_packages)).merge(
             "declaration" => declaration_metadata(declaration),
             "declared_package" => context.fetch(:declared_package),
+            "dependency_pressure_category" => context.fetch(:dependency_pressure_category),
             "references" => context.fetch(:references).map { |reference| reference_metadata(reference) }
           )
         end

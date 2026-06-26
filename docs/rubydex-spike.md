@@ -358,4 +358,7 @@ Reasons not to enable it by default yet:
   counts declarations under `app/` and `lib/`, ignores test/setup/support paths
   such as `spec/`, `test/`, `lib/tasks/`, `lib/seeders/`, `lib/seed_data/`,
   `lib/test_data/`, and `lib/generators/`, and skips broad top-level
-  declarations when measuring pressure.
+  declarations when measuring pressure. Broad shared dependencies such as
+  configuration, settings, event registries, exception families, and
+  infrastructure hubs are downranked with shared-dependency triage rather than
+  suppressed.

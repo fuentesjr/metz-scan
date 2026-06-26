@@ -70,6 +70,18 @@ module MetzScan
         assert_empty findings
       end
 
+      def test_downranks_shared_dependency_declarations
+        finding = PackageDependencyPressure.new(index: shared_dependency_index).call.first
+
+        assert_shared_dependency_triage(finding)
+      end
+
+      def test_downranks_infrastructure_lib_declarations
+        finding = PackageDependencyPressure.new(index: infrastructure_dependency_index).call.first
+
+        assert_shared_dependency_triage(finding)
+      end
+
       private
 
       def assert_package_pressure_finding(finding)
@@ -103,9 +115,17 @@ module MetzScan
         assert_equal "app/services", metadata.fetch("declared_package")
         assert_equal 12, metadata.fetch("referring_file_count")
         assert_equal 6, metadata.fetch("referring_package_count")
+        assert_equal "package_boundary", metadata.fetch("dependency_pressure_category")
         assert_equal %w[app/controllers app/jobs app/mailers app/policies app/serializers app/workers],
                      metadata.fetch("referring_packages")
         assert_equal 12, metadata.fetch("references").size
+      end
+
+      def assert_shared_dependency_triage(finding)
+        assert_equal "low", finding.confidence
+        assert_equal "shared dependency", finding.triage_severity
+        assert_includes finding.triage_summary, "Shared dependency signal"
+        assert_equal "shared_dependency", finding.project_analyzer_metadata.fetch("dependency_pressure_category")
       end
 
       def pressured_index
@@ -135,15 +155,25 @@ module MetzScan
         )
       end
 
-      def pressure_index(available: true, name: "Billing::Gateway", references: [])
+      def shared_dependency_index
+        pressure_index(name: "Settings::General", path: "/project/app/models/settings/general.rb",
+                       references: external_references)
+      end
+
+      def infrastructure_dependency_index
+        pressure_index(name: "Redis::Alfred", path: "/project/lib/redis/alfred.rb",
+                       references: external_references)
+      end
+
+      def pressure_index(available: true, name: "Billing::Gateway", path: gateway_path, references: [])
         FakePackagePressureIndex.new(
-          available: available, declarations: gateway_declarations(name),
+          available: available, declarations: gateway_declarations(name, path),
           references: { name => references }
         )
       end
 
-      def gateway_declarations(name)
-        [ProjectIndex::Declaration.new(name: name, path: gateway_path, kind: :class)]
+      def gateway_declarations(name, path = gateway_path)
+        [ProjectIndex::Declaration.new(name: name, path: path, kind: :class)]
       end
 
       def external_references
