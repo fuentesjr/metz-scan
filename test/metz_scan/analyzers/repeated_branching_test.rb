@@ -183,7 +183,7 @@ module MetzScan
         assert_equal "order.status", finding.decision
         assert_equal %w[cancelled paid pending], finding.branch_values
         assert_equal 2, finding.occurrences.size
-        assert_includes finding.message, "order.status branches in 2 files"
+        assert_match(/order\.status .*branches in 2 files/, finding.message)
       end
 
       def assert_case_context(finding)

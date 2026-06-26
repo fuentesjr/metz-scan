@@ -5,6 +5,7 @@ require_relative "occurrence"
 require_relative "project_analyzer_triage"
 require_relative "ruby_file_enumerator"
 require_relative "repeated_branching/branch_site_collector"
+require_relative "repeated_branching/decision_subject"
 
 module MetzScan
   module Analyzers
@@ -69,19 +70,29 @@ module MetzScan
       end
 
       def finding_attributes(first, sites)
-        { source: source_name, rule_id: RULE_ID, message: message_for(first, sites),
-          decision: first.decision, kind: first.kind, branch_values: first.branch_values,
-          occurrences: sites }.merge(project_analyzer_triage_attributes,
-                                     project_analyzer_metadata: project_analyzer_metadata_for(first, sites),
-                                     why_it_matters: WHY, suggested_next_moves: SUGGESTED_NEXT_MOVES)
+        subject = DecisionSubject.for(first.decision)
+        core_finding_attributes(first, sites, subject).merge(triage_attributes_for(first, sites, subject))
+      end
+
+      def triage_attributes_for(first, sites, subject)
+        project_analyzer_triage_attributes.merge(
+          project_analyzer_metadata: project_analyzer_metadata_for(first, sites, subject),
+          why_it_matters: WHY, suggested_next_moves: SUGGESTED_NEXT_MOVES
+        )
+      end
+
+      def core_finding_attributes(first, sites, subject)
+        { source: source_name, rule_id: RULE_ID, message: message_for(first, sites, subject),
+          decision: first.decision, kind: first.kind, branch_values: first.branch_values, occurrences: sites }
       end
 
       def distinct_paths(sites)
         sites.map(&:path).uniq
       end
 
-      def message_for(site, sites)
-        "#{site.decision} branches in #{distinct_paths(sites).size} files#{context_suffix(sites)}; " \
+      def message_for(site, sites, subject)
+        "#{site.decision} (#{subject.label}) branches in #{distinct_paths(sites).size} files" \
+          "#{context_suffix(sites)}; " \
           "consider consolidating the decision."
       end
 
@@ -100,9 +111,10 @@ module MetzScan
         [site.enclosing_name, site.method_name].compact.join.then { |name| name unless name.empty? }
       end
 
-      def project_analyzer_metadata_for(site, sites)
+      def project_analyzer_metadata_for(site, sites, subject)
         { "decision" => site.decision, "kind" => site.kind.to_s,
-          "branch_values" => site.branch_values,
+          "branch_values" => site.branch_values, "decision_subject_kind" => subject.kind,
+          "decision_subject_label" => subject.label, "decision_subject_summary" => subject.summary,
           "occurrences" => sites.map { |occurrence| occurrence_metadata(occurrence) } }
       end
 
