@@ -434,7 +434,7 @@ Repo-local calibration rerun after shared-dependency downranking:
 | Project | Revision | Manual package-boundary findings | Shared-dependency findings | Result |
 | --- | --- | ---: | ---: | --- |
 | `chatwoot/chatwoot` | `e86222034e39` | 0 | 2 | neutral after shared-dependency downrank |
-| `discourse/discourse` | `2115f1cac5f9` | 2 | 8 | fail for validation; remaining scheduler/rate-limiter hubs need triage |
+| `discourse/discourse` | `2115f1cac5f9` | 0 | 10 | neutral after scheduler/rate-limiter downrank |
 | `forem/forem` | `d9a393f1d502` | 0 | 5 | neutral after shared-settings downrank |
 | `mastodon/mastodon` | `34bbb4748223` | 1 | 2 | fail for validation; `ActivityPub::TagManager` remains broad |
 | `openfoodfoundation/openfoodnetwork` | `be9d51ab32a6` | 7 | 3 | mixed; concrete Spree model pressure remains |
@@ -443,13 +443,12 @@ Repo-local calibration rerun after shared-dependency downranking:
 | `decidim/decidim` | `b2001fa7c9d2` | 0 | 0 | neutral |
 
 Shared-dependency result: **still fail for validated opt-in status**, but the
-signal is closer. The rerun leaves 16 manual package-boundary findings and 24
+signal is closer. The rerun leaves 14 manual package-boundary findings and 26
 downranked shared-dependency findings across the sample. Spree and
 OpenFoodNetwork retain useful domain-model pressure around `Order`, `Product`,
 `Variant`, `Store`, and related commerce models. The remaining blocker is that
 some broad hubs still appear as manual review, especially
-`ActivityPub::TagManager`, `Scheduler::Defer`, `RateLimiter::LimitExceeded`,
-and `OpenFoodNetwork::ScopeVariantToHub`.
+`ActivityPub::TagManager` and `OpenFoodNetwork::ScopeVariantToHub`.
 
 Current decision:
 

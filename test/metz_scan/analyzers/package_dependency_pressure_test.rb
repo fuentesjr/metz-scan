@@ -82,6 +82,15 @@ module MetzScan
         assert_shared_dependency_triage(finding)
       end
 
+      def test_downranks_scheduler_and_rate_limiter_declarations
+        findings = [
+          PackageDependencyPressure.new(index: scheduler_dependency_index).call.first,
+          PackageDependencyPressure.new(index: rate_limiter_dependency_index).call.first
+        ]
+
+        findings.each { |finding| assert_shared_dependency_triage(finding) }
+      end
+
       private
 
       def assert_package_pressure_finding(finding)
@@ -162,6 +171,16 @@ module MetzScan
 
       def infrastructure_dependency_index
         pressure_index(name: "Redis::Alfred", path: "/project/lib/redis/alfred.rb",
+                       references: external_references)
+      end
+
+      def scheduler_dependency_index
+        pressure_index(name: "Scheduler::Defer", path: "/project/lib/scheduler/defer.rb",
+                       references: external_references)
+      end
+
+      def rate_limiter_dependency_index
+        pressure_index(name: "RateLimiter::LimitExceeded", path: "/project/lib/rate_limiter/limit_exceeded.rb",
                        references: external_references)
       end
 

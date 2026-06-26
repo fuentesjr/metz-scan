@@ -18,7 +18,8 @@ module MetzScan
         NAME_SEGMENT_PATTERN =
           /\A(?:Config(?:uration)?|Settings?|Current|Core|Events?|Types?|Feature(?:Flag|Toggle)s?|Permissions?|Utils?|Utilities?)\z/i
         ERROR_SUFFIX_PATTERN = /(?:Error|Exception)\z/
-        INFRASTRUCTURE_LIB_SEGMENT_PATTERN = /\A(?:cache|caches|errors?|exceptions?|freedom_patches|redis)\z/i
+        INFRASTRUCTURE_LIB_SEGMENT_PATTERN =
+          /\A(?:cache|caches|errors?|exceptions?|freedom_patches|rate_limiter|redis|scheduler)\z/i
         private_constant :NAME_SEGMENT_PATTERN, :ERROR_SUFFIX_PATTERN, :INFRASTRUCTURE_LIB_SEGMENT_PATTERN
 
         module_function
