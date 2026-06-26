@@ -236,7 +236,7 @@ module MetzScan
       end
 
       def assert_setup_orchestration_triage(finding)
-        assert_equal "candidate", finding.project_analyzer_status
+        assert_equal "validated", finding.project_analyzer_status
         assert_equal "low", finding.confidence
         assert_equal "setup orchestration", finding.triage_severity
         assert_match(/Setup workflow signal/, finding.triage_summary)

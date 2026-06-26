@@ -46,7 +46,7 @@ module MetzScan
       private
 
       def assert_service_soup_triage_metadata
-        expected = { "status" => "candidate", "confidence" => "medium", "triage_severity" => "design pressure" }
+        expected = { "status" => "validated", "confidence" => "medium", "triage_severity" => "design pressure" }
         assert_equal expected, service_soup_metadata.slice(*expected.keys)
       end
 

@@ -85,14 +85,13 @@ triage semantics beyond the default RuboCop-backed cops.
 
 Readiness by analyzer:
 
-- `MetzProject/ServiceSoup` is the strongest graduation candidate. The latest
-  repo-local rerun confirmed sparse, reviewable findings that still look like
-  plausible true positives in service-heavy Rails applications. A follow-up
-  promotion review added one more strong service-workflow target and one
-  setup-orchestration example that is now downranked with low confidence and
-  setup-specific triage language. It now passes the local bar for a validated
-  opt-in analyzer, but it should stay out of default output until the product
-  boundary for default project-analyzer findings is decided.
+- `MetzProject/ServiceSoup` is validated for opt-in project-analyzer output.
+  The latest repo-local rerun confirmed sparse, reviewable findings that still
+  look like plausible true positives in service-heavy Rails applications. A
+  follow-up promotion review added one more strong service-workflow target and
+  one setup-orchestration example that is now downranked with low confidence
+  and setup-specific triage language. It should stay out of default output
+  until the product boundary for default project-analyzer findings is decided.
 - `MetzProject/RepeatedBranching` remains experimental. The counts are stable
   and context-enriched findings are readable, but generic decision subjects
   still need clearer user-facing confidence and severity language before this
@@ -165,8 +164,8 @@ output was readable but sorted project-analyzer blocks alphabetically, which
 buried the higher-confidence `ServiceSoup` candidate after the high-volume
 experimental inheritance and repeated-branching sections. Text output now
 keeps normal RuboCop cops first, then orders project-analyzer summary rows and
-blocks by triage priority so candidate/design-pressure signals surface before
-experimental/manual-review signals.
+blocks by triage priority so higher-confidence design-pressure signals surface
+before experimental/manual-review signals.
 
 Second-target validation on 2026-06-25: direct `ProjectAnalyzerRunner`
 sampling against the repo-local Discourse checkout at `2115f1cac5f9` captured
@@ -183,17 +182,17 @@ bundle exec ruby tmp/project-analyzer-calibration/runs/20260625-140109/render_pr
 The sample produced 53 findings and 60 offenses: `ServiceSoup` had 1 finding
 and 3 offenses, `DeepInheritanceTree` had 47 findings and 47 offenses, and
 `RepeatedBranching` had 5 findings and 10 offenses. The text report now lists
-the `ServiceSoup` candidate/design-pressure summary and block first, ahead of
+the `ServiceSoup` design-pressure summary and block first, ahead of
 the larger experimental inheritance and repeated-branching sections. This
 confirms the Mastodon-driven priority change helps on a second high-volume
 target rather than only on the original sample.
 
 Readiness decision after second-target validation: keep all project analyzers
 behind `--project-analyzers`. The priority-ordered text report now makes the
-sparse `ServiceSoup` candidate visible even when `DeepInheritanceTree` dominates
+sparse `ServiceSoup` signal visible even when `DeepInheritanceTree` dominates
 finding volume, but this improves triage rather than default-output readiness.
-`ServiceSoup` remains the strongest candidate and needs broader service-style
-coverage before graduation. `RepeatedBranching` remains experimental until its
+`ServiceSoup` remained the strongest candidate but still needed broader
+service-style coverage before graduation. `RepeatedBranching` remains experimental until its
 generic branch-subject findings have clearer confidence/severity interpretation.
 `DeepInheritanceTree` remains the main blocker for default project-analyzer
 output because large Rails and framework roots need more calibration after
@@ -270,7 +269,8 @@ did not show three-service workflows using those shapes.
 
 Expanded decision:
 
-- Keep ServiceSoup as **Candidate** and still opt-in. The expanded sample shows
+- Keep ServiceSoup as **Candidate** and still opt-in at this point in the
+  calibration history. The expanded sample shows
   useful true positives in service-heavy applications, but the evidence is not
   broad enough for default scan output.
 - Do not add more invocation styles until calibration finds repeated,
@@ -296,7 +296,8 @@ Rerun decision:
 - No implementation change is warranted from this pass. The findings remain
   sparse and reviewable, and the current supported call shapes are sufficient
   for the observed examples.
-- Keep ServiceSoup **Candidate** and opt-in. It has the strongest true-positive
+- Keep ServiceSoup **Candidate** and opt-in at this point in the calibration
+  history. It has the strongest true-positive
   evidence of the three project analyzers, but not enough breadth yet for
   default output.
 
@@ -319,7 +320,7 @@ Seed/setup downranking follow-up:
 - ServiceSoup now detects setup-like workflows by path, namespace/class name, or
   method name terms such as `seed`, `seeds`, `setup`, `install`, and
   `bootstrap`.
-- Setup-like findings keep `status: candidate` but emit `confidence: low`,
+- Setup-like findings keep `status: validated` but emit `confidence: low`,
   `severity: setup orchestration`, setup-specific triage language, and
   setup-specific next moves.
 - Rule summaries and text-rendered rule blocks choose the highest-priority
@@ -352,14 +353,13 @@ Repo-local calibration rerun after setup downranking:
 Threshold result: **pass for validated opt-in status**. The rerun produced 10
 medium-confidence design-pressure findings across 5 repositories, plus 1
 downranked setup finding, and no high-volume ServiceSoup target. This does not
-settle default-output readiness; it only establishes that ServiceSoup is ready
-for a validated opt-in status if the status taxonomy is updated.
+settle default-output readiness; it establishes that ServiceSoup is ready for a
+validated opt-in status.
 
 Promotion-review decision:
 
-- Keep ServiceSoup opt-in for now, but treat it as ready for a `validated`
-  opt-in status once the status taxonomy and renderer priority rules include
-  that state.
+- Promote ServiceSoup to **Validated** while keeping it opt-in behind
+  `--project-analyzers`.
 - Do not add `execute` or `run` support yet. The passing evidence still comes
   from existing `call` and `new(...).perform` support.
 

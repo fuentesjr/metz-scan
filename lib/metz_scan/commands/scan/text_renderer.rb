@@ -72,10 +72,11 @@ module MetzScan
         def sorted_offense_blocks
           OffenseExtractor.offenses(parsed)
                           .group_by { |offense| offense[:cop_name] }
-                          .sort_by { |cop_name, list| offense_block_sort_key(cop_name, list.first) }
+                          .sort_by { |cop_name, list| offense_block_sort_key(cop_name, list) }
         end
 
-        def offense_block_sort_key(cop_name, offense)
+        def offense_block_sort_key(cop_name, list)
+          offense = representative_offense(list)
           metadata = offense[:project_analyzer]
           return [0, cop_name] unless metadata
 

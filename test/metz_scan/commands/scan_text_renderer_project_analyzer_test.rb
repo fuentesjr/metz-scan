@@ -37,7 +37,7 @@ module MetzScan
                 "location" => { "start_line" => 20, "start_column" => 1 },
                 "why_it_matters" => "Service-object soup scatters one workflow.",
                 "project_analyzer" => {
-                  "status" => "candidate",
+                  "status" => "validated",
                   "confidence" => "medium",
                   "triage_severity" => "design pressure",
                   "triage_summary" => "Candidate workflow signal; review methods that coordinate several " \
@@ -53,7 +53,7 @@ module MetzScan
               { "cop_name" => "MetzProject/RepeatedBranching", "status" => "experimental",
                 "confidence" => "early", "triage_severity" => "manual review", "finding_count" => 1,
                 "offense_count" => 1 },
-              { "cop_name" => "MetzProject/ServiceSoup", "status" => "candidate",
+              { "cop_name" => "MetzProject/ServiceSoup", "status" => "validated",
                 "confidence" => "medium", "triage_severity" => "design pressure", "finding_count" => 1,
                 "offense_count" => 1 }
             ]
@@ -69,7 +69,7 @@ module MetzScan
                         "confidence: early, severity: manual review"
       end
 
-      def test_project_analyzer_summary_lists_candidate_rules_first
+      def test_project_analyzer_summary_lists_validated_rules_first
         service_summary = rendered.index("MetzProject/ServiceSoup: 1 finding")
         repeated_summary = rendered.index("MetzProject/RepeatedBranching: 1 finding")
 

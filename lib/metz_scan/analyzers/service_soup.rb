@@ -14,10 +14,10 @@ module MetzScan
       include ProjectAnalyzerTriage
 
       RULE_ID = "MetzProject/ServiceSoup"
-      PROJECT_ANALYZER_STATUS = "candidate"
+      PROJECT_ANALYZER_STATUS = "validated"
       CONFIDENCE = "medium"
       TRIAGE_SEVERITY = "design pressure"
-      TRIAGE_SUMMARY = "Candidate workflow signal; review methods that coordinate several distinct services."
+      TRIAGE_SUMMARY = "Validated workflow signal; review methods that coordinate several distinct services."
       WHY = "Service-object soup scatters one workflow across many procedural steps " \
             "and makes orchestration harder to change."
       SUGGESTED_NEXT_MOVES = [

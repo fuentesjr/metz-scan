@@ -51,6 +51,12 @@ module MetzScan
         assert_equal "design pressure", summary.fetch("triage_severity")
       end
 
+      def test_validated_status_sorts_before_candidate
+        priority = Scan::ProjectAnalyzerTriagePriority
+
+        assert_equal(-1, priority.sort_key("status" => "validated") <=> priority.sort_key("status" => "candidate"))
+      end
+
       private
 
       def assert_normal_service_soup_summary(summary)
@@ -75,12 +81,13 @@ module MetzScan
       end
 
       def mixed_priority_findings
-        [service_finding("low", "setup orchestration"), service_finding("medium", "design pressure")]
+        [service_finding("validated", "low", "setup orchestration"),
+         service_finding("validated", "medium", "design pressure")]
       end
 
-      def service_finding(confidence, triage_severity)
+      def service_finding(status, confidence, triage_severity)
         Struct.new(:rule_id, :project_analyzer_status, :confidence, :triage_severity, keyword_init: true)
-              .new(rule_id: "MetzProject/ServiceSoup", project_analyzer_status: "candidate",
+              .new(rule_id: "MetzProject/ServiceSoup", project_analyzer_status: status,
                    confidence: confidence, triage_severity: triage_severity)
       end
 

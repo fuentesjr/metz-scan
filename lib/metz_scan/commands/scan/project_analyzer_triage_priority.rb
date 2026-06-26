@@ -5,7 +5,7 @@ module MetzScan
     class Scan
       module ProjectAnalyzerTriagePriority
         PRIORITIES = {
-          "status" => { "candidate" => 0, "experimental" => 1 },
+          "status" => { "validated" => 0, "candidate" => 1, "experimental" => 2 },
           "confidence" => { "high" => 0, "medium" => 1, "early" => 2, "low" => 3 },
           "triage_severity" => {
             "design pressure" => 0,
