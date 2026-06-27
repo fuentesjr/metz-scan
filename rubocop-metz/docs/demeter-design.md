@@ -528,6 +528,6 @@ mission documents:
   closes Q1–Q12)
 - Historical validation IDs: [milestone-history.md](../../docs/milestone-history.md)
 - csend invariant (project-wide): `AGENTS.md` "csend invariant"
-- Cop base class and metadata DSL:
-  (`rubocop-metz/lib/rubocop/cop/metz/base.rb`,
+- Safe-navigation bridge and metadata DSL:
+  (`rubocop-metz/lib/rubocop/cop/metz/on_send_csend_bridge.rb`,
   `rubocop-metz/lib/metz/cop_metadata.rb`)

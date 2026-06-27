@@ -50,7 +50,6 @@ minitest_test_descendants:
   - MetzScan::ProjectIndexWorkspaceTest
   - RuboCopCopMetzMethodsTooManyParametersTest
 metz_cop_declarations:
-  - RuboCop::Cop::Metz::Base
   - RuboCop::Cop::Metz::ClassesTooLong
   - RuboCop::Cop::Metz::ControllersTooManyDirectCollaborators
   - RuboCop::Cop::Metz::DemeterTrainWreck
@@ -60,7 +59,7 @@ metz_cop_declarations:
   - RuboCop::Cop::Metz::MethodsTooManyParameters
   - RuboCop::Cop::Metz::OnSendCsendBridge
   - RuboCop::Cop::Metz::ViewsDeepNavigation
-references_to RuboCop::Cop::Metz::Base: 3
+references_to RuboCop::Cop::Metz::OnSendCsendBridge: 2
 diagnostics: 187
 index_errors: 0
 ```
@@ -121,7 +120,7 @@ triage.
 Run the spike against the current workspace:
 
 ```bash
-bundle exec ruby script/inheritance_descendants_spike.rb RuboCop::Cop::Metz::Base
+bundle exec ruby script/inheritance_descendants_spike.rb RuboCop::Cop::Metz::DemeterTrainWreck
 ```
 
 Current output with Rubydex `0.2.5`:
@@ -129,19 +128,16 @@ Current output with Rubydex `0.2.5`:
 ```text
 backend: rubydex
 workspace: true
-base_name: RuboCop::Cop::Metz::Base
+base_name: RuboCop::Cop::Metz::DemeterTrainWreck
 rule_id: MetzProject/DeepInheritanceTree
 descendants: 0
   (none)
 ```
 
 The first-party cops now inherit directly from `RuboCop::Cop::Base` and compose
-Metz helpers explicitly, so `RuboCop::Cop::Metz::Base` remains only as a
-compatibility shim and no longer produces the dogfood inheritance finding.
-
-TODO (breaking cleanup): remove the `RuboCop::Cop::Metz::Base` compatibility
-shim, update tests/docs/requires to use `RuboCop::Cop::Metz::OnSendCsendBridge`
-directly, and accept the downstream API break.
+Metz helpers explicitly. The old `RuboCop::Cop::Metz::Base` compatibility shim
+has been removed as a breaking cleanup; cops that define `on_send` include
+`RuboCop::Cop::Metz::OnSendCsendBridge` directly.
 
 TDD evidence:
 
@@ -151,7 +147,8 @@ TDD evidence:
 - Green: fake-index analyzer tests pass without Rubydex, and the Rubydex-backed
   fixture test passes with `env BUNDLE_WITH=rubydex`.
 - Guard: `bundle exec ruby script/inheritance_descendants_spike.rb
-  RuboCop::Cop::Metz::Base` exits clearly when Rubydex is not enabled.
+  RuboCop::Cop::Metz::DemeterTrainWreck` exits clearly when Rubydex is not
+  enabled.
 
 Limitations:
 

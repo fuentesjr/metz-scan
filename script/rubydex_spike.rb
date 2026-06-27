@@ -32,8 +32,8 @@ puts "metz_cop_declarations:"
 metz_declarations.each { |name| puts "  - #{name}" }
 puts "  (none)" if metz_declarations.empty?
 
-base_references = index.constant_references_to("RuboCop::Cop::Metz::Base")
-puts "references_to RuboCop::Cop::Metz::Base: #{base_references.size}"
+bridge_references = index.constant_references_to("RuboCop::Cop::Metz::OnSendCsendBridge")
+puts "references_to RuboCop::Cop::Metz::OnSendCsendBridge: #{bridge_references.size}"
 
 puts "diagnostics: #{index.diagnostics.size}"
 puts "index_errors: #{index.index_errors.size}"

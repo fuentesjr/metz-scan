@@ -41,13 +41,21 @@ module MetzScan
       def assert_deep_inheritance_metadata(parsed)
         offense = deep_inheritance_offense(parsed)
 
+        assert_deep_inheritance_triage(offense)
+        assert_deep_inheritance_identity(offense)
+        assert_descendant_metadata(offense)
+        assert_report_location_metadata(offense)
+      end
+
+      def assert_deep_inheritance_triage(offense)
         assert_equal "candidate", offense.dig("project_analyzer", "status")
         assert_equal "low", offense.dig("project_analyzer", "confidence")
         assert_equal "broad base", offense.dig("project_analyzer", "triage_severity")
+      end
+
+      def assert_deep_inheritance_identity(offense)
         assert_equal "ApplicationController", offense.dig("project_analyzer", "base_name")
         assert_equal "rails application base", offense.dig("project_analyzer", "root_kind")
-        assert_descendant_metadata(offense)
-        assert_report_location_metadata(offense)
       end
 
       def assert_descendant_metadata(offense)
@@ -63,12 +71,20 @@ module MetzScan
       def assert_project_analyzer_summary(parsed)
         summary = parsed.fetch("summary").fetch("project_analyzers")
 
+        assert_project_analyzer_counts(summary)
+        assert_project_analyzer_rule(summary.fetch("rules").first)
+      end
+
+      def assert_project_analyzer_counts(summary)
         assert_equal 1, summary.fetch("finding_count")
         assert_equal 1, summary.fetch("offense_count")
-        assert_equal 1, summary.fetch("rules").first.fetch("offense_count")
-        assert_equal "candidate", summary.fetch("rules").first.fetch("status")
-        assert_equal "low", summary.fetch("rules").first.fetch("confidence")
-        assert_equal "broad base", summary.fetch("rules").first.fetch("triage_severity")
+      end
+
+      def assert_project_analyzer_rule(rule)
+        assert_equal 1, rule.fetch("offense_count")
+        assert_equal "candidate", rule.fetch("status")
+        assert_equal "low", rule.fetch("confidence")
+        assert_equal "broad base", rule.fetch("triage_severity")
       end
 
       def deep_inheritance_offense(parsed)

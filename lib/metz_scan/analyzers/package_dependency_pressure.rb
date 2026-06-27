@@ -4,6 +4,7 @@ require_relative "../project_index"
 require_relative "package_dependency_pressure/finding"
 require_relative "package_dependency_pressure/metadata"
 require_relative "package_dependency_pressure/package_map"
+require_relative "package_dependency_pressure/reference_collector"
 require_relative "package_dependency_pressure/reference_set"
 require_relative "package_dependency_pressure/shared_dependency_triage"
 require_relative "project_analyzer_triage"
@@ -32,6 +33,7 @@ module MetzScan
       def initialize(paths: nil, index: nil, minimum_referring_files: 12, minimum_referring_packages: 5)
         @paths = Array(paths)
         @index = index || ProjectIndex.build(@paths)
+        @reference_collector = ReferenceCollector.new(@index)
         @minimum_referring_files = minimum_referring_files
         @minimum_referring_packages = minimum_referring_packages
       end
@@ -44,7 +46,7 @@ module MetzScan
 
       private
 
-      attr_reader :paths, :index, :minimum_referring_files, :minimum_referring_packages
+      attr_reader :index, :reference_collector, :minimum_referring_files, :minimum_referring_packages
 
       def declarations
         index.declarations.select { |declaration| declaration_candidate?(declaration) }
@@ -62,27 +64,10 @@ module MetzScan
       end
 
       def finding_for(declaration)
-        reference_set = ReferenceSet.new(counted_references_for(declaration))
+        reference_set = ReferenceSet.new(reference_collector.for(declaration))
         return unless reference_set.enough?(minimum_referring_files, minimum_referring_packages)
 
         Finding.new(finding_attributes(declaration, reference_set))
-      end
-
-      def counted_references_for(declaration)
-        declared_package = PackageMap.package_for(declaration.path)
-        index.constant_references_to(declaration.name).filter_map do |reference|
-          counted_reference_for(reference, declaration.path, declared_package)
-        end
-      end
-
-      def counted_reference_for(reference, declaration_path, declared_package)
-        return if same_path?(reference.path, declaration_path)
-        return if PackageMap.ignored_path?(reference.path)
-
-        package = PackageMap.package_for(reference.path)
-        return if !package || package == declared_package
-
-        Reference.new(path: reference.path, line: reference.line, column: reference.column, package: package)
       end
 
       def finding_attributes(declaration, reference_set)
@@ -118,19 +103,7 @@ module MetzScan
       end
 
       def metadata_for(declaration, reference_set)
-        Metadata.for(declaration, metadata_context(declaration, reference_set))
-      end
-
-      def metadata_context(declaration, reference_set)
-        { references: reference_set.references,
-          referring_files: reference_set.files,
-          referring_packages: reference_set.packages,
-          declared_package: PackageMap.package_for(declaration.path),
-          dependency_pressure_category: dependency_pressure_category_for(declaration) }
-      end
-
-      def same_path?(left, right)
-        File.expand_path(left) == File.expand_path(right)
+        Metadata.for(declaration, reference_set, dependency_pressure_category_for(declaration))
       end
 
       def ignored_declaration_name?(name)

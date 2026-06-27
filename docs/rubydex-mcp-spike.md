@@ -104,11 +104,11 @@ MCP results:
 
 Verdict: `rg` wins for this exact method-call-reference query.
 
-### Which cops inherit from `RuboCop::Cop::Metz::Base`?
+### Which cops inherited from `RuboCop::Cop::Metz::Base`?
 
 Historical note: this section predates the refactor that moved first-party cops
-off `RuboCop::Cop::Metz::Base`. The local base now remains only as a
-compatibility shim.
+off `RuboCop::Cop::Metz::Base` and the later breaking cleanup that removed the
+local base shim.
 
 Baseline `rg` found direct subclass syntax quickly, but indirect descendants
 require manual interpretation:
@@ -121,8 +121,8 @@ MCP `get_descendants` found the transitive hierarchy and included
 `RuboCop::Cop::Metz::ViewsDeepNavigation`, which inherits through
 `DemeterTrainWreck`.
 
-Observed MCP result also included `RuboCop::Cop::Metz::Base` itself in the
-descendant list, so callers need to filter self out.
+Observed historical MCP result also included `RuboCop::Cop::Metz::Base` itself
+in the descendant list, so callers needed to filter self out.
 
 Verdict: MCP wins for transitive descendant discovery, with a small result
 cleanup caveat.

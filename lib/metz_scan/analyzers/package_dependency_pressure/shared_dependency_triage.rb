@@ -15,12 +15,15 @@ module MetzScan
           "Leave stable shared APIs alone when callers use a narrow, intentional interface.",
           "Extract package-owned adapters when broad APIs force repeated package-specific knowledge."
         ].freeze
+        SHARED_NAME_SEGMENTS = "Config(?:uration)?|Settings?|Current|Core|Events?|Types?|" \
+                               "Feature(?:Flag|Toggle)s?|Permissions?|Utils?|Utilities?"
         NAME_SEGMENT_PATTERN =
-          /\A(?:Config(?:uration)?|Settings?|Current|Core|Events?|Types?|Feature(?:Flag|Toggle)s?|Permissions?|Utils?|Utilities?)\z/i
+          /\A(?:#{SHARED_NAME_SEGMENTS})\z/i
         ERROR_SUFFIX_PATTERN = /(?:Error|Exception)\z/
         INFRASTRUCTURE_LIB_SEGMENT_PATTERN =
           /\A(?:cache|caches|errors?|exceptions?|freedom_patches|rate_limiter|redis|scheduler)\z/i
-        private_constant :NAME_SEGMENT_PATTERN, :ERROR_SUFFIX_PATTERN, :INFRASTRUCTURE_LIB_SEGMENT_PATTERN
+        private_constant :SHARED_NAME_SEGMENTS, :NAME_SEGMENT_PATTERN, :ERROR_SUFFIX_PATTERN,
+                         :INFRASTRUCTURE_LIB_SEGMENT_PATTERN
 
         module_function
 
@@ -40,11 +43,10 @@ module MetzScan
         end
 
         def shared_path?(path)
-          parts = path.to_s.split(File::SEPARATOR)
-          lib_index = parts.index("lib")
-          return false unless lib_index
+          package_parts = PackageMap.package_parts(path)
+          return false unless package_parts.first == "lib"
 
-          root_lib_file?(parts, lib_index) || infrastructure_lib_segment?(parts, lib_index)
+          root_lib_file?(package_parts) || infrastructure_lib_segment?(package_parts)
         end
 
         def name_segments(name)
@@ -59,12 +61,12 @@ module MetzScan
           segment.to_s.match?(ERROR_SUFFIX_PATTERN)
         end
 
-        def root_lib_file?(parts, lib_index)
-          parts[lib_index + 1].to_s.end_with?(".rb")
+        def root_lib_file?(package_parts)
+          package_parts[1].to_s.end_with?(".rb")
         end
 
-        def infrastructure_lib_segment?(parts, lib_index)
-          File.basename(parts[lib_index + 1].to_s, ".rb").match?(INFRASTRUCTURE_LIB_SEGMENT_PATTERN)
+        def infrastructure_lib_segment?(package_parts)
+          File.basename(package_parts[1].to_s, ".rb").match?(INFRASTRUCTURE_LIB_SEGMENT_PATTERN)
         end
       end
     end

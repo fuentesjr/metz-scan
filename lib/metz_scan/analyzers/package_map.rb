@@ -31,6 +31,10 @@ module MetzScan
         parts[(index + 2)..] || []
       end
 
+      def package_parts(path)
+        package_for(path).to_s.split("/")
+      end
+
       def package_after(parts, index)
         return unless parts[index + 1]
 

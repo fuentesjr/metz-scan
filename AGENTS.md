@@ -7,9 +7,7 @@ Always use the OpenAI developer documentation MCP server when working with the O
 ## Metz cop safe-navigation invariant
 
 Metz cops that define `on_send` are expected to handle `csend` the same way.
-First-party cops should include `RuboCop::Cop::Metz::OnSendCsendBridge`;
-`RuboCop::Cop::Metz::Base` remains a downstream compatibility shim and includes
-the same bridge.
+Metz cops should include `RuboCop::Cop::Metz::OnSendCsendBridge` directly.
 
 ## Project analyzer calibration fixtures
 

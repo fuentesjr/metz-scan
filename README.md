@@ -200,7 +200,7 @@ bundle exec ruby script/rubydex_spike.rb
 
 The script indexes Ruby files, prints declaration/document counts, reports known
 `Minitest::Test` descendants, lists `RuboCop::Cop::Metz` declarations, and
-counts references to the `RuboCop::Cop::Metz::Base` compatibility shim.
+counts references to `RuboCop::Cop::Metz::OnSendCsendBridge`.
 
 See [docs/rubydex-spike.md](docs/rubydex-spike.md) for current results and
 feasibility notes.

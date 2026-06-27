@@ -92,18 +92,18 @@ module MetzScan
     end
 
     def changed_project_offense
-      { "path" => "rubocop-metz/lib/rubocop/cop/metz/base.rb",
+      { "path" => "lib/metz_scan/analyzers/inheritance_descendants.rb",
         "offense" => changed_project_offense_payload }
     end
 
     def changed_project_offense_payload
       { "cop_name" => "MetzProject/DeepInheritanceTree",
-        "message" => "RuboCop::Cop::Metz::Base has 10 descendants; consider whether shared behavior is broad.",
+        "message" => "ApplicationController has 10 descendants; consider whether shared behavior is broad.",
         "project_analyzer" => changed_project_metadata }
     end
 
     def changed_project_metadata
-      { "base_name" => "RuboCop::Cop::Metz::Base", "descendant_count" => 10 }
+      { "base_name" => "ApplicationController", "descendant_count" => 10 }
     end
   end
 end

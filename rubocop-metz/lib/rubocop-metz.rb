@@ -11,7 +11,6 @@ require_relative "metz/erb_ruby_extractor"
 require_relative "metz/haml_ruby_extractor"
 require_relative "metz/slim_ruby_extractor"
 require_relative "rubocop/cop/metz/on_send_csend_bridge"
-require_relative "rubocop/cop/metz/base"
 require_relative "rubocop/cop/metz_cops"
 require_relative "rubocop/formatter/metz_json_formatter"
 

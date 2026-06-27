@@ -613,10 +613,9 @@ new recurring false-positive category.
 Result: **Candidate**, behind `--project-analyzers`.
 
 The analyzer depends on the optional Rubydex-backed project index. Without the
-optional bundle group enabled, it contributes no findings. With Rubydex enabled,
-the focused spike on this repository no longer reports
-`RuboCop::Cop::Metz::Base`: first-party cops now compose Metz helpers directly,
-and the local base remains only as a compatibility shim.
+optional bundle group enabled, it contributes no findings. First-party cops now
+compose Metz helpers directly with `RuboCop::Cop::Metz::OnSendCsendBridge`;
+the old local base shim has been removed as a breaking cleanup.
 
 Initial Rubydex-backed calibration used the same five real applications as the
 first project-analyzer pass, scanning only `app/` and `lib/`. The raw count is

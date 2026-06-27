@@ -6,13 +6,21 @@ module MetzScan
       module Metadata
         module_function
 
-        def for(declaration, context)
-          counts(context.fetch(:referring_files), context.fetch(:referring_packages)).merge(
-            "declaration" => declaration_metadata(declaration),
-            "declared_package" => context.fetch(:declared_package),
-            "dependency_pressure_category" => context.fetch(:dependency_pressure_category),
-            "references" => context.fetch(:references).map { |reference| reference_metadata(reference) }
+        def for(declaration, reference_set, dependency_pressure_category)
+          counts(reference_set.files, reference_set.packages).merge(
+            dependency_metadata(declaration, reference_set, dependency_pressure_category)
           )
+        end
+
+        def dependency_metadata(declaration, reference_set, dependency_pressure_category)
+          { "declaration" => declaration_metadata(declaration),
+            "declared_package" => PackageMap.package_for(declaration.path),
+            "dependency_pressure_category" => dependency_pressure_category,
+            "references" => references_metadata(reference_set) }
+        end
+
+        def references_metadata(reference_set)
+          reference_set.references.map { |reference| reference_metadata(reference) }
         end
 
         def counts(referring_files, referring_packages)

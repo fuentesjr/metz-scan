@@ -61,11 +61,19 @@ module MetzScan
       def assert_project_analyzer_summary(parsed)
         summary = parsed.fetch("summary").fetch("project_analyzers")
 
+        assert_project_analyzer_counts(summary)
+        assert_project_analyzer_rule(summary.fetch("rules").first)
+      end
+
+      def assert_project_analyzer_counts(summary)
         assert_equal 1, summary.fetch("finding_count")
         assert_equal 1, summary.fetch("offense_count")
-        assert_equal "MetzProject/PackageDependencyPressure", summary.fetch("rules").first.fetch("cop_name")
-        assert_equal "candidate", summary.fetch("rules").first.fetch("status")
-        assert_equal "medium", summary.fetch("rules").first.fetch("confidence")
+      end
+
+      def assert_project_analyzer_rule(rule)
+        assert_equal "MetzProject/PackageDependencyPressure", rule.fetch("cop_name")
+        assert_equal "candidate", rule.fetch("status")
+        assert_equal "medium", rule.fetch("confidence")
       end
 
       def package_dependency_offense(parsed)

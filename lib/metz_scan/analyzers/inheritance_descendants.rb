@@ -2,7 +2,9 @@
 
 require_relative "../project_index"
 require_relative "inheritance_descendants/finding"
+require_relative "inheritance_descendants/metadata"
 require_relative "inheritance_descendants/root_kind"
+require_relative "inheritance_descendants/triage"
 require_relative "occurrence"
 
 module MetzScan
@@ -14,10 +16,6 @@ module MetzScan
       CONFIDENCE = "medium"
       TRIAGE_SEVERITY = "manual review"
       TRIAGE_SUMMARY = "Candidate inheritance signal; review broad base classes and descendant spread in context."
-      BROAD_ROOT_CONFIDENCE = "low"
-      BROAD_ROOT_TRIAGE_SEVERITY = "broad base"
-      BROAD_ROOT_TRIAGE_SUMMARY = "Broad inheritance base; review only when shared behavior changes often " \
-                                  "or descendants diverge."
       WHY = "Large inheritance trees hide coupling and make changes expensive."
       SUGGESTED_NEXT_MOVES = [
         "Review whether the base class is carrying multiple responsibilities.",
@@ -42,7 +40,7 @@ module MetzScan
 
       private
 
-      attr_reader :paths, :index, :base_names, :minimum_descendants
+      attr_reader :index, :base_names, :minimum_descendants
 
       def base_candidates
         return base_names unless base_names.empty?
@@ -94,22 +92,10 @@ module MetzScan
       end
 
       def triage_for(base_name, descendants, descendant_locations, root_kind)
-        triage_attributes_for(root_kind).merge(
+        Triage.attributes_for(root_kind).merge(
           project_analyzer_metadata: project_analyzer_metadata_for(base_name, descendants, descendant_locations,
                                                                    root_kind)
         )
-      end
-
-      def triage_attributes_for(root_kind)
-        return broad_root_triage_attributes if root_kind
-
-        { project_analyzer_status: PROJECT_ANALYZER_STATUS, confidence: CONFIDENCE,
-          triage_severity: TRIAGE_SEVERITY, triage_summary: TRIAGE_SUMMARY }
-      end
-
-      def broad_root_triage_attributes
-        { project_analyzer_status: PROJECT_ANALYZER_STATUS, confidence: BROAD_ROOT_CONFIDENCE,
-          triage_severity: BROAD_ROOT_TRIAGE_SEVERITY, triage_summary: BROAD_ROOT_TRIAGE_SUMMARY }
       end
 
       def message_for(base_name, descendants, root_kind)
@@ -127,13 +113,11 @@ module MetzScan
       end
 
       def project_analyzer_metadata_for(base_name, descendants, descendant_locations, root_kind)
-        { "base_name" => base_name, "descendants" => descendants,
-          "descendant_count" => descendants.size, "descendant_locations" => location_metadata(descendant_locations),
-          "root_kind" => root_kind, "source" => index.backend_name.to_s }.compact
+        Metadata.for(base_name, descendants, descendant_locations, metadata_context(root_kind))
       end
 
-      def location_metadata(locations)
-        locations.map { |location| { "name" => location.name, "path" => location.path } }
+      def metadata_context(root_kind)
+        { root_kind: root_kind, source: index.backend_name.to_s }
       end
 
       def location_for(name)

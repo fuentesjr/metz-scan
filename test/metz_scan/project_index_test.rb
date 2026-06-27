@@ -64,7 +64,7 @@ module MetzScan
       assert_empty index.declarations
       assert_empty index.documents
       assert_empty index.descendants_of("Minitest::Test")
-      assert_empty index.constant_references_to("RuboCop::Cop::Metz::Base")
+      assert_empty index.constant_references_to("RuboCop::Cop::Metz::OnSendCsendBridge")
       assert_empty index.search("Metz")
     end
 

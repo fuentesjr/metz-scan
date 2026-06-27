@@ -7,59 +7,7 @@ require "metz_scan/analyzers/inheritance_descendants"
 
 module MetzScan
   module Analyzers
-    class InheritanceDescendantsTest < Minitest::Test
-      def test_reports_configured_base_when_descendant_count_meets_threshold
-        finding = analyze_fake_index.first
-
-        assert_finding_metadata(finding)
-        assert_finding_descendants(finding)
-      end
-
-      def test_uses_index_declarations_as_base_candidates_when_unconfigured
-        finding = InheritanceDescendants.new(index: fake_index, minimum_descendants: 2).call.first
-
-        assert_equal "ApplicationController", finding.base_name
-        assert_equal %w[AdminController OrdersController], finding.descendants
-      end
-
-      def test_reports_candidate_triage_for_unlabeled_base
-        finding = InheritanceDescendants.new(index: custom_base_index, base_names: "DomainWorkflowBase",
-                                             minimum_descendants: 2).call.first
-
-        assert_equal "candidate", finding.project_analyzer_status
-        assert_equal "medium", finding.confidence
-        assert_equal "manual review", finding.triage_severity
-        assert_includes finding.triage_summary, "Candidate inheritance signal"
-        refute finding.project_analyzer_metadata.key?("root_kind")
-      end
-
-      def test_skips_configured_base_below_threshold
-        analyzer = InheritanceDescendants.new(index: fake_index, base_names: "ApplicationController",
-                                              minimum_descendants: 3)
-
-        assert_empty analyzer.call
-      end
-
-      def test_skips_when_index_is_unavailable
-        analyzer = InheritanceDescendants.new(index: unavailable_index, base_names: "ApplicationController")
-
-        assert_empty analyzer.call
-      end
-
-      def test_filters_core_and_synthetic_declarations_from_auto_discovered_candidates
-        finding = InheritanceDescendants.new(index: noisy_index, minimum_descendants: 2).call.first
-
-        assert_equal "ApplicationRecord", finding.base_name
-        assert_equal %w[Account Order], finding.descendants
-      end
-
-      def test_uses_first_descendant_location_when_base_declaration_has_no_path
-        finding = InheritanceDescendants.new(index: missing_base_path_index, base_names: "ApplicationController",
-                                             minimum_descendants: 2).call.first
-
-        assert_equal ["/app/admin_controller.rb"], finding.occurrences.map(&:path)
-      end
-
+    module InheritanceDescendantsTestSupport
       private
 
       def analyze_fake_index
@@ -164,6 +112,66 @@ module MetzScan
       def declaration(name, path, kind = nil) = ProjectIndex::Declaration.new(name: name, path: path, kind: kind)
     end
 
+    class InheritanceDescendantsTest < Minitest::Test
+      include InheritanceDescendantsTestSupport
+
+      def test_reports_configured_base_when_descendant_count_meets_threshold
+        finding = analyze_fake_index.first
+
+        assert_finding_metadata(finding)
+        assert_finding_descendants(finding)
+      end
+
+      def test_uses_index_declarations_as_base_candidates_when_unconfigured
+        finding = InheritanceDescendants.new(index: fake_index, minimum_descendants: 2).call.first
+
+        assert_equal "ApplicationController", finding.base_name
+        assert_equal %w[AdminController OrdersController], finding.descendants
+      end
+
+      def test_reports_candidate_triage_for_unlabeled_base
+        finding = InheritanceDescendants.new(index: custom_base_index, base_names: "DomainWorkflowBase",
+                                             minimum_descendants: 2).call.first
+
+        assert_candidate_triage_for_unlabeled_base(finding)
+        refute finding.project_analyzer_metadata.key?("root_kind")
+      end
+
+      def assert_candidate_triage_for_unlabeled_base(finding)
+        assert_equal "candidate", finding.project_analyzer_status
+        assert_equal "medium", finding.confidence
+        assert_equal "manual review", finding.triage_severity
+        assert_includes finding.triage_summary, "Candidate inheritance signal"
+      end
+
+      def test_skips_configured_base_below_threshold
+        analyzer = InheritanceDescendants.new(index: fake_index, base_names: "ApplicationController",
+                                              minimum_descendants: 3)
+
+        assert_empty analyzer.call
+      end
+
+      def test_skips_when_index_is_unavailable
+        analyzer = InheritanceDescendants.new(index: unavailable_index, base_names: "ApplicationController")
+
+        assert_empty analyzer.call
+      end
+
+      def test_filters_core_and_synthetic_declarations_from_auto_discovered_candidates
+        finding = InheritanceDescendants.new(index: noisy_index, minimum_descendants: 2).call.first
+
+        assert_equal "ApplicationRecord", finding.base_name
+        assert_equal %w[Account Order], finding.descendants
+      end
+
+      def test_uses_first_descendant_location_when_base_declaration_has_no_path
+        finding = InheritanceDescendants.new(index: missing_base_path_index, base_names: "ApplicationController",
+                                             minimum_descendants: 2).call.first
+
+        assert_equal ["/app/admin_controller.rb"], finding.occurrences.map(&:path)
+      end
+    end
+
     class InheritanceDescendantsRootSelectionTest < Minitest::Test
       def test_auto_discovery_ignores_known_non_class_roots
         findings = InheritanceDescendants.new(index: kinded_index, minimum_descendants: 2).call
@@ -239,11 +247,15 @@ module MetzScan
       def assert_root_kind(findings, base_name, root_kind)
         finding = findings.find { |candidate| candidate.base_name == base_name }
 
+        assert_broad_root_triage(finding)
         assert_equal root_kind, finding.project_analyzer_metadata.fetch("root_kind")
+        assert_includes finding.message, "#{base_name} (#{root_kind}) has 2 descendants"
+      end
+
+      def assert_broad_root_triage(finding)
         assert_equal "candidate", finding.project_analyzer_status
         assert_equal "low", finding.confidence
         assert_equal "broad base", finding.triage_severity
-        assert_includes finding.message, "#{base_name} (#{root_kind}) has 2 descendants"
       end
 
       def root_kind_index

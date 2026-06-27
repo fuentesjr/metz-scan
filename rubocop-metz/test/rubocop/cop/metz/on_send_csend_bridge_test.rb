@@ -3,6 +3,27 @@
 require_relative "../../../test_helper"
 
 class RuboCopCopMetzOnSendCsendBridgeTest < Minitest::Test
+  def test_local_base_compatibility_shim_is_removed
+    refute defined?(RuboCop::Cop::Metz::Base)
+  end
+
+  def test_composes_with_cop_metadata_without_local_base
+    klass = Class.new(RuboCop::Cop::Base) do
+      exclude_from_registry
+
+      extend Metz::CopMetadata
+      include RuboCop::Cop::Metz::OnSendCsendBridge
+
+      why_it_matters "composition matters"
+      fix_safety :unsafe
+      suggested_next_moves ["include the bridge directly"]
+    end
+
+    assert_equal "composition matters", klass.why_it_matters
+    assert_equal :unsafe, klass.fix_safety
+    assert_equal ["include the bridge directly"], klass.suggested_next_moves
+  end
+
   def test_aliases_on_send_when_included_before_definition
     klass = Class.new do
       include RuboCop::Cop::Metz::OnSendCsendBridge

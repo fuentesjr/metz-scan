@@ -6,7 +6,7 @@ require "metz_scan/analyzers/package_dependency_pressure"
 
 module MetzScan
   module Analyzers
-    class PackageDependencyPressureTest < Minitest::Test
+    module PackageDependencyPressureFixtures
       EXTERNAL_REFERENCE_PATHS = [
         ["app/controllers/orders_controller.rb", 10],
         ["app/controllers/refunds_controller.rb", 11],
@@ -33,78 +33,57 @@ module MetzScan
         ["lib/generators/billing/install_generator.rb", 11]
       ].freeze
 
-      def test_reports_declarations_referenced_across_external_packages
-        finding = PackageDependencyPressure.new(index: pressured_index).call.first
+      private
 
-        assert_package_pressure_finding(finding)
-        assert_package_pressure_metadata(finding)
+      def pressured_index
+        pressure_index(references: external_references)
       end
 
-      def test_ignores_unavailable_index
-        assert_empty PackageDependencyPressure.new(index: pressure_index(available: false)).call
+      def below_threshold_index
+        pressure_index(references: external_references.first(3))
       end
 
-      def test_ignores_declarations_below_thresholds
-        findings = PackageDependencyPressure.new(index: below_threshold_index).call
-
-        assert_empty findings
+      def noisy_reference_index
+        pressure_index(references: noisy_references)
       end
 
-      def test_ignores_top_level_namespace_declarations
-        findings = PackageDependencyPressure.new(index: top_level_namespace_index).call
-
-        assert_empty findings
+      def top_level_namespace_index
+        pressure_index(name: "RuboCop", references: external_references)
       end
 
-      def test_ignores_same_package_test_setup_and_self_references
-        finding = PackageDependencyPressure.new(index: noisy_reference_index).call.first
-
-        assert_equal 12, finding.referring_files.size
-        assert_equal %w[app/controllers app/jobs app/mailers app/policies app/serializers app/workers],
-                     finding.referring_packages
+      def setup_declaration_index
+        pressure_index(path: "/project/lib/tasks/billing_gateway.rb", references: external_references)
       end
 
-      def test_ignores_declarations_in_setup_paths
-        findings = PackageDependencyPressure.new(index: setup_declaration_index).call
-
-        assert_empty findings
+      def pressure_index(available: true, name: "Billing::Gateway", path: gateway_path, references: [])
+        FakePackagePressureIndex.new(
+          available: available, declarations: gateway_declarations(name, path),
+          references: { name => references }
+        )
       end
 
-      def test_downranks_shared_dependency_declarations
-        finding = PackageDependencyPressure.new(index: shared_dependency_index).call.first
-
-        assert_shared_dependency_triage(finding)
+      def gateway_declarations(name, path = gateway_path)
+        [ProjectIndex::Declaration.new(name: name, path: path, kind: :class)]
       end
 
-      def test_downranks_infrastructure_lib_declarations
-        finding = PackageDependencyPressure.new(index: infrastructure_dependency_index).call.first
-
-        assert_shared_dependency_triage(finding)
+      def external_references
+        EXTERNAL_REFERENCE_PATHS.map { |path, line| reference(path, line) }
       end
 
-      def test_downranks_scheduler_and_rate_limiter_declarations
-        findings = [
-          PackageDependencyPressure.new(index: scheduler_dependency_index).call.first,
-          PackageDependencyPressure.new(index: rate_limiter_dependency_index).call.first
-        ]
-
-        findings.each { |finding| assert_shared_dependency_triage(finding) }
+      def noisy_references
+        NOISY_REFERENCE_PATHS.map { |path, line| reference(path, line) } + external_references
       end
 
-      def test_classifies_packages_from_project_paths_not_parent_directories
-        finding = PackageDependencyPressure.new(index: parent_named_package_index).call.first
-
-        assert_equal parent_named_gateway_path, finding.report_occurrences.first.path
-        assert_parent_named_package_finding(finding)
+      def reference(path, line)
+        ProjectIndex::Reference.new(name: "Billing::Gateway", path: "/project/#{path}", line: line, column: 8)
       end
 
-      def assert_parent_named_package_finding(finding)
-        assert_includes finding.message, "outside app/services"
-        assert_equal "app/services", finding.declared_package
-        assert_equal %w[app/controllers app/jobs app/mailers app/policies app/serializers app/workers],
-                     finding.referring_packages
+      def gateway_path
+        "/project/app/services/billing/gateway.rb"
       end
+    end
 
+    module PackageDependencyPressureAssertions
       private
 
       def assert_package_pressure_finding(finding)
@@ -140,43 +119,91 @@ module MetzScan
         assert_equal 12, metadata.fetch("referring_file_count")
         assert_equal 6, metadata.fetch("referring_package_count")
         assert_equal "package_boundary", metadata.fetch("dependency_pressure_category")
-        assert_equal %w[app/controllers app/jobs app/mailers app/policies app/serializers app/workers],
-                     metadata.fetch("referring_packages")
+        assert_package_pressure_references(metadata)
+      end
+
+      def assert_package_pressure_references(metadata)
+        assert_equal expected_referring_packages, metadata.fetch("referring_packages")
         assert_equal 12, metadata.fetch("references").size
       end
+
+      def expected_referring_packages
+        %w[app/controllers app/jobs app/mailers app/policies app/serializers app/workers]
+      end
+    end
+
+    class PackageDependencyPressureTest < Minitest::Test
+      include PackageDependencyPressureAssertions
+      include PackageDependencyPressureFixtures
+
+      def test_reports_declarations_referenced_across_external_packages
+        finding = PackageDependencyPressure.new(index: pressured_index).call.first
+
+        assert_package_pressure_finding(finding)
+        assert_package_pressure_metadata(finding)
+      end
+
+      def test_ignores_unavailable_index
+        assert_empty PackageDependencyPressure.new(index: pressure_index(available: false)).call
+      end
+
+      def test_ignores_declarations_below_thresholds
+        assert_empty PackageDependencyPressure.new(index: below_threshold_index).call
+      end
+
+      def test_ignores_top_level_namespace_declarations
+        assert_empty PackageDependencyPressure.new(index: top_level_namespace_index).call
+      end
+
+      def test_ignores_same_package_test_setup_and_self_references
+        finding = PackageDependencyPressure.new(index: noisy_reference_index).call.first
+
+        assert_equal 12, finding.referring_files.size
+        assert_equal expected_referring_packages, finding.referring_packages
+      end
+
+      def test_ignores_declarations_in_setup_paths
+        assert_empty PackageDependencyPressure.new(index: setup_declaration_index).call
+      end
+    end
+
+    class PackageDependencyPressureSharedDependencyTest < Minitest::Test
+      include PackageDependencyPressureFixtures
+
+      def test_downranks_shared_dependency_declarations
+        finding = PackageDependencyPressure.new(index: shared_dependency_index).call.first
+
+        assert_shared_dependency_triage(finding)
+      end
+
+      def test_downranks_infrastructure_lib_declarations
+        finding = PackageDependencyPressure.new(index: infrastructure_dependency_index).call.first
+
+        assert_shared_dependency_triage(finding)
+      end
+
+      def test_downranks_infrastructure_lib_declarations_when_parent_path_contains_lib
+        finding = PackageDependencyPressure.new(index: parent_lib_infrastructure_dependency_index).call.first
+
+        assert_shared_dependency_triage(finding)
+      end
+
+      def test_downranks_scheduler_and_rate_limiter_declarations
+        findings = [
+          PackageDependencyPressure.new(index: scheduler_dependency_index).call.first,
+          PackageDependencyPressure.new(index: rate_limiter_dependency_index).call.first
+        ]
+
+        findings.each { |finding| assert_shared_dependency_triage(finding) }
+      end
+
+      private
 
       def assert_shared_dependency_triage(finding)
         assert_equal "low", finding.confidence
         assert_equal "shared dependency", finding.triage_severity
         assert_includes finding.triage_summary, "Shared dependency signal"
         assert_equal "shared_dependency", finding.project_analyzer_metadata.fetch("dependency_pressure_category")
-      end
-
-      def pressured_index
-        pressure_index(references: external_references)
-      end
-
-      def below_threshold_index
-        pressure_index(references: external_references.first(3))
-      end
-
-      def noisy_reference_index
-        pressure_index(references: noisy_references)
-      end
-
-      def top_level_namespace_index
-        pressure_index(name: "RuboCop", references: external_references)
-      end
-
-      def setup_declaration_index
-        FakePackagePressureIndex.new(
-          available: true,
-          declarations: [
-            ProjectIndex::Declaration.new(name: "Billing::Gateway", path: "/project/lib/tasks/billing_gateway.rb",
-                                          kind: :class)
-          ],
-          references: { "Billing::Gateway" => external_references }
-        )
       end
 
       def shared_dependency_index
@@ -189,6 +216,15 @@ module MetzScan
                        references: external_references)
       end
 
+      def parent_lib_infrastructure_dependency_index
+        pressure_index(name: "Redis::Alfred", path: "#{parent_lib_project_root}/lib/redis/alfred.rb",
+                       references: external_references)
+      end
+
+      def parent_lib_project_root
+        "/tmp/spec/lib/project"
+      end
+
       def scheduler_dependency_index
         pressure_index(name: "Scheduler::Defer", path: "/project/lib/scheduler/defer.rb",
                        references: external_references)
@@ -198,28 +234,29 @@ module MetzScan
         pressure_index(name: "RateLimiter::LimitExceeded", path: "/project/lib/rate_limiter/limit_exceeded.rb",
                        references: external_references)
       end
+    end
+
+    class PackageDependencyPressurePackageClassificationTest < Minitest::Test
+      include PackageDependencyPressureAssertions
+      include PackageDependencyPressureFixtures
+
+      def test_classifies_packages_from_project_paths_not_parent_directories
+        finding = PackageDependencyPressure.new(index: parent_named_package_index).call.first
+
+        assert_equal parent_named_gateway_path, finding.report_occurrences.first.path
+        assert_parent_named_package_finding(finding)
+      end
+
+      private
+
+      def assert_parent_named_package_finding(finding)
+        assert_includes finding.message, "outside app/services"
+        assert_equal "app/services", finding.declared_package
+        assert_equal expected_referring_packages, finding.referring_packages
+      end
 
       def parent_named_package_index
         pressure_index(path: parent_named_gateway_path, references: parent_named_references)
-      end
-
-      def pressure_index(available: true, name: "Billing::Gateway", path: gateway_path, references: [])
-        FakePackagePressureIndex.new(
-          available: available, declarations: gateway_declarations(name, path),
-          references: { name => references }
-        )
-      end
-
-      def gateway_declarations(name, path = gateway_path)
-        [ProjectIndex::Declaration.new(name: name, path: path, kind: :class)]
-      end
-
-      def external_references
-        EXTERNAL_REFERENCE_PATHS.map { |path, line| reference(path, line) }
-      end
-
-      def noisy_references
-        NOISY_REFERENCE_PATHS.map { |path, line| reference(path, line) } + external_references
       end
 
       def parent_named_references
@@ -227,14 +264,6 @@ module MetzScan
           ProjectIndex::Reference.new(name: "Billing::Gateway", path: "#{parent_named_project_root}/#{path}",
                                       line: line, column: 8)
         end
-      end
-
-      def reference(path, line)
-        ProjectIndex::Reference.new(name: "Billing::Gateway", path: "/project/#{path}", line: line, column: 8)
-      end
-
-      def gateway_path
-        "/project/app/services/billing/gateway.rb"
       end
 
       def parent_named_gateway_path
