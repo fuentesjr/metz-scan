@@ -84,7 +84,8 @@ module MetzScan
 
       def expected_active_analyzers
         [Analyzers::RepeatedBranching, Analyzers::ServiceSoup,
-         Analyzers::InheritanceDescendants, Analyzers::PackageDependencyPressure]
+         Analyzers::InheritanceDescendants, Analyzers::PackageDependencyPressure,
+         Analyzers::NamespaceLeakPressure]
       end
 
       def merge_project_analyzers

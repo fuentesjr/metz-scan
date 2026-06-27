@@ -1,38 +1,26 @@
 # Sandi Metz project-analyzer candidates
 
-Last updated: 2026-06-26.
+Last updated: 2026-06-27.
 
 This note records a read-only research pass for project-level analyzer ideas
 grounded in Sandi Metz's OOP teaching. It excludes analyzers already
 implemented or already under active consideration: `ServiceSoup`,
 `RepeatedBranching`, `DeepInheritanceTree`, `PackageDependencyPressure`,
-`DeadCodeCandidates`, and broad unstable-abstraction/concern heuristics.
+`NamespaceLeakPressure`, `DeadCodeCandidates`, and broad
+unstable-abstraction/concern heuristics.
+
+## Implemented from this list
+
+### `NamespaceLeakPressure`
+
+Implemented as `MetzProject/NamespaceLeakPressure` candidate output. It reports
+deeply nested declarations whose references spread outside the home namespace
+into multiple coarse packages. It remains behind `--project-analyzers` until
+real-project calibration proves the signal is sparse and reviewable.
 
 ## Candidate shortlist
 
-### 1. `NamespaceLeakPressure`
-
-- Teaching fit: Sandi's dependency-management guidance is about keeping
-  dependencies explicit, isolated, and not smuggling class knowledge across
-  boundaries.
-- Source grounding:
-  - InformIT chapter on Managing Dependencies:
-    https://www.informit.com/articles/article.aspx?p=1946176&seqNum=2
-  - Ruby Rogues POODR interview:
-    https://topenddevs.com/podcasts/ruby-rogues/episodes/087-rr-book-club-practical-object-oriented-design-in-ruby-with-sandi-metz
-- Signal: flag nested declarations whose constants are referenced outside
-  their home namespace or package, especially when the same internal constant
-  leaks into two or more distinct packages or layers.
-- Required data: declarations, constant references, and namespace/package
-  grouping. This is feasible with the current `ProjectIndex`.
-- Likely false positives: intentionally public namespaced APIs, engine
-  boundaries, value-object namespaces, generated scaffolding.
-- Project-level: yes.
-- Smallest viable fixture: `Billing::Ledger::PrivateFormatter` referenced by
-  both a controller and a job outside `Billing::Ledger`.
-- Feasibility: high.
-
-### 2. `ImplicitContextPressure`
+### 1. `ImplicitContextPressure`
 
 - Teaching fit: dependency isolation plus message-passing: systems are easier
   to reason about when dependencies are explicit rather than ambient.
@@ -53,7 +41,7 @@ implemented or already under active consideration: `ServiceSoup`,
   service read `Current.account`.
 - Feasibility: medium-high.
 
-### 3. `SubclassOverridePressure`
+### 2. `SubclassOverridePressure`
 
 - Teaching fit: Sandi's public OOP material favors composition when broad
   inheritance starts hiding coupling.
@@ -74,7 +62,7 @@ implemented or already under active consideration: `ServiceSoup`,
   the same `perform` or `build_client` hook.
 - Feasibility: medium-low.
 
-### 4. `RepeatedQueryCriteria`
+### 3. `RepeatedQueryCriteria`
 
 - Teaching fit: this is an inference from tell-don't-ask and dependency
   isolation: repeated queries suggest callers know too much about retrieval
@@ -98,8 +86,9 @@ implemented or already under active consideration: `ServiceSoup`,
 
 ## Exclusions
 
-- `ServiceSoup`, `RepeatedBranching`, `DeepInheritanceTree`, and
-  `PackageDependencyPressure` are already implemented or actively in scope.
+- `ServiceSoup`, `RepeatedBranching`, `DeepInheritanceTree`,
+  `PackageDependencyPressure`, and `NamespaceLeakPressure` are already
+  implemented or actively in scope.
 - Callback-workflow analyzers are adjacent to existing design notes and were
   not treated as newly discovered candidates.
 - Concern heuristics and raw inheritance-depth ideas overlap with already

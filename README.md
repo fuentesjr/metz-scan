@@ -114,6 +114,7 @@ Current project analyzer status:
 | `MetzProject/RepeatedBranching` | Validated | Repeated `case` expressions with the same lexical decision and branch-value set, or repeated `if`/`elsif` predicate chains with the same receiver and predicate set, across distinct Ruby files. |
 | `MetzProject/DeepInheritanceTree` | Candidate | Indexed base classes or modules with at least three known descendants, when the optional Rubydex-backed project index is available. |
 | `MetzProject/PackageDependencyPressure` | Candidate | Indexed namespaced classes or modules referenced from several files across multiple coarse packages outside their declaration package. |
+| `MetzProject/NamespaceLeakPressure` | Candidate | Indexed deeply nested classes or modules referenced from multiple files across packages outside their home namespace. |
 
 Project analyzers parse Ruby files only. They do not inspect ERB/HAML/SLIM
 templates, and they avoid semantic claims that require resolving runtime types.
@@ -138,6 +139,11 @@ Its default threshold is at least 12 referring files across at least 5 packages.
 Broad shared dependencies such as configuration, settings, event registries,
 exception families, and infrastructure hubs are still reported, but with lower
 confidence and shared-dependency triage.
+`NamespaceLeakPressure` also requires the optional project index and contributes
+no findings when the index is unavailable. It reports deeply nested declarations
+such as `Billing::Ledger::PrivateFormatter` when references spread outside the
+home namespace into at least two coarse packages. References from the same
+namespace path, test roots, and setup/support paths are ignored.
 
 Project analyzer output includes status, confidence, triage severity, and triage
 summary metadata. Default output includes only validated, medium-confidence

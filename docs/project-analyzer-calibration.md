@@ -8,6 +8,9 @@ This note records real-world calibration passes for the opt-in analyzers behind
 `MetzProject/DeepInheritanceTree` is ready to move closer to default scan
 output. `MetzProject/PackageDependencyPressure` was added later and now has a
 candidate opt-in calibration pass after shared-dependency downranking.
+`MetzProject/NamespaceLeakPressure` was added later as an uncalibrated
+candidate and should remain opt-in until real-project samples confirm sparse,
+useful namespace-boundary findings.
 
 ## Method
 
@@ -113,6 +116,12 @@ Readiness by analyzer:
   smaller set of concrete package-boundary pressure prompts. It should not move
   toward default output or validated status until broader samples confirm those
   manual-review findings are consistently useful.
+- `MetzProject/NamespaceLeakPressure` is candidate for opt-in project-analyzer
+  output. The first implementation reports deeply nested declarations whose
+  references spread outside the home namespace into at least two packages. It
+  should not move toward default output or validated status until calibration
+  confirms that intentionally public nested APIs, engines, and stable value
+  object namespaces remain reviewable false-positive categories.
 
 Reporting-language follow-up on 2026-06-24: text output now labels each
 project-analyzer summary with status, confidence, and severity, and the summary

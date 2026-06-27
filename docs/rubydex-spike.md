@@ -366,3 +366,11 @@ medium-confidence design-pressure project-analyzer findings.
   configuration, settings, event registries, exception families, and
   infrastructure hubs are downranked with shared-dependency triage rather than
   suppressed.
+- `MetzProject/NamespaceLeakPressure` — candidate. Reports indexed deeply
+  nested classes or modules referenced from multiple files across coarse
+  packages outside their home namespace. It depends on the optional project
+  index and emits one primary offense at the declaration path while preserving
+  referring files and packages in metadata. The first slice requires at least 2
+  referring files across 2 packages, ignores same-namespace references, and
+  uses the same test/setup/support path exclusions as package dependency
+  pressure.
