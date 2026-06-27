@@ -333,14 +333,17 @@ Reasons not to enable it by default yet:
 
 ## Project analyzer status
 
-`metz-scan scan --project-analyzers` currently runs:
+Default `metz-scan scan` output includes only validated,
+medium-confidence design-pressure project-analyzer findings.
+`metz-scan scan --project-analyzers` runs the full project-analyzer set:
 
 - `MetzProject/ServiceSoup` — validated. Reports methods with at least three
-  distinct service constants, while remaining opt-in.
+  distinct service constants. Medium-confidence design-pressure findings are
+  default-eligible; setup-orchestration findings require `--project-analyzers`.
 - `MetzProject/RepeatedBranching` — validated. Reports repeated lexical
   `case` decisions with the same branch-value set, or repeated `if`/`elsif`
   predicate chains with the same receiver and predicate set, across distinct
-  Ruby files.
+  Ruby files. Medium-confidence design-pressure findings are default-eligible.
 - `MetzProject/DeepInheritanceTree` — candidate. Reports indexed base
   classes or modules with at least three known descendants. It depends on the
   optional Rubydex-backed project index, so it contributes no findings when

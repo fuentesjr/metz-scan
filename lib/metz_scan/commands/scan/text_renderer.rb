@@ -56,7 +56,7 @@ module MetzScan
         def emit_project_analyzer_summary_heading(summary)
           stdout.puts "Project analyzers: #{count_label(summary.fetch('finding_count'), 'finding')}, " \
                       "#{count_label(summary.fetch('offense_count'), 'offense')} " \
-                      "(opt-in advisory signals; review in context)"
+                      "(advisory signals; review in context)"
         end
 
         def emit_project_analyzer_rule_summaries(summary)

@@ -42,6 +42,24 @@ module MetzScan
           end
         RUBY
       end
+
+      def setup_service_soup_source
+        <<~RUBY
+          # frozen_string_literal: true
+
+          module Spree
+            module Seeds
+              class All
+                def call
+                  Countries.call
+                  States.call
+                  Zones.call
+                end
+              end
+            end
+          end
+        RUBY
+      end
     end
 
     class ScanProjectAnalyzersTest < Minitest::Test
@@ -68,14 +86,6 @@ module MetzScan
         assert_project_analyzer_output(code)
       end
 
-      def test_project_analyzers_are_opt_in
-        write_scan_fixture
-        code = scan_without_project_analyzers
-
-        refute_equal 0, code
-        refute_includes rubocop_cop_names, "MetzProject/RepeatedBranching"
-      end
-
       private
 
       def write_scan_fixture
@@ -85,10 +95,6 @@ module MetzScan
 
       def scan_project_analyzers
         run_scan([relative_tmpdir, "--project-analyzers", "--format", "json"])
-      end
-
-      def scan_without_project_analyzers
-        run_scan([relative_tmpdir, "--format", "json"])
       end
 
       def run_scan(argv)
@@ -144,6 +150,86 @@ module MetzScan
 
       def json_offenses
         parsed_json.fetch("files").flat_map { |file| file.fetch("offenses") }
+      end
+
+      def parsed_json
+        @parsed_json ||= JSON.parse(@stdout.string)
+      end
+
+      def tmp_root
+        File.expand_path("../../../scan-test-tmp", __dir__)
+      end
+
+      def configure_rubocop_cache_root
+        @original_rubocop_cache_root = ENV.fetch("RUBOCOP_CACHE_ROOT", nil)
+        ENV["RUBOCOP_CACHE_ROOT"] = File.expand_path("../../../tmp/rubocop_cache", __dir__)
+      end
+
+      def restore_rubocop_cache_root
+        return ENV.delete("RUBOCOP_CACHE_ROOT") unless @original_rubocop_cache_root
+
+        ENV["RUBOCOP_CACHE_ROOT"] = @original_rubocop_cache_root
+      end
+    end
+
+    class ScanDefaultProjectAnalyzersTest < Minitest::Test
+      include ScanProjectAnalyzerFixtures
+
+      def setup
+        @stdout = StringIO.new
+        @stderr = StringIO.new
+        configure_rubocop_cache_root
+        FileUtils.mkdir_p(tmp_root)
+        @tmpdir = Dir.mktmpdir("metz-scan-default-project-analyzers-test", tmp_root)
+      end
+
+      def teardown
+        FileUtils.remove_entry(@tmpdir) if @tmpdir
+        FileUtils.rmdir(tmp_root) if File.directory?(tmp_root) && Dir.empty?(tmp_root)
+        restore_rubocop_cache_root
+      end
+
+      def test_default_scan_includes_eligible_project_analyzer_findings
+        write_repeated_branching_files
+        code = scan_without_project_analyzers
+
+        refute_equal 0, code
+        assert_includes rubocop_cop_names, "MetzProject/RepeatedBranching"
+      end
+
+      def test_default_scan_excludes_low_confidence_project_analyzer_findings
+        write_setup_service_soup_file
+        code = scan_without_project_analyzers
+
+        assert_equal 0, code
+        refute_includes rubocop_cop_names, "MetzProject/ServiceSoup"
+        refute parsed_json.fetch("summary").key?("project_analyzers")
+      end
+
+      private
+
+      def scan_without_project_analyzers
+        Scan.run([relative_tmpdir, "--format", "json"], stdout: @stdout, stderr: @stderr)
+      end
+
+      def relative_tmpdir
+        @tmpdir.delete_prefix("#{Dir.pwd}/")
+      end
+
+      def write_repeated_branching_files
+        2.times do |index|
+          File.write(File.join(@tmpdir, "branching_#{index}.rb"), repeated_branching_source)
+        end
+      end
+
+      def write_setup_service_soup_file
+        File.write(File.join(@tmpdir, "setup_service_soup.rb"), setup_service_soup_source)
+      end
+
+      def rubocop_cop_names
+        offenses = parsed_json.fetch("files").flat_map { |file| file.fetch("offenses") }
+
+        offenses.map { |offense| offense.fetch("cop_name").to_s }
       end
 
       def parsed_json

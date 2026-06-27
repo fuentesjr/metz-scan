@@ -94,8 +94,11 @@ bundle exec metz-scan scan . --format sarif
 bundle exec metz-scan scan . --format gh-annotations
 ```
 
-By default, `scan` reports only RuboCop-backed Metz findings. Opt in to project
-analyzer findings in the same report:
+By default, `scan` reports RuboCop-backed Metz findings plus project-analyzer
+findings that satisfy the default-output policy: the analyzer is validated and
+the individual finding is medium-confidence design pressure. Use
+`--project-analyzers` to include the full opt-in set, including candidates and
+lower-confidence findings:
 
 ```bash
 bundle exec metz-scan scan . --project-analyzers
@@ -137,10 +140,12 @@ exception families, and infrastructure hubs are still reported, but with lower
 confidence and shared-dependency triage.
 
 Project analyzer output includes status, confidence, triage severity, and triage
-summary metadata. Text output shows a project-analyzer summary before rule
-blocks; JSON and SARIF output include machine-readable project-analyzer
-metadata, and GitHub annotations append the same triage context to the
-annotation message.
+summary metadata. Default output includes only validated, medium-confidence
+design-pressure findings; `--project-analyzers` includes candidates and
+lower-confidence findings too. Text output shows a project-analyzer summary
+before rule blocks; JSON and SARIF output include machine-readable
+project-analyzer metadata, and GitHub annotations append the same triage context
+to the annotation message.
 
 Run safe auto-correction or preview it first:
 

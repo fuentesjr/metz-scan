@@ -22,22 +22,30 @@ module MetzScan
           Analyzers::InheritanceDescendants,
           Analyzers::PackageDependencyPressure
         ].freeze
+        INDEX_BACKED_ANALYZERS = [
+          Analyzers::InheritanceDescendants,
+          Analyzers::PackageDependencyPressure
+        ].freeze
+        DEFAULT_OUTPUT_STATUS = "validated"
+        DEFAULT_OUTPUT_CONFIDENCE = "medium"
+        DEFAULT_OUTPUT_TRIAGE_SEVERITY = "design pressure"
 
         module_function
 
-        def merge!(parsed, paths, index: nil)
-          findings = project_findings_for(paths, index: index)
+        def merge!(parsed, paths, index: nil, default_output: false)
+          findings = project_findings_for(paths, index: index, default_output: default_output)
           return parsed if findings.empty?
 
           merge_findings(parsed, findings)
           parsed
         end
 
-        def project_findings_for(paths, index: nil)
+        def project_findings_for(paths, index: nil, default_output: false)
           paths = analyzer_paths(paths, index: index)
           return [] if paths.empty? && !index
 
-          project_findings(paths, index: index)
+          findings = project_findings(paths, index: index, default_output: default_output)
+          default_output ? findings.select { |finding| default_output_finding?(finding) } : findings
         end
 
         def merge_findings(parsed, findings)
@@ -46,9 +54,34 @@ module MetzScan
           update_summary(parsed, findings, offense_set.offenses)
         end
 
-        def project_findings(paths, index: nil)
-          index ||= ProjectIndex.build(paths)
-          ANALYZERS.flat_map { |analyzer| analyzer.new(paths: paths, index: index).call }
+        def project_findings(paths, index: nil, default_output: false)
+          analyzers = analyzers_for(default_output: default_output)
+          index = project_index_for(paths, index, analyzers)
+          analyzers.flat_map { |analyzer| analyzer.new(paths: paths, index: index).call }
+        end
+
+        def analyzers_for(default_output:)
+          return ANALYZERS unless default_output
+
+          ANALYZERS.select { |analyzer| default_output_analyzer?(analyzer) }
+        end
+
+        def default_output_analyzer?(analyzer)
+          analyzer.const_defined?(:PROJECT_ANALYZER_STATUS) &&
+            analyzer::PROJECT_ANALYZER_STATUS == DEFAULT_OUTPUT_STATUS
+        end
+
+        def project_index_for(paths, index, analyzers)
+          return index if index
+          return nil unless analyzers.any? { |analyzer| INDEX_BACKED_ANALYZERS.include?(analyzer) }
+
+          ProjectIndex.build(paths)
+        end
+
+        def default_output_finding?(finding)
+          finding.project_analyzer_status == DEFAULT_OUTPUT_STATUS &&
+            finding.confidence == DEFAULT_OUTPUT_CONFIDENCE &&
+            finding.triage_severity == DEFAULT_OUTPUT_TRIAGE_SEVERITY
         end
 
         def analyzer_paths(paths, index: nil)

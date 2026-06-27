@@ -62,7 +62,7 @@ module MetzScan
       }.freeze
 
       def test_project_analyzer_summary_renders_before_rule_blocks
-        assert_match(/\AProject analyzers: 2 findings, 2 offenses \(opt-in advisory signals; review in context\)/,
+        assert_match(/\AProject analyzers: 2 findings, 2 offenses \(advisory signals; review in context\)/,
                      rendered)
         assert_includes rendered,
                         "MetzProject/RepeatedBranching: 1 finding, 1 offense, status: validated, " \

@@ -67,7 +67,7 @@ module MetzScan
       end
 
       def configure_project_analyzer_parser(opts, flags)
-        opts.on("--project-analyzers", "Include opt-in project analyzer findings") do
+        opts.on("--project-analyzers", "Include all opt-in project analyzer findings") do
           flags[:project_analyzers] = true
         end
       end
@@ -94,7 +94,7 @@ module MetzScan
 
       def scan(options)
         parsed = Runner.invoke(options.paths)
-        ProjectAnalyzerRunner.merge!(parsed, options.paths) if options.project_analyzers
+        ProjectAnalyzerRunner.merge!(parsed, options.paths, default_output: !options.project_analyzers)
         render(parsed, options.format)
         Runner.exit_code_for(parsed)
       end

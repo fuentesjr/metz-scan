@@ -78,10 +78,13 @@ set, no filtered core or synthetic names remained in the captured findings.
 
 ## Default output readiness
 
-Current decision: do not graduate any project analyzer into default
-`metz-scan scan` output yet. `metz-scan scan --project-analyzers` remains the
-right boundary for these findings because they change scan scope, runtime, and
-triage semantics beyond the default RuboCop-backed cops.
+Current decision: default `metz-scan scan` output uses a combined analyzer-level
+and finding-level gate. A project-analyzer finding qualifies for default output
+only when its analyzer is `validated` and the individual finding is
+`confidence: medium` with `severity: design pressure`.
+`metz-scan scan --project-analyzers` remains the boundary for the full
+project-analyzer set, including candidate analyzers and lower-confidence
+findings.
 
 Readiness by analyzer:
 
@@ -90,13 +93,13 @@ Readiness by analyzer:
   look like plausible true positives in service-heavy Rails applications. A
   follow-up promotion review added one more strong service-workflow target and
   one setup-orchestration example that is now downranked with low confidence
-  and setup-specific triage language. It should stay out of default output
-  until the product boundary for default project-analyzer findings is decided.
+  and setup-specific triage language. Its medium-confidence design-pressure
+  findings qualify for default output; setup-orchestration findings remain
+  available only with `--project-analyzers`.
 - `MetzProject/RepeatedBranching` is validated for opt-in project-analyzer
   output. The counts are stable, context-enriched findings are readable, and a
-  Spree follow-up produced only three findings with concrete domain context. It
-  should stay out of default output until default project-analyzer findings have
-  a settled product boundary.
+  Spree follow-up produced only three findings with concrete domain context. Its
+  medium-confidence design-pressure findings qualify for default output.
 - `MetzProject/DeepInheritanceTree` is candidate for opt-in project-analyzer
   output. Grouped output, class-only auto-discovery, located-root filtering,
   root-kind labels, and broad-root downranking fixed the largest mechanical and
@@ -113,9 +116,9 @@ Readiness by analyzer:
 
 Reporting-language follow-up on 2026-06-24: text output now labels each
 project-analyzer summary with status, confidence, and severity, and the summary
-heading explicitly calls these findings opt-in advisory signals. Text and
-GitHub annotation triage lines now label the same status, confidence, and
-severity fields before the analyzer-specific triage summary.
+heading explicitly calls these findings advisory signals. Text and GitHub
+annotation triage lines now label the same status, confidence, and severity
+fields before the analyzer-specific triage summary.
 
 Real-output sampling follow-up on 2026-06-24: direct `ProjectAnalyzerRunner`
 text rendering against the repo-local Discourse checkout produced 53 findings

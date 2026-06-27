@@ -19,6 +19,19 @@ module MetzScan
         end
       end
     RUBY
+    PROJECT_ANALYZER_SETUP_SERVICE_SOUP_SOURCE = <<~RUBY
+      module Spree
+        module Seeds
+          class All
+            def call
+              Countries.call
+              States.call
+              Zones.call
+            end
+          end
+        end
+      end
+    RUBY
 
     class ScanProjectAnalyzerRunnerTest < Minitest::Test
       def setup
@@ -139,6 +152,53 @@ module MetzScan
 
       def write_service_soup_file
         File.write(File.join(@tmpdir, "service_soup.rb"), PROJECT_ANALYZER_SERVICE_SOUP_SOURCE)
+      end
+    end
+
+    class ScanProjectAnalyzerRunnerDefaultOutputTest < Minitest::Test
+      def setup
+        @tmpdir = Dir.mktmpdir("metz-scan-project-analyzer-default-output-test")
+      end
+
+      def teardown
+        FileUtils.remove_entry(@tmpdir) if @tmpdir
+      end
+
+      def test_default_output_keeps_only_eligible_project_findings
+        write_repeated_branching_files
+        write_setup_service_soup_file
+        parsed = merge_default_project_analyzers
+
+        assert_equal ["MetzProject/RepeatedBranching"], cop_names(parsed).uniq
+        assert_equal ["MetzProject/RepeatedBranching"], summary_cop_names(parsed)
+      end
+
+      private
+
+      def merge_default_project_analyzers
+        { "files" => [], "summary" => { "offense_count" => 0 } }.tap do |parsed|
+          Scan::ProjectAnalyzerRunner.merge!(parsed, [@tmpdir], default_output: true)
+        end
+      end
+
+      def cop_names(parsed)
+        parsed["files"].flat_map { |file| file["offenses"] }.map { |offense| offense.fetch("cop_name") }
+      end
+
+      def summary_cop_names(parsed)
+        parsed.dig("summary", "project_analyzers", "rules").map { |rule| rule.fetch("cop_name") }
+      end
+
+      def write_repeated_branching_files
+        2.times { |index| File.write(branching_path(index), PROJECT_ANALYZER_BRANCHING_SOURCE) }
+      end
+
+      def write_setup_service_soup_file
+        File.write(File.join(@tmpdir, "setup_service_soup.rb"), PROJECT_ANALYZER_SETUP_SERVICE_SOUP_SOURCE)
+      end
+
+      def branching_path(index)
+        File.join(@tmpdir, "branching_#{index}.rb")
       end
     end
 
