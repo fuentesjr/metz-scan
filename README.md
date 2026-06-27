@@ -142,8 +142,10 @@ confidence and shared-dependency triage.
 `NamespaceLeakPressure` also requires the optional project index and contributes
 no findings when the index is unavailable. It reports deeply nested declarations
 such as `Billing::Ledger::PrivateFormatter` when references spread outside the
-home namespace into at least two coarse packages. References from the same
-namespace path, test roots, and setup/support paths are ignored.
+home namespace into at least three files across three coarse packages.
+References from the same namespace path, test roots, and setup/support paths
+are ignored. Public constants, nested exception families, and framework or
+extension namespaces are reported with lower-confidence shared-namespace triage.
 
 Project analyzer output includes status, confidence, triage severity, and triage
 summary metadata. Default output includes only validated, medium-confidence

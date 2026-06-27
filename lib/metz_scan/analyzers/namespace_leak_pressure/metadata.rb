@@ -6,16 +6,18 @@ module MetzScan
       module Metadata
         module_function
 
-        def for(declaration, context)
-          counts(context.fetch(:referring_files), context.fetch(:referring_packages))
-            .merge(namespace_metadata(declaration, context))
+        def for(declaration, reference_set, namespace_leak_category)
+          counts(reference_set.files, reference_set.packages).merge(
+            namespace_metadata(declaration, reference_set, namespace_leak_category)
+          )
         end
 
-        def namespace_metadata(declaration, context)
+        def namespace_metadata(declaration, reference_set, namespace_leak_category)
           { "declaration" => declaration_metadata(declaration),
-            "home_namespace" => context.fetch(:home_namespace),
-            "declared_package" => context.fetch(:declared_package),
-            "references" => context.fetch(:references).map { |reference| reference_metadata(reference) } }
+            "home_namespace" => Namespace.new(declaration.name).home_name,
+            "declared_package" => PackageMap.package_for(declaration.path),
+            "namespace_leak_category" => namespace_leak_category,
+            "references" => reference_set.references.map { |reference| reference_metadata(reference) } }
         end
 
         def counts(referring_files, referring_packages)

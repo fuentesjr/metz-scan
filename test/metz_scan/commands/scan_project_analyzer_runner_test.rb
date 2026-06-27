@@ -80,6 +80,12 @@ module MetzScan
         assert_includes cop_names(parsed), "MetzProject/RepeatedBranching"
       end
 
+      def test_rubocop_target_files_exclude_setup_service_soup_fixture
+        targets = Scan::ProjectAnalyzerRunner.rubocop_target_files(["."])
+
+        refute(targets.any? { |path| path.include?("test/fixtures/service_soup_setup_app/") })
+      end
+
       private
 
       def expected_active_analyzers

@@ -139,6 +139,10 @@ The first-party cops now inherit directly from `RuboCop::Cop::Base` and compose
 Metz helpers explicitly, so `RuboCop::Cop::Metz::Base` remains only as a
 compatibility shim and no longer produces the dogfood inheritance finding.
 
+TODO (breaking cleanup): remove the `RuboCop::Cop::Metz::Base` compatibility
+shim, update tests/docs/requires to use `RuboCop::Cop::Metz::OnSendCsendBridge`
+directly, and accept the downstream API break.
+
 TDD evidence:
 
 - Red: `bundle exec ruby -Itest
@@ -370,7 +374,9 @@ medium-confidence design-pressure project-analyzer findings.
   nested classes or modules referenced from multiple files across coarse
   packages outside their home namespace. It depends on the optional project
   index and emits one primary offense at the declaration path while preserving
-  referring files and packages in metadata. The first slice requires at least 2
-  referring files across 2 packages, ignores same-namespace references, and
-  uses the same test/setup/support path exclusions as package dependency
-  pressure.
+  referring files and packages in metadata. The current default requires at
+  least 3 referring files across 3 packages, ignores same-namespace references,
+  and uses the same test/setup/support path exclusions as package dependency
+  pressure. Public constants, nested exception families, and framework or
+  extension namespaces are downranked with shared-namespace triage rather than
+  treated as medium-confidence namespace-boundary pressure.

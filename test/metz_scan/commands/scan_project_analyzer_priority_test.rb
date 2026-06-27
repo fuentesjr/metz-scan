@@ -75,13 +75,12 @@ module MetzScan
         assert_equal(-1, priority.sort_key(broad_base) <=> priority.sort_key(shared))
       end
 
-      def test_shared_dependency_sorts_before_setup_orchestration
+      def test_low_confidence_severities_sort_in_triage_order
         priority = Scan::ProjectAnalyzerTriagePriority
+        severities = ["shared dependency", "shared namespace", "setup orchestration"]
+        sort_keys = severities.map { |severity| priority.sort_key(low_experimental_metadata(severity)) }
 
-        shared = { "status" => "experimental", "confidence" => "low", "triage_severity" => "shared dependency" }
-        setup = { "status" => "experimental", "confidence" => "low", "triage_severity" => "setup orchestration" }
-
-        assert_equal(-1, priority.sort_key(shared) <=> priority.sort_key(setup))
+        assert_equal sort_keys.sort, sort_keys
       end
 
       private
@@ -120,6 +119,10 @@ module MetzScan
 
       def service_soup_offenses(count)
         Array.new(count) { { "cop_name" => "MetzProject/ServiceSoup" } }
+      end
+
+      def low_experimental_metadata(triage_severity)
+        { "status" => "experimental", "confidence" => "low", "triage_severity" => triage_severity }
       end
 
       def merge_project_analyzers

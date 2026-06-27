@@ -6,6 +6,7 @@ require_relative "namespace_leak_pressure/metadata"
 require_relative "namespace_leak_pressure/namespace"
 require_relative "namespace_leak_pressure/reference_collector"
 require_relative "namespace_leak_pressure/reference_set"
+require_relative "namespace_leak_pressure/shared_namespace_triage"
 require_relative "package_map"
 require_relative "project_analyzer_triage"
 
@@ -30,7 +31,7 @@ module MetzScan
       SUPPORTED_KINDS = [nil, :class, :module].freeze
       private_constant :IGNORED_DECLARATION_NAMES, :SYNTHETIC_DECLARATION_MARKER, :SUPPORTED_KINDS
 
-      def initialize(paths: nil, index: nil, minimum_referring_files: 2, minimum_referring_packages: 2)
+      def initialize(paths: nil, index: nil, minimum_referring_files: 3, minimum_referring_packages: 3)
         @paths = Array(paths)
         @index = index || ProjectIndex.build(@paths)
         @reference_collector = ReferenceCollector.new(@index)
@@ -72,7 +73,7 @@ module MetzScan
 
       def finding_attributes(declaration, reference_set)
         core_finding_attributes(declaration, reference_set)
-          .merge(project_analyzer_triage_attributes,
+          .merge(triage_attributes_for(declaration),
                  project_analyzer_metadata: metadata_for(declaration, reference_set))
       end
 
@@ -91,7 +92,7 @@ module MetzScan
         { referring_files: reference_set.files, referring_packages: reference_set.packages,
           references: reference_set.references,
           primary_location: Location.new(name: declaration.name, path: declaration.path),
-          why_it_matters: WHY, suggested_next_moves: SUGGESTED_NEXT_MOVES }
+          why_it_matters: why_for(declaration), suggested_next_moves: suggested_next_moves_for(declaration) }
       end
 
       def message_for(declaration, reference_set)
@@ -101,19 +102,33 @@ module MetzScan
       end
 
       def metadata_for(declaration, reference_set)
-        Metadata.for(declaration, metadata_context(declaration, reference_set))
-      end
-
-      def metadata_context(declaration, reference_set)
-        { references: reference_set.references,
-          referring_files: reference_set.files,
-          referring_packages: reference_set.packages,
-          home_namespace: home_namespace_for(declaration.name),
-          declared_package: PackageMap.package_for(declaration.path) }
+        Metadata.for(declaration, reference_set, namespace_leak_category_for(declaration))
       end
 
       def home_namespace_for(name)
         Namespace.new(name).home_name
+      end
+
+      def triage_attributes_for(declaration)
+        return SharedNamespaceTriage.attributes(PROJECT_ANALYZER_STATUS) if shared_namespace?(declaration)
+
+        project_analyzer_triage_attributes
+      end
+
+      def namespace_leak_category_for(declaration)
+        shared_namespace?(declaration) ? SharedNamespaceTriage::CATEGORY : "namespace_boundary"
+      end
+
+      def why_for(declaration)
+        shared_namespace?(declaration) ? SharedNamespaceTriage::WHY : WHY
+      end
+
+      def suggested_next_moves_for(declaration)
+        shared_namespace?(declaration) ? SharedNamespaceTriage::SUGGESTED_NEXT_MOVES : SUGGESTED_NEXT_MOVES
+      end
+
+      def shared_namespace?(declaration)
+        SharedNamespaceTriage.shared?(declaration)
       end
 
       def ignored_declaration_name?(name)

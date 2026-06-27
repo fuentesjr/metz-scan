@@ -118,10 +118,17 @@ Readiness by analyzer:
   manual-review findings are consistently useful.
 - `MetzProject/NamespaceLeakPressure` is candidate for opt-in project-analyzer
   output. The first implementation reports deeply nested declarations whose
-  references spread outside the home namespace into at least two packages. It
-  should not move toward default output or validated status until calibration
-  confirms that intentionally public nested APIs, engines, and stable value
-  object namespaces remain reviewable false-positive categories.
+  references spread outside the home namespace into at least three files across
+  three packages. Calibration showed the original two-file/two-package threshold
+  was too noisy, so public constants, nested exception families, and framework
+  or extension namespaces are now downranked with shared-namespace triage. It
+  should not move toward default output or validated status until follow-up
+  calibration confirms those lower-confidence findings are sparse and useful.
+  A tuned 2026-06-27 calibration pass at the three-file/three-package threshold
+  produced 29 findings across Chatwoot, Discourse, Mastodon, Forem, and
+  OpenFoodNetwork. Only five remained medium-confidence namespace-boundary
+  findings (Chatwoot 1, Discourse 3, OpenFoodNetwork 1); the other 24 were
+  low-confidence shared-namespace findings.
 
 Reporting-language follow-up on 2026-06-24: text output now labels each
 project-analyzer summary with status, confidence, and severity, and the summary

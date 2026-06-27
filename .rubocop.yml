@@ -37,6 +37,9 @@ AllCops:
     # Deliberate service-heavy Rails fixture for the wrapper-level
     # MetzProject/ServiceSoup prototype.
     - test/fixtures/service_soup_app/**/*
+    # Deliberate setup-orchestration Rails fixture for low-confidence
+    # MetzProject/ServiceSoup triage.
+    - test/fixtures/service_soup_setup_app/**/*
 
 Style/StringLiterals:
   EnforcedStyle: double_quotes

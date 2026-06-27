@@ -12,7 +12,8 @@ module MetzScan
             "manual review" => 1,
             "broad base" => 2,
             "shared dependency" => 3,
-            "setup orchestration" => 4
+            "shared namespace" => 4,
+            "setup orchestration" => 5
           }
         }.freeze
 
