@@ -12,8 +12,8 @@ module MetzScan
 
         def package_for(path)
           parts = path.to_s.split(File::SEPARATOR)
-          return package_after(parts, "app") if parts.include?("app")
-          return package_after(parts, "lib") if parts.include?("lib")
+          return package_after(parts, app_index(parts)) if app_index(parts)
+          return package_after(parts, lib_index(parts)) if lib_index(parts)
 
           nil
         end
@@ -23,20 +23,38 @@ module MetzScan
           ignored_reference_root?(parts) || ignored_lib_package?(parts)
         end
 
-        def package_after(parts, root)
-          index = parts.index(root)
+        def package_after(parts, index)
           return unless parts[index + 1]
 
-          "#{root}/#{parts[index + 1]}"
+          "#{parts[index]}/#{parts[index + 1]}"
         end
 
         def ignored_reference_root?(parts)
-          IGNORED_REFERENCE_ROOTS.any? { |root| parts.include?(root) }
+          index = project_root_index(parts)
+          index && IGNORED_REFERENCE_ROOTS.include?(parts[index])
         end
 
         def ignored_lib_package?(parts)
-          index = parts.index("lib")
+          index = project_root_index(parts)
+          return false unless index && parts[index] == "lib"
+
           index && IGNORED_LIB_PACKAGES.include?(parts[index + 1])
+        end
+
+        def app_index(parts)
+          parts.rindex("app")
+        end
+
+        def lib_index(parts)
+          parts.rindex("lib")
+        end
+
+        def project_root_index(parts)
+          parts.each_index.reverse_each.find { |index| project_root?(parts[index]) }
+        end
+
+        def project_root?(part)
+          part == "app" || part == "lib" || IGNORED_REFERENCE_ROOTS.include?(part)
         end
       end
     end

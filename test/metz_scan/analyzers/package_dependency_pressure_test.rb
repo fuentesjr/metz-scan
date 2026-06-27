@@ -91,6 +91,20 @@ module MetzScan
         findings.each { |finding| assert_shared_dependency_triage(finding) }
       end
 
+      def test_classifies_packages_from_project_paths_not_parent_directories
+        finding = PackageDependencyPressure.new(index: parent_named_package_index).call.first
+
+        assert_equal parent_named_gateway_path, finding.report_occurrences.first.path
+        assert_parent_named_package_finding(finding)
+      end
+
+      def assert_parent_named_package_finding(finding)
+        assert_includes finding.message, "outside app/services"
+        assert_equal "app/services", finding.declared_package
+        assert_equal %w[app/controllers app/jobs app/mailers app/policies app/serializers app/workers],
+                     finding.referring_packages
+      end
+
       private
 
       def assert_package_pressure_finding(finding)
@@ -185,6 +199,10 @@ module MetzScan
                        references: external_references)
       end
 
+      def parent_named_package_index
+        pressure_index(path: parent_named_gateway_path, references: parent_named_references)
+      end
+
       def pressure_index(available: true, name: "Billing::Gateway", path: gateway_path, references: [])
         FakePackagePressureIndex.new(
           available: available, declarations: gateway_declarations(name, path),
@@ -204,12 +222,27 @@ module MetzScan
         NOISY_REFERENCE_PATHS.map { |path, line| reference(path, line) } + external_references
       end
 
+      def parent_named_references
+        EXTERNAL_REFERENCE_PATHS.map do |path, line|
+          ProjectIndex::Reference.new(name: "Billing::Gateway", path: "#{parent_named_project_root}/#{path}",
+                                      line: line, column: 8)
+        end
+      end
+
       def reference(path, line)
         ProjectIndex::Reference.new(name: "Billing::Gateway", path: "/project/#{path}", line: line, column: 8)
       end
 
       def gateway_path
         "/project/app/services/billing/gateway.rb"
+      end
+
+      def parent_named_gateway_path
+        "#{parent_named_project_root}/app/services/billing/gateway.rb"
+      end
+
+      def parent_named_project_root
+        "/tmp/spec/app/project"
       end
     end
 
