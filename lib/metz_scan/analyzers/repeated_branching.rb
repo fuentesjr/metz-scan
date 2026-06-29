@@ -15,6 +15,7 @@ module MetzScan
 
       RULE_ID = "MetzProject/RepeatedBranching"
       PROJECT_ANALYZER_STATUS = "validated"
+      DEFAULT_OUTPUT_ELIGIBLE = true
       CONFIDENCE = "medium"
       TRIAGE_SEVERITY = "design pressure"
       TRIAGE_SUMMARY = "Validated repeated-decision signal; review repeated decisions in context."

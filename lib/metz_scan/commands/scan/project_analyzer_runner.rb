@@ -70,7 +70,9 @@ module MetzScan
         end
 
         def default_output_analyzer?(analyzer)
-          analyzer.const_defined?(:PROJECT_ANALYZER_STATUS) &&
+          analyzer.const_defined?(:DEFAULT_OUTPUT_ELIGIBLE) &&
+            analyzer::DEFAULT_OUTPUT_ELIGIBLE &&
+            analyzer.const_defined?(:PROJECT_ANALYZER_STATUS) &&
             analyzer::PROJECT_ANALYZER_STATUS == DEFAULT_OUTPUT_STATUS
         end
 

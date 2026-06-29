@@ -15,6 +15,7 @@ module MetzScan
 
       RULE_ID = "MetzProject/ServiceSoup"
       PROJECT_ANALYZER_STATUS = "validated"
+      DEFAULT_OUTPUT_ELIGIBLE = true
       CONFIDENCE = "medium"
       TRIAGE_SEVERITY = "design pressure"
       TRIAGE_SUMMARY = "Validated workflow signal; review methods that coordinate several distinct services."

@@ -95,9 +95,10 @@ bundle exec metz-scan scan . --format gh-annotations
 ```
 
 By default, `scan` reports RuboCop-backed Metz findings plus project-analyzer
-findings that satisfy the default-output policy: the analyzer is validated and
-the individual finding is medium-confidence design pressure. Use
-`--project-analyzers` to include the full opt-in set, including candidates and
+findings that satisfy the default-output policy: the analyzer is explicitly
+default-output eligible, the analyzer is validated, and the individual finding
+is medium-confidence design pressure. Use `--project-analyzers` to include the
+full opt-in set, including validated opt-in-only analyzers, candidates, and
 lower-confidence findings:
 
 ```bash
@@ -108,13 +109,13 @@ bundle exec metz-scan scan . --project-analyzers --format sarif
 
 Current project analyzer status:
 
-| Analyzer | Status | Expected findings |
-| --- | --- | --- |
-| `MetzProject/ServiceSoup` | Validated | Methods that coordinate at least three distinct service constants, such as `ValidateOrder.call(...)`, `CapturePayment.new(...).call`, or `FetchMessages.new(...).perform`. |
-| `MetzProject/RepeatedBranching` | Validated | Repeated `case` expressions with the same lexical decision and branch-value set, or repeated `if`/`elsif` predicate chains with the same receiver and predicate set, across distinct Ruby files. |
-| `MetzProject/DeepInheritanceTree` | Candidate | Indexed base classes or modules with at least three known descendants, when the optional Rubydex-backed project index is available. |
-| `MetzProject/PackageDependencyPressure` | Candidate | Indexed namespaced classes or modules referenced from several files across multiple coarse packages outside their declaration package. |
-| `MetzProject/NamespaceLeakPressure` | Candidate | Indexed deeply nested classes or modules referenced from multiple files across packages outside their home namespace. |
+| Analyzer | Status | Default scan | Expected findings |
+| --- | --- | --- | --- |
+| `MetzProject/ServiceSoup` | Validated | Yes | Methods that coordinate at least three distinct service constants, such as `ValidateOrder.call(...)`, `CapturePayment.new(...).call`, or `FetchMessages.new(...).perform`. |
+| `MetzProject/RepeatedBranching` | Validated | Yes | Repeated `case` expressions with the same lexical decision and branch-value set, or repeated `if`/`elsif` predicate chains with the same receiver and predicate set, across distinct Ruby files. |
+| `MetzProject/DeepInheritanceTree` | Candidate | No | Indexed base classes or modules with at least three known descendants, when the optional Rubydex-backed project index is available. |
+| `MetzProject/PackageDependencyPressure` | Candidate | No | Indexed namespaced classes or modules referenced from several files across multiple coarse packages outside their declaration package. |
+| `MetzProject/NamespaceLeakPressure` | Candidate | No | Indexed deeply nested classes or modules referenced from multiple files across packages outside their home namespace. |
 
 Project analyzers parse Ruby files only. They do not inspect ERB/HAML/SLIM
 templates, and they avoid semantic claims that require resolving runtime types.
@@ -148,10 +149,11 @@ are ignored. Public constants, nested exception families, and framework or
 extension namespaces are reported with lower-confidence shared-namespace triage.
 
 Project analyzer output includes status, confidence, triage severity, and triage
-summary metadata. Default output includes only validated, medium-confidence
-design-pressure findings; `--project-analyzers` includes candidates and
-lower-confidence findings too. Text output shows a project-analyzer summary
-before rule blocks; JSON and SARIF output include machine-readable
+summary metadata. Default output includes only explicitly eligible, validated,
+medium-confidence design-pressure findings; `--project-analyzers` includes
+candidates, validated opt-in-only analyzers, and lower-confidence findings too.
+Text output shows a project-analyzer summary before rule blocks; JSON and SARIF
+output include machine-readable
 project-analyzer metadata, and GitHub annotations append the same triage context
 to the annotation message.
 

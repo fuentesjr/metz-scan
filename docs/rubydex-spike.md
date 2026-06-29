@@ -334,9 +334,10 @@ Reasons not to enable it by default yet:
 
 ## Project analyzer status
 
-Default `metz-scan scan` output includes only validated,
-medium-confidence design-pressure project-analyzer findings.
-`metz-scan scan --project-analyzers` runs the full project-analyzer set:
+Default `metz-scan scan` output includes only explicitly default-output
+eligible, validated, medium-confidence design-pressure project-analyzer
+findings. `metz-scan scan --project-analyzers` runs the full project-analyzer
+set, including validated opt-in-only analyzers:
 
 - `MetzProject/ServiceSoup` — validated. Reports methods with at least three
   distinct service constants. Medium-confidence design-pressure findings are

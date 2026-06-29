@@ -81,13 +81,14 @@ set, no filtered core or synthetic names remained in the captured findings.
 
 ## Default output readiness
 
-Current decision: default `metz-scan scan` output uses a combined analyzer-level
-and finding-level gate. A project-analyzer finding qualifies for default output
-only when its analyzer is `validated` and the individual finding is
-`confidence: medium` with `severity: design pressure`.
+Current decision: default `metz-scan scan` output uses a separate
+analyzer-level eligibility gate and finding-level triage gate. A
+project-analyzer finding qualifies for default output only when its analyzer is
+explicitly default-output eligible, its analyzer status is `validated`, and the
+individual finding is `confidence: medium` with `severity: design pressure`.
 `metz-scan scan --project-analyzers` remains the boundary for the full
-project-analyzer set, including candidate analyzers and lower-confidence
-findings.
+project-analyzer set, including candidate analyzers, validated opt-in-only
+analyzers, and lower-confidence findings.
 
 Readiness by analyzer:
 
@@ -97,12 +98,13 @@ Readiness by analyzer:
   follow-up promotion review added one more strong service-workflow target and
   one setup-orchestration example that is now downranked with low confidence
   and setup-specific triage language. Its medium-confidence design-pressure
-  findings qualify for default output; setup-orchestration findings remain
-  available only with `--project-analyzers`.
+  findings are explicitly default-output eligible; setup-orchestration findings
+  remain available only with `--project-analyzers`.
 - `MetzProject/RepeatedBranching` is validated for opt-in project-analyzer
   output. The counts are stable, context-enriched findings are readable, and a
   Spree follow-up produced only three findings with concrete domain context. Its
-  medium-confidence design-pressure findings qualify for default output.
+  medium-confidence design-pressure findings are explicitly default-output
+  eligible.
 - `MetzProject/DeepInheritanceTree` is candidate for opt-in project-analyzer
   output. Grouped output, class-only auto-discovery, located-root filtering,
   root-kind labels, and broad-root downranking fixed the largest mechanical and

@@ -163,6 +163,14 @@ module MetzScan
     end
 
     class ScanProjectAnalyzerRunnerDefaultOutputTest < Minitest::Test
+      class ValidatedOptInOnlyAnalyzer
+        PROJECT_ANALYZER_STATUS = "validated"
+
+        def initialize(paths: nil, index: nil); end
+
+        def call = []
+      end
+
       def setup
         @tmpdir = Dir.mktmpdir("metz-scan-project-analyzer-default-output-test")
       end
@@ -178,6 +186,15 @@ module MetzScan
 
         assert_equal ["MetzProject/RepeatedBranching"], cop_names(parsed).uniq
         assert_equal ["MetzProject/RepeatedBranching"], summary_cop_names(parsed)
+      end
+
+      def test_validated_status_alone_does_not_make_analyzer_default_eligible
+        refute Scan::ProjectAnalyzerRunner.default_output_analyzer?(ValidatedOptInOnlyAnalyzer)
+      end
+
+      def test_default_output_analyzers_are_explicitly_eligible
+        assert Scan::ProjectAnalyzerRunner.default_output_analyzer?(Analyzers::RepeatedBranching)
+        assert Scan::ProjectAnalyzerRunner.default_output_analyzer?(Analyzers::ServiceSoup)
       end
 
       private
