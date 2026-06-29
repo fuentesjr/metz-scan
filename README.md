@@ -79,6 +79,13 @@ bundle exec metz-scan rules
 bundle exec metz-scan rules --json
 ```
 
+List the available project analyzers and their rollout status:
+
+```bash
+bundle exec metz-scan project-analyzers
+bundle exec metz-scan project-analyzers --json
+```
+
 Explain a cop:
 
 ```bash

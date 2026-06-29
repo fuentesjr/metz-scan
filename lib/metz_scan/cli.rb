@@ -10,7 +10,8 @@ module MetzScan
       "rules" => "List all Metz/* cops with their one-line rationale",
       "explain" => "Print full metadata for a single Metz cop",
       "scan" => "Run rubocop-metz against PATH and render a report",
-      "report" => "Re-render an existing rubocop-metz JSON report"
+      "report" => "Re-render an existing rubocop-metz JSON report",
+      "project-analyzers" => "List project analyzers with status and default-output eligibility"
     }.freeze
 
     SUBCOMMANDS = SUBCOMMAND_SUMMARIES.keys.freeze
@@ -66,14 +67,14 @@ module MetzScan
     end
 
     SUBCOMMAND_HANDLERS = { "rules" => "Rules", "explain" => "Explain", "scan" => "Scan",
-                            "report" => "Report" }.freeze
+                            "report" => "Report", "project-analyzers" => "ProjectAnalyzers" }.freeze
     private_constant :SUBCOMMAND_HANDLERS
 
     def subcommand_handler(name)
       klass_name = SUBCOMMAND_HANDLERS[name]
       return unless klass_name
 
-      require_relative "commands/#{name}"
+      require_relative "commands/#{name.tr('-', '_')}"
       Commands.const_get(klass_name)
     end
 

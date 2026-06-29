@@ -69,6 +69,7 @@ gem specification ./rubocop-metz/rubocop-metz-*.gem files
 ```bash
 bundle exec metz-scan --help
 bundle exec metz-scan rules
+bundle exec metz-scan project-analyzers
 bundle exec metz-scan explain Metz/DemeterTrainWreck
 ```
 

@@ -27,7 +27,7 @@ module MetzScan
       assert_equal MetzScan::VERSION, @stdout.string.strip
     end
 
-    def test_help_flag_lists_all_four_subcommands_on_stdout_and_exits_zero
+    def test_help_flag_lists_subcommands_on_stdout_and_exits_zero
       code = MetzScan::CLI.start(["--help"], stdout: @stdout, stderr: @stderr)
 
       assert_equal 0, code
@@ -66,10 +66,18 @@ module MetzScan
       assert_empty @stderr.string
     end
 
+    def test_project_analyzers_subcommand_dispatches_to_handler_and_exits_zero
+      code = MetzScan::CLI.start(["project-analyzers"], stdout: @stdout, stderr: @stderr)
+
+      assert_equal 0, code
+      assert_includes @stdout.string, "MetzProject/ServiceSoup"
+      assert_empty @stderr.string
+    end
+
     private
 
     def assert_subcommands_in(output)
-      %w[rules explain scan report].each do |name|
+      %w[rules explain scan report project-analyzers].each do |name|
         assert_includes output, name, "expected help to mention '#{name}'"
       end
     end
