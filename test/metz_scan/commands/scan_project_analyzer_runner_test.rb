@@ -195,6 +195,7 @@ module MetzScan
       def test_default_output_analyzers_are_explicitly_eligible
         assert Scan::ProjectAnalyzerRunner.default_output_analyzer?(Analyzers::RepeatedBranching)
         assert Scan::ProjectAnalyzerRunner.default_output_analyzer?(Analyzers::ServiceSoup)
+        refute Scan::ProjectAnalyzerRunner.default_output_analyzer?(Analyzers::InheritanceDescendants)
       end
 
       private

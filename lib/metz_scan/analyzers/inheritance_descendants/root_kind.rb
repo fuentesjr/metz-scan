@@ -22,11 +22,24 @@ module MetzScan
           }],
           ["rails application base", ->(name) { RAILS_APPLICATION_BASES.include?(name) }],
           ["application job base", lambda { |name|
-            name == "Jobs::Base" || name == "Jobs::Scheduled" || name.end_with?("::BaseJob")
+            name == "Jobs::Base" || name == "Jobs::Scheduled" || name.start_with?("Jobs::") ||
+              name.end_with?("Job") || name.end_with?("::BaseJob")
           }],
-          ["application service base", ->(name) { name == "BaseService" || name.end_with?("::BaseService") }],
-          ["controller base", ->(name) { name.end_with?("::BaseController") }],
-          ["serializer base", ->(name) { name.end_with?("Serializer") }]
+          ["application service base", lambda { |name|
+            name == "BaseService" || name.start_with?("Service::") || name.end_with?("::BaseService") ||
+              name.match?(/Base.*Service/) || name.match?(/Service.*Base/)
+          }],
+          ["controller base", ->(name) { name.end_with?("Controller") }],
+          ["serializer base", ->(name) { name.end_with?("Serializer") }],
+          ["policy base", ->(name) { name.end_with?("Policy") }],
+          ["worker base", ->(name) { name.end_with?("Worker") }],
+          ["exception base", lambda { |name|
+            name.end_with?("Error") || name.end_with?("Exception") || name.include?("Exception")
+          }],
+          ["cli base", ->(name) { name.end_with?("CLI::Base") }],
+          ["abstract base", lambda { |name|
+            name.include?("::Base::") || base_token?(name.split("::").last)
+          }]
         ].freeze
         private_constant :FRAMEWORK_ROOT_NAMESPACES, :RAILS_APPLICATION_BASES, :RULES
 
@@ -34,6 +47,10 @@ module MetzScan
 
         def for(base_name)
           RULES.find { |_label, matcher| matcher.call(base_name) }&.first
+        end
+
+        def base_token?(name)
+          name == "Base" || name.start_with?("Base") || name.end_with?("Base")
         end
       end
     end

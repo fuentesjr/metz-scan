@@ -12,10 +12,10 @@ module MetzScan
     # Reports configured inheritance roots with enough known descendants.
     class InheritanceDescendants
       RULE_ID = "MetzProject/DeepInheritanceTree"
-      PROJECT_ANALYZER_STATUS = "candidate"
+      PROJECT_ANALYZER_STATUS = "validated"
       CONFIDENCE = "medium"
       TRIAGE_SEVERITY = "manual review"
-      TRIAGE_SUMMARY = "Candidate inheritance signal; review broad base classes and descendant spread in context."
+      TRIAGE_SUMMARY = "Validated inheritance signal; review broad base classes and descendant spread in context."
       WHY = "Large inheritance trees hide coupling and make changes expensive."
       SUGGESTED_NEXT_MOVES = [
         "Review whether the base class is carrying multiple responsibilities.",

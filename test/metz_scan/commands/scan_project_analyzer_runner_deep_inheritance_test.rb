@@ -48,7 +48,7 @@ module MetzScan
       end
 
       def assert_deep_inheritance_triage(offense)
-        assert_equal "candidate", offense.dig("project_analyzer", "status")
+        assert_equal "validated", offense.dig("project_analyzer", "status")
         assert_equal "low", offense.dig("project_analyzer", "confidence")
         assert_equal "broad base", offense.dig("project_analyzer", "triage_severity")
       end
@@ -82,7 +82,7 @@ module MetzScan
 
       def assert_project_analyzer_rule(rule)
         assert_equal 1, rule.fetch("offense_count")
-        assert_equal "candidate", rule.fetch("status")
+        assert_equal "validated", rule.fetch("status")
         assert_equal "low", rule.fetch("confidence")
         assert_equal "broad base", rule.fetch("triage_severity")
       end

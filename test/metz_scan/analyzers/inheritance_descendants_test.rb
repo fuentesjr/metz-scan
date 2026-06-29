@@ -29,7 +29,7 @@ module MetzScan
       end
 
       def assert_finding_triage(finding)
-        assert_equal "candidate", finding.project_analyzer_status
+        assert_equal "validated", finding.project_analyzer_status
         assert_equal "low", finding.confidence
         assert_equal "broad base", finding.triage_severity
         assert_match(/broad inheritance base/i, finding.triage_summary)
@@ -58,12 +58,12 @@ module MetzScan
 
       def custom_base_index
         FakeIndex.new(available: true,
-                      descendants: { "DomainWorkflowBase" => %w[CheckoutWorkflow RefundWorkflow] },
+                      descendants: { "DomainWorkflowCoordinator" => %w[CheckoutWorkflow RefundWorkflow] },
                       declarations: custom_base_declarations)
       end
 
       def custom_base_declarations
-        [declaration("DomainWorkflowBase", "/app/domain_workflow_base.rb"),
+        [declaration("DomainWorkflowCoordinator", "/app/domain_workflow_coordinator.rb"),
          declaration("CheckoutWorkflow", "/app/checkout_workflow.rb"),
          declaration("RefundWorkflow", "/app/refund_workflow.rb")]
       end
@@ -129,19 +129,19 @@ module MetzScan
         assert_equal %w[AdminController OrdersController], finding.descendants
       end
 
-      def test_reports_candidate_triage_for_unlabeled_base
-        finding = InheritanceDescendants.new(index: custom_base_index, base_names: "DomainWorkflowBase",
+      def test_reports_validated_triage_for_unlabeled_base
+        finding = InheritanceDescendants.new(index: custom_base_index, base_names: "DomainWorkflowCoordinator",
                                              minimum_descendants: 2).call.first
 
-        assert_candidate_triage_for_unlabeled_base(finding)
+        assert_validated_triage_for_unlabeled_base(finding)
         refute finding.project_analyzer_metadata.key?("root_kind")
       end
 
-      def assert_candidate_triage_for_unlabeled_base(finding)
-        assert_equal "candidate", finding.project_analyzer_status
+      def assert_validated_triage_for_unlabeled_base(finding)
+        assert_equal "validated", finding.project_analyzer_status
         assert_equal "medium", finding.confidence
         assert_equal "manual review", finding.triage_severity
-        assert_includes finding.triage_summary, "Candidate inheritance signal"
+        assert_includes finding.triage_summary, "Validated inheritance signal"
       end
 
       def test_skips_configured_base_below_threshold
@@ -239,9 +239,25 @@ module MetzScan
       private
 
       def expected_root_kinds
+        base_root_kinds.merge(category_root_kinds).merge(abstract_root_kinds)
+      end
+
+      def base_root_kinds
         { "ApplicationController" => "rails application base", "ActiveModel::Serializer" => "framework root",
           "Api::BaseController" => "controller base", "ActivityPub::Serializer" => "serializer base",
           "BaseService" => "application service base", "Jobs::Base" => "application job base" }
+      end
+
+      def category_root_kinds
+        { "Admin::ApplicationController" => "controller base", "ApplicationPolicy" => "policy base",
+          "BustCacheBaseWorker" => "worker base", "Mastodon::Error" => "exception base",
+          "CustomExceptions::Base" => "exception base", "Mastodon::CLI::Base" => "cli base" }
+      end
+
+      def abstract_root_kinds
+        { "BaseListener" => "abstract base", "LiquidTagBase" => "abstract base",
+          "Reporting::Reports::BulkCoop::Base" => "abstract base",
+          "Service::StepsInspector::Step" => "application service base" }
       end
 
       def assert_root_kind(findings, base_name, root_kind)
@@ -253,7 +269,7 @@ module MetzScan
       end
 
       def assert_broad_root_triage(finding)
-        assert_equal "candidate", finding.project_analyzer_status
+        assert_equal "validated", finding.project_analyzer_status
         assert_equal "low", finding.confidence
         assert_equal "broad base", finding.triage_severity
       end
@@ -274,7 +290,9 @@ module MetzScan
 
       def root_names
         ["ApplicationController", "ActiveModel::Serializer", "Api::BaseController", "ActivityPub::Serializer",
-         "BaseService", "Jobs::Base"]
+         "BaseService", "Jobs::Base", "Admin::ApplicationController", "ApplicationPolicy", "BustCacheBaseWorker",
+         "Mastodon::Error", "CustomExceptions::Base", "Mastodon::CLI::Base", "BaseListener", "LiquidTagBase",
+         "Reporting::Reports::BulkCoop::Base", "Service::StepsInspector::Step"]
       end
 
       def descendants_for(name)

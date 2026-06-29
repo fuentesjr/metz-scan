@@ -105,12 +105,12 @@ Readiness by analyzer:
   Spree follow-up produced only three findings with concrete domain context. Its
   medium-confidence design-pressure findings are explicitly default-output
   eligible.
-- `MetzProject/DeepInheritanceTree` is candidate for opt-in project-analyzer
-  output. Grouped output, class-only auto-discovery, located-root filtering,
-  root-kind labels, and broad-root downranking fixed the largest mechanical and
-  triage-language problems. It should not move toward default output until
-  broad framework and Rails application bases are calibrated across more
-  projects.
+- `MetzProject/DeepInheritanceTree` is validated for opt-in project-analyzer
+  output, but is not default-output eligible. Grouped output, class-only
+  auto-discovery, located-root filtering, expanded root-kind labels, and
+  broad-root downranking fixed the largest mechanical and triage-language
+  problems. It should not move toward default output until broad root kinds are
+  calibrated across more projects.
 - `MetzProject/PackageDependencyPressure` is candidate for opt-in
   project-analyzer output. Threshold tuning and shared-dependency downranking
   reduced broad public APIs, shared configuration, framework extension points,
@@ -612,7 +612,7 @@ new recurring false-positive category.
 
 ## `MetzProject/DeepInheritanceTree`
 
-Result: **Candidate**, behind `--project-analyzers`.
+Result: **Validated opt-in**, not default-output eligible.
 
 The analyzer depends on the optional Rubydex-backed project index. Without the
 optional bundle group enabled, it contributes no findings. First-party cops now
@@ -807,6 +807,8 @@ now labels common broad roots in both the visible message and
 `project_analyzer.root_kind` metadata. The first supported labels are
 `framework root`, `rails application base`, `controller base`,
 `serializer base`, `application service base`, and `application job base`.
+The 2026-06-29 expansion added `policy base`, `worker base`, `exception base`,
+`cli base`, and `abstract base`.
 Direct `ProjectAnalyzerRunner` reruns against Mastodon `34bbb4748223` and
 Discourse `2115f1cac5f9` used the same `app/` and `lib/` paths as the
 report-priority samples. Finding counts did not change: Mastodon still produced
@@ -837,3 +839,32 @@ Root-kind decision:
 - Broad framework and Rails application bases are reported with
   `confidence: low` and `severity: broad base`. Unlabeled custom inheritance
   roots keep `confidence: medium` and `severity: manual review`.
+
+Root-kind expansion and opt-in validation follow-up on 2026-06-29:
+`MetzProject/DeepInheritanceTree` now also labels recurring controller, job,
+service, policy, worker, exception, CLI, and explicit abstract-base roots. The
+rerun used existing repo-local scratch checkouts under
+`tmp/project-analyzer-calibration/apps/` and did not use the historical
+`/private/tmp` calibration paths.
+
+| Project | Revision | Findings | Medium manual-review findings | Low broad-base findings |
+| --- | --- | ---: | ---: | ---: |
+| `chatwoot/chatwoot` | `e86222034e39` | 32 | 2 | 30 |
+| `discourse/discourse` | `2115f1cac5f9` | 47 | 13 | 34 |
+| `forem/forem` | `d9a393f1d502` | 26 | 3 | 23 |
+| `mastodon/mastodon` | `34bbb4748223` | 40 | 6 | 34 |
+| `openfoodfoundation/openfoodnetwork` | `be9d51ab32a6` | 29 | 10 | 19 |
+| `decidim/decidim` | `b2001fa7c9d2` | 0 | 0 | 0 |
+| `solidusio/solidus` | `8d781ac742e3` | 0 | 0 | 0 |
+
+Validation decision:
+
+- Promote DeepInheritanceTree to **Validated** for opt-in project-analyzer
+  output. The remaining medium-confidence findings stay below 15 per full
+  target and are concrete inheritance-family prompts, while broad recurring
+  base categories remain visible with lower-confidence `broad base` triage.
+- Do not mark it default-output eligible. Its findings depend on the optional
+  Rubydex-backed project index, and broad-root output still needs opt-in
+  reviewer intent.
+- Keep expanded root-kind labels in metadata so downstream consumers can group
+  or filter broad bases without parsing message text.

@@ -113,9 +113,10 @@ that consumes a `ProjectIndex` and reports descendants of configured or
 auto-discovered base classes or modules. It is wired into
 `metz-scan scan --project-analyzers` as `MetzProject/DeepInheritanceTree`, but
 only produces findings when the optional Rubydex-backed project index is
-available. It is candidate for opt-in output; broad framework and Rails
-application bases are still reported, but with lower-confidence `broad base`
-triage.
+available. It is validated for opt-in output but is not default-output
+eligible. Broad framework, Rails application, controller, job, service, policy,
+worker, exception, CLI, and abstract bases are still reported, but with
+lower-confidence `broad base` triage.
 
 Run the spike against the current workspace:
 
@@ -346,15 +347,15 @@ set, including validated opt-in-only analyzers:
   `case` decisions with the same branch-value set, or repeated `if`/`elsif`
   predicate chains with the same receiver and predicate set, across distinct
   Ruby files. Medium-confidence design-pressure findings are default-eligible.
-- `MetzProject/DeepInheritanceTree` — candidate. Reports indexed base
+- `MetzProject/DeepInheritanceTree` — validated opt-in. Reports indexed base
   classes or modules with at least three known descendants. It depends on the
   optional Rubydex-backed project index, so it contributes no findings when
   Rubydex is not enabled. Ruby core and Rubydex synthetic declarations are
   filtered from auto-discovered candidates. When declaration kind is available,
   auto-discovered roots are limited to classes and must have declaration paths;
   explicit configured roots can still inspect modules. Findings emit one primary offense at the base
-  declaration while preserving descendant paths in metadata; the remaining
-  calibration concern is default-output readiness for broad root kinds.
+  declaration while preserving descendant paths in metadata. It is not
+  default-output eligible.
 - `MetzProject/PackageDependencyPressure` — candidate. Reports indexed
   namespaced classes or modules referenced from several files across multiple
   coarse packages outside their declaration package. It depends on the optional
