@@ -70,17 +70,20 @@ gem specification ./rubocop-metz/rubocop-metz-*.gem files
 ```bash
 bundle exec metz-scan --help
 bundle exec metz-scan rules
+bundle exec metz-scan project-analyzers
 bundle exec metz-scan explain Metz/DemeterTrainWreck
 ```
 
 - [ ] Run a scan against the sample fixture.
 
 These commands are expected to exit nonzero when findings are reported; confirm
-that the output is well-formed for each format.
+that the output is well-formed for each format. Copy the fixture outside this
+repository first because the repo RuboCop config excludes this fixture tree.
 
 ```bash
 fixture_dir="$(mktemp -d)"
 cp -R test/fixtures/service_soup_app "$fixture_dir/service_soup_app"
+bundle exec metz-scan scan "$fixture_dir/service_soup_app" --format text
 bundle exec metz-scan scan "$fixture_dir/service_soup_app" --project-analyzers --format text
 bundle exec metz-scan scan "$fixture_dir/service_soup_app" --project-analyzers --format json
 bundle exec metz-scan scan "$fixture_dir/service_soup_app" --project-analyzers --format sarif
@@ -92,8 +95,12 @@ rm -rf "$fixture_dir"
 
 ```bash
 git diff --quiet
-bundle exec metz-scan scan test/fixtures/sample_app --auto-fix --dry-run
+autofix_dir="$(mktemp -d)"
+cp -R test/fixtures/service_soup_app "$autofix_dir/service_soup_app"
+bundle exec metz-scan scan "$autofix_dir/service_soup_app" --auto-fix --dry-run
+diff -qr test/fixtures/service_soup_app "$autofix_dir/service_soup_app"
 git diff --quiet
+rm -rf "$autofix_dir"
 ```
 
 ## Source Tag and GitHub Release

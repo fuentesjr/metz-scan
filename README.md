@@ -37,7 +37,7 @@ unset GITHUB_PACKAGES_TOKEN
 source "https://rubygems.org"
 
 source "https://rubygems.pkg.github.com/fuentesjr" do
-  gem "metz-scan", "~> 0.2.0"
+  gem "metz-scan", "~> 0.3.0"
 end
 ```
 

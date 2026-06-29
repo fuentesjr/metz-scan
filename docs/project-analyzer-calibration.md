@@ -487,6 +487,35 @@ Current decision:
   real-application passes show mostly concrete boundary-pressure examples after
   broad public/infra categories are handled.
 
+## `MetzProject/NamespaceLeakPressure`
+
+Result: **Candidate**, behind `--project-analyzers`.
+
+This analyzer was added after `PackageDependencyPressure` to report deeply
+nested declarations whose references spread outside their home namespace into
+at least three files across three packages. Public constants, nested exception
+families, and framework or extension namespaces are downranked as
+low-confidence shared-namespace findings rather than counted as
+medium-confidence namespace-boundary evidence.
+
+Candidate-path checkpoint on 2026-06-29:
+
+- Pass threshold: revisit validation only if the active repo-local calibration
+  home shows at least one additional clear medium-confidence true positive
+  beyond the two already documented.
+- Active source: `tmp/project-analyzer-calibration/apps`; historical
+  `/private/tmp` calibration paths were not used.
+- Result: **fail for validation; stop/defer**. A read-only rerun over active
+  checkouts found only two medium-confidence namespace-boundary findings:
+  `Badge::Trigger::PostRevision` in Discourse and
+  `Spree::Gateway::StripeSCA` in OpenFoodNetwork. Chatwoot, Forem, Mastodon,
+  Solidus, and Decidim produced no additional medium-confidence
+  namespace-boundary findings.
+- Decision: keep NamespaceLeakPressure as a candidate opt-in analyzer. Do not
+  start a full graduation loop until a new approved target or refreshed active
+  checkout produces at least a third clear medium-confidence namespace-boundary
+  positive.
+
 ## `MetzProject/RepeatedBranching`
 
 Result: **Validated**, behind `--project-analyzers`.
