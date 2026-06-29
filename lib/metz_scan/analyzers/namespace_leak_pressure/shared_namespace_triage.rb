@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "shared_namespace_triage/exception_declaration"
+
 module MetzScan
   module Analyzers
     class NamespaceLeakPressure
@@ -15,14 +17,20 @@ module MetzScan
           "Introduce a narrower public object only when callers repeat namespace-specific knowledge."
         ].freeze
         SHARED_SEGMENT_PATTERN =
-          /\A(?:Config|Settings?|Core|Events?|Types?|VERSION|DefaultsProvider|RedisKeys|Errors?|Exceptions?)\z/i
+          /\A(?:Config|Settings?|Core|Events?|Types?|VERSION|DefaultsProvider|RedisKeys|Registr(?:y|ies)|Errors?|
+              Exceptions?)\z/ix
+        EXCEPTION_FAMILY_SEGMENT_PATTERN = /(?:Errors?|Exceptions?)\z/i
+        ERROR_SUFFIX_PATTERN = /(?:Error|Exception)\z/
         FRAMEWORK_NAMESPACE_PATTERN = /\A(?:I18n::Backend|Spree::Core)\b/
-        private_constant :SHARED_SEGMENT_PATTERN, :FRAMEWORK_NAMESPACE_PATTERN
+        private_constant :SHARED_SEGMENT_PATTERN, :EXCEPTION_FAMILY_SEGMENT_PATTERN, :ERROR_SUFFIX_PATTERN,
+                         :FRAMEWORK_NAMESPACE_PATTERN
 
         module_function
 
         def shared?(declaration)
-          shared_name?(declaration.name) || framework_namespace?(declaration.name)
+          shared_name?(declaration.name) ||
+            ExceptionDeclaration.exception?(declaration) ||
+            framework_namespace?(declaration.name)
         end
 
         def attributes(status)
@@ -32,7 +40,7 @@ module MetzScan
 
         def shared_name?(name)
           segments = name.to_s.split("::")
-          segments.any? { |segment| segment.match?(SHARED_SEGMENT_PATTERN) } ||
+          segments.any? { |segment| shared_segment?(segment) } ||
             constant_like_tail?(segments.last) || error_like_tail?(segments.last)
         end
 
@@ -40,12 +48,20 @@ module MetzScan
           name.to_s.match?(FRAMEWORK_NAMESPACE_PATTERN)
         end
 
+        def shared_segment?(segment)
+          segment.to_s.match?(SHARED_SEGMENT_PATTERN) || exception_family_segment?(segment)
+        end
+
         def constant_like_tail?(segment)
           segment.to_s.match?(/\A[A-Z][A-Z0-9_]*\z/)
         end
 
         def error_like_tail?(segment)
-          segment.to_s.match?(/(?:Error|Exception)\z/)
+          segment.to_s.match?(ERROR_SUFFIX_PATTERN)
+        end
+
+        def exception_family_segment?(segment)
+          segment.to_s.match?(EXCEPTION_FAMILY_SEGMENT_PATTERN)
         end
       end
     end

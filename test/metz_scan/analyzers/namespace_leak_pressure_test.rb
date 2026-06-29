@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require "minitest/autorun"
+require "fileutils"
+require "tmpdir"
 
 require "metz_scan/analyzers/namespace_leak_pressure"
 
@@ -203,6 +205,14 @@ module MetzScan
     class NamespaceLeakPressureSharedNamespaceTest < Minitest::Test
       include NamespaceLeakPressureTestSupport
 
+      STANDARD_ERROR_ASSIGNMENT_SOURCE = <<~RUBY
+        module Compression
+          class Strategy
+            ExtractFailed = Class.new(StandardError)
+          end
+        end
+      RUBY
+
       def test_downranks_constant_namespaces
         finding = finding_for_shared("Events::Types::ASSIGNEE_CHANGED", "/project/lib/events/types.rb")
 
@@ -215,6 +225,28 @@ module MetzScan
         assert_shared_namespace_triage(finding)
       end
 
+      def test_downranks_exception_family_segments_with_prefixes
+        finding = finding_for_shared("CustomExceptions::CustomFilter::InvalidValue",
+                                     "/project/lib/custom_exceptions/custom_filter.rb")
+
+        assert_shared_namespace_triage(finding)
+      end
+
+      def test_downranks_standard_error_assignments_without_error_suffix
+        with_standard_error_assignment do |path|
+          finding = finding_for_shared("Compression::Strategy::ExtractFailed", path)
+
+          assert_shared_namespace_triage(finding)
+        end
+      end
+
+      def test_downranks_registry_extension_points
+        finding = finding_for_shared("AdminDashboard::Reports::Registry",
+                                     "/project/lib/admin_dashboard/reports/registry.rb")
+
+        assert_shared_namespace_triage(finding)
+      end
+
       def test_downranks_framework_extension_namespaces
         finding = finding_for_shared("Spree::Core::Engine", "/project/lib/spree/core/engine.rb")
 
@@ -222,6 +254,19 @@ module MetzScan
       end
 
       private
+
+      def with_standard_error_assignment
+        Dir.mktmpdir do |dir|
+          path = File.join(dir, "lib/compression/strategy.rb")
+          write_standard_error_assignment(path)
+          yield path
+        end
+      end
+
+      def write_standard_error_assignment(path)
+        FileUtils.mkdir_p(File.dirname(path))
+        File.write(path, STANDARD_ERROR_ASSIGNMENT_SOURCE)
+      end
 
       def finding_for_shared(name, path)
         NamespaceLeakPressure.new(index: shared_namespace_index(name, path)).call.first
