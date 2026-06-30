@@ -7,6 +7,10 @@ repo_root="$(cd "$(dirname "$0")/.." && pwd)"
 repo_root_real="$(cd "$repo_root" && pwd -P)"
 ruby_bin="${RUBY_BIN:-$(command -v ruby)}"
 bundle_bin="${BUNDLE_BIN:-$(dirname "$ruby_bin")/bundle}"
+clean_ruby_env=(
+  "HOME=${HOME:-}"
+  "PATH=$(dirname "$ruby_bin"):$PATH"
+)
 
 fail() {
   printf 'check_published_gem: %s\n' "$*" >&2
@@ -30,7 +34,11 @@ fi
 [ -x "$ruby_bin" ] || fail "ruby executable not found: $ruby_bin"
 [ -x "$bundle_bin" ] || fail "bundle executable not found: $bundle_bin"
 
-version="${1:-$("$ruby_bin" -I"$repo_root/lib" -e 'require "metz_scan/version"; print MetzScan::VERSION')}"
+clean_ruby() {
+  env -i "${clean_ruby_env[@]}" "$ruby_bin" "$@"
+}
+
+version="${1:-$(clean_ruby -I"$repo_root/lib" -e 'require "metz_scan/version"; print MetzScan::VERSION')}"
 case "$version" in
   ""|*[!0-9A-Za-z.-]*)
     fail "invalid gem version: $version"
@@ -73,7 +81,7 @@ github_packages_credential() {
   local credentials_file="${GEM_CREDENTIALS:-$HOME/.gem/credentials}"
   [ -f "$credentials_file" ] || fail "missing GitHub Packages credentials; set GITHUB_PACKAGES_TOKEN or GEM_CREDENTIALS"
 
-  "$ruby_bin" -ryaml -e '
+  clean_ruby -ryaml -e '
     creds = YAML.load_file(ARGV.fetch(0))
     value = creds[:github] || creds["github"]
     abort "missing :github credential" unless value
@@ -86,7 +94,7 @@ credential="$(github_packages_credential)"
 
 redact_file() {
   local file="$1"
-  SECRET="$credential" SECRET_TOKEN="${credential#*:}" "$ruby_bin" -e '
+  env -i "${clean_ruby_env[@]}" "SECRET=$credential" "SECRET_TOKEN=${credential#*:}" "$ruby_bin" -e '
     text = File.binread(ARGV.fetch(0))
     [ENV.fetch("SECRET"), ENV.fetch("SECRET_TOKEN")].uniq.each do |secret|
       text = text.gsub(secret, "[REDACTED]") unless secret.empty?
@@ -107,14 +115,14 @@ run_redacted() {
   return "$status"
 }
 
-base_bundle_env=(
+bundle_runtime_env=(
   "HOME=$workdir/home"
   "BUNDLE_APP_CONFIG=$workdir/.bundle"
   "BUNDLE_PATH=$workdir/vendor/bundle"
   "PATH=$(dirname "$ruby_bin"):$PATH"
 )
-install_bundle_env=(
-  "${base_bundle_env[@]}"
+bundle_install_env=(
+  "${bundle_runtime_env[@]}"
   "BUNDLE_RUBYGEMS__PKG__GITHUB__COM=$credential"
 )
 
@@ -183,13 +191,12 @@ RUBY
 
 bundle_command() (
   cd "$workdir"
-  unset BUNDLE_RUBYGEMS__PKG__GITHUB__COM GEM_CREDENTIALS GITHUB_PACKAGES_TOKEN
-  env "${base_bundle_env[@]}" "$bundle_bin" "$@"
+  env -i "${bundle_runtime_env[@]}" "$bundle_bin" "$@"
 )
 
 bundle_install() (
   cd "$workdir"
-  env "${install_bundle_env[@]}" "$bundle_bin" install --jobs 4 --retry 2
+  env -i "${bundle_install_env[@]}" "$bundle_bin" install --jobs 4 --retry 2
 )
 
 bundle_exec() {

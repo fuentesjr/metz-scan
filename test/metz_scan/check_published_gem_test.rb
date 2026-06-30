@@ -10,18 +10,35 @@ module MetzScan
   CheckPublishedGemResult = Struct.new(:stdout, :stderr, :status, :log, keyword_init: true) do
     def success? = status.success?
   end
+  CHECK_PUBLISHED_GEM_SECRET_TOKEN = "token-for-check-published-gem-test"
+  CHECK_PUBLISHED_GEM_POLLUTED_ENV = {
+    "BUNDLE_GEMFILE" => "/tmp/contaminated/Gemfile",
+    "BUNDLE_BIN_PATH" => "/tmp/contaminated-bundle-bin",
+    "BUNDLE_APP_CONFIG" => "/tmp/contaminated-bundle-app-config",
+    "BUNDLE_PATH" => "/tmp/contaminated-bundle-path",
+    "BUNDLER_VERSION" => "9.9.9",
+    "GEM_HOME" => "/tmp/contaminated-gem-home",
+    "GEM_PATH" => "/tmp/contaminated-gem-path",
+    "RUBYLIB" => "/tmp/contaminated-rubylib",
+    "RUBYOPT" => "-v",
+    "BUNDLE_RUBYGEMS__PKG__GITHUB__COM" => "fuentesjr:#{CHECK_PUBLISHED_GEM_SECRET_TOKEN}",
+    "GITHUB_PACKAGES_TOKEN" => CHECK_PUBLISHED_GEM_SECRET_TOKEN,
+    "GEM_CREDENTIALS" => "/tmp/contaminated-credentials"
+  }.freeze
 
   class CheckPublishedGemTest < Minitest::Test
     REPO_ROOT = File.expand_path("../..", __dir__)
     VERSION = "9.8.7"
-    SECRET_TOKEN = "token-for-check-published-gem-test"
 
     def test_published_gem_smoke_is_local_isolated_and_redacted
       with_smoke_result { |result, tmp_base| assert_successful_smoke(result, tmp_base) }
     end
 
     def test_published_gem_smoke_scopes_ambient_bundler_credential
-      with_smoke_result(bundler_credential: true) { |result, tmp_base| assert_successful_smoke(result, tmp_base) }
+      with_smoke_result(
+        bundler_credential: true,
+        ambient_env: CHECK_PUBLISHED_GEM_POLLUTED_ENV
+      ) { |result, tmp_base| assert_successful_smoke(result, tmp_base) }
     end
 
     def test_rejects_temp_base_inside_repository
@@ -29,7 +46,8 @@ module MetzScan
     end
 
     def test_release_checklists_run_published_gem_smoke_after_publish
-      release_checklist_paths.each do |path|
+      [File.join(REPO_ROOT, "RELEASE_CHECKLIST.md"),
+       File.join(REPO_ROOT, ".github/ISSUE_TEMPLATE/release_checklist.md")].each do |path|
         checklist = File.read(path)
 
         assert_includes checklist, "bin/check_published_gem X.Y.Z", path
@@ -38,43 +56,29 @@ module MetzScan
 
     private
 
-    def with_smoke_result(bundler_credential: false)
+    def with_smoke_result(options = {})
       with_fake_bundle do |fake_dir|
         Dir.mktmpdir("metz-scan-published-gem-smoke") do |tmp_base|
-          yield smoke_result(tmp_base, fake_dir, bundler_credential), tmp_base
+          yield run_check_published_gem(tmp_base, fake_dir, options), tmp_base
         end
       end
     end
 
-    def smoke_result(tmp_base, fake_dir, bundler_credential)
-      run_check_published_gem(tmp_base, fake_bundle(fake_dir), bundle_log(fake_dir),
-                              bundler_credential: bundler_credential)
-    end
+    def run_check_published_gem(tmp_base, fake_dir, options = {})
+      log_path = bundle_log(fake_dir)
+      stdout, stderr, status = capture_check_published_gem(tmp_base, fake_bundle(fake_dir), options)
 
-    def run_check_published_gem(tmp_base, fake_bundle_path, log_path, bundler_credential: false)
-      stdout, stderr, status = Open3.capture3(env_for(tmp_base, fake_bundle_path, log_path,
-                                                      bundler_credential: bundler_credential),
-                                              check_published_gem_path, VERSION)
       CheckPublishedGemResult.new(stdout: stdout, stderr: stderr, status: status, log: log_for(log_path))
     end
 
-    def env_for(tmp_base, fake_bundle_path, log_path, bundler_credential: false)
-      base_env.merge("BUNDLE_BIN" => fake_bundle_path, "FAKE_BUNDLE_LOG" => log_path,
-                     "PUBLISHED_GEM_SMOKE_TMPDIR" => tmp_base)
-              .merge(credential_env(bundler_credential))
+    def capture_check_published_gem(tmp_base, fake_bundle_path, options)
+      Open3.capture3(env_for(tmp_base, fake_bundle_path, options), check_published_gem_path, VERSION)
     end
 
-    def fake_bundle(fake_dir)
-      File.join(fake_dir, "bundle").tap do |path|
-        FileUtils.cp(fake_bundle_fixture_path, path)
-        File.chmod(0o755, path)
-      end
-    end
-
-    def with_repo_tmp_base_result
-      with_fake_bundle do |fake_dir|
-        yield run_check_published_gem(REPO_ROOT, fake_bundle(fake_dir), bundle_log(fake_dir)), bundle_log(fake_dir)
-      end
+    def env_for(tmp_base, fake_bundle_path, options)
+      base_env.merge("BUNDLE_BIN" => fake_bundle_path, "PUBLISHED_GEM_SMOKE_TMPDIR" => tmp_base)
+              .merge(options.fetch(:ambient_env, {}))
+              .merge(credential_env(options.fetch(:bundler_credential, false)))
     end
 
     def assert_successful_smoke(result, tmp_base)
@@ -94,7 +98,7 @@ module MetzScan
     def assert_redacted(result)
       assert_includes result.stdout, "[REDACTED]"
       assert_includes result.stderr, "[REDACTED]"
-      refute_includes "#{result.stdout}\n#{result.stderr}", SECRET_TOKEN
+      refute_includes "#{result.stdout}\n#{result.stderr}", CHECK_PUBLISHED_GEM_SECRET_TOKEN
     end
 
     def assert_exact_gem_pin(log)
@@ -110,20 +114,15 @@ module MetzScan
       refute_path_exists install_pwd
     end
 
-    def release_checklist_paths
-      [File.join(REPO_ROOT, "RELEASE_CHECKLIST.md"),
-       File.join(REPO_ROOT, ".github/ISSUE_TEMPLATE/release_checklist.md")]
-    end
-
     def base_env
       { "BUNDLE_RUBYGEMS__PKG__GITHUB__COM" => nil, "PATH" => ENV.fetch("PATH"),
         "RUBY_BIN" => RbConfig.ruby }
     end
 
     def credential_env(bundler_credential)
-      return { "BUNDLE_RUBYGEMS__PKG__GITHUB__COM" => "fuentesjr:#{SECRET_TOKEN}" } if bundler_credential
-
-      { "GITHUB_PACKAGES_TOKEN" => SECRET_TOKEN }
+      key = bundler_credential ? "BUNDLE_RUBYGEMS__PKG__GITHUB__COM" : "GITHUB_PACKAGES_TOKEN"
+      value = bundler_credential ? "fuentesjr:#{CHECK_PUBLISHED_GEM_SECRET_TOKEN}" : CHECK_PUBLISHED_GEM_SECRET_TOKEN
+      { key => value }
     end
 
     def with_fake_bundle(&)
@@ -139,5 +138,18 @@ module MetzScan
     def bundle_log(fake_dir) = File.join(fake_dir, "bundle.log")
 
     def log_for(log_path) = File.exist?(log_path) ? File.read(log_path) : ""
+
+    def with_repo_tmp_base_result
+      with_fake_bundle do |fake_dir|
+        yield run_check_published_gem(REPO_ROOT, fake_dir), bundle_log(fake_dir)
+      end
+    end
+
+    def fake_bundle(fake_dir)
+      File.join(fake_dir, "bundle").tap do |path|
+        FileUtils.cp(fake_bundle_fixture_path, path)
+        File.chmod(0o755, path)
+      end
+    end
   end
 end

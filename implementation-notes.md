@@ -346,3 +346,99 @@ Decision:
   boundary/noise review, especially because the active `spree` checkout has no
   top-level `app/` or `lib/` under the requested slice and was effectively
   unexercised.
+
+## 2026-06-30: Targeted pressure calibration and smoke env isolation
+
+Task: finish the next two big tasks: targeted `PackageDependencyPressure`
+calibration and broader `bin/check_published_gem` environment isolation, using
+agenticons.
+
+Scope boundaries:
+
+- Use only `tmp/project-analyzer-calibration/apps` for calibration evidence.
+- Do not promote or retune analyzers until targeted evidence is recorded.
+- Keep `NamespaceLeakPressure` and `PackageDependencyPressure` candidate
+  opt-in unless evidence and review justify a later behavior change.
+- Keep release-smoke changes limited to script environment isolation and the
+  existing local non-network test/fixture.
+- Keep `implementation-notes.md` current before and after verification.
+
+Change type: chore.
+
+Verbatim task statement: "Ok go ahead and do that now"
+
+Plan:
+
+1. Spawn `helper_worker: PackageDependencyPressure targeted calibration` for
+   read-only path coverage and boundary/noise classification.
+2. Spawn `coding_worker: published-gem smoke env isolation` for the script and
+   fixture/test patch.
+3. Integrate code-worker changes, run focused red/green proof where feasible,
+   then run full local gates and the strategic design validation loop.
+4. Record calibration evidence, design-review findings, and final decision.
+
+Verification status:
+
+- `coding_worker: published-gem smoke env isolation` moved script and fixture
+  isolation to an explicit env allow-list and returned without running tests.
+- Focused red check exposed that `env -i` omitted the fixture log env and that
+  script-internal Ruby helpers still inherited polluted Bundler/Ruby variables.
+  The script now uses `clean_ruby` for internal version, credential-file, and
+  redaction Ruby calls.
+- `ruby -Ilib -Itest test/metz_scan/check_published_gem_test.rb` passed:
+  4 runs, 40 assertions, 0 failures, 0 errors.
+- `bundle exec ruby -Ilib -Itest test/metz_scan/check_published_gem_test.rb`
+  passed: 4 runs, 40 assertions, 0 failures, 0 errors.
+- `bundle exec rubocop` passed: 155 files inspected, no offenses.
+- `bash -n bin/check_published_gem` passed.
+- `bash -n test/fixtures/check_published_gem/fake_bundle` passed.
+- `bin/check_published_gem 0.3.0` passed against the published GitHub
+  Packages gems with the isolated install/runtime environment.
+- `ruby /Users/sal/Projects/strategic-software-design/scripts/validate.rb
+  --type chore --task "Ok go ahead and do that now"` passed: slice tests,
+  lint, and TODO gates passed; red/green skipped; warnings 0.
+- `reviewer: strategic design validation` verdict was clean with no findings.
+- `helper_worker: PackageDependencyPressure targeted calibration` completed
+  read-only calibration and found no path-discovery change is indicated for
+  the active `spree` fixture.
+
+Release-smoke environment isolation:
+
+- Runtime `bundle exec` commands now run under `env -i` with only script-owned
+  `HOME`, `PATH`, `BUNDLE_APP_CONFIG`, and `BUNDLE_PATH`.
+- Install still runs under `env -i`, adding only the script-owned
+  `BUNDLE_RUBYGEMS__PKG__GITHUB__COM` credential.
+- Script-internal Ruby calls now run through `clean_ruby`, avoiding ambient
+  Bundler/Ruby variables while still preserving the user home needed to read
+  `~/.gem/credentials`.
+- The fake Bundler fixture no longer strips ambient variables itself. It now
+  fails runtime commands if polluted variables reach `bundle exec`, and asserts
+  script-controlled `BUNDLE_APP_CONFIG`/`BUNDLE_PATH` point at the generated
+  consumer project.
+
+Targeted `PackageDependencyPressure` calibration:
+
+- Active `spree` checkout root scan and nested-engine scan both produced the
+  same 10 findings: 4 `shared_dependency`, 6 `package_boundary`.
+- Nested Spree paths checked: `spree/spree/core`, `spree/spree/emails`,
+  `spree/spree/admin`, `spree/spree/api`, and `spree/spree/lib`.
+- Result equality: no root-only or nested-only findings. No path-discovery
+  change is indicated by this run.
+- `openfoodnetwork` still produced 10 findings: 3 `shared_dependency`, 7
+  `package_boundary`.
+- `mastodon` still produced 3 findings: 2 `shared_dependency`, 1
+  `package_boundary`.
+
+Classification decision:
+
+- Promote/review candidate: `OpenFoodNetwork::ScopeVariantToHub` looks like a
+  package-owned adapter participating in shared scoping behavior.
+- Defer/downrank candidates: OpenFoodNetwork `Spree::*` core model findings
+  (`Spree::Order`, `Spree::Variant`, `Spree::Product`, `Spree::Money`,
+  `Spree::User`, `Spree::LineItem`) look more like broad shared domain/API
+  surface than package-boundary pressure.
+- Defer/downrank candidate: `ActivityPub::TagManager` in Mastodon reads as a
+  broad shared URI/routing API surface rather than a package-boundary smell.
+- Keep `PackageDependencyPressure` candidate opt-in. The targeted calibration
+  found one strong candidate but not enough clean cross-app package-boundary
+  signal to promote the analyzer.

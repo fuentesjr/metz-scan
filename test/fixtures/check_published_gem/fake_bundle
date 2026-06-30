@@ -2,13 +2,31 @@
 set -euo pipefail
 
 credential="${BUNDLE_RUBYGEMS__PKG__GITHUB__COM:-}"
-unset BUNDLE_APP_CONFIG BUNDLE_BIN_PATH BUNDLE_GEMFILE BUNDLE_PATH
-unset BUNDLER_VERSION GEM_HOME GEM_PATH RUBYLIB RUBYOPT
 if [ -n "$credential" ]; then
   export BUNDLE_RUBYGEMS__PKG__GITHUB__COM="$credential"
 fi
+FAKE_BUNDLE_LOG="${FAKE_BUNDLE_LOG:-$(cd "$(dirname "$0")" && pwd)/bundle.log}"
+export FAKE_BUNDLE_LOG
 
 ruby --disable-gems - "$@" <<'RUBY'
+FORBIDDEN_RUNTIME_ENV = %w[
+  BUNDLE_GEMFILE
+  BUNDLE_BIN_PATH
+  BUNDLER_VERSION
+  GEM_HOME
+  GEM_PATH
+  RUBYLIB
+  RUBYOPT
+  BUNDLE_RUBYGEMS__PKG__GITHUB__COM
+  GITHUB_PACKAGES_TOKEN
+  GEM_CREDENTIALS
+].freeze
+
+EXPECTED_RUNTIME_ENV = {
+  "BUNDLE_APP_CONFIG" => File.join(Dir.pwd, ".bundle"),
+  "BUNDLE_PATH" => File.join(Dir.pwd, "vendor/bundle")
+}.freeze
+
 def log(message)
   File.open(ENV.fetch("FAKE_BUNDLE_LOG"), "a") { |file| file.puts(message) }
 end
@@ -17,12 +35,22 @@ def version
   File.read("Gemfile").match(/gem "metz-scan", "([^"]+)"/)[1]
 end
 
-def assert_no_runtime_credential!
-  return unless %w[BUNDLE_RUBYGEMS__PKG__GITHUB__COM GEM_CREDENTIALS GITHUB_PACKAGES_TOKEN].any? do |name|
+def normalized_path(path)
+  File.expand_path(path).sub(%r{\A/private/var/}, "/var/")
+end
+
+def assert_runtime_env!
+  leaked = FORBIDDEN_RUNTIME_ENV.find do |name|
     ENV.key?(name)
   end
 
-  abort "runtime credential leaked"
+  abort "runtime environment leaked: #{leaked}" if leaked
+
+  EXPECTED_RUNTIME_ENV.each do |name, value|
+    next if ENV[name] && normalized_path(ENV[name]) == normalized_path(value)
+
+    abort "runtime environment mismatch: #{name}=#{ENV[name].inspect}"
+  end
 end
 
 log("argv=#{ARGV.join(" ")}")
@@ -35,18 +63,18 @@ in ["install", *]
   puts ENV.fetch("BUNDLE_RUBYGEMS__PKG__GITHUB__COM")
   warn ENV.fetch("BUNDLE_RUBYGEMS__PKG__GITHUB__COM")
 in ["exec", "metz-scan", "--version"]
-  assert_no_runtime_credential!
+  assert_runtime_env!
   puts version
 in ["exec", "ruby", "-e", String]
-  assert_no_runtime_credential!
+  assert_runtime_env!
   puts version
   puts version
 in ["exec", "metz-scan", "rules"]
-  assert_no_runtime_credential!
+  assert_runtime_env!
 in ["exec", "metz-scan", "project-analyzers"]
-  assert_no_runtime_credential!
+  assert_runtime_env!
 in ["exec", "metz-scan", "scan", "app", "--format", "text"]
-  assert_no_runtime_credential!
+  assert_runtime_env!
   puts "MetzProject/ServiceSoup"
   puts "Metz/ControllersTooManyDirectCollaborators"
   exit 1
