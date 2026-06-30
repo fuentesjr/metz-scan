@@ -146,8 +146,9 @@ declarations under `app/` and `lib/` packages, and it ignores references from
 `lib/test_data/`, and `lib/generators/` when measuring cross-package pressure.
 Its default threshold is at least 12 referring files across at least 5 packages.
 Broad shared dependencies such as configuration, settings, event registries,
-exception families, and infrastructure hubs are still reported, but with lower
-confidence and shared-dependency triage.
+exception families, infrastructure hubs, and calibrated broad domain or protocol
+surfaces are still reported, but with lower confidence and shared-dependency
+triage.
 `NamespaceLeakPressure` also requires the optional project index and contributes
 no findings when the index is unavailable. It reports deeply nested declarations
 such as `Billing::Ledger::PrivateFormatter` when references spread outside the

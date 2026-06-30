@@ -170,6 +170,15 @@ module MetzScan
     class PackageDependencyPressureSharedDependencyTest < Minitest::Test
       include PackageDependencyPressureFixtures
 
+      SPREE_SHARED_DOMAIN_MODELS = {
+        "Spree::LineItem" => "/project/app/models/spree/line_item.rb",
+        "Spree::Money" => "/project/lib/spree/money.rb",
+        "Spree::Order" => "/project/app/models/spree/order.rb",
+        "Spree::Product" => "/project/app/models/spree/product.rb",
+        "Spree::User" => "/project/app/models/spree/user.rb",
+        "Spree::Variant" => "/project/app/models/spree/variant.rb"
+      }.freeze
+
       def test_downranks_shared_dependency_declarations
         finding = PackageDependencyPressure.new(index: shared_dependency_index).call.first
 
@@ -195,6 +204,29 @@ module MetzScan
         ]
 
         findings.each { |finding| assert_shared_dependency_triage(finding) }
+      end
+
+      def test_downranks_calibrated_spree_shared_domain_surfaces
+        spree_shared_domain_models.each do |name, path|
+          finding = PackageDependencyPressure.new(index: pressure_index(name: name, path: path,
+                                                                        references: external_references)).call.first
+
+          assert_shared_dependency_triage(finding)
+        end
+      end
+
+      def test_downranks_activitypub_tag_manager_as_shared_protocol_surface
+        finding = PackageDependencyPressure.new(index: activitypub_tag_manager_index).call.first
+
+        assert_shared_dependency_triage(finding)
+      end
+
+      def test_keeps_open_food_network_scope_variant_to_hub_as_package_boundary
+        finding = PackageDependencyPressure.new(index: scope_variant_to_hub_index).call.first
+
+        assert_equal "medium", finding.confidence
+        assert_equal "manual review", finding.triage_severity
+        assert_equal "package_boundary", finding.project_analyzer_metadata.fetch("dependency_pressure_category")
       end
 
       private
@@ -232,6 +264,19 @@ module MetzScan
 
       def rate_limiter_dependency_index
         pressure_index(name: "RateLimiter::LimitExceeded", path: "/project/lib/rate_limiter/limit_exceeded.rb",
+                       references: external_references)
+      end
+
+      def spree_shared_domain_models = SPREE_SHARED_DOMAIN_MODELS
+
+      def activitypub_tag_manager_index
+        pressure_index(name: "ActivityPub::TagManager", path: "/project/app/lib/activitypub/tag_manager.rb",
+                       references: external_references)
+      end
+
+      def scope_variant_to_hub_index
+        pressure_index(name: "OpenFoodNetwork::ScopeVariantToHub",
+                       path: "/project/lib/open_food_network/scope_variant_to_hub.rb",
                        references: external_references)
       end
     end

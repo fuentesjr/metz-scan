@@ -1,0 +1,106 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+$LOAD_PATH.unshift(File.expand_path("../lib", __dir__))
+
+require "json"
+require "optparse"
+
+require "metz_scan/calibration/project_analyzer_evidence_runner"
+
+RUNNER = MetzScan::Calibration::ProjectAnalyzerEvidenceRunner
+USAGE = "Usage: check_project_analyzer_calibration [--json] [--text] [--default-output] [--output-dir DIR] " \
+        "[--run-id ID] [--no-write] [PATH ...]"
+
+def parse_options
+  default_options.tap { |options| option_parser(options).parse! }
+end
+
+def default_options
+  { json: true, default_output: false, write: true, output_dir: RUNNER.default_results_path, run_id: nil }
+end
+
+def option_parser(options)
+  OptionParser.new do |parser|
+    parser.banner = USAGE
+    add_output_options(parser, options)
+    add_artifact_options(parser, options)
+  end
+end
+
+def add_output_options(parser, options)
+  parser.on("--json", "Output JSON (default)") { options[:json] = true }
+  parser.on("--text", "Output a compact text summary") { options[:json] = false }
+  parser.on("--default-output", "Restrict to analyzers with default-output eligibility") do
+    options[:default_output] = true
+  end
+end
+
+def add_artifact_options(parser, options)
+  parser.on("--output-dir DIR", "Write artifacts under DIR") { |dir| options[:output_dir] = dir }
+  parser.on("--run-id ID", "Use ID as the artifact subdirectory name") { |id| options[:run_id] = id }
+  parser.on("--no-write", "Do not write calibration artifacts") { options[:write] = false }
+  parser.on("-h", "--help", "Show usage") { exit_with_help(parser) }
+end
+
+def exit_with_help(parser)
+  puts parser
+  exit 0
+end
+
+def render_text(summary)
+  text_lines(summary).join("\n")
+end
+
+def text_lines(summary)
+  [target_line(summary), finding_line(summary), "rules:", *rule_lines(summary), artifact_line(summary)].compact
+end
+
+def target_line(summary)
+  "targets: #{summary.fetch('targets').map { |target| target.fetch('name') }.join(', ')}"
+end
+
+def finding_line(summary)
+  "findings: #{summary.fetch('finding_count')} (offenses: #{summary.fetch('offense_count')})"
+end
+
+def rule_lines(summary)
+  summary.fetch("project_analyzers", {}).fetch("rules", []).map { |rule| rule_line(rule) }
+end
+
+def rule_line(rule)
+  "  - #{rule.fetch('cop_name')}: #{rule.fetch('finding_count')} finding(s), " \
+    "#{rule.fetch('offense_count')} offense(s), status=#{rule.fetch('status', '?')}, " \
+    "confidence=#{rule.fetch('confidence', '?')}, severity=#{rule.fetch('triage_severity', '?')}"
+end
+
+def artifact_line(summary)
+  artifacts = summary.fetch("artifacts", {})
+  "artifacts: #{artifacts.fetch('directory')}" unless artifacts.empty?
+end
+
+def emit_json(summary)
+  JSON.pretty_generate(summary)
+end
+
+def summary_for(options)
+  RUNNER.summarize(paths: ARGV, default_output: options.fetch(:default_output))
+end
+
+def write_artifacts(summary, options)
+  RUNNER.write_artifacts(summary, output_dir: options.fetch(:output_dir), run_id: options[:run_id])
+end
+
+begin
+  options = parse_options
+  summary = summary_for(options)
+  summary = summary.merge("artifacts" => write_artifacts(summary, options)) if options.fetch(:write)
+  puts(options.fetch(:json) ? emit_json(summary) : render_text(summary))
+  exit 0
+rescue OptionParser::ParseError, MetzScan::Calibration::ProjectAnalyzerEvidenceRunner::Error => e
+  warn "check_project_analyzer_calibration: #{e.message}"
+  exit 1
+rescue StandardError => e
+  warn "check_project_analyzer_calibration: #{e.message}"
+  exit 2
+end

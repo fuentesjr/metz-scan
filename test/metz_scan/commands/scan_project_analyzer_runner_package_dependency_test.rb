@@ -122,6 +122,49 @@ module MetzScan
       end
     end
 
+    class ScanProjectAnalyzerRunnerPackageDependencySharedTriageTest < Minitest::Test
+      def test_preserves_shared_dependency_triage_metadata
+        assert_shared_dependency_payload(shared_dependency_offense)
+      end
+
+      private
+
+      def assert_shared_dependency_payload(offense)
+        assert_equal "candidate", offense.dig("project_analyzer", "status")
+        assert_equal "low", offense.dig("project_analyzer", "confidence")
+        assert_equal "shared dependency", offense.dig("project_analyzer", "triage_severity")
+        assert_equal "shared_dependency", offense.dig("project_analyzer", "dependency_pressure_category")
+      end
+
+      def shared_dependency_offense
+        parsed = { "files" => [], "summary" => { "offense_count" => 0 } }
+        Scan::ProjectAnalyzerRunner.merge!(parsed, [], index: shared_dependency_index)
+        package_dependency_offenses(parsed).first
+      end
+
+      def package_dependency_offenses(parsed)
+        parsed.fetch("files").flat_map { |file| file.fetch("offenses") }.select do |candidate|
+          candidate.fetch("cop_name") == "MetzProject/PackageDependencyPressure"
+        end
+      end
+
+      def shared_dependency_index
+        ProjectAnalyzerRunnerPackageDependencyIndex.new(
+          declarations: [spree_order_declaration], references: { "Spree::Order" => external_references }
+        )
+      end
+
+      def spree_order_declaration
+        ProjectIndex::Declaration.new(name: "Spree::Order", path: "/project/app/models/spree/order.rb", kind: :class)
+      end
+
+      def external_references
+        ScanProjectAnalyzerRunnerPackageDependencyTest::EXTERNAL_REFERENCE_PATHS.map do |path, line|
+          ProjectIndex::Reference.new(name: "Spree::Order", path: "/project/#{path}", line: line, column: 8)
+        end
+      end
+    end
+
     class ProjectAnalyzerRunnerPackageDependencyIndex
       def initialize(declarations:, references:)
         @declarations = declarations

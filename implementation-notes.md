@@ -442,3 +442,144 @@ Classification decision:
 - Keep `PackageDependencyPressure` candidate opt-in. The targeted calibration
   found one strong candidate but not enough clean cross-app package-boundary
   signal to promote the analyzer.
+
+## 2026-06-30: Package pressure downranking and calibration runner
+
+Task: start on the next two big tasks and keep using agenticons.
+
+Scope boundaries:
+
+- Use `tmp/project-analyzer-calibration/apps` as the active calibration fixture
+  home. Treat `/private/tmp` calibration paths as historical only.
+- Keep `PackageDependencyPressure` candidate opt-in.
+- Limit analyzer behavior changes to downranking broad shared API/domain
+  surfaces identified by current calibration evidence.
+- Add a repeatable calibration/evidence runner without creating a broad
+  framework or changing normal scan output.
+- Keep agenticon delegation shallow and record findings.
+
+Change type: feature.
+
+Verbatim task statement: "Ok go ahead and start on the next 2 big tasks and keep using agenticons"
+
+Plan:
+
+1. Spawn `planner: package pressure and calibration runner plan` for sequencing,
+   test strategy, and scope checks.
+2. Spawn `helper_worker: package pressure calibration reconnaissance` for
+   read-only file/symbol evidence.
+3. Add focused tests for calibrated `PackageDependencyPressure`
+   shared-surface downranking cases.
+4. Implement the narrow downranking classifier change.
+5. Add a small calibration/evidence runner using existing project-analyzer
+   APIs and repo-local fixture defaults.
+6. Run focused red/green checks, local gates, strategic validation, and design
+   review if required.
+
+Verification status:
+
+- `planner: package pressure and calibration runner plan` recommended two
+  incremental slices: narrow analyzer downranking and an internal evidence
+  runner, with focused tests and no analyzer promotion.
+- `helper_worker: package pressure calibration reconnaissance` confirmed
+  `SharedDependencyTriage` as the right downranking point, existing
+  `ProjectAnalyzerRunner` APIs as the runner base, and
+  `tmp/project-analyzer-calibration/apps` as the active fixture source.
+- `coding_worker: project analyzer calibration runner` added the first runner
+  implementation, bin wrapper, and tests. Parent integration split it into
+  target discovery, summary, artifact writer, and Markdown renderer
+  collaborators to satisfy local design/lint constraints.
+- Red run: `bundle exec ruby -Ilib -Itest
+  test/metz_scan/analyzers/package_dependency_pressure_test.rb` failed before
+  the classifier change for `Spree::*` shared domain surfaces and
+  `ActivityPub::TagManager`, proving the missing downranking behavior.
+- Green focused tests:
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/analyzers/package_dependency_pressure_test.rb` passed: 14
+    runs, 97 assertions, 0 failures, 0 errors.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/commands/scan_project_analyzer_runner_package_dependency_test.rb`
+    passed: 2 runs, 18 assertions, 0 failures, 0 errors.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/calibration/project_analyzer_evidence_runner_test.rb`
+    passed after the review-driven integration test addition: 5 runs, 19
+    assertions, 0 failures, 0 errors.
+- `bundle exec ruby bin/check_project_analyzer_calibration --text --no-write
+  test/fixtures/sample_app` passed and printed a compact summary without
+  writing artifacts.
+- Focused `bundle exec rubocop` over touched Ruby/bin/test files passed: 10
+  files inspected, no offenses.
+- Full local gates:
+  - `bundle exec rake` passed: 377 runs, 1567 assertions, 0 failures, 0
+    errors, 2 skips.
+  - `bundle exec rubocop` passed: 162 files inspected, no offenses.
+  - `bin/check_dependency_direction` passed.
+  - `bin/check_sample_app_frozen` passed.
+  - `git diff --check` passed.
+- Strategic validation before the review-driven integration test addition
+  passed: slice tests, red/green, lint, and todo gates passed; warnings 0;
+  review required.
+- `reviewer: strategic design validation` returned a clean verdict with one
+  concern: the new runner tests stubbed both the project index and analyzer
+  runner and should include one fixture-backed real summarize path.
+- Added a fixture-backed runner test against `test/fixtures/sample_app` without
+  stubbing `ProjectIndex.build` or `ProjectAnalyzerRunner.project_findings_for`.
+- Strategic validation after the review-driven test addition passed: slice
+  tests, red/green, lint, and todo gates passed; warnings 0; review required.
+- Follow-up `reviewer: strategic design validation` found one blocker: unused
+  public `ProjectAnalyzerEvidenceRunner.markdown_for` widened the runner API
+  without a caller. It also raised one concern that `TargetRun` still reaches
+  concrete collaborators internally.
+- Removed the unused `markdown_for` public method. Artifact writing now remains
+  the only MarkdownRenderer caller.
+- Final verification after blocker fix:
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/calibration/project_analyzer_evidence_runner_test.rb`
+    passed: 5 runs, 19 assertions, 0 failures, 0 errors.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/analyzers/package_dependency_pressure_test.rb` passed: 14
+    runs, 97 assertions, 0 failures, 0 errors.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/commands/scan_project_analyzer_runner_package_dependency_test.rb`
+    passed: 2 runs, 18 assertions, 0 failures, 0 errors.
+  - `bundle exec ruby bin/check_project_analyzer_calibration --text --no-write
+    test/fixtures/sample_app` passed.
+  - `bundle exec rake` passed: 377 runs, 1567 assertions, 0 failures, 0
+    errors, 2 skips.
+  - `bundle exec rubocop` passed: 162 files inspected, no offenses.
+  - `bin/check_dependency_direction` passed.
+  - `bin/check_sample_app_frozen` passed.
+  - `git diff --check` passed.
+  - `ruby /Users/sal/Projects/strategic-software-design/scripts/validate.rb
+    --type feature --task "Ok go ahead and start on the next 2 big tasks and
+    keep using agenticons"` passed: slice tests, red/green, lint, and todo
+    gates passed; warnings 0; review required.
+- Final strategic review after blocker fix pending.
+- Final `reviewer: strategic design validation` found one more blocker:
+  `ProjectAnalyzerEvidenceRunner.summarize(index:)` exposed an unused public
+  option with no CLI caller. It repeated the non-blocking concern about
+  concrete collaborator lookup inside `TargetRun`.
+- Removed the public `index:` keyword and simplified `Summary`/`TargetRun` to
+  build indexes internally through the existing project-analyzer API.
+- Verification after public `index:` removal:
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/calibration/project_analyzer_evidence_runner_test.rb`
+    passed: 5 runs, 19 assertions, 0 failures, 0 errors.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/analyzers/package_dependency_pressure_test.rb` passed: 14
+    runs, 97 assertions, 0 failures, 0 errors.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/commands/scan_project_analyzer_runner_package_dependency_test.rb`
+    passed: 2 runs, 18 assertions, 0 failures, 0 errors.
+  - `bundle exec ruby bin/check_project_analyzer_calibration --text --no-write
+    test/fixtures/sample_app` passed.
+  - `bundle exec rake` passed: 377 runs, 1567 assertions, 0 failures, 0
+    errors, 2 skips.
+  - `bundle exec rubocop` passed: 162 files inspected, no offenses.
+  - `bin/check_dependency_direction` passed.
+  - `bin/check_sample_app_frozen` passed.
+  - `git diff --check` passed.
+- Strategic validation after public `index:` removal passed: slice tests,
+  red/green, lint, and todo gates passed; warnings 0; review required.
+- The final clean-context review subagent stalled and was closed without a
+  verdict. User explicitly directed committing the current work and moving on.

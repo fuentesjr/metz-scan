@@ -22,13 +22,22 @@ module MetzScan
         ERROR_SUFFIX_PATTERN = /(?:Error|Exception)\z/
         INFRASTRUCTURE_LIB_SEGMENT_PATTERN =
           /\A(?:cache|caches|errors?|exceptions?|freedom_patches|rate_limiter|redis|scheduler)\z/i
+        CALIBRATED_SHARED_SURFACE_PATHS = {
+          "ActivityPub::TagManager" => "activitypub/tag_manager.rb",
+          "Spree::LineItem" => "spree/line_item.rb",
+          "Spree::Money" => "spree/money.rb",
+          "Spree::Order" => "spree/order.rb",
+          "Spree::Product" => "spree/product.rb",
+          "Spree::User" => "spree/user.rb",
+          "Spree::Variant" => "spree/variant.rb"
+        }.freeze
         private_constant :SHARED_NAME_SEGMENTS, :NAME_SEGMENT_PATTERN, :ERROR_SUFFIX_PATTERN,
-                         :INFRASTRUCTURE_LIB_SEGMENT_PATTERN
+                         :INFRASTRUCTURE_LIB_SEGMENT_PATTERN, :CALIBRATED_SHARED_SURFACE_PATHS
 
         module_function
 
         def shared?(declaration)
-          shared_name?(declaration.name) || shared_path?(declaration.path)
+          shared_name?(declaration.name) || shared_path?(declaration.path) || calibrated_shared_surface?(declaration)
         end
 
         def attributes(status)
@@ -49,6 +58,12 @@ module MetzScan
           root_lib_file?(package_parts) || infrastructure_lib_segment?(package_parts)
         end
 
+        def calibrated_shared_surface?(declaration)
+          suffix = CALIBRATED_SHARED_SURFACE_PATHS[declaration.name]
+
+          suffix && normalized_path(declaration.path).end_with?(suffix)
+        end
+
         def name_segments(name)
           name.to_s.split("::")
         end
@@ -67,6 +82,10 @@ module MetzScan
 
         def infrastructure_lib_segment?(package_parts)
           File.basename(package_parts[1].to_s, ".rb").match?(INFRASTRUCTURE_LIB_SEGMENT_PATTERN)
+        end
+
+        def normalized_path(path)
+          path.to_s.split(File::SEPARATOR).join("/")
         end
       end
     end

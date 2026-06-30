@@ -1,6 +1,6 @@
 # Project analyzer calibration
 
-Last updated: 2026-06-26.
+Last updated: 2026-06-30.
 
 This note records real-world calibration passes for the opt-in analyzers behind
 `metz-scan scan --project-analyzers`. The goal was to decide whether
@@ -34,6 +34,18 @@ under `/private/tmp/metz-calibration`. Those paths are historical context only.
 Current and future calibration runs should use repo-local ignored scratch space
 under `tmp/project-analyzer-calibration/`, including
 `tmp/project-analyzer-calibration/apps/` for approved sparse target checkouts.
+Use the repeatable evidence runner for new calibration slices:
+
+```bash
+bin/check_project_analyzer_calibration --text
+```
+
+With no paths, the runner discovers target checkouts under
+`tmp/project-analyzer-calibration/apps/`, scans each target's `app/` and `lib/`
+directories when present, records checkout revisions, index metadata, finding
+counts, and triage summaries, and writes `summary.json` plus `summary.md` under
+`tmp/project-analyzer-calibration/results/<run-id>/`. Pass explicit paths for a
+narrower sample, or `--no-write` for a dry local summary.
 
 Initial targets:
 
@@ -406,9 +418,9 @@ The first slice only counts declarations under `app/` and `lib/` packages, and
 it ignores references from `spec/`, `test/`, `lib/tasks/`, `lib/seeders/`,
 `lib/seed_data/`, `lib/test_data/`, and `lib/generators/` when measuring
 cross-package pressure. Broad shared dependencies such as configuration,
-settings, event registries, exception families, and infrastructure hubs are
-reported with lower confidence and `shared dependency` triage rather than
-suppressed.
+settings, event registries, exception families, infrastructure hubs, and
+calibrated broad domain or protocol surfaces are reported with lower confidence
+and `shared dependency` triage rather than suppressed.
 
 Initial real-project calibration before threshold tuning used 4 files across 2
 packages. It produced high-volume output on most full applications:
@@ -469,13 +481,23 @@ Repo-local calibration rerun after shared-dependency downranking:
 | `decidim/decidim` | `b2001fa7c9d2` | 0 | 0 | neutral |
 
 Shared-dependency result: **pass for candidate opt-in status; still fail for
-validated opt-in status**. The rerun leaves 14 manual package-boundary findings
-and 26 downranked shared-dependency findings across the sample. Spree and
-OpenFoodNetwork retain useful domain-model pressure around `Order`, `Product`,
-`Variant`, `Store`, and related commerce models. The remaining broad manual
-examples, especially `ActivityPub::TagManager` and
-`OpenFoodNetwork::ScopeVariantToHub`, are acceptable candidate-level review
-prompts, but they block validated status.
+validated opt-in status**. The rerun left 14 manual package-boundary findings
+and 26 downranked shared-dependency findings across the sample. A targeted
+2026-06-30 calibration pass then separated the remaining broad surfaces from
+the stronger package-boundary prompt:
+
+- `ActivityPub::TagManager` now downranks as a shared protocol URI/routing
+  surface.
+- OpenFoodNetwork `Spree::Order`, `Spree::Variant`, `Spree::Product`,
+  `Spree::Money`, `Spree::User`, and `Spree::LineItem` now downranks as broad
+  shared commerce domain/API surfaces.
+- `OpenFoodNetwork::ScopeVariantToHub` remains a medium-confidence manual
+  review candidate because it looks like a package-owned adapter participating
+  in repeated cross-package scoping behavior.
+
+After that targeted downranking, the active calibration evidence still does not
+justify validated status: the useful manual signal is narrow and concentrated
+in one application.
 
 Current decision:
 
