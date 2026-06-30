@@ -183,6 +183,7 @@ RUBY
 
 bundle_command() (
   cd "$workdir"
+  unset BUNDLE_RUBYGEMS__PKG__GITHUB__COM GEM_CREDENTIALS GITHUB_PACKAGES_TOKEN
   env "${base_bundle_env[@]}" "$bundle_bin" "$@"
 )
 

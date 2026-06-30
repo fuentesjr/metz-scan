@@ -10,6 +10,7 @@ module MetzScan
       "rubocop-metz/test/integration/**/*_test.rb",
       "rubocop-metz/test/cop/metz/views_deep_navigation_test.rb",
       "test/metz_scan/check_dogfood_test.rb",
+      "test/metz_scan/check_published_gem_test.rb",
       "test/metz_scan/sigint_test.rb",
       "test/metz_scan/commands/scan_auto_fix*_test.rb",
       "test/metz_scan/commands/scan_error_test.rb",

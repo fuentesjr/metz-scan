@@ -171,6 +171,15 @@ gh api /users/fuentesjr/packages/rubygems/rubocop-metz --jq .html_url
 gh api /users/fuentesjr/packages/rubygems/metz-scan --jq .html_url
 ```
 
+## Post-Publish Smoke Test
+
+- [ ] Run the published-gem smoke check; it creates a clean temporary consumer
+  project outside this checkout.
+
+```bash
+bin/check_published_gem X.Y.Z
+```
+
 ## Cleanup
 
 - [ ] Remove generated gem files after publishing or testing.

@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+credential="${BUNDLE_RUBYGEMS__PKG__GITHUB__COM:-}"
+unset BUNDLE_APP_CONFIG BUNDLE_BIN_PATH BUNDLE_GEMFILE BUNDLE_PATH
+unset BUNDLER_VERSION GEM_HOME GEM_PATH RUBYLIB RUBYOPT
+if [ -n "$credential" ]; then
+  export BUNDLE_RUBYGEMS__PKG__GITHUB__COM="$credential"
+fi
+
+ruby --disable-gems - "$@" <<'RUBY'
+def log(message)
+  File.open(ENV.fetch("FAKE_BUNDLE_LOG"), "a") { |file| file.puts(message) }
+end
+
+def version
+  File.read("Gemfile").match(/gem "metz-scan", "([^"]+)"/)[1]
+end
+
+def assert_no_runtime_credential!
+  return unless %w[BUNDLE_RUBYGEMS__PKG__GITHUB__COM GEM_CREDENTIALS GITHUB_PACKAGES_TOKEN].any? do |name|
+    ENV.key?(name)
+  end
+
+  abort "runtime credential leaked"
+end
+
+log("argv=#{ARGV.join(" ")}")
+log("pwd=#{Dir.pwd}")
+
+case ARGV
+in ["install", *]
+  log("install_pwd=#{Dir.pwd}")
+  log("gem_line=#{File.read("Gemfile").lines.grep(/gem "metz-scan"/).first.strip}")
+  puts ENV.fetch("BUNDLE_RUBYGEMS__PKG__GITHUB__COM")
+  warn ENV.fetch("BUNDLE_RUBYGEMS__PKG__GITHUB__COM")
+in ["exec", "metz-scan", "--version"]
+  assert_no_runtime_credential!
+  puts version
+in ["exec", "ruby", "-e", String]
+  assert_no_runtime_credential!
+  puts version
+  puts version
+in ["exec", "metz-scan", "rules"]
+  assert_no_runtime_credential!
+in ["exec", "metz-scan", "project-analyzers"]
+  assert_no_runtime_credential!
+in ["exec", "metz-scan", "scan", "app", "--format", "text"]
+  assert_no_runtime_credential!
+  puts "MetzProject/ServiceSoup"
+  puts "Metz/ControllersTooManyDirectCollaborators"
+  exit 1
+else
+  abort "unexpected fake bundle argv: #{ARGV.inspect}"
+end
+RUBY

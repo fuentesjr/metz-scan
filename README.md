@@ -216,6 +216,7 @@ See [docs/rubydex-spike.md](docs/rubydex-spike.md) for current results and
 feasibility notes.
 
 For common questions and adoption guidance, see [docs/faq.md](docs/faq.md). For release checks, see [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md).
+You can also run `bin/check_published_gem VERSION` from this repository; it creates a clean temporary consumer project to verify packaged installs from GitHub Packages.
 
 ## Configuration
 

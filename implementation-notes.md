@@ -212,3 +212,137 @@ Decision:
 - Keep the analyzer candidate opt-in and move the next `0.4.0` investment to
   either `PackageDependencyPressure` non-commerce evidence or release/reporting
   UX around already validated analyzers.
+
+## 2026-06-29: PackageDependencyPressure evidence and release UX hardening
+
+Task: run the `PackageDependencyPressure` non-commerce evidence slice and
+harden release/reporting UX around already validated paths, using agenticons.
+
+Scope boundaries:
+
+- Use `tmp/project-analyzer-calibration/apps` as the only calibration fixture
+  home.
+- Do not promote or retune `PackageDependencyPressure` before evidence is
+  recorded.
+- Keep `NamespaceLeakPressure` candidate opt-in.
+- Prefer local non-network release-smoke tests before any broader reporting UX
+  changes.
+- Keep agenticon delegation shallow and record review findings.
+
+Change type: chore.
+
+Verbatim task statement: "Ok go ahead and use agenticons for it."
+
+Plan:
+
+1. Spawn `helper_worker: PackageDependencyPressure evidence slice` for
+   read-only calibration data.
+2. Spawn `planner: release/reporting UX hardening` for the smallest valuable
+   release-smoke/reporting implementation plan.
+3. Add a local non-network test for `bin/check_published_gem` covering the
+   credential redaction, exact version pinning, repo-external temp project, and
+   runtime credential scoping noted by review.
+4. Update the release checklist to include the published-gem smoke command
+   after package publication.
+5. Record `PackageDependencyPressure` pass/defer evidence and run the Ruby
+   verification loop before committing.
+
+Verification status:
+
+- Red run: `ruby -Ilib -Itest test/metz_scan/check_published_gem_test.rb`
+  failed before docs and harness fixes, proving the missing checklist assertion
+  and exercising the fake Bundler path.
+- Green run: `ruby -Ilib -Itest test/metz_scan/check_published_gem_test.rb`
+  passed after the ambient Bundler credential fix: 4 runs, 36 assertions,
+  0 failures, 0 errors.
+- `bundle exec ruby -Ilib -Itest test/metz_scan/check_published_gem_test.rb`
+  passed after style cleanup: 4 runs, 40 assertions, 0 failures, 0 errors.
+- `bundle exec rake test:slow` passed after the Bundler environment harness
+  fix: 68 runs, 318 assertions, 0 failures, 0 errors.
+- `bundle exec rake` passed after the ambient Bundler credential fix: 368 runs,
+  1506 assertions, 0 failures, 0 errors, 2 skips.
+- Earlier full-suite run passed after the fixture refactor: 367 runs, 1489
+  assertions, 0 failures, 0 errors, 2 skips.
+- `bundle exec rubocop` passed: 155 files inspected, no offenses.
+- `bin/check_dependency_direction` passed.
+- `bin/check_sample_app_frozen` passed.
+- `bash -n bin/check_published_gem` passed.
+- `git diff --check` passed.
+- `helper_worker: PackageDependencyPressure evidence slice` completed read-only
+  calibration and recommended further targeted calibration rather than
+  promotion.
+- `planner: release/reporting UX hardening` recommended local non-network
+  script coverage, slow-test grouping, checklist updates, and a narrow README
+  pointer.
+- `coding_worker: release smoke docs` updated only `RELEASE_CHECKLIST.md`,
+  `.github/ISSUE_TEMPLATE/release_checklist.md`, and `README.md`.
+
+Release-smoke hardening:
+
+- Added `test/metz_scan/check_published_gem_test.rb` and
+  `test/fixtures/check_published_gem/fake_bundle` with a fake shell-wrapper
+  Bundler command, so the local test covers the wrapper portability issue found
+  in the previous review.
+- The test asserts exact Gemfile pinning, credential redaction for install
+  output, no GitHub Packages credential in runtime `bundle exec` commands, temp
+  project creation outside the repository, default cleanup, and rejection of a
+  temp base inside the repository.
+- After `reviewer: strategic design validation` raised a concern that ambient
+  `BUNDLE_RUBYGEMS__PKG__GITHUB__COM` could still leak into runtime commands,
+  `bin/check_published_gem` now explicitly unsets that credential before
+  runtime `bundle exec`, and the test covers both `GITHUB_PACKAGES_TOKEN` and
+  `BUNDLE_RUBYGEMS__PKG__GITHUB__COM` credential sources.
+- The follow-up strategic review found that stripping only
+  `BUNDLE_RUBYGEMS__PKG__GITHUB__COM` was incomplete because
+  `GITHUB_PACKAGES_TOKEN` and `GEM_CREDENTIALS` are also accepted credential
+  sources. Runtime `bundle exec` now unsets all three, and the fake Bundler
+  fixture fails if any supported auth source reaches runtime commands.
+- Final strategic review verdict was clean. It carried one concern: the fake
+  Bundler fixture strips ambient Bundler/Ruby variables itself, while the real
+  script still allows broader variables such as `BUNDLE_GEMFILE` and
+  `BUNDLE_BIN_PATH` through. Treat moving that broader environment scrubbing
+  into `bin/check_published_gem` as the next hardening slice if the release
+  smoke script continues to grow.
+- Added the new subprocess test to the slow test group.
+- Added a post-publish smoke step to both release checklists:
+  `bin/check_published_gem X.Y.Z`.
+- Added a brief README pointer that the command creates a clean temporary
+  consumer project to verify packaged installs from GitHub Packages.
+
+Active calibration checkouts:
+
+- `chatwoot` `e86222034e39b9be4837fea0c058ad9a6a27aa72`
+- `decidim` `b2001fa7c9d26fa7b43aadd2d05353d67e5da889` (`develop`)
+- `discourse` `2115f1cac5f9ddc192c469acc025bb2def4f106a` (`main`)
+- `forem` `d9a393f1d50209041a3aec0825b73b3ffd78760e` (`main`)
+- `mastodon` `34bbb474822391445c8681ef898991e0c6e32e38` (`main`)
+- `openfoodnetwork` `be9d51ab32a6fc6dc5fa25702d94ff94f93f79e6` (`master`)
+- `solidus` `8d781ac742e38a83e417a4b90297b74f6266b070` (`main`)
+- `spree` `7752652ef4ead1adb735d7c649614689e161b1a8` (`main`)
+
+`PackageDependencyPressure` slice over active `app/` and `lib/` paths:
+
+| App | Paths | Total findings | Category mix | Package-boundary findings |
+| --- | --- | ---: | --- | --- |
+| `chatwoot` | `app`, `lib` | 2 | `shared_dependency`: 2 | 0 |
+| `decidim` | `lib` | 0 | none | 0 |
+| `discourse` | `app`, `lib` | 10 | `shared_dependency`: 10 | 0 |
+| `forem` | `app`, `lib` | 5 | `shared_dependency`: 5 | 0 |
+| `mastodon` | `app`, `lib` | 3 | `package_boundary`: 1, `shared_dependency`: 2 | 1: `ActivityPub::TagManager` |
+| `openfoodnetwork` | `app`, `lib` | 10 | `package_boundary`: 7, `shared_dependency`: 3 | 7: `OpenFoodNetwork::ScopeVariantToHub`, `Spree::LineItem`, `Spree::Money`, `Spree::Order`, `Spree::Product`, `Spree::User`, `Spree::Variant` |
+| `solidus` | `lib` | 0 | none | 0 |
+| `spree` | none | 0 | none | 0 |
+
+Decision:
+
+- Do not promote `PackageDependencyPressure` yet. The signal is real, but
+  mostly concentrated in `openfoodnetwork`, with one additional `mastodon`
+  boundary candidate.
+- Keep the existing thresholds (`minimum_referring_files=12`,
+  `minimum_referring_packages=5`) for now because the current triage separates
+  broad shared APIs/infrastructure into `shared_dependency` low-confidence
+  output.
+- Next analyzer work should be targeted calibration for path coverage and
+  boundary/noise review, especially because the active `spree` checkout has no
+  top-level `app/` or `lib/` under the requested slice and was effectively
+  unexercised.
