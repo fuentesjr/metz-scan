@@ -1,0 +1,227 @@
+#!/usr/bin/env bash
+# Smoke-tests a published metz-scan release from a clean consumer project.
+
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "$0")/.." && pwd)"
+repo_root_real="$(cd "$repo_root" && pwd -P)"
+ruby_bin="${RUBY_BIN:-$(command -v ruby)}"
+bundle_bin="${BUNDLE_BIN:-$(dirname "$ruby_bin")/bundle}"
+
+fail() {
+  printf 'check_published_gem: %s\n' "$*" >&2
+  exit 1
+}
+
+usage() {
+  printf 'Usage: bin/check_published_gem [VERSION]\n'
+}
+
+if [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
+  usage
+  exit 0
+fi
+
+if [ "$#" -gt 1 ]; then
+  usage >&2
+  exit 2
+fi
+
+[ -x "$ruby_bin" ] || fail "ruby executable not found: $ruby_bin"
+[ -x "$bundle_bin" ] || fail "bundle executable not found: $bundle_bin"
+
+version="${1:-$("$ruby_bin" -I"$repo_root/lib" -e 'require "metz_scan/version"; print MetzScan::VERSION')}"
+case "$version" in
+  ""|*[!0-9A-Za-z.-]*)
+    fail "invalid gem version: $version"
+    ;;
+esac
+
+default_tmp_base="/private/tmp"
+[ -d "$default_tmp_base" ] || default_tmp_base="${TMPDIR:-/tmp}"
+tmp_base="${PUBLISHED_GEM_SMOKE_TMPDIR:-$default_tmp_base}"
+tmp_base="${tmp_base%/}"
+[ -d "$tmp_base" ] || fail "temp base does not exist: $tmp_base"
+tmp_base_real="$(cd "$tmp_base" && pwd -P)"
+case "$tmp_base_real" in
+  "$repo_root_real"|"$repo_root_real"/*)
+    fail "temp base must be outside this repository: $tmp_base"
+    ;;
+esac
+workdir="$(mktemp -d "$tmp_base/metz-scan-published-${version}.XXXXXX")"
+
+cleanup() {
+  if [ "${KEEP_PUBLISHED_GEM_SMOKE:-0}" = "1" ]; then
+    printf 'check_published_gem: kept temp project at %s\n' "$workdir"
+  else
+    rm -rf "$workdir"
+  fi
+}
+trap cleanup EXIT
+
+github_packages_credential() {
+  if [ -n "${BUNDLE_RUBYGEMS__PKG__GITHUB__COM:-}" ]; then
+    printf '%s' "$BUNDLE_RUBYGEMS__PKG__GITHUB__COM"
+    return
+  fi
+
+  if [ -n "${GITHUB_PACKAGES_TOKEN:-}" ]; then
+    printf 'fuentesjr:%s' "$GITHUB_PACKAGES_TOKEN"
+    return
+  fi
+
+  local credentials_file="${GEM_CREDENTIALS:-$HOME/.gem/credentials}"
+  [ -f "$credentials_file" ] || fail "missing GitHub Packages credentials; set GITHUB_PACKAGES_TOKEN or GEM_CREDENTIALS"
+
+  "$ruby_bin" -ryaml -e '
+    creds = YAML.load_file(ARGV.fetch(0))
+    value = creds[:github] || creds["github"]
+    abort "missing :github credential" unless value
+    token = value.to_s.sub(/\ABearer\s+/, "")
+    print "fuentesjr:#{token}"
+  ' "$credentials_file"
+}
+
+credential="$(github_packages_credential)"
+
+redact_file() {
+  local file="$1"
+  SECRET="$credential" SECRET_TOKEN="${credential#*:}" "$ruby_bin" -e '
+    text = File.binread(ARGV.fetch(0))
+    [ENV.fetch("SECRET"), ENV.fetch("SECRET_TOKEN")].uniq.each do |secret|
+      text = text.gsub(secret, "[REDACTED]") unless secret.empty?
+    end
+    print text
+  ' "$file"
+}
+
+run_redacted() {
+  local stdout_file="$workdir/command.out"
+  local stderr_file="$workdir/command.err"
+  set +e
+  "$@" >"$stdout_file" 2>"$stderr_file"
+  local status=$?
+  set -e
+  redact_file "$stdout_file"
+  redact_file "$stderr_file" >&2
+  return "$status"
+}
+
+base_bundle_env=(
+  "HOME=$workdir/home"
+  "BUNDLE_APP_CONFIG=$workdir/.bundle"
+  "BUNDLE_PATH=$workdir/vendor/bundle"
+  "PATH=$(dirname "$ruby_bin"):$PATH"
+)
+install_bundle_env=(
+  "${base_bundle_env[@]}"
+  "BUNDLE_RUBYGEMS__PKG__GITHUB__COM=$credential"
+)
+
+mkdir -p "$workdir/home" "$workdir/app/controllers" "$workdir/app/services"
+
+cat >"$workdir/Gemfile" <<RUBY
+source "https://rubygems.org"
+
+source "https://rubygems.pkg.github.com/fuentesjr" do
+  gem "metz-scan", "${version}"
+end
+RUBY
+
+cat >"$workdir/app/controllers/orders_controller.rb" <<'RUBY'
+# frozen_string_literal: true
+
+class OrdersController
+  def create
+    ValidateOrder.call(order)
+    ReserveInventory.call(order)
+    CapturePayment.new(order).call
+    SendReceipt.call(order)
+  end
+
+  private
+
+  def order
+    @order
+  end
+end
+RUBY
+
+cat >"$workdir/app/services/validate_order.rb" <<'RUBY'
+# frozen_string_literal: true
+
+class ValidateOrder
+  def self.call(_order); end
+end
+RUBY
+
+cat >"$workdir/app/services/reserve_inventory.rb" <<'RUBY'
+# frozen_string_literal: true
+
+class ReserveInventory
+  def self.call(_order); end
+end
+RUBY
+
+cat >"$workdir/app/services/capture_payment.rb" <<'RUBY'
+# frozen_string_literal: true
+
+class CapturePayment
+  def initialize(_order); end
+
+  def call; end
+end
+RUBY
+
+cat >"$workdir/app/services/send_receipt.rb" <<'RUBY'
+# frozen_string_literal: true
+
+class SendReceipt
+  def self.call(_order); end
+end
+RUBY
+
+bundle_command() (
+  cd "$workdir"
+  env "${base_bundle_env[@]}" "$bundle_bin" "$@"
+)
+
+bundle_install() (
+  cd "$workdir"
+  env "${install_bundle_env[@]}" "$bundle_bin" install --jobs 4 --retry 2
+)
+
+bundle_exec() {
+  bundle_command exec "$@"
+}
+
+printf 'check_published_gem: installing metz-scan %s in %s\n' "$version" "$workdir"
+run_redacted bundle_install
+
+actual_version="$(bundle_exec metz-scan --version)"
+[ "$actual_version" = "$version" ] || fail "expected metz-scan $version, got $actual_version"
+
+resolved_versions="$(bundle_exec ruby -e 'require "metz_scan/version"; require "rubocop/metz/version"; puts MetzScan::VERSION; puts RuboCop::Metz::VERSION')"
+expected_versions="$(printf '%s\n%s' "$version" "$version")"
+[ "$resolved_versions" = "$expected_versions" ] || fail "unexpected resolved gem versions: $resolved_versions"
+
+bundle_exec metz-scan rules >/dev/null
+bundle_exec metz-scan project-analyzers >/dev/null
+
+set +e
+scan_output="$(bundle_exec metz-scan scan app --format text 2>&1)"
+scan_status=$?
+set -e
+printf '%s\n' "$scan_output"
+
+[ "$scan_status" -eq 1 ] || fail "expected scan to exit 1 for fixture findings, got $scan_status"
+case "$scan_output" in
+  *"MetzProject/ServiceSoup"*) ;;
+  *) fail "expected scan output to include MetzProject/ServiceSoup" ;;
+esac
+case "$scan_output" in
+  *"Metz/ControllersTooManyDirectCollaborators"*) ;;
+  *) fail "expected scan output to include Metz/ControllersTooManyDirectCollaborators" ;;
+esac
+
+printf 'check_published_gem: PASS metz-scan %s with rubocop-metz %s\n' "$version" "$version"
