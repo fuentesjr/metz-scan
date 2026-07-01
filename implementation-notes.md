@@ -1407,3 +1407,131 @@ Implementation decisions:
 - Keep both analyzers candidate opt-in. The calibration output is sparse and
   readable, but both signals still need manual review before validated status
   or default-output eligibility.
+
+## 2026-07-01: Method index support and subclass override candidate
+
+Task: start on the next 2 big tasks and keep using agenticons, commit the
+changes, then provide a detailed comprehensive summary as described in
+AGENTS.md.
+
+Scope boundaries:
+
+- Use `tmp/project-analyzer-calibration/apps` as the active calibration fixture
+  home. Treat `/private/tmp` calibration paths as historical only.
+- Skip RuboCop cache deletion for now, per user instruction.
+- Do not downrank remaining pressure-analyzer medium findings without new
+  generalized evidence.
+- Keep the new analyzer candidate opt-in and not default-output eligible.
+- Use agenticon delegation shallowly and record each result.
+
+Change type: feature.
+
+Verbatim task statement: "Ok go ahead and start on the next 2 big tasks and
+keep using agenticons and at the end commit the changes. Then give me a detail
+and comprehensive summary as described in AGENTS.md"
+
+Plan:
+
+1. Use `planner: next two task selection` to choose the next two substantial
+   tasks from current analyzer notes.
+2. Use `helper_worker: pressure-analyzer follow-up evidence` to check whether
+   remaining `PackageDependencyPressure` or `NamespaceLeakPressure` medium
+   findings justify another generalized behavior change.
+3. Extend `ProjectIndex` with normalized method declarations from Rubydex:
+   owner name, normalized method name, signature, path, line, and column.
+4. Implement the first `MetzProject/SubclassOverridePressure` candidate using
+   known descendants and base-declared method overrides.
+5. Register the analyzer, add metadata breakdown support, update docs, run
+   focused tests, active-fixture calibration smoke, full gates, strategic
+   validation, reviews, and commit.
+
+Verification status:
+
+- `planner: next two task selection` recommended exactly this two-task slice:
+  method declaration metadata in `ProjectIndex`, then the first narrow
+  `MetzProject/SubclassOverridePressure` candidate. It explicitly warned not
+  to reclassify pressure analyzers without new evidence.
+- `helper_worker: pressure-analyzer follow-up evidence` found no generalized
+  basis for downranking the remaining medium pressure findings:
+  `OpenFoodNetwork::ScopeVariantToHub`,
+  `Badge::Trigger::PostRevision`, `Spree::Gateway::StripeSCA`, and
+  `Spree::PaymentMethod::StoreCredit` should stay medium manual-review prompts
+  for now.
+- Red run: `bundle exec ruby -Ilib -Itest test/metz_scan/project_index_test.rb`
+  failed because `ProjectIndex#method_declarations` did not exist.
+- Red run: `bundle exec ruby -Ilib -Itest
+  test/metz_scan/analyzers/subclass_override_pressure_test.rb` failed with
+  `LoadError` because the analyzer did not exist.
+- Red run: `bundle exec ruby -Ilib -Itest
+  test/metz_scan/commands/project_analyzers_test.rb` failed because
+  `MetzProject/SubclassOverridePressure` was not registered.
+- Red run: `bundle exec ruby -Ilib -Itest
+  test/metz_scan/commands/scan_project_analyzer_runner_test.rb` failed because
+  `MetzScan::Analyzers::SubclassOverridePressure` was not defined.
+- Red follow-up: `bundle exec ruby -Ilib -Itest
+  test/metz_scan/analyzers/subclass_override_pressure_test.rb` failed because
+  broad-root override findings still reported medium confidence.
+- Green focused tests after implementation and broad-root triage:
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/project_index_test.rb`: 8 runs, 37 assertions, 0 failures,
+    0 errors, 2 skips.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/analyzers/subclass_override_pressure_test.rb`: 4 runs,
+    29 assertions, 0 failures, 0 errors.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/commands/project_analyzers_test.rb`: 3 runs,
+    21 assertions, 0 failures, 0 errors.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/commands/scan_project_analyzer_runner_test.rb`: 12 runs,
+    36 assertions, 0 failures, 0 errors.
+- First manifest-backed `MetzProject/SubclassOverridePressure` calibration over
+  the active fixtures passed mechanically with 206 findings and 2040 offenses.
+  I tightened the first slice to emit one primary offense per override family,
+  reuse broad-root triage, and require six overriding descendants by default.
+- Final manifest-backed `MetzProject/SubclassOverridePressure` calibration over
+  the active fixtures passed with 104 findings and 104 offenses:
+  29 medium manual-review findings and 75 low broad-base findings.
+  Medium finding distribution: Discourse 12, Forem 3, Mastodon 1,
+  OpenFoodNetwork 7, Spree 6; Chatwoot, Decidim, and Solidus had no medium
+  findings.
+- Focused RuboCop over touched Ruby files passed: 15 files inspected, no
+  offenses.
+- Full local gates passed:
+  - `bundle exec rake`: 416 runs, 1747 assertions, 0 failures, 0 errors,
+    2 skips.
+  - `bundle exec rubocop`: 177 files inspected, no offenses.
+  - `bin/check_dependency_direction`: passed.
+  - `bin/check_sample_app_frozen`: passed.
+  - `bin/check_dogfood`: passed with accepted project-analyzer baseline of
+    0 findings.
+  - `git -c core.fsmonitor=false diff --check`: passed.
+- Strategic validation passed for change type `feature`: slice tests,
+  red/green proof, lint, and task-comment gates passed; warnings 0; review
+  required by diff size and new public interface.
+- `reviewer: strategic design validation` returned a clean verdict with no
+  findings.
+- `doc_reviewer: documentation drift` found one docs issue: README and
+  calibration docs omitted serializer bases from the SubclassOverridePressure
+  broad-root list even though the analyzer reuses the `DeepInheritanceTree`
+  root-kind vocabulary. I fixed both docs to include serializer bases.
+- Final post-doc-fix calibration smoke for `SubclassOverridePressure` still
+  passed with 104 findings and 104 offenses: `low=75`, `medium=29`.
+- Final post-doc-fix strategic validation still passed with warnings 0, and
+  the fresh `reviewer: strategic design validation` verdict was clean with no
+  findings.
+
+Implementation decisions:
+
+- `ProjectIndex::MethodDeclaration` is a normalized project-index value object
+  so analyzers do not consume Rubydex method objects directly.
+- Rubydex method names such as `Parent#perform()` are split into owner name,
+  method name, and original signature while preserving source location.
+- `SubclassOverridePressure` only reports a method when it is declared on the
+  base class and redefined by enough known descendants.
+- The analyzer emits one primary offense per override family and keeps the full
+  override list in `project_analyzer_metadata`.
+- Broad roots use the same root-kind vocabulary as `DeepInheritanceTree` and
+  are low-confidence `broad base` prompts.
+- Keep `SubclassOverridePressure` candidate opt-in. The first pass surfaces
+  concrete hook protocols, but the signal is still broad enough to require
+  manual review before any validated-status or default-output discussion.

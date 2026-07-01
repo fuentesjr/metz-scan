@@ -7,6 +7,8 @@ module MetzScan
   # Thin facade over optional project-wide indexes used by future analyzers.
   class ProjectIndex
     Declaration = Struct.new(:name, :path, :kind, keyword_init: true)
+    MethodDeclaration = Struct.new(:name, :owner_name, :method_name, :signature, :path, :line, :column,
+                                   keyword_init: true)
     Reference = Struct.new(:name, :path, :line, :column, keyword_init: true)
 
     class UnknownBackendError < StandardError; end
@@ -82,6 +84,10 @@ module MetzScan
 
     def declarations
       backend.declarations
+    end
+
+    def method_declarations
+      backend.method_declarations
     end
 
     def documents

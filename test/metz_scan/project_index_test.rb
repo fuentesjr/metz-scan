@@ -61,8 +61,17 @@ module MetzScan
     private
 
     def assert_empty_index(index)
+      assert_empty_core_index(index)
+      assert_empty_index_queries(index)
+    end
+
+    def assert_empty_core_index(index)
       assert_empty index.declarations
+      assert_empty index.method_declarations
       assert_empty index.documents
+    end
+
+    def assert_empty_index_queries(index)
       assert_empty index.descendants_of("Minitest::Test")
       assert_empty index.constant_references_to("RuboCop::Cop::Metz::OnSendCsendBridge")
       assert_empty index.search("Metz")
@@ -109,6 +118,48 @@ module MetzScan
 
     def declaration(index, name)
       index.declarations.find { |candidate| candidate.name == name }
+    end
+  end
+
+  class ProjectIndexMethodDeclarationsTest < Minitest::Test
+    def test_rubydex_backend_indexes_method_declarations
+      skip "rubydex is not installed" unless ProjectIndex::RubydexBackend.available?
+
+      Dir.mktmpdir { |dir| assert_method_declarations(index_method_fixture(dir)) }
+    end
+
+    private
+
+    def index_method_fixture(dir)
+      write_method_fixture(dir)
+      ProjectIndex.build([dir], backend: :rubydex)
+    end
+
+    def write_method_fixture(dir)
+      File.write(File.join(dir, "methods.rb"), method_fixture_source)
+    end
+
+    def method_fixture_source
+      "class Parent\n  def perform; end\nend\nclass Child < Parent\n  def perform; end\nend\n"
+    end
+
+    def assert_method_declarations(index)
+      assert_method_declaration(index, "Parent", "perform", 2)
+      assert_method_declaration(index, "Child", "perform", 5)
+    end
+
+    def assert_method_declaration(index, owner, method_name, line)
+      declaration = method_declaration(index, owner, method_name)
+      assert declaration
+      assert_equal "#{owner}##{method_name}()", declaration.name
+      assert_equal "#{method_name}()", declaration.signature
+      assert_equal line, declaration.line
+    end
+
+    def method_declaration(index, owner, method_name)
+      index.method_declarations.find do |declaration|
+        declaration.owner_name == owner && declaration.method_name == method_name
+      end
     end
   end
 

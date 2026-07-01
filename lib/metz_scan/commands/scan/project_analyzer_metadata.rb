@@ -14,6 +14,7 @@ module MetzScan
           namespace_leak_category
           repeated_query_category
           root_kind
+          subclass_override_category
         ].freeze
 
         module_function

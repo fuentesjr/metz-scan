@@ -94,7 +94,7 @@ module MetzScan
         [Analyzers::RepeatedBranching, Analyzers::ServiceSoup,
          Analyzers::InheritanceDescendants, Analyzers::PackageDependencyPressure,
          Analyzers::NamespaceLeakPressure, Analyzers::ImplicitContextPressure,
-         Analyzers::RepeatedQueryCriteria]
+         Analyzers::RepeatedQueryCriteria, Analyzers::SubclassOverridePressure]
       end
 
       def merge_project_analyzers
@@ -204,14 +204,20 @@ module MetzScan
       end
 
       def test_default_output_analyzers_are_explicitly_eligible
-        assert Scan::ProjectAnalyzerRunner.default_output_analyzer?(Analyzers::RepeatedBranching)
-        assert Scan::ProjectAnalyzerRunner.default_output_analyzer?(Analyzers::ServiceSoup)
-        refute Scan::ProjectAnalyzerRunner.default_output_analyzer?(Analyzers::InheritanceDescendants)
-        refute Scan::ProjectAnalyzerRunner.default_output_analyzer?(Analyzers::ImplicitContextPressure)
-        refute Scan::ProjectAnalyzerRunner.default_output_analyzer?(Analyzers::RepeatedQueryCriteria)
+        default_output_analyzers.each { |analyzer| assert Scan::ProjectAnalyzerRunner.default_output_analyzer?(analyzer) }
+        opt_in_analyzers.each { |analyzer| refute Scan::ProjectAnalyzerRunner.default_output_analyzer?(analyzer) }
       end
 
       private
+
+      def default_output_analyzers
+        [Analyzers::RepeatedBranching, Analyzers::ServiceSoup]
+      end
+
+      def opt_in_analyzers
+        [Analyzers::InheritanceDescendants, Analyzers::ImplicitContextPressure,
+         Analyzers::RepeatedQueryCriteria, Analyzers::SubclassOverridePressure]
+      end
 
       def merge_default_project_analyzers
         { "files" => [], "summary" => { "offense_count" => 0 } }.tap do |parsed|

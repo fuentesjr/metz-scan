@@ -125,6 +125,7 @@ Current project analyzer status:
 | `MetzProject/NamespaceLeakPressure` | Candidate | No | Indexed deeply nested classes or modules referenced from multiple files across packages outside their home namespace. |
 | `MetzProject/ImplicitContextPressure` | Candidate | No | Repeated `Current.*` or namespaced `Current` ambient context access across files and coarse packages. |
 | `MetzProject/RepeatedQueryCriteria` | Candidate | No | Repeated constant-receiver `where` hash criteria across files and coarse packages. |
+| `MetzProject/SubclassOverridePressure` | Candidate | No | Indexed base classes whose descendants repeatedly override the same method. |
 
 Project analyzers parse Ruby files only. They do not inspect ERB/HAML/SLIM
 templates, and they avoid semantic claims that require resolving runtime types.
@@ -142,9 +143,9 @@ scan output keeps medium-confidence design-pressure findings.
 `DeepInheritanceTree` uses the optional Rubydex-backed project index. Without
 that optional bundle group enabled, `--project-analyzers` still runs and this
 analyzer simply contributes no findings. Broad framework, Rails application,
-controller, job, service, policy, worker, exception, CLI, and abstract bases
-remain visible, but they are reported with lower confidence and `broad base`
-triage.
+controller, job, service, serializer, policy, worker, exception, CLI, and
+abstract bases remain visible, but they are reported with lower confidence and
+`broad base` triage.
 `PackageDependencyPressure` also requires the optional project index and
 contributes no findings when the index is unavailable. It currently only counts
 declarations under `app/` and `lib/` packages, and it ignores references from
@@ -176,6 +177,12 @@ hash keys, such as `Order.where(account_id: ..., status: ...)`, when the same
 receiver and key set appear in at least three files across at least two coarse
 packages. Dynamic SQL strings, single-key lookups, and non-constant receivers
 are outside this first slice.
+`SubclassOverridePressure` requires the optional project index and remains
+candidate opt-in. Its first slice reports base classes whose known descendants
+override the same base-declared method in at least six subclasses. Framework,
+Rails application, controller, job, service, serializer, policy, worker,
+exception, CLI, and abstract bases use the same broad-root vocabulary as `DeepInheritanceTree`
+and are reported with lower confidence and `broad base` triage.
 
 Project analyzer output includes status, confidence, triage severity, and triage
 summary metadata. Default output includes only explicitly eligible, validated,

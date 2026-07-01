@@ -21,6 +21,8 @@ module MetzScan
 
       def declarations = []
 
+      def method_declarations = []
+
       def documents = []
 
       def descendants_of(_name) = []

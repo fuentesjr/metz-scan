@@ -13,7 +13,9 @@ candidate and should remain opt-in until real-project samples confirm sparse,
 useful namespace-boundary findings. `MetzProject/ImplicitContextPressure` was
 added later as a candidate opt-in analyzer for repeated ambient context access.
 `MetzProject/RepeatedQueryCriteria` was added later as a candidate opt-in
-analyzer for repeated query predicates.
+analyzer for repeated query predicates. `MetzProject/SubclassOverridePressure`
+was added later as a candidate opt-in analyzer for repeated subclass method
+overrides.
 
 ## Method
 
@@ -52,6 +54,7 @@ counts, triage summaries, and breakdowns by rule, confidence, severity, and
 known analyzer-specific metadata categories such as `decision_subject_kind`,
 `dependency_pressure_category`, `namespace_leak_category`,
 `implicit_context_category`, `repeated_query_category`, and `root_kind`.
+`subclass_override_category` is also included for subclass override findings.
 Discovered targets without top-level `app/` or `lib/` are recorded with
 no-scan metadata instead of falling back to a whole-root scan. Pass explicit
 paths for intentional one-off scans, `--analyzer` one or more times for a
@@ -188,6 +191,14 @@ Readiness by analyzer:
   three files and two coarse packages. It is not default-output eligible and
   should not move toward validated status until broader calibration confirms
   the query-repetition signal is sparse and consistently actionable.
+- `MetzProject/SubclassOverridePressure` is candidate for opt-in
+  project-analyzer output. The first slice is index-backed and reports base
+  classes whose known descendants override the same base-declared method in at
+  least six subclasses. Broad framework, Rails application, controller, job,
+  service, serializer, policy, worker, exception, CLI, and abstract bases are kept
+  lower-confidence with broad-base triage. It is not default-output eligible
+  and should not move toward validated status until follow-up calibration
+  confirms the medium-confidence override families are consistently actionable.
 
 Reporting-language follow-up on 2026-06-24: text output now labels each
 project-analyzer summary with status, confidence, and severity, and the summary
@@ -737,6 +748,48 @@ Decision: keep RepeatedQueryCriteria **Candidate** and opt-in. The first pass
 is sparse and readable, but repeated query criteria can be intentional local
 lookup duplication. It needs more calibration before validated status or
 default-output eligibility.
+
+## `MetzProject/SubclassOverridePressure`
+
+Result: **Candidate**, behind `--project-analyzers`.
+
+This analyzer reports repeated descendant overrides of a method declared by the
+base class. The first slice is deliberately conservative: it requires the
+optional project index, only uses known descendants and method declarations,
+requires at least six descendants overriding the same method, and emits one
+primary offense per override family. The full override list remains in
+project-analyzer metadata. Broad framework, Rails application, controller, job,
+service, serializer, policy, worker, exception, CLI, and abstract bases are
+still visible but reported with lower-confidence broad-base triage.
+
+First active-fixture manifest pass on 2026-07-01 used the generic target
+manifest:
+
+```bash
+bundle exec ruby bin/check_project_analyzer_calibration --text --no-write \
+  --targets-file tmp/project-analyzer-calibration/project_analyzer_targets.yml \
+  --analyzer MetzProject/SubclassOverridePressure
+```
+
+The run produced 104 findings and 104 offenses:
+
+| Target | Findings | Medium manual-review | Low broad-base | Example medium findings |
+| --- | ---: | ---: | ---: | --- |
+| `chatwoot` | 10 | 0 | 10 | none |
+| `decidim` | 0 | 0 | 0 | none |
+| `discourse` | 16 | 12 | 4 | `Auth::Authenticator#display_name`, `Auth::Authenticator#enabled?`, `Auth::Authenticator#name` |
+| `forem` | 14 | 3 | 11 | `Authentication::Providers::Provider#cleanup_payload`, `existing_user_data`, `new_user_data` |
+| `mastodon` | 16 | 1 | 15 | `ActivityPub::Activity#perform` |
+| `openfoodnetwork` | 18 | 7 | 11 | `Reporting::ReportTemplate#columns`, `default_params`, `query_result` |
+| `solidus` | 0 | 0 | 0 | none |
+| `spree` | 30 | 6 | 24 | `Spree::Calculator#compute`, `Spree::Export#csv_headers`, `scope_includes` |
+
+Decision: keep SubclassOverridePressure **Candidate** and opt-in. The signal is
+useful for identifying hook protocols, but the first pass is still too broad
+for validated status or default output: 75 of 104 findings are intentionally
+low-confidence broad-root prompts, and the 29 medium findings need manual
+review for whether repeated overrides are deliberate framework-style extension
+points.
 
 ## `MetzProject/RepeatedBranching`
 

@@ -1,15 +1,17 @@
 # frozen_string_literal: true
 
+require_relative "rubydex_backend/file_discovery"
 require_relative "rubydex_backend/location_formatting"
+require_relative "rubydex_backend/method_declarations"
 
 module MetzScan
   class ProjectIndex
     class RubydexBackend
       include LocationFormatting
+      include MethodDeclarations
+      extend FileDiscovery
 
-      RUBY_GLOB = "**/*.rb"
       DECLARATION_KINDS = { "Rubydex::Class" => :class, "Rubydex::Module" => :module }.freeze
-      private_constant :RUBY_GLOB
 
       def self.available?
         require "rubydex"
@@ -38,27 +40,6 @@ module MetzScan
         errors
       end
       private_class_method :index_graph
-
-      def self.ruby_files_for(paths)
-        paths.flat_map { |path| ruby_files_under(path) }.uniq.sort
-      end
-
-      def self.ruby_files_under(path)
-        expanded = File.expand_path(path)
-        return Dir.glob(File.join(expanded, RUBY_GLOB)) if File.directory?(expanded)
-        return [expanded] if File.file?(expanded) && File.extname(expanded) == ".rb"
-
-        []
-      end
-      private_class_method :ruby_files_under
-
-      def self.workspace_path_for(paths)
-        expanded = File.expand_path(paths.first || Dir.pwd)
-        return expanded if File.directory?(expanded)
-
-        File.dirname(expanded)
-      end
-      private_class_method :workspace_path_for
 
       def initialize(graph:, indexed_files:, index_errors:)
         @graph = graph
@@ -115,10 +96,21 @@ module MetzScan
 
       def definition_path(declaration)
         definition = declaration.definitions.first if declaration.respond_to?(:definitions)
-        path_from_location(definition&.location)
+        path_from_display_location(definition)
       end
 
       def declaration_kind(declaration) = DECLARATION_KINDS[declaration.class.name]
+
+      def path_from_display_location(definition)
+        path_from_location(display_location_for(definition))
+      end
+
+      def display_location_for(definition)
+        location = definition&.location
+        return location.to_display if location.respond_to?(:to_display)
+
+        location
+      end
 
       def normalized_reference(reference)
         location = reference.location.to_display
