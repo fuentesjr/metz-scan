@@ -40,11 +40,13 @@ module MetzScan
         assert_default_output(parsed, "MetzProject/ServiceSoup", true)
         assert_default_output(parsed, "MetzProject/DeepInheritanceTree", false)
         assert_default_output(parsed, "MetzProject/ImplicitContextPressure", false)
+        assert_default_output(parsed, "MetzProject/RepeatedQueryCriteria", false)
       end
 
       def assert_json_statuses(parsed)
         assert_status(parsed, "MetzProject/DeepInheritanceTree", "validated")
         assert_status(parsed, "MetzProject/ImplicitContextPressure", "candidate")
+        assert_status(parsed, "MetzProject/RepeatedQueryCriteria", "candidate")
       end
 
       def test_unknown_option_exits_nonzero_with_usage

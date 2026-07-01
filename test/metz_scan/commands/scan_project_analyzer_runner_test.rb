@@ -93,7 +93,8 @@ module MetzScan
       def expected_active_analyzers
         [Analyzers::RepeatedBranching, Analyzers::ServiceSoup,
          Analyzers::InheritanceDescendants, Analyzers::PackageDependencyPressure,
-         Analyzers::NamespaceLeakPressure, Analyzers::ImplicitContextPressure]
+         Analyzers::NamespaceLeakPressure, Analyzers::ImplicitContextPressure,
+         Analyzers::RepeatedQueryCriteria]
       end
 
       def merge_project_analyzers
@@ -207,6 +208,7 @@ module MetzScan
         assert Scan::ProjectAnalyzerRunner.default_output_analyzer?(Analyzers::ServiceSoup)
         refute Scan::ProjectAnalyzerRunner.default_output_analyzer?(Analyzers::InheritanceDescendants)
         refute Scan::ProjectAnalyzerRunner.default_output_analyzer?(Analyzers::ImplicitContextPressure)
+        refute Scan::ProjectAnalyzerRunner.default_output_analyzer?(Analyzers::RepeatedQueryCriteria)
       end
 
       private

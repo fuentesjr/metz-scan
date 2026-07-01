@@ -123,7 +123,8 @@ Current project analyzer status:
 | `MetzProject/DeepInheritanceTree` | Validated | No | Indexed base classes or modules with at least three known descendants, when the optional Rubydex-backed project index is available. |
 | `MetzProject/PackageDependencyPressure` | Candidate | No | Indexed namespaced classes or modules referenced from several files across multiple coarse packages outside their declaration package. |
 | `MetzProject/NamespaceLeakPressure` | Candidate | No | Indexed deeply nested classes or modules referenced from multiple files across packages outside their home namespace. |
-| `MetzProject/ImplicitContextPressure` | Candidate | No | Repeated `Current.*` ambient context access across files and coarse packages. |
+| `MetzProject/ImplicitContextPressure` | Candidate | No | Repeated `Current.*` or namespaced `Current` ambient context access across files and coarse packages. |
+| `MetzProject/RepeatedQueryCriteria` | Candidate | No | Repeated constant-receiver `where` hash criteria across files and coarse packages. |
 
 Project analyzers parse Ruby files only. They do not inspect ERB/HAML/SLIM
 templates, and they avoid semantic claims that require resolving runtime types.
@@ -165,9 +166,16 @@ nested exception families, and framework or extension namespaces are reported
 with lower-confidence shared-namespace triage.
 `ImplicitContextPressure` is AST-only and remains candidate opt-in. Its first
 slice reports repeated Rails `CurrentAttributes`-style access, such as
-`Current.account`, only when the same ambient context appears in at least three
-files across at least two coarse packages. Lifecycle calls such as
-`Current.reset` and `Current.set(...)` are ignored.
+`Current.account` or `Spree::Current.store`, only when the same ambient context
+appears in at least three files across at least two coarse packages. Lifecycle
+calls such as `Current.reset`, `Spree::Current.reset`, and `Current.set(...)`
+are ignored.
+`RepeatedQueryCriteria` is AST-only and remains candidate opt-in. Its first
+slice reports simple constant-receiver `where` calls with at least two literal
+hash keys, such as `Order.where(account_id: ..., status: ...)`, when the same
+receiver and key set appear in at least three files across at least two coarse
+packages. Dynamic SQL strings, single-key lookups, and non-constant receivers
+are outside this first slice.
 
 Project analyzer output includes status, confidence, triage severity, and triage
 summary metadata. Default output includes only explicitly eligible, validated,

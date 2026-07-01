@@ -35,6 +35,32 @@ module MetzScan
         RUBY
       end
 
+      def spree_current_store_sources
+        { "app/controllers/orders_controller.rb" => spree_current_store_reader_source,
+          "app/jobs/sync_order_job.rb" => spree_current_store_reader_source,
+          "app/services/order_audit.rb" => spree_current_store_writer_source }
+      end
+
+      def spree_current_store_reader_source
+        <<~RUBY
+          class OrdersController
+            def create
+              Spree::Current.store
+            end
+          end
+        RUBY
+      end
+
+      def spree_current_store_writer_source
+        <<~RUBY
+          class OrderAudit
+            def call
+              Spree::Current.store = store
+            end
+          end
+        RUBY
+      end
+
       def below_threshold_sources
         current_account_sources.slice("app/controllers/orders_controller.rb", "app/jobs/sync_order_job.rb")
       end
@@ -67,12 +93,29 @@ module MetzScan
           "app/services/order_audit.rb" => current_lifecycle_source }
       end
 
+      def namespaced_current_lifecycle_sources
+        { "app/controllers/orders_controller.rb" => namespaced_current_lifecycle_source,
+          "app/jobs/sync_order_job.rb" => namespaced_current_lifecycle_source,
+          "app/services/order_audit.rb" => namespaced_current_lifecycle_source }
+      end
+
       def current_lifecycle_source
         <<~RUBY
           class OrdersController
             def create
               Current.reset
               Current.set(account: account) { nil }
+            end
+          end
+        RUBY
+      end
+
+      def namespaced_current_lifecycle_source
+        <<~RUBY
+          class OrdersController
+            def create
+              Spree::Current.reset
+              Spree::Current.set(store: store) { nil }
             end
           end
         RUBY
@@ -194,6 +237,56 @@ module MetzScan
       def backend_name = :fake
 
       def available? = @available
+    end
+
+    class ImplicitContextPressureNamespacedCurrentTest < Minitest::Test
+      include ImplicitContextPressureFixtures
+
+      def test_reports_namespaced_current_attribute_used_across_files_and_packages
+        with_context_files(spree_current_store_sources) do |files|
+          finding = analyze(files).first
+
+          assert_spree_current_store_finding(finding)
+          assert_spree_current_store_metadata(finding)
+        end
+      end
+
+      def test_ignores_namespaced_current_lifecycle_calls
+        with_context_files(namespaced_current_lifecycle_sources) do |files|
+          assert_empty analyze(files)
+        end
+      end
+
+      private
+
+      def analyze(files)
+        ImplicitContextPressure.new(index: FakeImplicitContextIndex.new(available: true, indexed_files: files)).call
+      end
+
+      def assert_spree_current_store_finding(finding)
+        assert_equal "Spree::Current.store", finding.ambient_context
+        assert_match(/Spree::Current\.store is accessed from 3 files across 3 packages/, finding.message)
+      end
+
+      def assert_spree_current_store_metadata(finding)
+        assert_equal %w[read write], finding.project_analyzer_metadata.fetch("access_modes")
+        assert_equal "Spree::Current.store", finding.project_analyzer_metadata.fetch("ambient_context")
+      end
+
+      def with_context_files(sources)
+        Dir.mktmpdir { |dir| yield write_context_files(dir, sources) }
+      end
+
+      def write_context_files(dir, sources)
+        sources.map { |relative_path, source| write_context_file(dir, relative_path, source) }
+      end
+
+      def write_context_file(dir, relative_path, source)
+        File.join(dir, relative_path).tap do |path|
+          FileUtils.mkdir_p(File.dirname(path))
+          File.write(path, source)
+        end
+      end
     end
   end
 end

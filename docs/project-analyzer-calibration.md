@@ -12,6 +12,8 @@ candidate opt-in calibration pass after shared-dependency downranking.
 candidate and should remain opt-in until real-project samples confirm sparse,
 useful namespace-boundary findings. `MetzProject/ImplicitContextPressure` was
 added later as a candidate opt-in analyzer for repeated ambient context access.
+`MetzProject/RepeatedQueryCriteria` was added later as a candidate opt-in
+analyzer for repeated query predicates.
 
 ## Method
 
@@ -49,7 +51,7 @@ directories when present, records checkout revisions, index metadata, finding
 counts, triage summaries, and breakdowns by rule, confidence, severity, and
 known analyzer-specific metadata categories such as `decision_subject_kind`,
 `dependency_pressure_category`, `namespace_leak_category`,
-`implicit_context_category`, and `root_kind`.
+`implicit_context_category`, `repeated_query_category`, and `root_kind`.
 Discovered targets without top-level `app/` or `lib/` are recorded with
 no-scan metadata instead of falling back to a whole-root scan. Pass explicit
 paths for intentional one-off scans, `--analyzer` one or more times for a
@@ -174,10 +176,18 @@ Readiness by analyzer:
   low-confidence shared-namespace findings.
 - `MetzProject/ImplicitContextPressure` is candidate for opt-in
   project-analyzer output. The first slice is AST-only and reports repeated
-  `Current.*` ambient context access across at least three files and two coarse
-  packages. It is not default-output eligible and should not move toward
-  validated status until broader calibration shows the signal is sparse outside
-  the initial Chatwoot evidence.
+  Rails `CurrentAttributes`-style ambient context access across at least three
+  files and two coarse packages. It now includes namespaced CurrentAttributes
+  constants such as `Spree::Current`. It is not default-output eligible and
+  should not move toward validated status until broader calibration shows the
+  signal is sparse and reviewable outside the initial Chatwoot and Spree
+  evidence.
+- `MetzProject/RepeatedQueryCriteria` is candidate for opt-in project-analyzer
+  output. The first slice is AST-only and reports simple constant-receiver
+  `where` calls with at least two literal hash keys repeated across at least
+  three files and two coarse packages. It is not default-output eligible and
+  should not move toward validated status until broader calibration confirms
+  the query-repetition signal is sparse and consistently actionable.
 
 Reporting-language follow-up on 2026-06-24: text output now labels each
 project-analyzer summary with status, confidence, and severity, and the summary
@@ -639,10 +649,11 @@ Result: **Candidate**, behind `--project-analyzers`.
 
 This analyzer reports repeated reliance on Rails `CurrentAttributes`-style
 ambient context. The first slice deliberately stays narrow: it detects
-`Current.<attribute>` reads and writes, ignores lifecycle methods such as
-`Current.reset` and `Current.set(...)`, requires at least three files across at
-least two coarse packages, and emits one primary offense per ambient context.
-The full reference list remains in project-analyzer metadata.
+`Current.<attribute>` and namespaced `Current` reads and writes, ignores
+lifecycle methods such as `Current.reset`, `Spree::Current.reset`, and
+`Current.set(...)`, requires at least three files across at least two coarse
+packages, and emits one primary offense per ambient context. The full reference
+list remains in project-analyzer metadata.
 
 First active-fixture manifest pass on 2026-07-01 used the generic target
 manifest:
@@ -667,6 +678,65 @@ Decision: keep ImplicitContextPressure **Candidate** and opt-in. The Chatwoot
 evidence is strong enough to justify an exploratory analyzer, but it is
 concentrated in one target and needs broader calibration before validated
 status or default-output eligibility.
+
+Namespaced CurrentAttributes follow-up on 2026-07-01 used the same active
+manifest and analyzer-specific command. The run produced 10 findings and 10
+offenses, still all medium-confidence manual-review candidates:
+
+| Target | Ambient context | Files | Packages |
+| --- | --- | ---: | ---: |
+| `chatwoot` | `Current.account` | 77 | 8 |
+| `chatwoot` | `Current.account_user` | 6 | 2 |
+| `chatwoot` | `Current.contact` | 4 | 3 |
+| `chatwoot` | `Current.executed_by` | 8 | 3 |
+| `chatwoot` | `Current.user` | 29 | 8 |
+| `spree` | `Spree::Current.channel` | 5 | 3 |
+| `spree` | `Spree::Current.currency` | 8 | 4 |
+| `spree` | `Spree::Current.locale` | 6 | 3 |
+| `spree` | `Spree::Current.market` | 5 | 4 |
+| `spree` | `Spree::Current.store` | 21 | 8 |
+
+Decision: keep ImplicitContextPressure **Candidate** and opt-in. The
+namespaced pass broadens the evidence beyond Chatwoot, but the new findings
+are all from Spree's framework-level `Current` surface and still need manual
+review before any validated-status or default-output discussion.
+
+## `MetzProject/RepeatedQueryCriteria`
+
+Result: **Candidate**, behind `--project-analyzers`.
+
+This analyzer reports repeated constant-receiver `where` calls with literal
+hash criteria. The first slice deliberately stays narrow: it ignores dynamic
+SQL strings, single-key lookups, non-constant receivers, and scope-chain
+fingerprints; it requires the same receiver and sorted criteria-key set to
+appear in at least three files across at least two coarse packages; and it
+emits one primary offense per repeated query fingerprint. The full occurrence
+list remains in project-analyzer metadata.
+
+First active-fixture manifest pass on 2026-07-01 used the generic target
+manifest:
+
+```bash
+bundle exec ruby bin/check_project_analyzer_calibration --text --no-write \
+  --targets-file tmp/project-analyzer-calibration/project_analyzer_targets.yml \
+  --analyzer MetzProject/RepeatedQueryCriteria
+```
+
+The run produced 6 findings and 6 offenses:
+
+| Target | Query fingerprint | Files | Packages |
+| --- | --- | ---: | ---: |
+| `discourse` | `Draft.where(draft_key, user_id)` | 3 | 2 |
+| `discourse` | `GroupUser.where(group_id, user_id)` | 3 | 2 |
+| `discourse` | `Post.where(post_number, topic_id)` | 7 | 6 |
+| `discourse` | `TopicUser.where(topic_id, user_id)` | 7 | 4 |
+| `forem` | `Comment.where(commentable_id, commentable_type)` | 4 | 4 |
+| `mastodon` | `AccountDomainBlock.where(account_id, domain)` | 4 | 4 |
+
+Decision: keep RepeatedQueryCriteria **Candidate** and opt-in. The first pass
+is sparse and readable, but repeated query criteria can be intentional local
+lookup duplication. It needs more calibration before validated status or
+default-output eligibility.
 
 ## `MetzProject/RepeatedBranching`
 

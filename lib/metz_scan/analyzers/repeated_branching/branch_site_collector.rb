@@ -3,7 +3,7 @@
 require "rubocop"
 
 require_relative "branch_value"
-require_relative "contextual_node_walker"
+require_relative "../contextual_node_walker"
 require_relative "predicate_chain"
 
 module MetzScan
@@ -36,7 +36,7 @@ module MetzScan
         end
 
         def contextual_nodes
-          ContextualNodeWalker.new(processed_source.ast).nodes
+          MetzScan::Analyzers::ContextualNodeWalker.new(processed_source.ast).nodes
         end
 
         def case_branch?(node)

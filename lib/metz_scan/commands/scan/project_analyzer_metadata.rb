@@ -12,6 +12,7 @@ module MetzScan
           dependency_pressure_category
           implicit_context_category
           namespace_leak_category
+          repeated_query_category
           root_kind
         ].freeze
 

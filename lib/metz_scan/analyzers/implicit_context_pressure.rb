@@ -2,6 +2,7 @@
 
 require "rubocop"
 
+require_relative "contextual_node_walker"
 require_relative "occurrence"
 require_relative "package_map"
 require_relative "project_analyzer_triage"
@@ -141,7 +142,7 @@ module MetzScan
         end
 
         def call
-          collect(processed_source.ast, [], nil, [])
+          contextual_nodes.filter_map { |contextual_node| reference_for(contextual_node) }
         rescue Parser::SyntaxError
           []
         end
@@ -154,45 +155,8 @@ module MetzScan
           RuboCop::ProcessedSource.new(File.read(path), RUBY_VERSION.to_f)
         end
 
-        def collect(node, namespace, method_name, references)
-          return references unless node
-          return collect_namespace(node, namespace, references) if namespace_node?(node)
-          return collect_method(node, namespace, method_label(node), references) if method_node?(node)
-
-          collect_reference(node, namespace, method_name, references)
-          collect_children(node, namespace, method_name, references)
-        end
-
-        def namespace_node?(node)
-          %i[class module].include?(node.type)
-        end
-
-        def method_node?(node)
-          %i[def defs].include?(node.type)
-        end
-
-        def method_label(node)
-          node.type == :defs ? ".#{node.method_name}" : "##{node.method_name}"
-        end
-
-        def collect_namespace(node, namespace, references)
-          collect(node.children.last, namespace + [constant_name(node.children.first)].compact, nil, references)
-        end
-
-        def collect_method(node, namespace, method_name, references)
-          body = node.type == :defs ? node.children[3] : node.children[2]
-          collect(body, namespace, method_name, references)
-        end
-
-        def collect_reference(node, namespace, method_name, references)
-          return unless current_attribute_reference?(node)
-
-          references << reference_for(node, namespace, method_name)
-        end
-
-        def collect_children(node, namespace, method_name, references)
-          node.children.grep(RuboCop::AST::Node).each { |child| collect(child, namespace, method_name, references) }
-          references
+        def contextual_nodes
+          ContextualNodeWalker.new(processed_source.ast).nodes
         end
 
         def current_attribute_reference?(node)
@@ -200,7 +164,7 @@ module MetzScan
         end
 
         def current_receiver?(node)
-          node&.type == :const && node.source == "Current"
+          node&.type == :const && current_constant?(node)
         end
 
         def attribute_method?(node)
@@ -216,12 +180,36 @@ module MetzScan
           arguments.empty?
         end
 
-        def reference_for(node, namespace, method_name)
+        def reference_for(contextual_node)
+          node = contextual_node.node
+          return unless current_attribute_reference?(node)
+
+          Reference.new(reference_attributes(contextual_node))
+        end
+
+        def reference_attributes(contextual_node)
+          node = contextual_node.node
           attribute = attribute_name(node.method_name)
-          Reference.new(ambient_context: "Current.#{attribute}", attribute: attribute,
-                        access_mode: access_mode(node.method_name),
-                        enclosing_name: optional_name(namespace.join("::")), method_name: method_name,
-                        path: path, line: node.loc.expression.line, expression: first_line(node))
+          current_attribute_attributes(node, attribute)
+            .merge(context_attributes(contextual_node))
+            .merge(location_attributes(node))
+        end
+
+        def current_attribute_attributes(node, attribute)
+          { ambient_context: "#{node.receiver.source}.#{attribute}", attribute: attribute,
+            access_mode: access_mode(node.method_name) }
+        end
+
+        def context_attributes(contextual_node)
+          { enclosing_name: contextual_node.enclosing_name, method_name: contextual_node.method_name }
+        end
+
+        def location_attributes(node)
+          { path: path, line: node.loc.expression.line, expression: first_line(node) }
+        end
+
+        def current_constant?(node)
+          node.source.split("::").last == "Current"
         end
 
         def attribute_name(method_name)
@@ -230,14 +218,6 @@ module MetzScan
 
         def access_mode(method_name)
           method_name.to_s.end_with?("=") ? "write" : "read"
-        end
-
-        def constant_name(node)
-          node.source if node&.type == :const
-        end
-
-        def optional_name(name)
-          name unless name.empty?
         end
 
         def first_line(node)

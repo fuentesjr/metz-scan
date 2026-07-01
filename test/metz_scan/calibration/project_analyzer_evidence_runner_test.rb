@@ -323,6 +323,14 @@ module MetzScan
     class ProjectAnalyzerEvidenceRunnerCollaboratorTest < Minitest::Test
       include ProjectAnalyzerEvidenceRunnerHelpers
 
+      class ValidatedOptInAnalyzer
+        PROJECT_ANALYZER_STATUS = "validated"
+
+        def initialize(paths: nil, index: nil); end
+
+        def call = [REPEATED_BRANCHING_FINDING]
+      end
+
       def test_summary_uses_injected_internal_collaborators
         with_tmpdir { |dir| assert_injected_collaborators_used(dir) }
       end
@@ -337,6 +345,12 @@ module MetzScan
         end
 
         assert_match(%r{unknown project analyzer: MetzProject/MissingAnalyzer}, error.message)
+      end
+
+      def test_selected_default_output_keeps_analyzer_level_eligibility_gate
+        findings = selected_default_output_findings([ValidatedOptInAnalyzer])
+
+        assert_empty findings
       end
 
       private
@@ -365,6 +379,12 @@ module MetzScan
 
       def summarize_repeated_branching_only(dir)
         ProjectAnalyzerEvidenceRunner.summarize(paths: [dir], analyzer_names: ["MetzProject/RepeatedBranching"])
+      end
+
+      def selected_default_output_findings(analyzers)
+        runner = ProjectAnalyzerEvidenceRunner::FindingRunner.new(analyzers: analyzers)
+
+        runner.call(["app"], index: FakeIndex.new, default_output: true)
       end
 
       def write_filtered_analyzer_fixture(dir)

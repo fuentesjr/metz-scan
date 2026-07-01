@@ -1238,3 +1238,172 @@ Implementation decisions:
   globals, and broader false-positive calibration are deferred.
 - Keep `ImplicitContextPressure` candidate opt-in. The initial evidence is
   useful but concentrated entirely in Chatwoot.
+
+## 2026-07-01: Namespaced Current and repeated query criteria
+
+Task: start on the next 2 big tasks and keep using agenticons, commit the
+changes, then provide a detailed comprehensive summary as described in
+AGENTS.md.
+
+Scope boundaries:
+
+- Use `tmp/project-analyzer-calibration/apps` as the active calibration fixture
+  home. Treat `/private/tmp` calibration paths as historical only.
+- Keep analyzer promotion and default-output policy unchanged.
+- Keep both changed analyzers candidate opt-in; do not make either
+  default-output eligible.
+- Broaden `ImplicitContextPressure` only to constant chains ending in
+  `Current`; do not add `Thread.current`, class variables, or singleton global
+  detection in this slice.
+- Implement the first `RepeatedQueryCriteria` slice only for simple
+  constant-receiver `where` calls with literal hash criteria.
+- Use agenticon delegation shallowly and record each result.
+
+Change type: feature.
+
+Verbatim task statement: "Ok go ahead and start on the next 2 big tasks and
+keep using agenticons and at the end commit the changes. Then give me a detail
+and comprehensive summary as described in AGENTS.md"
+
+Plan:
+
+1. Use `planner: next two task selection` and
+   `helper_worker: backlog reconnaissance` to validate the next implementation
+   pair.
+2. Broaden `MetzProject/ImplicitContextPressure` to namespaced
+   CurrentAttributes constants such as `Spree::Current.store`, while
+   preserving lifecycle-call ignores and local `current` rejection.
+3. Add `MetzProject/RepeatedQueryCriteria` as an AST-only candidate analyzer
+   for repeated multi-key `where` hash criteria across files and coarse
+   packages.
+4. Register the new analyzer, add metadata breakdown support, and keep it out
+   of default output.
+5. Update README, candidate notes, calibration docs, and implementation notes;
+   run focused tests, manifest-backed calibration smokes, full gates,
+   strategic validation, required reviews, and commit.
+
+Verification status:
+
+- `planner: next two task selection` recommended namespaced
+  `CurrentAttributes` support plus the conservative `RepeatedQueryCriteria`
+  candidate. It explicitly warned not to promote analyzers or change default
+  output.
+- `helper_worker: backlog reconnaissance` ranked pressure-analyzer follow-ups
+  first but warned that downranking the remaining medium findings could overfit
+  sparse evidence. I used that as a constraint and left those analyzers'
+  classifications unchanged.
+- Red run: `bundle exec ruby -Ilib -Itest
+  test/metz_scan/analyzers/implicit_context_pressure_test.rb` failed because
+  `Spree::Current.store` produced no finding.
+- Red run: `bundle exec ruby -Ilib -Itest
+  test/metz_scan/analyzers/repeated_query_criteria_test.rb` failed with
+  `LoadError` because the analyzer did not exist yet.
+- Green focused tests after implementation:
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/analyzers/implicit_context_pressure_test.rb`: 10 runs,
+    32 assertions, 0 failures, 0 errors.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/analyzers/repeated_query_criteria_test.rb`: 8 runs,
+    25 assertions, 0 failures, 0 errors.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/commands/project_analyzers_test.rb`: 3 runs,
+    19 assertions, 0 failures, 0 errors.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/commands/scan_project_analyzer_runner_test.rb`: 12 runs,
+    35 assertions, 0 failures, 0 errors.
+- Manifest-backed `MetzProject/ImplicitContextPressure` calibration over the
+  active fixtures passed with 10 findings and 10 offenses. It kept the 5
+  Chatwoot findings and added 5 Spree namespaced contexts:
+  `Spree::Current.channel`, `Spree::Current.currency`,
+  `Spree::Current.locale`, `Spree::Current.market`, and
+  `Spree::Current.store`.
+- First manifest-backed `MetzProject/RepeatedQueryCriteria` calibration over
+  the active fixtures passed with 6 findings and 6 offenses:
+  `Draft.where(draft_key, user_id)`,
+  `GroupUser.where(group_id, user_id)`,
+  `Post.where(post_number, topic_id)`,
+  `TopicUser.where(topic_id, user_id)`,
+  `Comment.where(commentable_id, commentable_type)`, and
+  `AccountDomainBlock.where(account_id, domain)`.
+- Initial `reviewer: strategic design validation` returned one blocker:
+  `LEAK-1` in
+  `lib/metz_scan/calibration/project_analyzer_evidence_runner/collaborators.rb`.
+  The selected-analyzer calibration path filtered only finding metadata for
+  default output and skipped the analyzer-level `DEFAULT_OUTPUT_ELIGIBLE`
+  policy. I fixed it by filtering selected analyzer classes through
+  `ProjectAnalyzerRunner.default_output_analyzer?` before applying the
+  existing finding-level default-output gate.
+- Blocker-fix red run: `bundle exec ruby -Ilib -Itest
+  test/metz_scan/calibration/project_analyzer_evidence_runner_test.rb` failed
+  because a selected validated opt-in analyzer leaked a medium design-pressure
+  finding under `default_output: true`.
+- Blocker-fix focused green run: `bundle exec ruby -Ilib -Itest
+  test/metz_scan/calibration/project_analyzer_evidence_runner_test.rb`: 14
+  runs, 63 assertions, 0 failures, 0 errors.
+- Blocker-fix focused RuboCop passed for the collaborator and calibration test
+  files: 2 files inspected, no offenses.
+- Full local gates after the blocker fix passed:
+  - `bundle exec rake`: 411 runs, 1705 assertions, 0 failures, 0 errors,
+    2 skips.
+  - `bundle exec rubocop`: 170 files inspected, no offenses.
+  - `bin/check_dependency_direction`: passed.
+  - `bin/check_sample_app_frozen`: passed.
+  - `bin/check_dogfood`: passed with accepted project-analyzer baseline of
+    0 findings.
+  - `git -c core.fsmonitor=false diff --check`: passed.
+- Strategic validation after the blocker fix passed for change type `feature`:
+  slice tests, red/green proof, lint, and task-comment gates passed; warnings 0;
+  review required by diff size and new public analyzer surface.
+- Follow-up `reviewer: strategic design validation` on the final diff returned
+  one blocker: `LEAK-1` in
+  `lib/metz_scan/analyzers/implicit_context_pressure.rb`. The new collectors
+  duplicated namespace/method AST context traversal that already existed in
+  `RepeatedBranching::ContextualNodeWalker`. I fixed it by promoting the
+  walker to `MetzScan::Analyzers::ContextualNodeWalker`, keeping the old
+  repeated-branching require path as a compatibility alias, and updating
+  `BranchSiteCollector`, `CurrentAttributeCollector`, and
+  `QuerySiteCollector` to use the shared walker.
+- Shared-walker focused verification passed:
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/analyzers/repeated_branching_helper_test.rb`: 6 runs,
+    14 assertions, 0 failures, 0 errors.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/analyzers/repeated_branching_test.rb`: 11 runs,
+    35 assertions, 0 failures, 0 errors.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/analyzers/implicit_context_pressure_test.rb`: 10 runs,
+    32 assertions, 0 failures, 0 errors.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/analyzers/repeated_query_criteria_test.rb`: 8 runs,
+    25 assertions, 0 failures, 0 errors.
+  - Focused RuboCop over the shared walker and three collectors passed:
+    5 files inspected, no offenses.
+- Final `reviewer: strategic design validation` after the shared-walker fix
+  was clean with no findings.
+- `doc_reviewer: analyzer documentation drift` found no documentation drift.
+  It confirmed README, calibration docs, candidate notes, and implementation
+  notes match the analyzer behavior and active calibration counts. It noted the
+  calibration tables are point-in-time snapshots tied to
+  `tmp/project-analyzer-calibration/apps`.
+
+Implementation decisions:
+
+- `ImplicitContextPressure` now treats any constant receiver whose final
+  namespace segment is `Current` as CurrentAttributes-style access, preserving
+  the full ambient context in messages and metadata.
+- Lifecycle ignores remain method-name based, so `Current.reset`,
+  `Spree::Current.reset`, `Current.set(...)`, and
+  `Spree::Current.set(...)` are all excluded.
+- `RepeatedQueryCriteria` groups by constant receiver plus sorted literal hash
+  keys. It requires at least two keys, three referring files, and two coarse
+  packages to reduce common one-off lookup noise.
+- `RepeatedQueryCriteria` emits one primary offense per repeated query
+  fingerprint and keeps the full occurrence list in project-analyzer metadata.
+- `ContextualNodeWalker` is now shared at the analyzer namespace, so analyzer
+  collectors share namespace and method context extraction instead of
+  reimplementing recursive AST traversal.
+- `repeated_query_category` is now part of the shared project-analyzer metadata
+  breakdown key list.
+- Keep both analyzers candidate opt-in. The calibration output is sparse and
+  readable, but both signals still need manual review before validated status
+  or default-output eligibility.

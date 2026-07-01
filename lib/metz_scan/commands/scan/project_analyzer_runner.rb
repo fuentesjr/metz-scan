@@ -8,6 +8,7 @@ require_relative "../../analyzers/inheritance_descendants"
 require_relative "../../analyzers/package_dependency_pressure"
 require_relative "../../analyzers/namespace_leak_pressure"
 require_relative "../../analyzers/implicit_context_pressure"
+require_relative "../../analyzers/repeated_query_criteria"
 require_relative "../../project_index"
 require_relative "project_analyzer_metadata"
 require_relative "project_analyzer_offenses"
@@ -24,7 +25,8 @@ module MetzScan
           Analyzers::InheritanceDescendants,
           Analyzers::PackageDependencyPressure,
           Analyzers::NamespaceLeakPressure,
-          Analyzers::ImplicitContextPressure
+          Analyzers::ImplicitContextPressure,
+          Analyzers::RepeatedQueryCriteria
         ].freeze
         INDEX_BACKED_ANALYZERS = [
           Analyzers::InheritanceDescendants,

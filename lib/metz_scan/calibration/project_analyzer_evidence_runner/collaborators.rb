@@ -41,7 +41,8 @@ module MetzScan
         def call(paths, index:, default_output:)
           return project_findings(paths, index: index, default_output: default_output) unless analyzers
 
-          filter_default_output(run_selected_analyzers(paths, index), default_output)
+          selected = selected_analyzers(default_output)
+          filter_default_output(run_selected_analyzers(selected, paths, index), default_output)
         end
 
         private
@@ -54,8 +55,14 @@ module MetzScan
           )
         end
 
-        def run_selected_analyzers(paths, index)
-          analyzers.flat_map { |analyzer| analyzer.new(paths: paths, index: index).call }
+        def selected_analyzers(default_output)
+          return analyzers unless default_output
+
+          analyzers.select { |analyzer| Commands::Scan::ProjectAnalyzerRunner.default_output_analyzer?(analyzer) }
+        end
+
+        def run_selected_analyzers(selected, paths, index)
+          selected.flat_map { |analyzer| analyzer.new(paths: paths, index: index).call }
         end
 
         def filter_default_output(findings, default_output)
