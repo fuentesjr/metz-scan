@@ -182,7 +182,11 @@ candidate opt-in. Its first slice reports base classes whose known descendants
 override the same base-declared method in at least six subclasses. Framework,
 Rails application, controller, job, service, serializer, policy, worker,
 exception, CLI, and abstract bases use the same broad-root vocabulary as `DeepInheritanceTree`
-and are reported with lower confidence and `broad base` triage.
+and are reported with lower confidence and `broad base` triage. It also records
+whether the base method is abstract, empty, default-valued, or concrete, and
+whether descendant overrides call `super`, so repeated override families can be
+triaged as broad-root, abstract-hook, cooperative, replacement, or unclassified
+override pressure.
 
 Project analyzer output includes status, confidence, triage severity, and triage
 summary metadata. Default output includes only explicitly eligible, validated,

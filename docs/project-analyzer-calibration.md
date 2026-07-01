@@ -196,9 +196,12 @@ Readiness by analyzer:
   classes whose known descendants override the same base-declared method in at
   least six subclasses. Broad framework, Rails application, controller, job,
   service, serializer, policy, worker, exception, CLI, and abstract bases are kept
-  lower-confidence with broad-base triage. It is not default-output eligible
-  and should not move toward validated status until follow-up calibration
-  confirms the medium-confidence override families are consistently actionable.
+  lower-confidence with broad-base triage. It records base method body kind and
+  descendant `super` usage so medium findings can be separated into
+  abstract-hook, cooperative, replacement, or unclassified override families.
+  It is not default-output eligible and should not move toward validated status
+  until follow-up calibration confirms those classified medium-confidence
+  families are consistently actionable.
 
 Reporting-language follow-up on 2026-06-24: text output now labels each
 project-analyzer summary with status, confidence, and severity, and the summary
@@ -758,7 +761,10 @@ base class. The first slice is deliberately conservative: it requires the
 optional project index, only uses known descendants and method declarations,
 requires at least six descendants overriding the same method, and emits one
 primary offense per override family. The full override list remains in
-project-analyzer metadata. Broad framework, Rails application, controller, job,
+project-analyzer metadata. The analyzer also parses the base method body and
+override bodies to classify base methods as `abstract_raise`, `empty`,
+`default_value`, `concrete`, or `unknown`, and to count descendant overrides
+that call `super`. Broad framework, Rails application, controller, job,
 service, serializer, policy, worker, exception, CLI, and abstract bases are
 still visible but reported with lower-confidence broad-base triage.
 
@@ -771,25 +777,33 @@ bundle exec ruby bin/check_project_analyzer_calibration --text --no-write \
   --analyzer MetzProject/SubclassOverridePressure
 ```
 
-The run produced 104 findings and 104 offenses:
+The latest body-fact pass still produced 104 findings and 104 offenses:
 
-| Target | Findings | Medium manual-review | Low broad-base | Example medium findings |
+| Target | Findings | Medium | Low | Category mix |
 | --- | ---: | ---: | ---: | --- |
-| `chatwoot` | 10 | 0 | 10 | none |
+| `chatwoot` | 10 | 0 | 10 | `broad_root_override=10` |
 | `decidim` | 0 | 0 | 0 | none |
-| `discourse` | 16 | 12 | 4 | `Auth::Authenticator#display_name`, `Auth::Authenticator#enabled?`, `Auth::Authenticator#name` |
-| `forem` | 14 | 3 | 11 | `Authentication::Providers::Provider#cleanup_payload`, `existing_user_data`, `new_user_data` |
-| `mastodon` | 16 | 1 | 15 | `ActivityPub::Activity#perform` |
-| `openfoodnetwork` | 18 | 7 | 11 | `Reporting::ReportTemplate#columns`, `default_params`, `query_result` |
+| `discourse` | 16 | 12 | 4 | `abstract_hook_override=7`, `cooperative_override=4`, `replacement_override=1`, `broad_root_override=4` |
+| `forem` | 14 | 3 | 11 | `replacement_override=3`, `broad_root_override=11` |
+| `mastodon` | 16 | 1 | 15 | `abstract_hook_override=1`, `broad_root_override=15` |
+| `openfoodnetwork` | 18 | 7 | 11 | `abstract_hook_override=5`, `cooperative_override=1`, `replacement_override=1`, `broad_root_override=11` |
 | `solidus` | 0 | 0 | 0 | none |
-| `spree` | 30 | 6 | 24 | `Spree::Calculator#compute`, `Spree::Export#csv_headers`, `scope_includes` |
+| `spree` | 30 | 6 | 24 | `abstract_hook_override=4`, `replacement_override=2`, `broad_root_override=24` |
+
+Overall category mix:
+
+| Category | Findings | Meaning |
+| --- | ---: | --- |
+| `broad_root_override` | 75 | The base is already a broad framework/application/root-kind family and remains low-confidence broad-base output. |
+| `abstract_hook_override` | 17 | The base method is empty, raises an abstract-method error, or returns a default literal value. |
+| `cooperative_override` | 5 | At least one descendant override calls `super`, suggesting an extension protocol rather than pure replacement. |
+| `replacement_override` | 7 | The base method is concrete and the sampled descendant overrides do not call `super`. |
 
 Decision: keep SubclassOverridePressure **Candidate** and opt-in. The signal is
 useful for identifying hook protocols, but the first pass is still too broad
 for validated status or default output: 75 of 104 findings are intentionally
-low-confidence broad-root prompts, and the 29 medium findings need manual
-review for whether repeated overrides are deliberate framework-style extension
-points.
+low-confidence broad-root prompts, and the 29 medium findings are now
+classified for manual review rather than promoted or suppressed.
 
 ## `MetzProject/RepeatedBranching`
 

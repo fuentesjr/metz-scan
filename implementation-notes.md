@@ -1535,3 +1535,127 @@ Implementation decisions:
 - Keep `SubclassOverridePressure` candidate opt-in. The first pass surfaces
   concrete hook protocols, but the signal is still broad enough to require
   manual review before any validated-status or default-output discussion.
+
+## 2026-07-01: Subclass override body facts and categories
+
+Task: start on the next 2 big tasks and keep using agenticons, commit the
+changes, then provide a detailed comprehensive summary as described in
+AGENTS.md.
+
+Scope boundaries:
+
+- Use `tmp/project-analyzer-calibration/apps` as the active calibration fixture
+  home. Treat `/private/tmp` calibration paths as historical only.
+- Keep `SubclassOverridePressure` candidate opt-in and not default-output
+  eligible.
+- Do not promote analyzers, change default-output policy, or add app-specific
+  suppressions.
+- Prefer source-derived metadata and conservative category classification over
+  downranking medium findings from sparse evidence.
+- Use agenticon delegation shallowly and record each result.
+
+Change type: feature.
+
+Verbatim task statement: "Ok go ahead and start on the next 2 big tasks and
+keep using agenticons and at the end commit the changes. Then give me a detail
+and comprehensive summary as described in AGENTS.md"
+
+Plan:
+
+1. Use `planner: next two task selection` to choose the next two tasks after
+   the `SubclassOverridePressure` candidate slice.
+2. Use `helper_worker: subclass override evidence` to inspect active medium
+   findings and identify evidence-backed refinements.
+3. Add source-derived method body facts for override families: base method body
+   kind and descendant override `super` calls.
+4. Classify `subclass_override_category` using those facts:
+   `broad_root_override`, `abstract_hook_override`, `cooperative_override`,
+   `replacement_override`, or fallback `subclass_override`.
+5. Update docs/notes, run focused tests, active-fixture calibration smoke, full
+   gates, strategic validation, reviews, and commit.
+
+Verification status:
+
+- `planner: next two task selection` recommended method-body facts followed by
+  classification metadata for `SubclassOverridePressure`; it warned to keep
+  status/default-output policy unchanged.
+- `helper_worker: subclass override evidence` confirmed the current 29 medium
+  findings are mostly hook-protocol style bases and recommended abstract/no-op
+  base-method classification plus cooperative `super` metadata. It explicitly
+  advised against promotion, app-specific suppressions, threshold changes, or
+  relying only on existing `root_kind` triage.
+- Local read-only sample over the active fixtures found 18 medium families with
+  concrete base methods and 11 with abstract-raise base methods; 7 of the 29
+  medium families had at least one descendant override calling `super`.
+- Red run: `bundle exec ruby -Ilib -Itest
+  test/metz_scan/analyzers/subclass_override_pressure_body_facts_test.rb`
+  failed because metadata still reported generic `subclass_override` category
+  and lacked body facts.
+- Green focused tests after implementation:
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/analyzers/subclass_override_pressure_body_facts_test.rb`:
+    3 runs, 11 assertions, 0 failures, 0 errors.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/analyzers/subclass_override_pressure_test.rb`: 4 runs,
+    29 assertions, 0 failures, 0 errors.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/commands/project_analyzers_test.rb`: 3 runs,
+    21 assertions, 0 failures, 0 errors.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/commands/scan_project_analyzer_runner_test.rb`: 12 runs,
+    36 assertions, 0 failures, 0 errors.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/project_index_test.rb`: 8 runs, 37 assertions, 0 failures,
+    0 errors, 2 skips.
+- Focused RuboCop over touched subclass-override files passed: 7 files
+  inspected, no offenses.
+- Manifest-backed `MetzProject/SubclassOverridePressure` calibration over the
+  active fixtures passed with 104 findings and 104 offenses:
+  `broad_root_override=75`, `abstract_hook_override=17`,
+  `cooperative_override=5`, `replacement_override=7`.
+- Full local gates passed:
+  - `bundle exec rake`: 419 runs, 1758 assertions, 0 failures, 0 errors,
+    2 skips.
+  - `bundle exec rubocop`: 180 files inspected, no offenses.
+  - `bin/check_dependency_direction`: passed.
+  - `bin/check_sample_app_frozen`: passed.
+  - `bin/check_dogfood`: passed with accepted project-analyzer baseline of
+    0 findings.
+  - `git -c core.fsmonitor=false diff --check`: passed.
+- Strategic validation passed for change type `feature`: slice tests,
+  red/green proof, lint, and task-comment gates passed; warnings 0; review
+  required by diff size and new public interface.
+- `doc_reviewer: documentation drift` found no documentation drift. README,
+  calibration docs, candidate notes, and implementation notes match the new
+  body-fact metadata, category names, counts, project-index requirement, and
+  candidate/default-output status.
+- `reviewer: strategic design validation` returned a clean verdict with one
+  non-blocking concern:
+  - `rubric_id`: `DEP-1`
+  - `location`:
+    `lib/metz_scan/analyzers/package_dependency_pressure/shared_dependency_triage.rb:25-35`
+  - `severity`: `concern`
+  - `rationale`: "The generic package-pressure analyzer now hard-codes
+    calibration outcomes for specific external applications and constants, so
+    future fixture changes or new calibration samples require editing analyzer
+    behavior rather than updating calibration data."
+  - `suggested_change`: "Move calibrated shared-surface names into an
+    injected/default calibration data source or express the downranking through
+    generic metadata rules so the analyzer does not directly depend on
+    app-specific fixture constants."
+
+Implementation decisions:
+
+- Kept method-body analysis internal to `SubclassOverridePressure` instead of
+  widening `ProjectIndex`; body facts are source-derived triage metadata, not
+  a reusable index capability yet.
+- Classified base method bodies conservatively as `abstract_raise`, `empty`,
+  `default_value`, `concrete`, or `unknown`.
+- Treated empty, abstract-raise, and default literal base methods as
+  `abstract_hook_override`; treated concrete base methods with any descendant
+  `super` calls as `cooperative_override`; treated concrete families without
+  `super` as `replacement_override`; preserved `broad_root_override` for
+  existing broad-root triage; preserved `subclass_override` for unknown bodies.
+- Did not change analyzer status, default-output eligibility, or confidence
+  policy for medium findings. The new categories are for manual-review
+  calibration and triage.

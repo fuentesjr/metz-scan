@@ -40,10 +40,12 @@ scope-chain fingerprints, and broader query/filter forms are future scope.
 
 Implemented as `MetzProject/SubclassOverridePressure` candidate output. The
 first slice is index-backed and detects base classes whose known descendants
-override the same base-declared method in at least six subclasses. It remains
-behind `--project-analyzers`; `super` weighting, abstract-method body analysis,
-and narrower calibration of deliberate framework extension points are future
-scope.
+override the same base-declared method in at least six subclasses. It now
+records conservative base-method body facts and descendant `super` usage so
+override families can be classified as broad-root, abstract-hook, cooperative,
+replacement, or unclassified signals. It remains behind `--project-analyzers`;
+narrower calibration of deliberate framework extension points and any future
+triage weighting are future scope.
 
 ## Candidate shortlist
 

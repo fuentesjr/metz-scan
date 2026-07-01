@@ -3,14 +3,17 @@
 require_relative "../project_index"
 require_relative "inheritance_descendants/root_kind"
 require_relative "project_analyzer_triage"
+require_relative "subclass_override_pressure/family_builder"
 require_relative "subclass_override_pressure/finding"
 require_relative "subclass_override_pressure/metadata"
+require_relative "subclass_override_pressure/method_body_facts"
 
 module MetzScan
   module Analyzers
     # Reports base classes whose descendants repeatedly override the same method.
     class SubclassOverridePressure
       include ProjectAnalyzerTriage
+      include FamilyBuilder
       include Metadata
 
       RULE_ID = "MetzProject/SubclassOverridePressure"
@@ -32,7 +35,12 @@ module MetzScan
       SYNTHETIC_DECLARATION_MARKER = "::<"
       private_constant :IGNORED_DECLARATION_NAMES, :SYNTHETIC_DECLARATION_MARKER
 
-      OverrideFamily = Struct.new(:base, :method_name, :descendants, :overrides, :root_kind, keyword_init: true)
+      OverrideFamily = Struct.new(:base, :base_method, :method_name, :descendants, :overrides, :root_kind,
+                                  :base_method_body_kind, :override_body_facts, keyword_init: true) do
+        def overrides_calling_super_count
+          override_body_facts.values.count(&:calls_super)
+        end
+      end
 
       def initialize(paths: nil, index: nil, base_names: nil,
                      minimum_overriding_descendants: MINIMUM_OVERRIDING_DESCENDANTS)
@@ -52,63 +60,12 @@ module MetzScan
 
       attr_reader :index, :base_names, :minimum_overriding_descendants
 
-      def base_candidates
-        return configured_base_candidates unless base_names.empty?
-
-        auto_discovered_base_candidates
-      end
-
-      def configured_base_candidates
-        base_names.filter_map { |name| declarations_by_name[name] }
-      end
-
-      def auto_discovered_base_candidates
-        index.declarations.select { |declaration| auto_discovered_base_candidate?(declaration) }
-      end
-
-      def auto_discovered_base_candidate?(declaration)
-        declaration.name && declaration.path && class_candidate?(declaration) &&
-          !ignored_declaration_name?(declaration.name)
-      end
-
-      def class_candidate?(declaration)
-        !declaration.respond_to?(:kind) || declaration.kind.nil? || declaration.kind == :class
-      end
-
-      def findings_for(base)
-        descendants = sorted_descendants(base.name)
-        return [] if descendants.size < minimum_overriding_descendants
-
-        base_method_names(base).filter_map { |method_name| finding_for(base, method_name, descendants) }
-      end
-
-      def sorted_descendants(base_name)
-        index.descendants_of(base_name).reject { |name| ignored_declaration_name?(name) }.sort
-      end
-
-      def base_method_names(base)
-        methods_by_owner.fetch(base.name, []).map(&:method_name).uniq.sort
-      end
-
-      def finding_for(base, method_name, descendants)
-        overrides = overrides_for(method_name, descendants)
-        return if overrides.size < minimum_overriding_descendants
-
-        Finding.new(finding_attributes(override_family(base, method_name, descendants, overrides)))
-      end
-
-      def overrides_for(method_name, descendants)
-        descendants.filter_map { |descendant| method_declaration_for(descendant, method_name) }
-                   .sort_by { |declaration| declaration.owner_name.to_s }
-      end
-
-      def method_declaration_for(owner_name, method_name)
-        methods_by_owner.fetch(owner_name, []).find { |declaration| declaration.method_name == method_name }
-      end
-
-      def override_family(base, method_name, descendants, overrides)
-        OverrideFamily.new(base: base, method_name: method_name, descendants: descendants, overrides: overrides,
-                           root_kind: InheritanceDescendants::RootKind.for(base.name))
+      def override_family(base, base_method, descendants, overrides)
+        OverrideFamily.new(base: base, base_method: base_method, method_name: base_method.method_name,
+                           descendants: descendants, overrides: overrides,
+                           root_kind: InheritanceDescendants::RootKind.for(base.name),
+                           base_method_body_kind: body_facts_for(base_method).body_kind,
+                           override_body_facts: override_body_facts_for(overrides))
       end
 
       def finding_attributes(family)
@@ -129,6 +86,18 @@ module MetzScan
 
       def methods_by_owner
         @methods_by_owner ||= index.method_declarations.group_by(&:owner_name)
+      end
+
+      def override_body_facts_for(overrides)
+        overrides.to_h { |override| [override.owner_name, body_facts_for(override)] }
+      end
+
+      def body_facts_for(declaration)
+        body_facts.for(declaration)
+      end
+
+      def body_facts
+        @body_facts ||= MethodBodyFacts.new
       end
 
       def ignored_declaration_name?(name)
