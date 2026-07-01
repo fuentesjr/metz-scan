@@ -442,11 +442,12 @@ Findings emit one primary offense at the declaration path and preserve the
 referring files and packages in project-analyzer metadata.
 The first slice only counts declarations under `app/` and `lib/` packages, and
 it ignores references from `spec/`, `test/`, `lib/tasks/`, `lib/seeders/`,
-`lib/seed_data/`, `lib/test_data/`, and `lib/generators/` when measuring
-cross-package pressure. Broad shared dependencies such as configuration,
-settings, event registries, exception families, infrastructure hubs, and
-calibrated broad domain or protocol surfaces are reported with lower confidence
-and `shared dependency` triage rather than suppressed.
+`lib/seed_data/`, `lib/test_data/`, `lib/generators/`, nested seed paths, and
+nested `testing_support` paths when measuring cross-package pressure. Broad
+shared dependencies such as configuration, settings, event registries,
+exception families, infrastructure hubs, and calibrated broad domain or
+protocol surfaces are reported with lower confidence and `shared dependency`
+triage rather than suppressed.
 
 Initial real-project calibration before threshold tuning used 4 files across 2
 packages. It produced high-volume output on most full applications:
@@ -525,6 +526,35 @@ After that targeted downranking, the active calibration evidence still does not
 justify validated status: the useful manual signal is narrow and concentrated
 in one application.
 
+Manifest-backed follow-up on 2026-07-01 used the repeatable runner's
+`--targets-file` option so nested Spree engine paths contributed evidence
+without scanning the checkout root. The first manifest pass found 40
+PackageDependencyPressure findings: 37 low-confidence shared dependencies and
+3 medium manual-review package-boundary findings. The medium findings were
+`OpenFoodNetwork::ScopeVariantToHub`, `Spree::Store`, and `Spree::Taxon`.
+`Spree::Store` and `Spree::Taxon` were then calibrated as broad shared
+commerce domain/API surfaces, consistent with the existing `Spree::*` model
+downranking.
+
+Post-downranking manifest-backed result:
+
+| Project | Medium package-boundary findings | Shared-dependency findings |
+| --- | ---: | ---: |
+| `chatwoot/chatwoot` | 0 | 2 |
+| `decidim/decidim` | 0 | 0 |
+| `discourse/discourse` | 0 | 10 |
+| `forem/forem` | 0 | 5 |
+| `mastodon/mastodon` | 0 | 3 |
+| `openfoodfoundation/openfoodnetwork` | 1 | 9 |
+| `solidusio/solidus` | 0 | 0 |
+| `spree/spree` nested engines | 0 | 9 |
+| **Total** | **1** | **38** |
+
+Decision: keep PackageDependencyPressure **Candidate** and opt-in. The
+calibrated output is now sparse enough to review, but the only remaining
+medium package-boundary finding is `OpenFoodNetwork::ScopeVariantToHub`, so
+there is not enough cross-application positive evidence for validated status.
+
 Current decision:
 
 - Promote PackageDependencyPressure to **Candidate** and keep it opt-in.
@@ -563,6 +593,34 @@ Candidate-path checkpoint on 2026-06-29:
   start a full graduation loop until a new approved target or refreshed active
   checkout produces at least a third clear medium-confidence namespace-boundary
   positive.
+
+Manifest-backed follow-up on 2026-07-01 used nested Spree engine paths through
+the calibration runner target manifest. The first pass produced 37 findings:
+32 low-confidence shared namespaces and 5 medium manual-review namespace
+boundaries. Two Spree medium findings were partly supported by nested seed or
+`testing_support` references, so the shared pressure-analyzer path filter now
+ignores nested seed and `testing_support` paths.
+
+Post-filter manifest-backed result:
+
+| Project | Medium namespace-boundary findings | Shared-namespace findings |
+| --- | ---: | ---: |
+| `chatwoot/chatwoot` | 0 | 9 |
+| `decidim/decidim` | 0 | 0 |
+| `discourse/discourse` | 1 | 11 |
+| `forem/forem` | 0 | 2 |
+| `mastodon/mastodon` | 0 | 2 |
+| `openfoodfoundation/openfoodnetwork` | 1 | 3 |
+| `solidusio/solidus` | 0 | 0 |
+| `spree/spree` nested engines | 1 | 4 |
+| **Total** | **3** | **31** |
+
+Remaining medium findings are `Badge::Trigger::PostRevision`,
+`Spree::Gateway::StripeSCA`, and `Spree::PaymentMethod::StoreCredit`.
+Decision: keep NamespaceLeakPressure **Candidate** and opt-in. The new Spree
+StoreCredit finding is plausible, but two of the three medium findings are in
+the Spree/OpenFoodNetwork commerce family, so the evidence is still too narrow
+for validated status.
 
 ## `MetzProject/RepeatedBranching`
 

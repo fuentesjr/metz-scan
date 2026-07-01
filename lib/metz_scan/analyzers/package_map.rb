@@ -6,7 +6,8 @@ module MetzScan
     module PackageMap
       IGNORED_REFERENCE_ROOTS = %w[spec test].freeze
       IGNORED_LIB_PACKAGES = %w[generators seed_data seeders tasks test_data].freeze
-      private_constant :IGNORED_REFERENCE_ROOTS, :IGNORED_LIB_PACKAGES
+      IGNORED_SUPPORT_SEGMENTS = %w[seeds testing_support].freeze
+      private_constant :IGNORED_REFERENCE_ROOTS, :IGNORED_LIB_PACKAGES, :IGNORED_SUPPORT_SEGMENTS
 
       module_function
 
@@ -20,7 +21,7 @@ module MetzScan
 
       def ignored_path?(path)
         parts = path.to_s.split(File::SEPARATOR)
-        ignored_reference_root?(parts) || ignored_lib_package?(parts)
+        ignored_reference_root?(parts) || ignored_lib_package?(parts) || ignored_support_segment?(parts)
       end
 
       def parts_after_package(path)
@@ -51,6 +52,13 @@ module MetzScan
         return false unless index && parts[index] == "lib"
 
         index && IGNORED_LIB_PACKAGES.include?(parts[index + 1])
+      end
+
+      def ignored_support_segment?(parts)
+        index = app_index(parts) || lib_index(parts)
+        return false unless index
+
+        parts[(index + 1)..].any? { |part| IGNORED_SUPPORT_SEGMENTS.include?(part) }
       end
 
       def app_index(parts)

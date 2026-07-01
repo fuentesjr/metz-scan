@@ -950,3 +950,136 @@ Implementation decisions:
   findings, and the remaining medium-confidence roots are diverse application
   or domain extension families. Keep DeepInheritanceTree validated opt-in and
   do not add a new filter or downranking rule from this pass.
+
+## 2026-07-01: Pressure analyzer support filtering and Spree surface triage
+
+Task: start on the next 2 big tasks and keep using agenticons, commit the
+changes, then provide a detailed comprehensive summary as described in
+AGENTS.md.
+
+Scope boundaries:
+
+- Use `tmp/project-analyzer-calibration/apps` as the active calibration fixture
+  home. Treat `/private/tmp` calibration paths as historical only.
+- Keep normal `metz-scan scan` behavior unchanged.
+- Keep `PackageDependencyPressure` and `NamespaceLeakPressure` candidate
+  opt-in; do not promote analyzers or change default-output policy in this
+  pass.
+- Limit behavior changes to fixture-backed filtering or downranking supported
+  by manifest-backed evidence.
+- Use agenticon delegation shallowly and record each result.
+
+Change type: feature.
+
+Verbatim task statement: "Ok go ahead and start on the next 2 big tasks and
+keep using agenticons and at the end commit the changes. Then give me a detail
+and comprehensive summary as described in AGENTS.md"
+
+Plan:
+
+1. Use `planner: next two task selection` and
+   `helper_worker: analyzer backlog reconnaissance` to validate the next
+   implementation pair.
+2. Tighten shared pressure-analyzer setup/support path filtering so nested
+   seed or testing-support references do not inflate package/namespace
+   pressure evidence.
+3. Downrank manifest-exposed `PackageDependencyPressure` broad Spree domain
+   surfaces `Spree::Store` and `Spree::Taxon`, while preserving
+   `OpenFoodNetwork::ScopeVariantToHub` as a medium package-boundary prompt.
+4. Rerun manifest-backed PackageDependencyPressure and NamespaceLeakPressure
+   calibration, update docs/notes with the hold decisions, then run focused
+   tests, local gates, strategic validation, required reviews, and commit the
+   finished slice.
+
+Verification status:
+
+- `planner: next two task selection` recommended tightening shared
+  setup/support path filtering first, then downranking manifest-exposed
+  `PackageDependencyPressure` broad Spree domain surfaces. It explicitly
+  deferred analyzer promotion, default-output policy changes, Sorbet, dogfood
+  CI, and GitHub issue housekeeping.
+- `helper_worker: analyzer backlog reconnaissance` ranked
+  `PackageDependencyPressure` broad-surface regression lock-in as the most
+  actionable implementation slice and `RepeatedBranching` report polish as
+  mostly reporting/evidence-limited. I chose the planner's first task because
+  manifest-backed NamespaceLeakPressure evidence showed concrete support-path
+  inflation affecting both pressure analyzers.
+- Baseline manifest-backed calibration before code changes:
+  - `PackageDependencyPressure`: 40 findings, 40 offenses,
+    `low=37`, `medium=3`; medium findings were
+    `OpenFoodNetwork::ScopeVariantToHub`, `Spree::Store`, and `Spree::Taxon`.
+  - `NamespaceLeakPressure`: 37 findings, 37 offenses,
+    `low=32`, `medium=5`; Spree medium findings included nested seed and
+    `testing_support` references.
+- Red run: `bundle exec ruby -Ilib -Itest
+  test/metz_scan/analyzers/package_dependency_pressure_test.rb` failed with
+  two expected failures: nested support references counted 14 files instead of
+  12, and calibrated Spree shared domain surfaces still reported
+  `confidence: medium`.
+- Red run: `bundle exec ruby -Ilib -Itest
+  test/metz_scan/analyzers/namespace_leak_pressure_test.rb` failed with the
+  expected failure: nested setup/support references counted 5 files instead of
+  3.
+- Green focused tests:
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/analyzers/package_dependency_pressure_test.rb`: 15 runs,
+    109 assertions, 0 failures, 0 errors.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/analyzers/namespace_leak_pressure_test.rb`: 15 runs,
+    67 assertions, 0 failures, 0 errors.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/commands/scan_project_analyzer_runner_package_dependency_test.rb`:
+    2 runs, 18 assertions, 0 failures, 0 errors.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/commands/scan_project_analyzer_runner_namespace_leak_test.rb`:
+    1 run, 14 assertions, 0 failures, 0 errors.
+- Focused RuboCop over touched analyzer/test files passed: 4 files inspected,
+  no offenses.
+- Manifest-backed calibration after implementation:
+  - `PackageDependencyPressure`: 39 findings, 39 offenses,
+    `low=38`, `medium=1`; the only remaining medium package-boundary finding
+    is `OpenFoodNetwork::ScopeVariantToHub`.
+  - `NamespaceLeakPressure`: 34 findings, 34 offenses,
+    `low=31`, `medium=3`; remaining medium namespace-boundary findings are
+    `Badge::Trigger::PostRevision`, `Spree::Gateway::StripeSCA`, and
+    `Spree::PaymentMethod::StoreCredit`.
+- Scratch calibration artifacts were written under
+  `tmp/project-analyzer-calibration/results/20260701-package-pressure-support-filter`
+  and
+  `tmp/project-analyzer-calibration/results/20260701-namespace-leak-support-filter`.
+- Full local gates passed:
+  - `bundle exec rake`: 390 runs, 1625 assertions, 0 failures, 0 errors,
+    2 skips.
+  - `bundle exec rubocop`: 166 files inspected, no offenses.
+  - `bin/check_dependency_direction`: passed.
+  - `bin/check_sample_app_frozen`: passed.
+  - `bin/check_dogfood`: passed with accepted project-analyzer baseline of
+    0 findings.
+  - `git diff --check`: passed.
+- Strategic validation passed for change type `feature`: slice tests,
+  red/green proof, lint, and task-comment gates passed; warnings 0; review
+  required by diff size and touched public analyzer surface.
+- Initial `reviewer: strategic design validation` verdict was clean with no
+  findings.
+- `doc_reviewer: pressure analyzer docs` found no documentation drift. It
+  noted that README discoverability would improve by spelling out nested seed
+  and `testing_support` filtering for NamespaceLeakPressure; I addressed that
+  before the final validation.
+- Follow-up `reviewer: strategic design validation` after the README clarity
+  fix was clean with no findings.
+
+Implementation decisions:
+
+- `PackageMap.ignored_path?` now ignores nested `seeds` and
+  `testing_support` path segments under `app/` or `lib/`. This applies to both
+  pressure analyzers through their existing reference collectors.
+- `Spree::Store` and `Spree::Taxon` now join the calibrated
+  `PackageDependencyPressure` shared-surface list with other broad
+  `Spree::*` commerce domain/API surfaces.
+- `OpenFoodNetwork::ScopeVariantToHub` remains medium-confidence manual review
+  because it is still the strongest package-owned adapter signal in the active
+  evidence.
+- Keep both pressure analyzers candidate opt-in. PackageDependencyPressure now
+  has only one medium package-boundary finding in the active manifest-backed
+  sample, and NamespaceLeakPressure has three medium findings but two are in
+  the Spree/OpenFoodNetwork commerce family.

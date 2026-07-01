@@ -30,6 +30,10 @@ module MetzScan
         ["lib/test_data/billing_formatter_factory.rb", 11],
         ["lib/generators/billing/install_generator.rb", 12]
       ].freeze
+      NESTED_SUPPORT_REFERENCE_PATHS = [
+        ["app/services/spree/seeds/digital_delivery.rb", 22],
+        ["lib/spree/testing_support/factories/calculator_factory.rb", 23]
+      ].freeze
 
       def leaking_index
         leak_index(references: external_references)
@@ -45,6 +49,10 @@ module MetzScan
 
       def noisy_reference_index
         leak_index(references: noisy_references + external_references)
+      end
+
+      def nested_support_reference_index
+        leak_index(references: nested_support_references + external_references)
       end
 
       def public_namespace_root_index
@@ -78,6 +86,10 @@ module MetzScan
 
       def noisy_references
         NOISY_REFERENCE_PATHS.map { |path, line| reference(path, line) }
+      end
+
+      def nested_support_references
+        NESTED_SUPPORT_REFERENCE_PATHS.map { |path, line| reference(path, line) }
       end
 
       def parent_named_references
@@ -192,6 +204,13 @@ module MetzScan
 
       def test_ignores_same_namespace_setup_and_self_references
         finding = NamespaceLeakPressure.new(index: noisy_reference_index).call.first
+
+        assert_equal 3, finding.referring_files.size
+        assert_equal %w[app/controllers app/jobs app/mailers], finding.referring_packages
+      end
+
+      def test_ignores_nested_setup_and_support_references
+        finding = NamespaceLeakPressure.new(index: nested_support_reference_index).call.first
 
         assert_equal 3, finding.referring_files.size
         assert_equal %w[app/controllers app/jobs app/mailers], finding.referring_packages

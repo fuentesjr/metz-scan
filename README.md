@@ -147,7 +147,8 @@ triage.
 contributes no findings when the index is unavailable. It currently only counts
 declarations under `app/` and `lib/` packages, and it ignores references from
 `spec/`, `test/`, `lib/tasks/`, `lib/seeders/`, `lib/seed_data/`,
-`lib/test_data/`, and `lib/generators/` when measuring cross-package pressure.
+`lib/test_data/`, `lib/generators/`, nested seed paths, and nested
+`testing_support` paths when measuring cross-package pressure.
 Its default threshold is at least 12 referring files across at least 5 packages.
 Broad shared dependencies such as configuration, settings, event registries,
 exception families, infrastructure hubs, and calibrated broad domain or protocol
@@ -158,8 +159,9 @@ no findings when the index is unavailable. It reports deeply nested declarations
 such as `Billing::Ledger::PrivateFormatter` when references spread outside the
 home namespace into at least three files across three coarse packages.
 References from the same namespace path, test roots, and setup/support paths
-are ignored. Public constants, nested exception families, and framework or
-extension namespaces are reported with lower-confidence shared-namespace triage.
+such as nested seed and `testing_support` paths are ignored. Public constants,
+nested exception families, and framework or extension namespaces are reported
+with lower-confidence shared-namespace triage.
 
 Project analyzer output includes status, confidence, triage severity, and triage
 summary metadata. Default output includes only explicitly eligible, validated,

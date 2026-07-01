@@ -32,6 +32,10 @@ module MetzScan
         ["lib/test_data/billing_gateway_factory.rb", 10],
         ["lib/generators/billing/install_generator.rb", 11]
       ].freeze
+      NESTED_SUPPORT_REFERENCE_PATHS = [
+        ["app/services/spree/seeds/digital_delivery.rb", 22],
+        ["lib/spree/testing_support/factories/calculator_factory.rb", 23]
+      ].freeze
 
       private
 
@@ -45,6 +49,11 @@ module MetzScan
 
       def noisy_reference_index
         pressure_index(references: noisy_references)
+      end
+
+      def nested_support_reference_index
+        pressure_index(path: "/project/app/models/billing/gateway.rb",
+                       references: external_references + nested_support_references)
       end
 
       def top_level_namespace_index
@@ -72,6 +81,10 @@ module MetzScan
 
       def noisy_references
         NOISY_REFERENCE_PATHS.map { |path, line| reference(path, line) } + external_references
+      end
+
+      def nested_support_references
+        NESTED_SUPPORT_REFERENCE_PATHS.map { |path, line| reference(path, line) }
       end
 
       def reference(path, line)
@@ -162,6 +175,13 @@ module MetzScan
         assert_equal expected_referring_packages, finding.referring_packages
       end
 
+      def test_ignores_nested_setup_and_support_references
+        finding = PackageDependencyPressure.new(index: nested_support_reference_index).call.first
+
+        assert_equal 12, finding.referring_files.size
+        assert_equal expected_referring_packages, finding.referring_packages
+      end
+
       def test_ignores_declarations_in_setup_paths
         assert_empty PackageDependencyPressure.new(index: setup_declaration_index).call
       end
@@ -175,6 +195,8 @@ module MetzScan
         "Spree::Money" => "/project/lib/spree/money.rb",
         "Spree::Order" => "/project/app/models/spree/order.rb",
         "Spree::Product" => "/project/app/models/spree/product.rb",
+        "Spree::Store" => "/project/app/models/spree/store.rb",
+        "Spree::Taxon" => "/project/app/models/spree/taxon.rb",
         "Spree::User" => "/project/app/models/spree/user.rb",
         "Spree::Variant" => "/project/app/models/spree/variant.rb"
       }.freeze

@@ -28,6 +28,8 @@ module MetzScan
           "Spree::Money" => "spree/money.rb",
           "Spree::Order" => "spree/order.rb",
           "Spree::Product" => "spree/product.rb",
+          "Spree::Store" => "spree/store.rb",
+          "Spree::Taxon" => "spree/taxon.rb",
           "Spree::User" => "spree/user.rb",
           "Spree::Variant" => "spree/variant.rb"
         }.freeze
