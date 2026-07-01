@@ -21,16 +21,28 @@ module MetzScan
         end
 
         def header_section
-          ["# Project analyzer evidence", "", "Generated: #{summary.fetch('generated_at')}",
+          ["# Project analyzer evidence", "", *header_metadata_lines, "", *header_count_lines, ""]
+        end
+
+        def header_metadata_lines
+          ["Generated: #{summary.fetch('generated_at')}",
            "Default output filter: #{summary.fetch('default_output')}",
-           "Analyzer filter: #{analyzer_filter_label}",
-           "Fixture root: `#{summary.fetch('fixture_root')}`", "",
-           "Findings: #{summary.fetch('finding_count')}", "Offenses: #{summary.fetch('offense_count')}", ""]
+           "Analyzer filter: #{analyzer_filter_label}", *targets_file_lines,
+           "Fixture root: `#{summary.fetch('fixture_root')}`"]
+        end
+
+        def header_count_lines
+          ["Findings: #{summary.fetch('finding_count')}", "Offenses: #{summary.fetch('offense_count')}"]
         end
 
         def analyzer_filter_label
           analyzer_names = summary.fetch("analyzer_filter", [])
           analyzer_names.empty? ? "none" : analyzer_names.join(", ")
+        end
+
+        def targets_file_lines
+          targets_file = summary["targets_file"]
+          targets_file ? ["Targets file: `#{targets_file}`"] : []
         end
 
         def target_section

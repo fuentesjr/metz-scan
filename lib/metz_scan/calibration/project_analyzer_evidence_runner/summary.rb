@@ -18,7 +18,7 @@ module MetzScan
 
         def to_h
           target_runs = targets.map { |target| target_run_for(target).call }
-          SummaryPayload.new(target_runs, default_output, fixture_root, analyzer_names).to_h
+          SummaryPayload.new(summary_payload_options(target_runs)).to_h
         end
 
         private
@@ -33,6 +33,11 @@ module MetzScan
           options.slice(:target_set, :default_output, :index_builder, :finding_runner).merge(target: target)
         end
 
+        def summary_payload_options(target_runs)
+          { target_runs: target_runs, default_output: default_output, fixture_root: fixture_root,
+            analyzer_names: analyzer_names, targets_file: targets_file }
+        end
+
         def targets = options.fetch(:targets)
 
         def default_output = options.fetch(:default_output)
@@ -40,6 +45,8 @@ module MetzScan
         def fixture_root = options.fetch(:fixture_root)
 
         def analyzer_names = options.fetch(:analyzer_names)
+
+        def targets_file = options.fetch(:targets_file)
       end
 
       class TargetRun
@@ -111,11 +118,8 @@ module MetzScan
       end
 
       class SummaryPayload
-        def initialize(target_runs, default_output, fixture_root, analyzer_names)
-          @target_runs = target_runs
-          @default_output = default_output
-          @fixture_root = fixture_root
-          @analyzer_names = analyzer_names
+        def initialize(options)
+          @options = options
         end
 
         def to_h
@@ -124,11 +128,22 @@ module MetzScan
 
         private
 
-        attr_reader :target_runs, :default_output, :fixture_root, :analyzer_names
+        attr_reader :options
+
+        def target_runs = options.fetch(:target_runs)
+
+        def default_output = options.fetch(:default_output)
+
+        def fixture_root = options.fetch(:fixture_root)
+
+        def analyzer_names = options.fetch(:analyzer_names)
+
+        def targets_file = options.fetch(:targets_file)
 
         def identity_fields
           { "generated_at" => Time.now.utc.iso8601, "default_output" => default_output,
-            "fixture_root" => fixture_root, "analyzer_filter" => analyzer_names }
+            "fixture_root" => fixture_root, "analyzer_filter" => analyzer_names,
+            "targets_file" => targets_file }.compact
         end
 
         def target_fields

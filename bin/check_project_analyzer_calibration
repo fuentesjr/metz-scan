@@ -9,8 +9,8 @@ require "optparse"
 require "metz_scan/calibration/project_analyzer_evidence_runner"
 
 RUNNER = MetzScan::Calibration::ProjectAnalyzerEvidenceRunner
-USAGE = "Usage: check_project_analyzer_calibration [--json] [--text] [--default-output] [--output-dir DIR] " \
-        "[--run-id ID] [--analyzer COP_NAME] [--no-write] [PATH ...]"
+USAGE = "Usage: check_project_analyzer_calibration [--json] [--text] [--default-output] " \
+        "[--targets-file FILE] [--output-dir DIR] [--run-id ID] [--analyzer COP_NAME] [--no-write] [PATH ...]"
 
 def parse_options
   default_options.tap { |options| option_parser(options).parse! }
@@ -18,7 +18,7 @@ end
 
 def default_options
   { json: true, default_output: false, write: true, output_dir: RUNNER.default_results_path, run_id: nil,
-    analyzer_names: [] }
+    analyzer_names: [], targets_file: nil }
 end
 
 def option_parser(options)
@@ -50,9 +50,16 @@ end
 
 def add_artifact_options(parser, options)
   parser.on("--output-dir DIR", "Write artifacts under DIR") { |dir| options[:output_dir] = dir }
+  add_targets_file_option(parser, options)
   parser.on("--run-id ID", "Use ID as the artifact subdirectory name") { |id| options[:run_id] = id }
   parser.on("--no-write", "Do not write calibration artifacts") { options[:write] = false }
   parser.on("-h", "--help", "Show usage") { exit_with_help(parser) }
+end
+
+def add_targets_file_option(parser, options)
+  parser.on("--targets-file FILE", "Read calibration targets and scan paths from FILE") do |file|
+    options[:targets_file] = file
+  end
 end
 
 def exit_with_help(parser)
@@ -65,8 +72,8 @@ def render_text(summary)
 end
 
 def text_lines(summary)
-  [target_line(summary), analyzer_filter_line(summary), finding_line(summary), *rule_section(summary),
-   *breakdown_lines(summary), artifact_line(summary)].compact
+  [target_line(summary), targets_file_line(summary), analyzer_filter_line(summary), finding_line(summary),
+   *rule_section(summary), *breakdown_lines(summary), artifact_line(summary)].compact
 end
 
 def target_line(summary)
@@ -80,6 +87,11 @@ end
 def analyzer_filter_line(summary)
   analyzer_names = summary.fetch("analyzer_filter", [])
   "analyzers: #{analyzer_names.join(', ')}" unless analyzer_names.empty?
+end
+
+def targets_file_line(summary)
+  targets_file = summary["targets_file"]
+  "targets file: #{targets_file}" if targets_file
 end
 
 def rule_lines(summary)
@@ -130,7 +142,7 @@ end
 
 def summary_for(options)
   RUNNER.summarize(paths: ARGV, default_output: options.fetch(:default_output),
-                   analyzer_names: options.fetch(:analyzer_names))
+                   analyzer_names: options.fetch(:analyzer_names), targets_file: options[:targets_file])
 end
 
 def write_artifacts(summary, options)

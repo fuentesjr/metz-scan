@@ -18,8 +18,8 @@ module MetzScan
 
       def self.default_results_path = File.expand_path(DEFAULT_RESULTS_PATH)
 
-      def self.summarize(paths: nil, default_output: false, analyzer_names: nil)
-        targets = target_set(paths)
+      def self.summarize(paths: nil, default_output: false, analyzer_names: nil, targets_file: nil)
+        targets = target_set(paths, targets_file)
         targets.ensure_present!
         Summary.new(summary_options(targets, default_output, analyzer_names)).to_h
       end
@@ -28,8 +28,8 @@ module MetzScan
         ArtifactWriter.new(summary: summary, output_dir: output_dir, run_id: run_id).call
       end
 
-      def self.target_set(paths)
-        TargetSet.new(paths: paths, default_apps_path: default_apps_path)
+      def self.target_set(paths, targets_file)
+        TargetSet.new(paths: paths, default_apps_path: default_apps_path, targets_file: targets_file)
       end
 
       def self.summary_options(targets, default_output, analyzer_names)
@@ -42,7 +42,7 @@ module MetzScan
       def self.base_summary_options(targets, default_output, analyzer_names)
         { targets: targets.paths, target_set: targets,
           default_output: default_output, fixture_root: default_apps_path,
-          analyzer_names: analyzer_names }
+          analyzer_names: analyzer_names, targets_file: targets.targets_file }
       end
       private_class_method :target_set, :summary_options
       private_class_method :base_summary_options

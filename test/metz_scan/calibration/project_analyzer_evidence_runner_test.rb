@@ -3,6 +3,7 @@
 require "fileutils"
 require "minitest/autorun"
 require "tmpdir"
+require "yaml"
 
 require "metz_scan/calibration/project_analyzer_evidence_runner"
 
@@ -18,6 +19,7 @@ module MetzScan
 
       def report_line = line
     end
+    ManifestFixture = Struct.new(:cal_root, :root, :scan_paths, :manifest, keyword_init: true)
 
     EMPTY_TARGET = {
       "name" => "empty", "root" => "/tmp/project-analyzer-calibration/apps/empty",
@@ -99,7 +101,7 @@ module MetzScan
 
       def base_summary_options(target_set, dir, default_output)
         { targets: target_set.paths, target_set: target_set, default_output: default_output, fixture_root: dir,
-          analyzer_names: [] }
+          analyzer_names: [], targets_file: nil }
       end
 
       def collaborator_options(call_captures, findings)
@@ -230,6 +232,80 @@ module MetzScan
       def sample_app_path
         File.expand_path("../../fixtures/sample_app", __dir__)
       end
+    end
+
+    class ProjectAnalyzerEvidenceRunnerTargetManifestTest < Minitest::Test
+      include ProjectAnalyzerEvidenceRunnerHelpers
+
+      def test_summary_uses_target_manifest_scan_paths
+        with_tmpdir { |dir| assert_target_manifest_scan_paths(dir) }
+      end
+
+      def test_summary_rejects_missing_manifest_scan_path
+        with_tmpdir { |dir| assert_missing_manifest_scan_path_is_rejected(dir) }
+      end
+
+      private
+
+      def assert_target_manifest_scan_paths(dir)
+        fixture = arrange_manifest_fixture(dir)
+        call_captures = captures
+        summary = summarize_manifest_fixture(fixture, call_captures)
+        assert_manifest_summary(summary, fixture, call_captures)
+      end
+
+      def arrange_manifest_fixture(dir)
+        root = File.join(dir, "apps", "spree")
+        scan_paths = relative_manifest_scan_paths.map { |path| File.join(root, path) }
+        scan_paths.each { |path| FileUtils.mkdir_p(path) }
+        ManifestFixture.new(cal_root: File.join(dir, "apps"), root: root, scan_paths: scan_paths,
+                            manifest: write_targets_manifest(dir, root, relative_manifest_scan_paths))
+      end
+
+      def summarize_manifest_fixture(fixture, call_captures)
+        with_calibration_stubs(fixture.cal_root, call_captures, [REPEATED_BRANCHING_FINDING]) do
+          ProjectAnalyzerEvidenceRunner.summarize(targets_file: fixture.manifest)
+        end
+      end
+
+      def assert_manifest_summary(summary, fixture, call_captures)
+        assert_equal ["spree"], target_names(summary)
+        assert_equal File.expand_path(fixture.manifest), summary.fetch("targets_file")
+        assert_equal expanded_scan_paths(fixture), summary.fetch("targets").first.fetch("scan_paths")
+        assert_equal [expanded_scan_paths(fixture)], call_captures.fetch(:index_paths)
+      end
+
+      def target_names(summary)
+        summary.fetch("targets").map { |target| target.fetch("name") }
+      end
+
+      def assert_missing_manifest_scan_path_is_rejected(dir)
+        fixture = arrange_missing_manifest_fixture(dir)
+        error = assert_raises(ProjectAnalyzerEvidenceRunner::Error) { summarize_manifest(fixture) }
+        assert_match(/calibration scan path missing:/, error.message)
+      end
+
+      def arrange_missing_manifest_fixture(dir)
+        root = File.join(dir, "apps", "spree")
+        FileUtils.mkdir_p(root)
+        ManifestFixture.new(manifest: write_targets_manifest(dir, root, ["spree/core/app"]))
+      end
+
+      def summarize_manifest(fixture)
+        ProjectAnalyzerEvidenceRunner.summarize(targets_file: fixture.manifest)
+      end
+
+      def write_targets_manifest(dir, root, scan_paths)
+        File.join(dir, "targets.yml").tap do |manifest|
+          File.write(manifest, YAML.dump("targets" => [{ "root" => root, "scan_paths" => scan_paths }]))
+        end
+      end
+
+      def expanded_scan_paths(fixture)
+        fixture.scan_paths.map { |path| File.expand_path(path) }
+      end
+
+      def relative_manifest_scan_paths = %w[spree/core/app spree/core/lib]
     end
 
     class ProjectAnalyzerEvidenceRunnerCollaboratorTest < Minitest::Test

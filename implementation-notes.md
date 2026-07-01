@@ -845,3 +845,108 @@ Implementation decisions:
 - Text reports append a compact `mix:` hint when a rule has multiple severity
   or metadata-category values, making mixed DeepInheritanceTree output easier
   to interpret without filtering.
+
+## 2026-07-01: Calibration target manifests and DeepInheritanceTree policy pass
+
+Task: start on the next 2 big tasks and keep using agenticons, commit the
+changes, then provide a detailed comprehensive summary.
+
+Scope boundaries:
+
+- Use `tmp/project-analyzer-calibration/apps` as the active calibration fixture
+  home. Treat `/private/tmp` calibration paths as historical only.
+- Keep normal `metz-scan scan` behavior unchanged.
+- Keep analyzer statuses and default-output eligibility unchanged unless a
+  separate human-approved promotion/default-output step is requested.
+- Keep target override support calibration-only; do not create a general
+  product configuration system.
+- Use agenticon delegation shallowly and record each result.
+
+Change type: feature.
+
+Verbatim task statement: "Ok go ahead and start on the next 2 big tasks and
+keep using agenticons and at the end commit the changes. Then give me a detail
+and comprehensive summary in the same format as the last one"
+
+Plan:
+
+1. Use `planner: next two task selection` and
+   `helper_worker: analyzer backlog reconnaissance` to validate the next
+   implementation pair.
+2. Add a calibration-only target manifest option so nested or multi-root
+   fixtures such as the active Spree checkout can contribute evidence without
+   reintroducing broad root fallback.
+3. Run a focused `MetzProject/DeepInheritanceTree` calibration pass with the
+   new manifest support and decide whether framework-style broad roots need
+   additional filtering, downranking, or documentation only.
+4. Update docs/notes with the manifest contract and DeepInheritanceTree
+   decision, then run focused tests, calibration smoke checks, local gates,
+   strategic validation, required reviews, and commit the finished slice.
+
+Verification status:
+
+- `planner: next two task selection` recommended adding calibration target-set
+  override support first, then using it for a focused DeepInheritanceTree
+  broad-root policy pass. It explicitly deferred analyzer promotion,
+  default-output changes, Sorbet, and more RepeatedBranching implementation.
+- `helper_worker: analyzer backlog reconnaissance` ranked
+  `PackageDependencyPressure` broad-surface classification first and
+  DeepInheritanceTree policy second. I chose the target-manifest slice first
+  because it directly follows the previous no-root-fallback change and unlocks
+  better evidence for both DeepInheritanceTree and future pressure-analyzer
+  runs.
+- Red run: `bundle exec ruby -Ilib -Itest
+  test/metz_scan/calibration/project_analyzer_evidence_runner_test.rb` failed
+  with `unknown keyword: :targets_file`, proving the missing manifest support.
+- Green focused runner test passed after implementation: 11 runs, 46
+  assertions, 0 failures, 0 errors.
+- Focused RuboCop over the touched runner/bin/test files passed: 6 files
+  inspected, no offenses.
+- `bundle exec ruby bin/check_project_analyzer_calibration --help` passed and
+  showed `--targets-file FILE`.
+- `bundle exec ruby bin/check_project_analyzer_calibration --text --no-write
+  --targets-file tmp/project-analyzer-calibration/deep_inheritance_targets.yml
+  --analyzer MetzProject/DeepInheritanceTree` passed over 8 active targets:
+  209 findings, 209 offenses, confidence breakdown `low=160`, `medium=49`,
+  severity breakdown `broad base=160`, `manual review=49`.
+- The same manifest-backed DeepInheritanceTree run wrote scratch artifacts to
+  `tmp/project-analyzer-calibration/results/20260701-deep-inheritance-manifest`;
+  `summary.json` and `summary.md` both recorded the absolute `targets_file`
+  path.
+- Full gates passed:
+  - `bundle exec rake`: 388 runs, 1611 assertions, 0 failures, 0 errors,
+    2 skips.
+  - `bundle exec rubocop`: 166 files inspected, no offenses.
+  - `bin/check_dependency_direction`: passed.
+  - `bin/check_sample_app_frozen`: passed.
+  - `bin/check_dogfood`: passed with accepted project-analyzer baseline of
+    0 findings.
+  - `git diff --check`: passed.
+- Strategic validation after the final doc sentence passed: slice tests,
+  red/green, lint, and task-comment gates passed; warnings 0; review required.
+- Initial `reviewer: strategic design validation` verdict was clean with no
+  findings.
+- `doc_reviewer: calibration manifest docs` found no documentation drift. It
+  noted one discoverability risk: docs did not explicitly say `--targets-file`
+  cannot be mixed with positional `PATH` arguments. I addressed that in
+  `docs/project-analyzer-calibration.md`.
+- Follow-up `reviewer: strategic design validation` after the doc-risk fix was
+  clean with no findings.
+
+Implementation decisions:
+
+- `--targets-file FILE` is calibration-only. Normal `metz-scan scan` behavior
+  and default project-analyzer target discovery are unchanged.
+- A target manifest lists checkout roots and explicit `scan_paths`; roots are
+  resolved from the current working directory, scan paths are resolved relative
+  to each root, and missing scan paths fail the run.
+- `--targets-file` cannot be combined with positional `PATH` arguments. Each
+  calibration run has one target source.
+- Text, JSON, and Markdown calibration summaries now include the resolved
+  `targets_file` path when a manifest is used.
+- The DeepInheritanceTree manifest pass included nested Spree engine paths and
+  found useful additional evidence, but no recurring missed framework-root
+  category. Existing broad roots are already low-confidence `broad base`
+  findings, and the remaining medium-confidence roots are diverse application
+  or domain extension families. Keep DeepInheritanceTree validated opt-in and
+  do not add a new filter or downranking rule from this pass.

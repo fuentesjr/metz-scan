@@ -1,6 +1,6 @@
 # Project analyzer calibration
 
-Last updated: 2026-06-30.
+Last updated: 2026-07-01.
 
 This note records real-world calibration passes for the opt-in analyzers behind
 `metz-scan scan --project-analyzers`. The goal was to decide whether
@@ -39,6 +39,7 @@ Use the repeatable evidence runner for new calibration slices:
 ```bash
 bin/check_project_analyzer_calibration --text
 bin/check_project_analyzer_calibration --text --analyzer MetzProject/RepeatedBranching
+bin/check_project_analyzer_calibration --text --targets-file tmp/project-analyzer-calibration/deep_inheritance_targets.yml
 ```
 
 With no paths, the runner discovers target checkouts under
@@ -50,8 +51,23 @@ known analyzer-specific metadata categories such as `decision_subject_kind`,
 Discovered targets without top-level `app/` or `lib/` are recorded with
 no-scan metadata instead of falling back to a whole-root scan. Pass explicit
 paths for intentional one-off scans, `--analyzer` one or more times for a
-focused rule sample, or `--no-write` for a dry local summary. The runner writes
-`summary.json` plus `summary.md` under
+focused rule sample, or `--no-write` for a dry local summary. Use
+`--targets-file` for approved nested or multi-root fixtures that should not be
+scanned from the checkout root. Target-file roots are resolved relative to the
+current working directory; each `scan_paths` entry is resolved relative to its
+target root, and missing scan paths fail the run. Do not combine
+`--targets-file` with positional `PATH` arguments; use one target source per
+run.
+
+```yaml
+targets:
+  - root: tmp/project-analyzer-calibration/apps/spree
+    scan_paths:
+      - spree/core/app
+      - spree/core/lib
+```
+
+The runner writes `summary.json` plus `summary.md` under
 `tmp/project-analyzer-calibration/results/<run-id>/`.
 
 Initial targets:
@@ -958,3 +974,59 @@ Validation decision:
   reviewer intent.
 - Keep expanded root-kind labels in metadata so downstream consumers can group
   or filter broad bases without parsing message text.
+
+Target-manifest follow-up on 2026-07-01: the repeatable calibration runner now
+supports a calibration-only `--targets-file` option for nested or multi-root
+fixtures. The focused `MetzProject/DeepInheritanceTree` pass used the active
+repo-local targets plus nested Spree engine paths under
+`tmp/project-analyzer-calibration/apps/spree`.
+
+```bash
+bundle exec ruby bin/check_project_analyzer_calibration --text \
+  --targets-file tmp/project-analyzer-calibration/deep_inheritance_targets.yml \
+  --analyzer MetzProject/DeepInheritanceTree
+```
+
+| Project | Findings | Medium manual-review findings | Low broad-base findings |
+| --- | ---: | ---: | ---: |
+| `chatwoot/chatwoot` | 32 | 2 | 30 |
+| `decidim/decidim` | 0 | 0 | 0 |
+| `discourse/discourse` | 47 | 13 | 34 |
+| `forem/forem` | 26 | 3 | 23 |
+| `mastodon/mastodon` | 40 | 6 | 34 |
+| `openfoodfoundation/openfoodnetwork` | 29 | 10 | 19 |
+| `solidusio/solidus` | 0 | 0 | 0 |
+| `spree/spree` nested engines | 35 | 15 | 20 |
+| **Total** | **209** | **49** | **160** |
+
+Aggregate root-kind breakdown for low-confidence broad roots:
+
+| Root kind | Findings |
+| --- | ---: |
+| `abstract base` | 38 |
+| `application job base` | 7 |
+| `application service base` | 8 |
+| `cli base` | 1 |
+| `controller base` | 50 |
+| `exception base` | 17 |
+| `framework root` | 1 |
+| `policy base` | 3 |
+| `rails application base` | 15 |
+| `serializer base` | 17 |
+| `worker base` | 3 |
+
+Policy decision:
+
+- Do not add another DeepInheritanceTree filter or downranking rule from this
+  pass. Existing broad-root categories are already low-confidence `broad base`
+  findings, and the remaining medium-confidence findings are diverse
+  application or domain extension families rather than one recurring obvious
+  framework bucket.
+- Keep DeepInheritanceTree **Validated opt-in** and not default-output
+  eligible. The Spree nested-engine sample adds useful evidence, but it also
+  confirms that manual reviewer intent is still necessary for interpreting
+  domain inheritance families such as `Spree::Calculator`,
+  `Spree::PaymentMethod`, `Reporting::ReportTemplate`, and
+  `ActivityPub::Activity`.
+- Revisit filtering only if a future manifest-backed run shows a recurring
+  non-actionable root family across multiple targets.
