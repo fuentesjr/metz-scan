@@ -7,6 +7,7 @@ require_relative "../../analyzers/service_soup"
 require_relative "../../analyzers/inheritance_descendants"
 require_relative "../../analyzers/package_dependency_pressure"
 require_relative "../../analyzers/namespace_leak_pressure"
+require_relative "../../analyzers/implicit_context_pressure"
 require_relative "../../project_index"
 require_relative "project_analyzer_metadata"
 require_relative "project_analyzer_offenses"
@@ -22,7 +23,8 @@ module MetzScan
           Analyzers::ServiceSoup,
           Analyzers::InheritanceDescendants,
           Analyzers::PackageDependencyPressure,
-          Analyzers::NamespaceLeakPressure
+          Analyzers::NamespaceLeakPressure,
+          Analyzers::ImplicitContextPressure
         ].freeze
         INDEX_BACKED_ANALYZERS = [
           Analyzers::InheritanceDescendants,

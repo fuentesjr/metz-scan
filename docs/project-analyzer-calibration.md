@@ -10,7 +10,8 @@ output. `MetzProject/PackageDependencyPressure` was added later and now has a
 candidate opt-in calibration pass after shared-dependency downranking.
 `MetzProject/NamespaceLeakPressure` was added later as an uncalibrated
 candidate and should remain opt-in until real-project samples confirm sparse,
-useful namespace-boundary findings.
+useful namespace-boundary findings. `MetzProject/ImplicitContextPressure` was
+added later as a candidate opt-in analyzer for repeated ambient context access.
 
 ## Method
 
@@ -39,7 +40,7 @@ Use the repeatable evidence runner for new calibration slices:
 ```bash
 bin/check_project_analyzer_calibration --text
 bin/check_project_analyzer_calibration --text --analyzer MetzProject/RepeatedBranching
-bin/check_project_analyzer_calibration --text --targets-file tmp/project-analyzer-calibration/deep_inheritance_targets.yml
+bin/check_project_analyzer_calibration --text --targets-file tmp/project-analyzer-calibration/project_analyzer_targets.yml
 ```
 
 With no paths, the runner discovers target checkouts under
@@ -47,7 +48,8 @@ With no paths, the runner discovers target checkouts under
 directories when present, records checkout revisions, index metadata, finding
 counts, triage summaries, and breakdowns by rule, confidence, severity, and
 known analyzer-specific metadata categories such as `decision_subject_kind`,
-`dependency_pressure_category`, `namespace_leak_category`, and `root_kind`.
+`dependency_pressure_category`, `namespace_leak_category`,
+`implicit_context_category`, and `root_kind`.
 Discovered targets without top-level `app/` or `lib/` are recorded with
 no-scan metadata instead of falling back to a whole-root scan. Pass explicit
 paths for intentional one-off scans, `--analyzer` one or more times for a
@@ -68,7 +70,10 @@ targets:
 ```
 
 The runner writes `summary.json` plus `summary.md` under
-`tmp/project-analyzer-calibration/results/<run-id>/`.
+`tmp/project-analyzer-calibration/results/<run-id>/`. Text, JSON, and Markdown
+summaries include a limited, priority-sorted `notable_findings` list for
+medium-confidence findings so calibration artifacts preserve the named manual
+review prompts instead of only aggregate counts.
 
 Initial targets:
 
@@ -167,6 +172,12 @@ Readiness by analyzer:
   OpenFoodNetwork. Only five remained medium-confidence namespace-boundary
   findings (Chatwoot 1, Discourse 3, OpenFoodNetwork 1); the other 24 were
   low-confidence shared-namespace findings.
+- `MetzProject/ImplicitContextPressure` is candidate for opt-in
+  project-analyzer output. The first slice is AST-only and reports repeated
+  `Current.*` ambient context access across at least three files and two coarse
+  packages. It is not default-output eligible and should not move toward
+  validated status until broader calibration shows the signal is sparse outside
+  the initial Chatwoot evidence.
 
 Reporting-language follow-up on 2026-06-24: text output now labels each
 project-analyzer summary with status, confidence, and severity, and the summary
@@ -622,6 +633,41 @@ StoreCredit finding is plausible, but two of the three medium findings are in
 the Spree/OpenFoodNetwork commerce family, so the evidence is still too narrow
 for validated status.
 
+## `MetzProject/ImplicitContextPressure`
+
+Result: **Candidate**, behind `--project-analyzers`.
+
+This analyzer reports repeated reliance on Rails `CurrentAttributes`-style
+ambient context. The first slice deliberately stays narrow: it detects
+`Current.<attribute>` reads and writes, ignores lifecycle methods such as
+`Current.reset` and `Current.set(...)`, requires at least three files across at
+least two coarse packages, and emits one primary offense per ambient context.
+The full reference list remains in project-analyzer metadata.
+
+First active-fixture manifest pass on 2026-07-01 used the generic target
+manifest:
+
+```bash
+bundle exec ruby bin/check_project_analyzer_calibration --text --no-write \
+  --targets-file tmp/project-analyzer-calibration/project_analyzer_targets.yml \
+  --analyzer MetzProject/ImplicitContextPressure
+```
+
+The run produced 5 findings and 5 offenses, all in `chatwoot/chatwoot`:
+
+| Ambient context | Files | Packages |
+| --- | ---: | ---: |
+| `Current.account` | 77 | 8 |
+| `Current.account_user` | 6 | 2 |
+| `Current.contact` | 4 | 3 |
+| `Current.executed_by` | 8 | 3 |
+| `Current.user` | 29 | 8 |
+
+Decision: keep ImplicitContextPressure **Candidate** and opt-in. The Chatwoot
+evidence is strong enough to justify an exploratory analyzer, but it is
+concentrated in one target and needs broader calibration before validated
+status or default-output eligibility.
+
 ## `MetzProject/RepeatedBranching`
 
 Result: **Validated**. Medium-confidence design-pressure findings are
@@ -1041,7 +1087,7 @@ repo-local targets plus nested Spree engine paths under
 
 ```bash
 bundle exec ruby bin/check_project_analyzer_calibration --text \
-  --targets-file tmp/project-analyzer-calibration/deep_inheritance_targets.yml \
+  --targets-file tmp/project-analyzer-calibration/project_analyzer_targets.yml \
   --analyzer MetzProject/DeepInheritanceTree
 ```
 

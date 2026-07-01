@@ -99,7 +99,8 @@ module MetzScan
 
         def result_metadata
           { "project_analyzers" => project_analyzer_summary, "finding_count" => findings.size,
-            "offense_count" => offenses.size, "breakdowns" => breakdowns }
+            "offense_count" => offenses.size, "breakdowns" => breakdowns,
+            "notable_findings" => notable_findings }
         end
 
         def project_findings
@@ -114,6 +115,10 @@ module MetzScan
 
         def breakdowns
           Commands::Scan::ProjectAnalyzerBreakdown.new(findings).to_h
+        end
+
+        def notable_findings
+          NotableFindings.new(findings, target_name: File.basename(target)).to_a
         end
       end
 
@@ -152,12 +157,15 @@ module MetzScan
 
         def project_fields
           { "project_analyzers" => project_analyzer_summary, "finding_count" => findings.size,
-            "offense_count" => offenses.size, "breakdowns" => breakdowns }
+            "offense_count" => offenses.size, "breakdowns" => breakdowns,
+            "notable_findings" => notable_findings }
         end
 
         def findings = target_runs.flat_map(&:findings)
 
         def offenses = target_runs.flat_map(&:offenses)
+
+        def notable_findings = target_runs.flat_map { |target_run| target_run.metadata.fetch("notable_findings") }
 
         def project_analyzer_summary
           Commands::Scan::ProjectAnalyzerMetadata.summary(findings, offenses)
@@ -165,6 +173,86 @@ module MetzScan
 
         def breakdowns
           Commands::Scan::ProjectAnalyzerBreakdown.new(findings).to_h
+        end
+      end
+
+      class NotableFindings
+        INCLUDED_CONFIDENCES = %w[high medium].freeze
+        LIMIT = 20
+        private_constant :INCLUDED_CONFIDENCES, :LIMIT
+
+        def initialize(findings, target_name:)
+          @findings = findings
+          @target_name = target_name
+        end
+
+        def to_a
+          findings.select { |finding| notable?(finding) }
+                  .sort_by { |finding| sort_key(finding) }
+                  .first(LIMIT)
+                  .map { |finding| finding_metadata(finding) }
+        end
+
+        private
+
+        attr_reader :findings, :target_name
+
+        def notable?(finding)
+          INCLUDED_CONFIDENCES.include?(triage_metadata(finding)["confidence"])
+        end
+
+        def sort_key(finding)
+          Commands::Scan::ProjectAnalyzerTriagePriority.sort_key(triage_metadata(finding)) +
+            [finding.rule_id.to_s, finding.message.to_s]
+        end
+
+        def finding_metadata(finding)
+          triage_metadata(finding).merge(identity_metadata(finding), detail_metadata(finding)).compact
+        end
+
+        def identity_metadata(finding)
+          { "target" => target_name, "rule_id" => finding.rule_id, "message" => finding.message }
+        end
+
+        def detail_metadata(finding)
+          { "category" => category_for(finding), "metadata" => analyzer_metadata(finding),
+            "occurrence" => occurrence_metadata(finding) }
+        end
+
+        def triage_metadata(finding)
+          Commands::Scan::ProjectAnalyzerMetadata.triage_metadata(finding)
+        end
+
+        def analyzer_metadata(finding)
+          Commands::Scan::ProjectAnalyzerMetadata.analyzer_metadata(finding)
+        end
+
+        def category_for(finding)
+          metadata = analyzer_metadata(finding)
+          category_metadata_keys.filter_map { |key| metadata[key] }.first
+        end
+
+        def category_metadata_keys
+          Commands::Scan::ProjectAnalyzerMetadata.category_metadata_keys
+        end
+
+        def occurrence_metadata(finding)
+          occurrence = Array(finding.report_occurrences).compact.first
+          return unless occurrence
+
+          { "path" => occurrence.path, "line" => occurrence_line(occurrence),
+            "context" => occurrence_context(occurrence) }.compact
+        end
+
+        def occurrence_line(occurrence)
+          return occurrence.report_line if occurrence.respond_to?(:report_line)
+          return occurrence.line if occurrence.respond_to?(:line)
+
+          nil
+        end
+
+        def occurrence_context(occurrence)
+          occurrence.context if occurrence.respond_to?(:context)
         end
       end
 

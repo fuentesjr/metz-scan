@@ -1,12 +1,12 @@
 # Sandi Metz project-analyzer candidates
 
-Last updated: 2026-06-27.
+Last updated: 2026-07-01.
 
 This note records a read-only research pass for project-level analyzer ideas
 grounded in Sandi Metz's OOP teaching. It excludes analyzers already
 implemented or already under active consideration: `ServiceSoup`,
 `RepeatedBranching`, `DeepInheritanceTree`, `PackageDependencyPressure`,
-`NamespaceLeakPressure`, `DeadCodeCandidates`, and broad
+`NamespaceLeakPressure`, `ImplicitContextPressure`, `DeadCodeCandidates`, and broad
 unstable-abstraction/concern heuristics.
 
 ## Implemented from this list
@@ -18,30 +18,17 @@ deeply nested declarations whose references spread outside the home namespace
 into multiple coarse packages. It remains behind `--project-analyzers` until
 real-project calibration proves the signal is sparse and reviewable.
 
+### `ImplicitContextPressure`
+
+Implemented as `MetzProject/ImplicitContextPressure` candidate output. The
+first slice is AST-only and detects repeated Rails `CurrentAttributes`-style
+access, such as `Current.account`, across multiple files and coarse packages.
+It remains behind `--project-analyzers`; `Thread.current`, class variables,
+singleton-style global access, and broader calibration are future scope.
+
 ## Candidate shortlist
 
-### 1. `ImplicitContextPressure`
-
-- Teaching fit: dependency isolation plus message-passing: systems are easier
-  to reason about when dependencies are explicit rather than ambient.
-- Source grounding:
-  - InformIT chapter on Managing Dependencies:
-    https://www.informit.com/articles/article.aspx?p=1946176&seqNum=2
-  - Ruby Rogues POODR interview:
-    https://topenddevs.com/podcasts/ruby-rogues/episodes/087-rr-book-club-practical-object-oriented-design-in-ruby-with-sandi-metz
-- Signal: repeated reliance on shared ambient context or mutable process/request
-  state across multiple files or layers, such as `Current`, `Thread.current`,
-  class variables, or singleton-style global access.
-- Required data: AST-level collection across files. A first slice does not need
-  the project index.
-- Likely false positives: legitimate Rails `CurrentAttributes`, request-scoped
-  context, cache/configuration glue, instrumentation.
-- Project-level: yes.
-- Smallest viable fixture: a controller writes `Current.account`, and a job and
-  service read `Current.account`.
-- Feasibility: medium-high.
-
-### 2. `SubclassOverridePressure`
+### 1. `SubclassOverridePressure`
 
 - Teaching fit: Sandi's public OOP material favors composition when broad
   inheritance starts hiding coupling.
@@ -62,7 +49,7 @@ real-project calibration proves the signal is sparse and reviewable.
   the same `perform` or `build_client` hook.
 - Feasibility: medium-low.
 
-### 3. `RepeatedQueryCriteria`
+### 2. `RepeatedQueryCriteria`
 
 - Teaching fit: this is an inference from tell-don't-ask and dependency
   isolation: repeated queries suggest callers know too much about retrieval
@@ -87,7 +74,8 @@ real-project calibration proves the signal is sparse and reviewable.
 ## Exclusions
 
 - `ServiceSoup`, `RepeatedBranching`, `DeepInheritanceTree`,
-  `PackageDependencyPressure`, and `NamespaceLeakPressure` are already
+  `PackageDependencyPressure`, `NamespaceLeakPressure`, and
+  `ImplicitContextPressure` are already
   implemented or actively in scope.
 - Callback-workflow analyzers are adjacent to existing design notes and were
   not treated as newly discovered candidates.

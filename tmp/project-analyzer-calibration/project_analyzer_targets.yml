@@ -1,0 +1,38 @@
+targets:
+  - root: tmp/project-analyzer-calibration/apps/chatwoot
+    scan_paths:
+      - app
+      - lib
+  - root: tmp/project-analyzer-calibration/apps/decidim
+    scan_paths:
+      - lib
+  - root: tmp/project-analyzer-calibration/apps/discourse
+    scan_paths:
+      - app
+      - lib
+  - root: tmp/project-analyzer-calibration/apps/forem
+    scan_paths:
+      - app
+      - lib
+  - root: tmp/project-analyzer-calibration/apps/mastodon
+    scan_paths:
+      - app
+      - lib
+  - root: tmp/project-analyzer-calibration/apps/openfoodnetwork
+    scan_paths:
+      - app
+      - lib
+  - root: tmp/project-analyzer-calibration/apps/solidus
+    scan_paths:
+      - lib
+  - root: tmp/project-analyzer-calibration/apps/spree
+    scan_paths:
+      - spree/admin/app
+      - spree/admin/lib
+      - spree/api/app
+      - spree/api/lib
+      - spree/core/app
+      - spree/core/lib
+      - spree/emails/app
+      - spree/emails/lib
+      - spree/lib

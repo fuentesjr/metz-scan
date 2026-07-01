@@ -1083,3 +1083,158 @@ Implementation decisions:
   has only one medium package-boundary finding in the active manifest-backed
   sample, and NamespaceLeakPressure has three medium findings but two are in
   the Spree/OpenFoodNetwork commerce family.
+
+## 2026-07-01: Notable calibration findings and implicit context candidate
+
+Task: start on the next 2 big tasks and keep using agenticons, commit the
+changes, then provide a detailed comprehensive summary as described in
+AGENTS.md.
+
+Scope boundaries:
+
+- Use `tmp/project-analyzer-calibration/apps` as the active calibration fixture
+  home. Treat `/private/tmp` calibration paths as historical only.
+- Keep analyzer promotion and default-output policy unchanged.
+- Keep the new analyzer candidate opt-in; do not make it default-output
+  eligible.
+- Prefer evidence-artifact improvements and a narrow AST-only analyzer slice
+  over downranking the remaining pressure-analyzer medium findings without new
+  evidence.
+- Use agenticon delegation shallowly and record each result.
+
+Change type: feature.
+
+Verbatim task statement: "Ok go ahead and start on the next 2 big tasks and
+keep using agenticons and at the end commit the changes. Then give me a detail
+and comprehensive summary as described in AGENTS.md"
+
+Plan:
+
+1. Use `planner: next two task selection` and
+   `helper_worker: backlog reconnaissance` to validate the next implementation
+   pair.
+2. Add limited, priority-sorted notable findings to calibration JSON, Markdown,
+   and compact text output so sparse medium-confidence findings are named in
+   artifacts instead of only counted.
+3. Add a generic calibration target manifest path for future manifest-backed
+   runs.
+4. Implement the first narrow `MetzProject/ImplicitContextPressure` candidate:
+   repeated `Current.<attribute>` access across at least three files and two
+   coarse packages, excluding lifecycle calls such as `Current.reset` and
+   `Current.set(...)`.
+5. Update docs/notes, run focused tests, manifest-backed calibration smokes,
+   full gates, strategic validation, required reviews, and commit.
+
+Verification status:
+
+- `planner: next two task selection` recommended upgrading calibration evidence
+  artifacts with named notable findings and a generic manifest path, then
+  implementing a first candidate slice of `MetzProject/ImplicitContextPressure`.
+  It explicitly deferred analyzer promotion/default-output changes,
+  DeepInheritanceTree filtering, and more pressure downranking without new
+  evidence.
+- `helper_worker: backlog reconnaissance` ranked follow-up evidence work on
+  the remaining NamespaceLeakPressure and PackageDependencyPressure medium
+  findings above new-analyzer work. I used that as a constraint: the remaining
+  pressure findings stay medium/manual-review, and this slice improves evidence
+  visibility rather than changing their classification.
+- Red run: `bundle exec ruby -Ilib -Itest
+  test/metz_scan/calibration/project_analyzer_evidence_runner_test.rb` failed
+  because `notable_findings` was missing from summaries and Markdown output.
+- Red run: `bundle exec ruby -Ilib -Itest
+  test/metz_scan/analyzers/implicit_context_pressure_test.rb` failed with
+  `LoadError` because the analyzer did not exist yet.
+- Red run: `bundle exec ruby -Ilib -Itest
+  test/metz_scan/commands/project_analyzers_test.rb` failed because
+  `MetzProject/ImplicitContextPressure` was not registered.
+- Red run: `bundle exec ruby -Ilib -Itest
+  test/metz_scan/commands/scan_project_analyzer_runner_test.rb` failed because
+  `MetzScan::Analyzers::ImplicitContextPressure` was not defined.
+- Green focused tests after implementation:
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/calibration/project_analyzer_evidence_runner_test.rb`: 13
+    runs, 59 assertions, 0 failures, 0 errors.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/analyzers/implicit_context_pressure_test.rb`: 7 runs,
+    25 assertions, 0 failures, 0 errors.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/commands/project_analyzers_test.rb`: 3 runs,
+    17 assertions, 0 failures, 0 errors.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/commands/scan_project_analyzer_runner_test.rb`: 12 runs,
+    34 assertions, 0 failures, 0 errors.
+- Manifest-backed notable-finding smoke for
+  `MetzProject/PackageDependencyPressure` passed with 39 findings and 39
+  offenses: `low=38`, `medium=1`; compact text now names
+  `OpenFoodNetwork::ScopeVariantToHub` as the notable medium
+  `package_boundary` finding.
+- Manifest-backed notable-finding smoke for
+  `MetzProject/NamespaceLeakPressure` passed with 34 findings and 34 offenses:
+  `low=31`, `medium=3`; compact text now names
+  `Badge::Trigger::PostRevision`, `Spree::Gateway::StripeSCA`, and
+  `Spree::PaymentMethod::StoreCredit`.
+- First manifest-backed `MetzProject/ImplicitContextPressure` calibration pass
+  over the active fixtures passed with 5 findings and 5 offenses, all in
+  Chatwoot: `Current.account` (77 files, 8 packages),
+  `Current.account_user` (6 files, 2 packages), `Current.contact` (4 files,
+  3 packages), `Current.executed_by` (8 files, 3 packages), and `Current.user`
+  (29 files, 8 packages).
+- Focused RuboCop over touched Ruby/bin/test files passed: 10 files inspected,
+  no offenses.
+- Initial `reviewer: strategic design validation` returned one blocker:
+  duplicated analyzer metadata category schema in notable findings and
+  `ProjectAnalyzerBreakdown`. I fixed it by moving the category key list into
+  `ProjectAnalyzerMetadata.category_metadata_keys` and making both reporting
+  paths use that single source.
+- Focused blocker-fix verification passed:
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/calibration/project_analyzer_evidence_runner_test.rb`: 13
+    runs, 61 assertions, 0 failures, 0 errors.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/commands/scan_project_analyzer_priority_test.rb
+    test/metz_scan/commands/scan_project_analyzer_triage_test.rb
+    test/metz_scan/commands/scan_text_renderer_project_analyzer_test.rb`: 8
+    runs, 14 assertions, 0 failures, 0 errors.
+  - Focused RuboCop over the shared metadata helper, breakdown helper, summary,
+    and calibration test passed: 4 files inspected, no offenses.
+- Full local gates passed:
+  - `bundle exec rake` after the blocker fix: 399 runs, 1668 assertions,
+    0 failures, 0 errors, 2 skips.
+  - `bundle exec rubocop`: 168 files inspected, no offenses.
+  - `bin/check_dependency_direction`: passed.
+  - `bin/check_sample_app_frozen`: passed.
+  - `bin/check_dogfood`: passed with accepted project-analyzer baseline of
+    0 findings.
+  - `git diff --check`: passed.
+- Strategic validation passed after the blocker fix for change type `feature`:
+  slice tests, red/green proof, lint, and task-comment gates passed; warnings
+  0; review required by diff size and new public analyzer surface.
+- Follow-up `reviewer: strategic design validation` after the blocker fix was
+  clean with no findings.
+- `doc_reviewer: documentation drift` did not complete after repeated waits,
+  so I closed it and performed the final doc sanity check locally. README,
+  calibration docs, candidate backlog notes, and implementation notes cover
+  the new candidate analyzer, generic manifest path, notable findings, and
+  default-output status accurately.
+
+Implementation decisions:
+
+- Calibration summaries now include `notable_findings` at both aggregate and
+  per-target levels. The list is limited to high/medium-confidence findings,
+  triage-priority sorted, capped, and includes target, rule, message,
+  confidence, severity, category, analyzer metadata, and first report location.
+- Compact text and Markdown artifact rendering include a Notable Findings
+  section when notable findings exist.
+- `implicit_context_category` is a known project-analyzer breakdown metadata
+  key.
+- `ImplicitContextPressure` is AST-only and uses `RubyFileEnumerator`, so it
+  works with explicit paths or indexed files without requiring Rubydex.
+- The analyzer reports one primary offense per ambient context while keeping
+  the full reference list in metadata. This avoided the first calibration
+  shape of 5 Chatwoot findings expanding into hundreds of offenses.
+- The first slice only detects `Current.<attribute>` reads/writes. It ignores
+  Rails CurrentAttributes lifecycle calls such as `reset`, `set`, `attributes`,
+  and reset callbacks. `Thread.current`, class variables, singleton-style
+  globals, and broader false-positive calibration are deferred.
+- Keep `ImplicitContextPressure` candidate opt-in. The initial evidence is
+  useful but concentrated entirely in Chatwoot.

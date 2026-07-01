@@ -42,13 +42,25 @@ module MetzScan
       suggested_next_moves: ["Consolidate repeated logic."]
     )
     PACKAGE_DEPENDENCY_FINDING = FindingFixture.new(
-      rule_id: "MetzProject/PackageDependencyPressure", message: "Detected candidate pattern.",
+      rule_id: "MetzProject/PackageDependencyPressure", message: "Detected shared dependency pattern.",
       report_occurrences: [OccurrenceFixture.new(path: "app/services/order_sync.rb", line: 15, context: "OrderSync")],
       project_analyzer_status: "candidate", confidence: "low", triage_severity: "shared dependency",
       triage_summary: "shared dependency candidate",
       project_analyzer_metadata: { "dependency_pressure_category" => "shared_dependency" },
       why_it_matters: "Broad shared dependencies can reveal global APIs.",
       suggested_next_moves: ["Review broad API callers."]
+    )
+    PACKAGE_BOUNDARY_FINDING = FindingFixture.new(
+      rule_id: "MetzProject/PackageDependencyPressure",
+      message: "OpenFoodNetwork::ScopeVariantToHub is referenced across packages.",
+      report_occurrences: [OccurrenceFixture.new(path: "app/services/scope_variant_to_hub.rb",
+                                                 line: 21, context: "OpenFoodNetwork::ScopeVariantToHub")],
+      project_analyzer_status: "candidate", confidence: "medium", triage_severity: "manual review",
+      triage_summary: "manual package-boundary review candidate",
+      project_analyzer_metadata: { "dependency_pressure_category" => "package_boundary",
+                                   "declaration" => "OpenFoodNetwork::ScopeVariantToHub" },
+      why_it_matters: "Package pressure can reveal an adapter that knows too many callers.",
+      suggested_next_moves: ["Review package boundaries."]
     )
 
     module ProjectAnalyzerEvidenceRunnerHelpers
@@ -423,6 +435,73 @@ module MetzScan
 
       def assert_breakdown(expected, actual)
         assert_equal expected.map { |value, count| { "value" => value, "finding_count" => count } }, actual
+      end
+    end
+
+    class ProjectAnalyzerEvidenceRunnerNotableFindingsTest < Minitest::Test
+      include ProjectAnalyzerEvidenceRunnerHelpers
+
+      def test_summary_records_priority_notable_findings
+        with_tmpdir { |dir| assert_summary_notable_findings(dir) }
+      end
+
+      def test_markdown_renders_notable_findings_section
+        with_tmpdir { |dir| assert_markdown_notable_findings(dir) }
+      end
+
+      private
+
+      def assert_summary_notable_findings(dir)
+        FileUtils.mkdir_p(dir)
+        findings = [PACKAGE_DEPENDENCY_FINDING, PACKAGE_BOUNDARY_FINDING, REPEATED_BRANCHING_FINDING]
+        with_calibration_stubs(dir, captures, findings) do
+          ProjectAnalyzerEvidenceRunner.summarize(paths: [dir]).then { |summary| assert_notable_summary(summary) }
+        end
+      end
+
+      def assert_notable_summary(summary)
+        notable_findings = summary.fetch("notable_findings")
+
+        assert_notable_count(summary, notable_findings)
+        assert_notable_rule_order(notable_findings)
+        assert_notable_package_boundary(notable_findings.last)
+        refute_low_confidence_notable(notable_findings)
+      end
+
+      def assert_notable_count(summary, notable_findings)
+        assert_equal 2, notable_findings.size
+        assert_equal notable_findings, summary.fetch("targets").first.fetch("notable_findings")
+      end
+
+      def assert_notable_rule_order(notable_findings)
+        assert_equal(["MetzProject/RepeatedBranching", "MetzProject/PackageDependencyPressure"],
+                     notable_findings.map { |finding| finding.fetch("rule_id") })
+      end
+
+      def assert_notable_package_boundary(finding)
+        assert_equal "package_boundary", finding.fetch("category")
+        assert_equal "OpenFoodNetwork::ScopeVariantToHub", finding.dig("metadata", "declaration")
+        assert_includes Commands::Scan::ProjectAnalyzerMetadata.category_metadata_keys,
+                        "dependency_pressure_category"
+      end
+
+      def refute_low_confidence_notable(notable_findings)
+        refute_includes notable_findings.map { |finding| finding.fetch("message") },
+                        PACKAGE_DEPENDENCY_FINDING.message
+      end
+
+      def assert_markdown_notable_findings(dir)
+        rendered = rendered_markdown_for(dir)
+
+        assert_includes rendered, "## Notable Findings"
+        assert_includes rendered, "OpenFoodNetwork::ScopeVariantToHub is referenced across packages."
+        assert_includes rendered, "package_boundary"
+      end
+
+      def rendered_markdown_for(dir)
+        FileUtils.mkdir_p(dir)
+        summary = summary_with_collaborators(dir, captures, findings: [PACKAGE_BOUNDARY_FINDING])
+        ProjectAnalyzerEvidenceRunner::MarkdownRenderer.new(summary).call
       end
     end
 

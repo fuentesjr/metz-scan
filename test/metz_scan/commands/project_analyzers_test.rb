@@ -32,9 +32,19 @@ module MetzScan
         ProjectAnalyzers.run(["--json"], stdout: @stdout, stderr: @stderr)
 
         parsed = JSON.parse(@stdout.string)
+        assert_json_default_output_flags(parsed)
+        assert_json_statuses(parsed)
+      end
+
+      def assert_json_default_output_flags(parsed)
         assert_default_output(parsed, "MetzProject/ServiceSoup", true)
         assert_default_output(parsed, "MetzProject/DeepInheritanceTree", false)
+        assert_default_output(parsed, "MetzProject/ImplicitContextPressure", false)
+      end
+
+      def assert_json_statuses(parsed)
         assert_status(parsed, "MetzProject/DeepInheritanceTree", "validated")
+        assert_status(parsed, "MetzProject/ImplicitContextPressure", "candidate")
       end
 
       def test_unknown_option_exits_nonzero_with_usage

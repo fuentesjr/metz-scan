@@ -73,7 +73,7 @@ end
 
 def text_lines(summary)
   [target_line(summary), targets_file_line(summary), analyzer_filter_line(summary), finding_line(summary),
-   *rule_section(summary), *breakdown_lines(summary), artifact_line(summary)].compact
+   *rule_section(summary), *notable_finding_lines(summary), *breakdown_lines(summary), artifact_line(summary)].compact
 end
 
 def target_line(summary)
@@ -107,6 +107,26 @@ def rule_line(rule)
   "  - #{rule.fetch('cop_name')}: #{rule.fetch('finding_count')} finding(s), " \
     "#{rule.fetch('offense_count')} offense(s), status=#{rule.fetch('status', '?')}, " \
     "confidence=#{rule.fetch('confidence', '?')}, severity=#{rule.fetch('triage_severity', '?')}"
+end
+
+def notable_finding_lines(summary)
+  notable_findings = summary.fetch("notable_findings", [])
+  return [] if notable_findings.empty?
+
+  ["notable findings:", *notable_findings.map { |finding| notable_finding_line(finding) }]
+end
+
+def notable_finding_line(finding)
+  location = notable_finding_location(finding)
+  category = finding["category"] ? ", category=#{finding['category']}" : ""
+  "  - #{finding.fetch('target')}: #{finding.fetch('rule_id')}, confidence=#{finding.fetch('confidence', '?')}, " \
+    "severity=#{finding.fetch('triage_severity', '?')}#{category}, location=#{location}, " \
+    "message=#{finding.fetch('message')}"
+end
+
+def notable_finding_location(finding)
+  occurrence = finding.fetch("occurrence", {})
+  [occurrence["path"], occurrence["line"]].compact.join(":")
 end
 
 def breakdown_lines(summary)

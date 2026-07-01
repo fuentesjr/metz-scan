@@ -123,6 +123,7 @@ Current project analyzer status:
 | `MetzProject/DeepInheritanceTree` | Validated | No | Indexed base classes or modules with at least three known descendants, when the optional Rubydex-backed project index is available. |
 | `MetzProject/PackageDependencyPressure` | Candidate | No | Indexed namespaced classes or modules referenced from several files across multiple coarse packages outside their declaration package. |
 | `MetzProject/NamespaceLeakPressure` | Candidate | No | Indexed deeply nested classes or modules referenced from multiple files across packages outside their home namespace. |
+| `MetzProject/ImplicitContextPressure` | Candidate | No | Repeated `Current.*` ambient context access across files and coarse packages. |
 
 Project analyzers parse Ruby files only. They do not inspect ERB/HAML/SLIM
 templates, and they avoid semantic claims that require resolving runtime types.
@@ -162,6 +163,11 @@ References from the same namespace path, test roots, and setup/support paths
 such as nested seed and `testing_support` paths are ignored. Public constants,
 nested exception families, and framework or extension namespaces are reported
 with lower-confidence shared-namespace triage.
+`ImplicitContextPressure` is AST-only and remains candidate opt-in. Its first
+slice reports repeated Rails `CurrentAttributes`-style access, such as
+`Current.account`, only when the same ambient context appears in at least three
+files across at least two coarse packages. Lifecycle calls such as
+`Current.reset` and `Current.set(...)` are ignored.
 
 Project analyzer output includes status, confidence, triage severity, and triage
 summary metadata. Default output includes only explicitly eligible, validated,
@@ -203,8 +209,8 @@ bundle exec rubocop --plugin rubocop-metz
 ## Experimental project index
 
 `metz-scan` has an optional Rubydex-backed project index for evaluating
-project-level design analysis. Normal scans do not use it; `scan
---project-analyzers` uses it opportunistically for `DeepInheritanceTree` when
+project-level design analysis. Normal scans do not require it; `scan
+--project-analyzers` uses it opportunistically for index-backed analyzers when
 the optional bundle group is available.
 
 Enable the optional bundle group and run the spike:

@@ -17,7 +17,7 @@ module MetzScan
         attr_reader :summary
 
         def sections
-          [header_section, target_section, rule_section, breakdown_section].flatten
+          [header_section, target_section, rule_section, notable_findings_section, breakdown_section].flatten
         end
 
         def header_section
@@ -94,6 +94,13 @@ module MetzScan
             "#{rule.fetch('triage_severity', '?')} |"
         end
 
+        def notable_findings_section
+          notable_findings = summary.fetch("notable_findings", [])
+          return [] if notable_findings.empty?
+
+          NotableFindingsMarkdown.new(notable_findings).call
+        end
+
         def breakdown_section
           breakdowns = summary.fetch("breakdowns", {})
           return [] if breakdowns.empty?
@@ -120,6 +127,45 @@ module MetzScan
 
         def breakdown_row(value)
           "| #{value.fetch('value')} | #{value.fetch('finding_count')} |"
+        end
+      end
+
+      class NotableFindingsMarkdown
+        def initialize(notable_findings)
+          @notable_findings = notable_findings
+        end
+
+        def call
+          ["", "## Notable Findings", "", header, *rows, ""]
+        end
+
+        private
+
+        attr_reader :notable_findings
+
+        def header
+          "| Target | Rule | Confidence | Severity | Category | Location | Message |\n" \
+            "| --- | --- | --- | --- | --- | --- | --- |"
+        end
+
+        def rows
+          notable_findings.map { |finding| row(finding) }
+        end
+
+        def row(finding)
+          "| #{cell(finding.fetch('target'))} | #{cell(finding.fetch('rule_id'))} | " \
+            "#{cell(finding.fetch('confidence', '?'))} | #{cell(finding.fetch('triage_severity', '?'))} | " \
+            "#{cell(finding.fetch('category', '?'))} | #{cell(location_label(finding))} | " \
+            "#{cell(finding.fetch('message'))} |"
+        end
+
+        def location_label(finding)
+          occurrence = finding.fetch("occurrence", {})
+          [occurrence["path"], occurrence["line"]].compact.join(":")
+        end
+
+        def cell(value)
+          value.to_s.gsub("|", "\\|")
         end
       end
     end

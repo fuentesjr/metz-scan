@@ -4,14 +4,6 @@ module MetzScan
   module Commands
     class Scan
       class ProjectAnalyzerBreakdown
-        METADATA_KEYS = %w[
-          decision_subject_kind
-          dependency_pressure_category
-          namespace_leak_category
-          root_kind
-        ].freeze
-        private_constant :METADATA_KEYS
-
         def initialize(findings)
           @findings = findings
         end
@@ -28,9 +20,13 @@ module MetzScan
         attr_reader :findings
 
         def metadata_breakdowns
-          METADATA_KEYS.to_h { |key| [key, metadata_breakdown_for(key)] }
-                       .reject { |_key, values| values.empty? }
-                       .then { |values| values unless values.empty? }
+          category_metadata_keys.to_h { |key| [key, metadata_breakdown_for(key)] }
+                                .reject { |_key, values| values.empty? }
+                                .then { |values| values unless values.empty? }
+        end
+
+        def category_metadata_keys
+          ProjectAnalyzerMetadata.category_metadata_keys
         end
 
         def metadata_breakdown_for(key)
