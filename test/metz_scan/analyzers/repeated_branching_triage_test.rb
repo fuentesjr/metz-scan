@@ -16,6 +16,14 @@ module MetzScan
         end
       end
 
+      def test_generic_subjects_are_context_required
+        with_branching_files(source: generic_branching_source) do |files|
+          finding = RepeatedBranching.new(index: fake_index(files)).call.first
+
+          assert_context_required(finding)
+        end
+      end
+
       private
 
       def assert_validated_design_pressure(finding)
@@ -24,18 +32,29 @@ module MetzScan
         assert_equal "design pressure", finding.triage_severity
       end
 
-      def with_branching_files
+      def assert_context_required(finding)
+        assert_equal "validated", finding.project_analyzer_status
+        assert_equal "low", finding.confidence
+        assert_equal "context required", finding.triage_severity
+        assert_match(/reported contexts and branch values/i, finding.triage_summary)
+      end
+
+      def with_branching_files(source: branching_source)
         Dir.mktmpdir do |dir|
-          yield [write_file(dir, "orders.rb"), write_file(dir, "invoices.rb")]
+          yield [write_file(dir, "orders.rb", source), write_file(dir, "invoices.rb", source)]
         end
       end
 
-      def write_file(dir, name)
-        File.join(dir, name).tap { |path| File.write(path, branching_source) }
+      def write_file(dir, name, source)
+        File.join(dir, name).tap { |path| File.write(path, source) }
       end
 
       def branching_source
         "case order.status\nwhen \"pending\"\n  nil\nwhen \"paid\", \"cancelled\"\n  nil\nend\n"
+      end
+
+      def generic_branching_source
+        "case action\nwhen \"block\"\n  nil\nwhen \"silence\"\n  nil\nend\n"
       end
 
       def fake_index(files)

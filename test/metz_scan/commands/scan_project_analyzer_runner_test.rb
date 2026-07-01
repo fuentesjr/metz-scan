@@ -10,6 +10,8 @@ module MetzScan
   module Commands
     PROJECT_ANALYZER_BRANCHING_SOURCE = "case order.status\nwhen \"pending\"\n  nil\n" \
                                         "when \"paid\", \"cancelled\"\n  nil\nend\n"
+    PROJECT_ANALYZER_GENERIC_BRANCHING_SOURCE = "case action\nwhen \"block\"\n  nil\n" \
+                                                "when \"silence\"\n  nil\nend\n"
     PROJECT_ANALYZER_SERVICE_SOUP_SOURCE = <<~RUBY
       class OrdersController
         def create
@@ -188,6 +190,14 @@ module MetzScan
         assert_equal ["MetzProject/RepeatedBranching"], summary_cop_names(parsed)
       end
 
+      def test_default_output_excludes_generic_repeated_branching_findings
+        write_generic_repeated_branching_files
+        parsed = merge_default_project_analyzers
+
+        assert_empty cop_names(parsed)
+        assert_nil parsed.dig("summary", "project_analyzers")
+      end
+
       def test_validated_status_alone_does_not_make_analyzer_default_eligible
         refute Scan::ProjectAnalyzerRunner.default_output_analyzer?(ValidatedOptInOnlyAnalyzer)
       end
@@ -204,6 +214,10 @@ module MetzScan
         { "files" => [], "summary" => { "offense_count" => 0 } }.tap do |parsed|
           Scan::ProjectAnalyzerRunner.merge!(parsed, [@tmpdir], default_output: true)
         end
+      end
+
+      def write_generic_repeated_branching_files
+        2.times { |index| File.write(branching_path(index), PROJECT_ANALYZER_GENERIC_BRANCHING_SOURCE) }
       end
 
       def cop_names(parsed)

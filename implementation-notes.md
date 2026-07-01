@@ -583,3 +583,265 @@ Verification status:
   red/green, lint, and todo gates passed; warnings 0; review required.
 - The final clean-context review subagent stalled and was closed without a
   verdict. User explicitly directed committing the current work and moving on.
+
+## 2026-06-30: Calibration breakdowns and repeated-branching triage
+
+Task: start on the next 2 big tasks and keep using agenticons.
+
+Scope boundaries:
+
+- Use `tmp/project-analyzer-calibration/apps` as the active calibration fixture
+  home. Treat `/private/tmp` calibration paths as historical only.
+- Keep project analyzers at their current opt-in/default-output eligibility;
+  do not promote or graduate any analyzer in this pass.
+- Improve the calibration runner as an internal evidence tool only; do not
+  change normal scan output formats.
+- Limit `RepeatedBranching` behavior changes to confidence/severity wording for
+  generic decision subjects. Do not add ignore lists, stricter thresholds, or
+  target-specific suppressions.
+- Keep agenticon delegation shallow and record findings.
+
+Change type: feature.
+
+Verbatim task statement: "Ok go ahead and start on the next 2 big tasks and keep using agenticons"
+
+Plan:
+
+1. Use `planner: next two task plan` to check sequencing and scope.
+2. Use `helper_worker: issue 27/28 reconnaissance` for read-only analyzer
+   surface review while implementing non-overlapping local changes.
+3. Add runner summary breakdowns for aggregate and per-target findings by rule,
+   confidence, triage severity, and analyzer-specific metadata category/kind.
+4. Add focused `RepeatedBranching` tests for generic-subject downranking while
+   keeping state/expression subjects at current design-pressure triage.
+5. Update calibration docs/notes with the decision, then run focused tests,
+   local gates, strategic validation, and review if required.
+
+Verification status:
+
+- `planner: next two task plan` recommended improving the calibration runner
+  first, then clarifying `RepeatedBranching` generic-subject triage. I kept
+  DeepInheritanceTree filtering out of scope because local docs already show
+  root-kind labeling and broad-base downranking completed.
+- `helper_worker: issue 27/28 reconnaissance` confirmed that the remaining
+  `RepeatedBranching` implementation surface is subject-aware triage, and that
+  DeepInheritanceTree's unresolved question is future filtering/downranking
+  rather than another semantic-labeling slice.
+- Red run: `bundle exec ruby -Ilib -Itest
+  test/metz_scan/calibration/project_analyzer_evidence_runner_test.rb` failed
+  with missing `breakdowns` metadata.
+- Red run: `bundle exec ruby -Ilib -Itest
+  test/metz_scan/analyzers/repeated_branching_triage_test.rb` failed because
+  generic `action` branching still reported `confidence: medium`.
+- Green focused tests:
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/calibration/project_analyzer_evidence_runner_test.rb`
+    passed: 6 runs, 25 assertions, 0 failures, 0 errors.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/analyzers/repeated_branching_triage_test.rb` passed: 2
+    runs, 8 assertions, 0 failures, 0 errors.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/analyzers/repeated_branching_subject_test.rb` passed: 2
+    runs, 6 assertions, 0 failures, 0 errors.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/commands/scan_project_analyzer_priority_test.rb` passed: 7
+    runs, 12 assertions, 0 failures, 0 errors.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/commands/scan_project_analyzer_runner_test.rb` passed: 12
+    runs, 33 assertions, 0 failures, 0 errors.
+- `bundle exec ruby bin/check_project_analyzer_calibration --text --no-write
+  test/fixtures/sample_app` passed and showed the new confidence, severity,
+  and `root_kind` breakdown lines.
+- Full repo-local calibration summary over
+  `tmp/project-analyzer-calibration/apps` passed with `--no-write`: 8 targets,
+  325 findings, 396 offenses. Aggregate breakdowns included
+  `context required=11`, `decision_subject_kind`: `generic=11`, `state=11`,
+  `expression=6`.
+- After cleanup for local size/style rules, `bundle exec rake` passed: 381
+  runs, 1583 assertions, 0 failures, 0 errors, 2 skips.
+- `bundle exec rubocop` passed: 163 files inspected, no offenses.
+- `bin/check_dependency_direction` passed.
+- `bin/check_sample_app_frozen` passed.
+- `git diff --check` passed.
+- `ruby /Users/sal/Projects/strategic-software-design/scripts/validate.rb
+  --type feature --task "Ok go ahead and start on the next 2 big tasks and
+  keep using agenticons"` passed: slice tests, red/green, lint, and todo gates
+  passed; warnings 0; review required.
+- `reviewer: strategic design validation` verdict was clean with no blockers.
+  Concern: `DEP-1` at
+  `lib/metz_scan/calibration/project_analyzer_evidence_runner/summary.rb:32-69`;
+  rationale: "TargetRun builds the project index and calls ProjectAnalyzerRunner
+  directly, which leaves the evidence runner coupled to volatile scan/index
+  plumbing and forces tests to replace singleton methods to observe
+  orchestration behavior."; suggested_change: "Thread internal index-builder
+  and finding-runner collaborators through Summary/TargetRun with production
+  defaults, while keeping ProjectAnalyzerEvidenceRunner.summarize's public API
+  narrow."
+- `doc_reviewer: documentation drift` stalled after the required design review
+  completed and was closed. Local documentation sanity check found and fixed one
+  misplaced RepeatedBranching result sentence under the ServiceSoup section.
+
+Implementation decisions:
+
+- The calibration runner now records aggregate and per-target breakdowns by
+  rule, confidence, severity, and selected analyzer metadata categories:
+  `decision_subject_kind`, `dependency_pressure_category`,
+  `namespace_leak_category`, and `root_kind`.
+- The compact text and Markdown calibration outputs render the breakdowns, but
+  normal scan output is unchanged.
+- `RepeatedBranching` generic subjects now report `confidence: low` and
+  `triage_severity: context required`. State-like and expression subjects keep
+  the existing medium-confidence design-pressure triage.
+- Default scan output still includes only medium-confidence design-pressure
+  findings, so generic repeated-branching findings remain available through
+  `--project-analyzers`.
+
+## 2026-06-30: Calibration runner internals and analyzer filter
+
+Task: start on the next 2 big tasks and keep using agenticons, then provide a
+detailed comprehensive summary.
+
+Scope boundaries:
+
+- Build on the current uncommitted calibration-breakdowns and RepeatedBranching
+  generic-subject triage slice without reverting it.
+- Keep normal `metz-scan scan` behavior unchanged.
+- Keep `ProjectAnalyzerEvidenceRunner.summarize` narrow for callers; prefer
+  internal collaborator injection over public test-only options.
+- Add calibration-runner filtering only for evidence runs, not for scan output.
+- Do not promote, graduate, or suppress project analyzers in this pass.
+- Keep `tmp/project-analyzer-calibration/apps` as the active calibration home.
+
+Change type: feature.
+
+Verbatim task statement: "Ok go ahead and start on the next 2 big tasks and keep using agenticons and at the end give me a detail and comprehensive summary"
+
+Plan:
+
+1. Use `planner: next two task selection` to validate the next pair of tasks.
+2. Use `helper_worker: calibration filter design` for read-only implementation
+   shape review.
+3. Address the strategic reviewer `DEP-1` concern by threading internal
+   index-builder and finding-runner collaborators through `Summary` and
+   `TargetRun` without widening the public runner API.
+4. Add a calibration-only `--analyzer COP_NAME` filter so focused evidence
+   runs can target one or more project analyzers while normal scan behavior
+   remains unchanged.
+5. Update docs/notes and rerun focused tests, calibration smoke, local gates,
+   strategic validation, and required reviews.
+
+Verification status:
+
+- `planner: next two task selection` recommended stabilizing calibration target
+  discovery/orchestration first, then improving mixed-triage project-analyzer
+  report summaries. It explicitly deferred Sorbet, dogfood CI, analyzer
+  promotion, and DeepInheritanceTree filtering.
+- `helper_worker: calibration filter design` confirmed the internal
+  `index_builder`/`finding_runner` collaborator seam and exact `RULE_ID`
+  analyzer filtering. It recommended rejecting unknown analyzer names rather
+  than silently returning empty output.
+- Red run: `bundle exec ruby -Ilib -Itest
+  test/metz_scan/calibration/project_analyzer_evidence_runner_test.rb` failed
+  because `analyzer_names:` was unsupported and `Summary` ignored injected
+  collaborators.
+- Red run: `bundle exec ruby -Ilib -Itest
+  test/metz_scan/commands/scan_project_analyzer_priority_test.rb` failed
+  because rule summaries did not include `breakdowns`.
+- Red run: `bundle exec ruby -Ilib -Itest
+  test/metz_scan/commands/scan_text_renderer_project_analyzer_test.rb` failed
+  because text output did not render a mixed-triage `mix:` hint.
+- Green focused tests:
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/calibration/project_analyzer_evidence_runner_test.rb`
+    passed: 9 runs, 39 assertions, 0 failures, 0 errors.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/commands/scan_project_analyzer_priority_test.rb` passed: 8
+    runs, 14 assertions, 0 failures, 0 errors.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/commands/scan_text_renderer_project_analyzer_test.rb`
+    passed: 5 runs, 16 assertions, 0 failures, 0 errors.
+- `bundle exec ruby bin/check_project_analyzer_calibration --text --no-write
+  --analyzer MetzProject/RepeatedBranching` passed over active fixtures: 25
+  findings, 55 offenses, `decision_subject_kind`: `generic=11`, `state=8`,
+  `expression=6`.
+- `bundle exec ruby bin/check_project_analyzer_calibration --text --no-write
+  test/fixtures/sample_app` passed.
+- `bundle exec ruby bin/check_project_analyzer_calibration --text --no-write
+  --analyzer MetzProject/MissingAnalyzer test/fixtures/sample_app` exited 1
+  with `unknown project analyzer: MetzProject/MissingAnalyzer`.
+- Full repo-local calibration summary over
+  `tmp/project-analyzer-calibration/apps` passed with `--no-write`: 8 targets,
+  267 findings, 319 offenses. The drop from the earlier 325/396 run is the
+  intentional result of skipping nested-only default targets such as `spree`
+  instead of silently scanning their whole root.
+- Additional focused regression checks passed:
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/commands/scan_project_analyzer_runner_test.rb`: 12 runs, 33
+    assertions, 0 failures, 0 errors.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/analyzers/repeated_branching_triage_test.rb`: 2 runs, 8
+    assertions, 0 failures, 0 errors.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/commands/project_analyzers_test.rb`: 3 runs, 15 assertions,
+    0 failures, 0 errors.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/commands/scan_project_analyzer_triage_test.rb`: 2 runs, 8
+    assertions, 0 failures, 0 errors.
+- `bundle exec ruby bin/check_project_analyzer_calibration --text --no-write
+  --analyzer MetzProject/RepeatedBranching test/fixtures/sample_app` passed
+  with zero findings and `rules: none`, proving empty filtered output stays
+  readable.
+- `bundle exec rake` passed after the additive summary-test update: 386 runs,
+  1604 assertions, 0 failures, 0 errors, 2 skips.
+- `bundle exec rubocop` passed: 166 files inspected, no offenses.
+- `bin/check_dependency_direction` passed.
+- `bin/check_sample_app_frozen` passed.
+- `git diff --check` passed.
+- `ruby /Users/sal/Projects/strategic-software-design/scripts/validate.rb
+  --type feature --task "Ok go ahead and start on the next 2 big tasks and
+  keep using agenticons and at the end give me a detail and comprehensive
+  summary"` passed: slice tests, red/green, lint, and todo gates passed;
+  warnings 0; review required.
+- Initial `reviewer: strategic design validation` returned one blocker:
+  `DEPTH-1` at
+  `lib/metz_scan/calibration/project_analyzer_evidence_runner/collaborators.rb:36-40`;
+  rationale: "IndexBuilder is a new public class whose only behavior is
+  forwarding to ProjectIndex.build, so it adds a collaborator name without
+  hiding any complexity or policy."; suggested_change: "Remove IndexBuilder and
+  pass ProjectIndex.method(:build) or call ProjectIndex.build directly from the
+  runner boundary."
+- Removed the pass-through `IndexBuilder` and now pass
+  `ProjectIndex.method(:build)` as the internal index-builder collaborator.
+- After the blocker fix, `bundle exec ruby -Ilib -Itest
+  test/metz_scan/calibration/project_analyzer_evidence_runner_test.rb` passed:
+  9 runs, 39 assertions, 0 failures, 0 errors.
+- `bundle exec rubocop` passed after the blocker fix: 166 files inspected, no
+  offenses.
+- `git diff --check` passed after the blocker fix.
+- Strategic validation after the blocker fix passed again: slice tests,
+  red/green, lint, and todo gates passed; warnings 0; review required.
+- `doc_reviewer: documentation drift` found no documentation drift. Residual
+  risk: calibration notes include historical target counts and sample revisions
+  that can age as fixtures evolve.
+- Follow-up `reviewer: strategic design validation` verdict was clean with no
+  findings. Summary: "No blockers found. The change keeps the new calibration
+  runner separate from normal scan flow, and the provided tests cover target
+  discovery, analyzer filtering, breakdowns, artifact writing, and the
+  default-output triage behavior."
+
+Implementation decisions:
+
+- `Summary` and `TargetRun` now depend on internal `IndexBuilder` and
+  `FindingRunner` collaborators rather than reaching directly for
+  `ProjectIndex.build` and `ProjectAnalyzerRunner.project_findings_for`.
+- `--analyzer COP_NAME` is calibration-only, repeatable, exact by `RULE_ID`,
+  and rejects unknown analyzer names.
+- Discovered default calibration targets without top-level `app/` or `lib/`
+  now remain in the summary with `backend: none`, empty scan paths, and a
+  no-scan reason instead of falling back to a broad root scan. Explicit paths
+  still scan the provided path.
+- `ProjectAnalyzerMetadata.summary` now includes per-rule breakdowns using the
+  same shared breakdown helper as the calibration runner.
+- Text reports append a compact `mix:` hint when a rule has multiple severity
+  or metadata-category values, making mixed DeepInheritanceTree output easier
+  to interpret without filtering.

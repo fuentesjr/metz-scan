@@ -40,7 +40,9 @@ module MetzScan
       end
 
       def test_project_analyzer_summary_counts_findings_and_expanded_offenses
-        assert_equal expected_branching_summary, repeated_branching_summary
+        assert_equal 1, repeated_branching_summary.fetch("finding_count")
+        assert_equal 2, repeated_branching_summary.fetch("offense_count")
+        assert_repeated_branching_rule_summary
       end
 
       private
@@ -62,8 +64,11 @@ module MetzScan
         merged_repeated_branching.dig("summary", "project_analyzers")
       end
 
-      def expected_branching_summary
-        { "finding_count" => 1, "offense_count" => 2, "rules" => [REPEATED_BRANCHING_SUMMARY] }
+      def assert_repeated_branching_rule_summary
+        rule = repeated_branching_summary.fetch("rules").first
+
+        assert_equal REPEATED_BRANCHING_SUMMARY, rule.slice(*REPEATED_BRANCHING_SUMMARY.keys)
+        assert_equal "state", rule.dig("breakdowns", "metadata", "decision_subject_kind").first.fetch("value")
       end
 
       def merged_service_soup

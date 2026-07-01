@@ -18,6 +18,10 @@ module MetzScan
 
         attr_reader :decision
 
+        def generic?
+          kind == "generic"
+        end
+
         def kind
           return "generic" if GENERIC_SUBJECTS.include?(decision)
           return "state" if SIMPLE_IDENTIFIER.match?(decision)

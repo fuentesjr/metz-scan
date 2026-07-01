@@ -6,6 +6,7 @@ require_relative "project_analyzer_triage"
 require_relative "ruby_file_enumerator"
 require_relative "repeated_branching/branch_site_collector"
 require_relative "repeated_branching/decision_subject"
+require_relative "repeated_branching/triage"
 
 module MetzScan
   module Analyzers
@@ -76,10 +77,14 @@ module MetzScan
       end
 
       def triage_attributes_for(first, sites, subject)
-        project_analyzer_triage_attributes.merge(
+        subject_triage_attributes(subject).merge(
           project_analyzer_metadata: project_analyzer_metadata_for(first, sites, subject),
           why_it_matters: WHY, suggested_next_moves: SUGGESTED_NEXT_MOVES
         )
+      end
+
+      def subject_triage_attributes(subject)
+        Triage.attributes_for(subject, status: PROJECT_ANALYZER_STATUS, fallback: project_analyzer_triage_attributes)
       end
 
       def core_finding_attributes(first, sites, subject)

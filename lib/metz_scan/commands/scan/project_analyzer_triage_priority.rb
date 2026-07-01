@@ -10,10 +10,11 @@ module MetzScan
           "triage_severity" => {
             "design pressure" => 0,
             "manual review" => 1,
-            "broad base" => 2,
-            "shared dependency" => 3,
-            "shared namespace" => 4,
-            "setup orchestration" => 5
+            "context required" => 2,
+            "broad base" => 3,
+            "shared dependency" => 4,
+            "shared namespace" => 5,
+            "setup orchestration" => 6
           }
         }.freeze
 

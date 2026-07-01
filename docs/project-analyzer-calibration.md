@@ -38,14 +38,21 @@ Use the repeatable evidence runner for new calibration slices:
 
 ```bash
 bin/check_project_analyzer_calibration --text
+bin/check_project_analyzer_calibration --text --analyzer MetzProject/RepeatedBranching
 ```
 
 With no paths, the runner discovers target checkouts under
 `tmp/project-analyzer-calibration/apps/`, scans each target's `app/` and `lib/`
 directories when present, records checkout revisions, index metadata, finding
-counts, and triage summaries, and writes `summary.json` plus `summary.md` under
-`tmp/project-analyzer-calibration/results/<run-id>/`. Pass explicit paths for a
-narrower sample, or `--no-write` for a dry local summary.
+counts, triage summaries, and breakdowns by rule, confidence, severity, and
+known analyzer-specific metadata categories such as `decision_subject_kind`,
+`dependency_pressure_category`, `namespace_leak_category`, and `root_kind`.
+Discovered targets without top-level `app/` or `lib/` are recorded with
+no-scan metadata instead of falling back to a whole-root scan. Pass explicit
+paths for intentional one-off scans, `--analyzer` one or more times for a
+focused rule sample, or `--no-write` for a dry local summary. The runner writes
+`summary.json` plus `summary.md` under
+`tmp/project-analyzer-calibration/results/<run-id>/`.
 
 Initial targets:
 
@@ -104,7 +111,7 @@ analyzers, and lower-confidence findings.
 
 Readiness by analyzer:
 
-- `MetzProject/ServiceSoup` is validated for opt-in project-analyzer output.
+- `MetzProject/ServiceSoup` is validated for project-analyzer output.
   The latest repo-local rerun confirmed sparse, reviewable findings that still
   look like plausible true positives in service-heavy Rails applications. A
   follow-up promotion review added one more strong service-workflow target and
@@ -112,11 +119,12 @@ Readiness by analyzer:
   and setup-specific triage language. Its medium-confidence design-pressure
   findings are explicitly default-output eligible; setup-orchestration findings
   remain available only with `--project-analyzers`.
-- `MetzProject/RepeatedBranching` is validated for opt-in project-analyzer
-  output. The counts are stable, context-enriched findings are readable, and a
-  Spree follow-up produced only three findings with concrete domain context. Its
+- `MetzProject/RepeatedBranching` is validated for project-analyzer output.
+  The counts are stable, context-enriched findings are readable, and a Spree
+  follow-up produced only three findings with concrete domain context. Its
   medium-confidence design-pressure findings are explicitly default-output
-  eligible.
+  eligible; lower-confidence generic-subject findings remain available only
+  with `--project-analyzers`.
 - `MetzProject/DeepInheritanceTree` is validated for opt-in project-analyzer
   output, but is not default-output eligible. Grouped output, class-only
   auto-discovery, located-root filtering, expanded root-kind labels, and
@@ -242,7 +250,9 @@ issue #28 covers RepeatedBranching generic branch-subject triage.
 
 ## `MetzProject/ServiceSoup`
 
-Result: **Validated**, behind `--project-analyzers`.
+Result: **Validated**. Medium-confidence design-pressure findings are
+default-output eligible; lower-confidence setup-orchestration findings remain
+available with `--project-analyzers`.
 
 The analyzer produced no findings across the five sampled applications. That is
 useful evidence that the default threshold of three distinct service constants
@@ -540,7 +550,9 @@ Candidate-path checkpoint on 2026-06-29:
 
 ## `MetzProject/RepeatedBranching`
 
-Result: **Validated**, behind `--project-analyzers`.
+Result: **Validated**. Medium-confidence design-pressure findings are
+default-output eligible; lower-confidence generic-subject findings remain
+available with `--project-analyzers`.
 
 The analyzer produced nine findings across the five sampled applications. The
 volume was low enough to review manually, and several findings looked like real
@@ -660,6 +672,33 @@ Validation threshold:
 Threshold result: **pass for validated opt-in status**. Spree produced three
 context-readable findings, stayed below the volume threshold, and did not add a
 new recurring false-positive category.
+
+Generic-subject triage follow-up on 2026-06-30: `RepeatedBranching` now keeps
+state-like and expression subjects at `confidence: medium` and
+`severity: design pressure`, but reports generic subjects such as `action`,
+`type`, `value`, and `key.to_s` with `confidence: low` and
+`severity: context required`. The message and metadata still include
+`decision_subject_kind`, reported contexts, and branch values, so the finding is
+reviewable under `--project-analyzers` without treating a generic variable name
+as default-output design pressure.
+
+The calibration evidence runner now records breakdowns by rule, confidence,
+severity, and analyzer-specific metadata such as `decision_subject_kind`. Use
+those breakdowns in future reruns to confirm whether generic repeated-branch
+subjects stay sparse and context-readable before changing thresholds.
+
+A full repo-local `bin/check_project_analyzer_calibration --text --no-write`
+run over the active fixture home on 2026-06-30 produced 25
+`RepeatedBranching` findings and 55 offenses after default target discovery was
+stabilized to skip nested-only targets such as the active `spree` checkout. The
+subject-kind breakdown was 11 generic, 8 state-like, and 6 expression subjects;
+the generic findings carried `context required` triage while state-like and
+expression findings stayed medium-confidence design-pressure candidates.
+
+Project-analyzer summaries now include per-rule breakdown metadata. Text
+reports show a compact `mix:` hint when one rule has multiple severities or
+metadata categories, so high-volume `DeepInheritanceTree` output can reveal the
+broad-base/manual-review split without filtering root kinds.
 
 ## `MetzProject/DeepInheritanceTree`
 

@@ -133,6 +133,10 @@ and setup-specific triage language. See
 [docs/project-analyzer-calibration.md](docs/project-analyzer-calibration.md) for
 current calibration notes.
 
+`RepeatedBranching` reports generic branch subjects such as `action`, `type`,
+`value`, and `key.to_s` with lower confidence and `context required` triage.
+Use `--project-analyzers` to review those context-dependent findings; default
+scan output keeps medium-confidence design-pressure findings.
 `DeepInheritanceTree` uses the optional Rubydex-backed project index. Without
 that optional bundle group enabled, `--project-analyzers` still runs and this
 analyzer simply contributes no findings. Broad framework, Rails application,

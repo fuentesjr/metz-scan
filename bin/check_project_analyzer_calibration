@@ -10,14 +10,15 @@ require "metz_scan/calibration/project_analyzer_evidence_runner"
 
 RUNNER = MetzScan::Calibration::ProjectAnalyzerEvidenceRunner
 USAGE = "Usage: check_project_analyzer_calibration [--json] [--text] [--default-output] [--output-dir DIR] " \
-        "[--run-id ID] [--no-write] [PATH ...]"
+        "[--run-id ID] [--analyzer COP_NAME] [--no-write] [PATH ...]"
 
 def parse_options
   default_options.tap { |options| option_parser(options).parse! }
 end
 
 def default_options
-  { json: true, default_output: false, write: true, output_dir: RUNNER.default_results_path, run_id: nil }
+  { json: true, default_output: false, write: true, output_dir: RUNNER.default_results_path, run_id: nil,
+    analyzer_names: [] }
 end
 
 def option_parser(options)
@@ -31,8 +32,19 @@ end
 def add_output_options(parser, options)
   parser.on("--json", "Output JSON (default)") { options[:json] = true }
   parser.on("--text", "Output a compact text summary") { options[:json] = false }
+  add_default_output_option(parser, options)
+  add_analyzer_filter_option(parser, options)
+end
+
+def add_default_output_option(parser, options)
   parser.on("--default-output", "Restrict to analyzers with default-output eligibility") do
     options[:default_output] = true
+  end
+end
+
+def add_analyzer_filter_option(parser, options)
+  parser.on("--analyzer COP_NAME", "Restrict calibration to a project analyzer rule id") do |name|
+    options.fetch(:analyzer_names) << name
   end
 end
 
@@ -53,7 +65,8 @@ def render_text(summary)
 end
 
 def text_lines(summary)
-  [target_line(summary), finding_line(summary), "rules:", *rule_lines(summary), artifact_line(summary)].compact
+  [target_line(summary), analyzer_filter_line(summary), finding_line(summary), *rule_section(summary),
+   *breakdown_lines(summary), artifact_line(summary)].compact
 end
 
 def target_line(summary)
@@ -64,14 +77,46 @@ def finding_line(summary)
   "findings: #{summary.fetch('finding_count')} (offenses: #{summary.fetch('offense_count')})"
 end
 
+def analyzer_filter_line(summary)
+  analyzer_names = summary.fetch("analyzer_filter", [])
+  "analyzers: #{analyzer_names.join(', ')}" unless analyzer_names.empty?
+end
+
 def rule_lines(summary)
   summary.fetch("project_analyzers", {}).fetch("rules", []).map { |rule| rule_line(rule) }
+end
+
+def rule_section(summary)
+  lines = rule_lines(summary)
+  lines.empty? ? ["rules: none"] : ["rules:", *lines]
 end
 
 def rule_line(rule)
   "  - #{rule.fetch('cop_name')}: #{rule.fetch('finding_count')} finding(s), " \
     "#{rule.fetch('offense_count')} offense(s), status=#{rule.fetch('status', '?')}, " \
     "confidence=#{rule.fetch('confidence', '?')}, severity=#{rule.fetch('triage_severity', '?')}"
+end
+
+def breakdown_lines(summary)
+  breakdowns = summary.fetch("breakdowns", {})
+  return [] if breakdowns.empty?
+
+  ["breakdowns:", *basic_breakdown_lines(breakdowns), *metadata_breakdown_lines(breakdowns.fetch("metadata", {}))]
+end
+
+def basic_breakdown_lines(breakdowns)
+  [["confidence", breakdowns["confidence"]], ["severity", breakdowns["triage_severity"]]]
+    .filter_map { |label, values| breakdown_line(label, values) }
+end
+
+def metadata_breakdown_lines(metadata)
+  metadata.filter_map { |key, values| breakdown_line(key, values) }
+end
+
+def breakdown_line(label, values)
+  return if values.to_a.empty?
+
+  "  - #{label}: #{values.map { |value| "#{value.fetch('value')}=#{value.fetch('finding_count')}" }.join(', ')}"
 end
 
 def artifact_line(summary)
@@ -84,7 +129,8 @@ def emit_json(summary)
 end
 
 def summary_for(options)
-  RUNNER.summarize(paths: ARGV, default_output: options.fetch(:default_output))
+  RUNNER.summarize(paths: ARGV, default_output: options.fetch(:default_output),
+                   analyzer_names: options.fetch(:analyzer_names))
 end
 
 def write_artifacts(summary, options)

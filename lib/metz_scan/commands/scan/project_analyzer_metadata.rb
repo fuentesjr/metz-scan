@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require_relative "project_analyzer_breakdown"
 require_relative "project_analyzer_triage_priority"
 
 module MetzScan
@@ -39,11 +40,13 @@ module MetzScan
         end
 
         def rule_summary(rule_id, findings, offenses)
-          summary_metadata(findings).merge(
-            "cop_name" => rule_id,
-            "finding_count" => findings.size,
-            "offense_count" => offense_count(rule_id, offenses)
-          )
+          summary_metadata(findings).merge(rule_count_metadata(rule_id, findings, offenses),
+                                           "breakdowns" => ProjectAnalyzerBreakdown.new(findings).to_h)
+        end
+
+        def rule_count_metadata(rule_id, findings, offenses)
+          { "cop_name" => rule_id, "finding_count" => findings.size,
+            "offense_count" => offense_count(rule_id, offenses) }
         end
 
         def summary_metadata(findings)

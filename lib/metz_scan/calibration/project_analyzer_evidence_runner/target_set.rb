@@ -20,12 +20,17 @@ module MetzScan
 
         def scan_paths_for(target)
           scan_paths = scan_children_for(target)
-          (scan_paths.empty? ? [target] : scan_paths).map { |path| File.expand_path(path) }
+          scan_paths = [target] if scan_paths.empty? && explicit_targets?
+          scan_paths.map { |path| File.expand_path(path) }
         end
 
         private
 
         attr_reader :default_apps_path
+
+        def explicit_targets?
+          !@paths.empty?
+        end
 
         def raw_targets
           @paths.empty? ? discovered_default_targets : @paths

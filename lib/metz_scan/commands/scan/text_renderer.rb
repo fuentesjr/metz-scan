@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "offense_extractor"
+require_relative "project_analyzer_summary_breakdown_formatter"
 require_relative "project_analyzer_triage_formatter"
 require_relative "project_analyzer_triage_priority"
 
@@ -64,9 +65,14 @@ module MetzScan
         end
 
         def project_analyzer_rule_summary(rule)
-          "#{rule.fetch('cop_name')}: #{count_label(rule.fetch('finding_count'), 'finding')}, " \
-            "#{count_label(rule.fetch('offense_count'), 'offense')}, status: #{rule.fetch('status')}, " \
-            "confidence: #{rule.fetch('confidence')}, severity: #{rule.fetch('triage_severity')}"
+          summary = "#{rule.fetch('cop_name')}: #{count_label(rule.fetch('finding_count'), 'finding')}, " \
+                    "#{count_label(rule.fetch('offense_count'), 'offense')}, status: #{rule.fetch('status')}, " \
+                    "confidence: #{rule.fetch('confidence')}, severity: #{rule.fetch('triage_severity')}"
+          [summary, mixed_breakdown_hint(rule)].compact.join("; ")
+        end
+
+        def mixed_breakdown_hint(rule)
+          ProjectAnalyzerSummaryBreakdownFormatter.new(rule).call
         end
 
         def sorted_offense_blocks

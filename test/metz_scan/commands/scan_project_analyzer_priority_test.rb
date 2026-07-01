@@ -51,36 +51,11 @@ module MetzScan
         assert_equal "design pressure", summary.fetch("triage_severity")
       end
 
-      def test_validated_status_sorts_before_candidate
-        priority = Scan::ProjectAnalyzerTriagePriority
+      def test_metadata_summary_includes_rule_breakdowns
+        breakdowns = service_soup_rule_summary(mixed_priority_metadata_summary).fetch("breakdowns")
 
-        assert_equal(-1, priority.sort_key("status" => "validated") <=> priority.sort_key("status" => "candidate"))
-      end
-
-      def test_manual_review_sorts_before_shared_dependency
-        priority = Scan::ProjectAnalyzerTriagePriority
-
-        manual = { "status" => "experimental", "confidence" => "low", "triage_severity" => "manual review" }
-        shared = { "status" => "experimental", "confidence" => "low", "triage_severity" => "shared dependency" }
-
-        assert_equal(-1, priority.sort_key(manual) <=> priority.sort_key(shared))
-      end
-
-      def test_broad_base_sorts_before_shared_dependency
-        priority = Scan::ProjectAnalyzerTriagePriority
-
-        broad_base = { "status" => "experimental", "confidence" => "low", "triage_severity" => "broad base" }
-        shared = { "status" => "experimental", "confidence" => "low", "triage_severity" => "shared dependency" }
-
-        assert_equal(-1, priority.sort_key(broad_base) <=> priority.sort_key(shared))
-      end
-
-      def test_low_confidence_severities_sort_in_triage_order
-        priority = Scan::ProjectAnalyzerTriagePriority
-        severities = ["shared dependency", "shared namespace", "setup orchestration"]
-        sort_keys = severities.map { |severity| priority.sort_key(low_experimental_metadata(severity)) }
-
-        assert_equal sort_keys.sort, sort_keys
+        assert_breakdown [["low", 1], ["medium", 1]], breakdowns.fetch("confidence")
+        assert_breakdown [["design pressure", 1], ["setup orchestration", 1]], breakdowns.fetch("triage_severity")
       end
 
       private
@@ -121,8 +96,8 @@ module MetzScan
         Array.new(count) { { "cop_name" => "MetzProject/ServiceSoup" } }
       end
 
-      def low_experimental_metadata(triage_severity)
-        { "status" => "experimental", "confidence" => "low", "triage_severity" => triage_severity }
+      def assert_breakdown(expected, actual)
+        assert_equal expected.map { |value, count| { "value" => value, "finding_count" => count } }, actual
       end
 
       def merge_project_analyzers
@@ -133,6 +108,46 @@ module MetzScan
 
       def write_file(name, source)
         File.write(File.join(@tmpdir, name), source)
+      end
+    end
+
+    class ScanProjectAnalyzerTriagePriorityTest < Minitest::Test
+      def test_validated_status_sorts_before_candidate
+        assert_prioritized({ "status" => "validated" }, over: { "status" => "candidate" })
+      end
+
+      def test_manual_review_sorts_before_shared_dependency
+        assert_prioritized low_metadata("manual review"), over: low_metadata("shared dependency")
+      end
+
+      def test_broad_base_sorts_before_shared_dependency
+        assert_prioritized low_metadata("broad base"), over: low_metadata("shared dependency")
+      end
+
+      def test_context_required_sorts_after_manual_review_before_broad_base
+        assert_prioritized low_metadata("manual review"), over: low_metadata("context required")
+        assert_prioritized low_metadata("context required"), over: low_metadata("broad base")
+      end
+
+      def test_low_confidence_severities_sort_in_triage_order
+        sort_keys = ["shared dependency", "shared namespace", "setup orchestration"]
+                    .map { |severity| priority.sort_key(low_metadata(severity)) }
+
+        assert_equal sort_keys.sort, sort_keys
+      end
+
+      private
+
+      def assert_prioritized(metadata, over:)
+        assert_equal(-1, priority.sort_key(metadata) <=> priority.sort_key(over))
+      end
+
+      def low_metadata(triage_severity)
+        { "status" => "experimental", "confidence" => "low", "triage_severity" => triage_severity }
+      end
+
+      def priority
+        Scan::ProjectAnalyzerTriagePriority
       end
     end
   end

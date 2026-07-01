@@ -100,5 +100,43 @@ module MetzScan
         StringIO.new.tap { |stdout| Scan::TextRenderer.new(stdout, parsed).render }.string
       end
     end
+
+    class ScanTextRendererProjectAnalyzerBreakdownTest < Minitest::Test
+      def test_project_analyzer_summary_renders_mixed_triage_breakdowns
+        assert_includes rendered,
+                        "MetzProject/DeepInheritanceTree: 3 findings, 3 offenses, status: validated, " \
+                        "confidence: medium, severity: manual review; mix: severity broad base=2, " \
+                        "manual review=1; root_kind controller base=1, rails application base=1"
+      end
+
+      private
+
+      def rendered
+        StringIO.new.tap { |stdout| Scan::TextRenderer.new(stdout, parsed).render }.string
+      end
+
+      def parsed
+        { "files" => [], "summary" => { "project_analyzers" => mixed_project_analyzer_summary } }
+      end
+
+      def mixed_project_analyzer_summary
+        { "finding_count" => 3, "offense_count" => 3, "rules" => [mixed_deep_inheritance_rule] }
+      end
+
+      def mixed_deep_inheritance_rule
+        { "cop_name" => "MetzProject/DeepInheritanceTree", "status" => "validated",
+          "confidence" => "medium", "triage_severity" => "manual review",
+          "finding_count" => 3, "offense_count" => 3, "breakdowns" => mixed_breakdowns }
+      end
+
+      def mixed_breakdowns
+        { "triage_severity" => breakdown("broad base" => 2, "manual review" => 1),
+          "metadata" => { "root_kind" => breakdown("controller base" => 1, "rails application base" => 1) } }
+      end
+
+      def breakdown(values)
+        values.map { |value, count| { "value" => value, "finding_count" => count } }
+      end
+    end
   end
 end
