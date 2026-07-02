@@ -32,15 +32,16 @@ singleton-style global access, and broader calibration are future scope.
 
 ### `RepeatedQueryCriteria`
 
-Implemented as `MetzProject/RepeatedQueryCriteria` candidate output. The first
-slice is AST-only and detects repeated constant-receiver and constant-root
-scope-chain `where` hash criteria, such as
-`Order.where(account_id: ..., status: ...)` or
-`Order.active.where(account_id: ..., status: ...)`, across multiple files and
-coarse packages. It classifies polymorphic, compound-association,
-association-scoped, and generic hash-criteria repeats. It remains behind
-`--project-analyzers`; dynamic SQL strings, dynamic scope chains, and broader
-query/filter forms are future scope.
+Implemented as `MetzProject/RepeatedQueryCriteria` candidate output. The
+current slice is AST-only and detects repeated constant-receiver and
+constant-root scope-chain hash query criteria across positive `where` filters,
+negative `where.not` filters, and finder lookups such as `find_by`,
+`find_or_initialize_by`, and `find_or_create_by`. It classifies polymorphic,
+compound-association, association-scoped, and generic hash-criteria repeats,
+and records query method, query operation, and receiver shape. It remains
+behind `--project-analyzers`; dynamic SQL strings, dynamic scope chains,
+non-constant receivers, dynamic hashes, bang finders, and broader relation APIs
+are future scope.
 
 ### `SubclassOverridePressure`
 

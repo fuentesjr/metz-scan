@@ -151,6 +151,66 @@ module MetzScan
       end
     end
 
+    module RepeatedQueryCriteriaFinderFixtures
+      def repeated_finder_query_sources(query_method = "find_by")
+        { "app/controllers/posts_controller.rb" => finder_query_source("PostsController", "show", query_method),
+          "app/jobs/sync_posts_job.rb" => finder_query_source("SyncPostsJob", "perform", query_method),
+          "app/services/post_lookup.rb" => finder_query_source("PostLookup", "call", query_method) }
+      end
+
+      def finder_query_source(class_name, method_name, query_method)
+        <<~RUBY
+          class #{class_name}
+            def #{method_name}
+              Post.#{query_method}(topic_id: topic.id, post_number: params[:post_number])
+            end
+          end
+        RUBY
+      end
+
+      def mixed_finder_and_where_sources
+        { "app/controllers/posts_controller.rb" => "Post.find_by(topic_id: topic.id, post_number: 1)\n",
+          "app/jobs/sync_posts_job.rb" => "Post.where(topic_id: topic.id, post_number: 1)\n",
+          "app/services/post_report.rb" => "Post.where(topic_id: topic.id, post_number: 1)\n" }
+      end
+
+      def single_key_finder_sources
+        repeated_sources_for("Post.find_by(topic_id: topic.id)")
+      end
+
+      def dynamic_finder_sources
+        repeated_sources_for("Post.find_by(query_attributes)")
+      end
+    end
+
+    module RepeatedQueryCriteriaNegativeWhereFixtures
+      def negative_where_sources
+        repeated_sources_for("Order.active.where.not(account_id: account.id, status: \"closed\")")
+      end
+
+      def mixed_positive_and_negative_where_sources
+        { "app/controllers/orders_controller.rb" => "Order.active.where(account_id: account.id, status: \"closed\")\n",
+          "app/jobs/sync_orders_job.rb" => "Order.active.where.not(account_id: account.id, status: \"closed\")\n",
+          "app/services/order_report.rb" => "Order.active.where(account_id: account.id, status: \"closed\")\n" }
+      end
+
+      def single_key_negative_where_sources
+        repeated_sources_for("Order.where.not(account_id: account.id)")
+      end
+
+      def dynamic_negative_where_sources
+        repeated_sources_for("Order.where.not(\"account_id = ? AND status = ?\", account.id, \"closed\")")
+      end
+    end
+
+    module RepeatedQueryCriteriaSmallSourceFixtures
+      def repeated_sources_for(expression)
+        { "app/controllers/orders_controller.rb" => expression,
+          "app/jobs/sync_orders_job.rb" => expression,
+          "app/services/order_report.rb" => expression }
+      end
+    end
+
     class RepeatedQueryCriteriaTest < Minitest::Test
       include RepeatedQueryCriteriaFixtures
 
@@ -348,6 +408,130 @@ module MetzScan
       def assert_scope_chain_query_metadata(finding)
         assert_equal "scope_chain", finding.project_analyzer_metadata.fetch("receiver_shape")
         assert_equal %w[account_id status], finding.criteria_keys
+      end
+
+      def with_query_files(sources)
+        Dir.mktmpdir { |dir| yield write_query_files(dir, sources) }
+      end
+
+      def write_query_files(dir, sources)
+        sources.map { |relative_path, source| write_query_file(dir, relative_path, source) }
+      end
+
+      def write_query_file(dir, relative_path, source)
+        File.join(dir, relative_path).tap do |path|
+          FileUtils.mkdir_p(File.dirname(path))
+          File.write(path, source)
+        end
+      end
+    end
+
+    class RepeatedQueryCriteriaFinderTest < Minitest::Test
+      include RepeatedQueryCriteriaFixtures
+      include RepeatedQueryCriteriaFinderFixtures
+      include RepeatedQueryCriteriaSmallSourceFixtures
+
+      def test_reports_repeated_supported_finder_hash_criteria
+        supported_finder_query_methods.each { |query_method| assert_finder_query_reported(query_method) }
+      end
+
+      def test_does_not_group_finders_with_where_queries
+        with_query_files(mixed_finder_and_where_sources) do |files|
+          assert_empty analyze(files)
+        end
+      end
+
+      def test_ignores_single_key_finder_queries
+        with_query_files(single_key_finder_sources) do |files|
+          assert_empty analyze(files)
+        end
+      end
+
+      def test_ignores_dynamic_finder_queries
+        with_query_files(dynamic_finder_sources) do |files|
+          assert_empty analyze(files)
+        end
+      end
+
+      private
+
+      def analyze(files)
+        RepeatedQueryCriteria.new(index: FakeRepeatedQueryIndex.new(available: true, indexed_files: files)).call
+      end
+
+      def supported_finder_query_methods
+        %w[find_by find_or_initialize_by find_or_create_by]
+      end
+
+      def assert_finder_query_reported(query_method)
+        with_query_files(repeated_finder_query_sources(query_method)) do |files|
+          assert_finder_query_finding(analyze(files).first, query_method)
+        end
+      end
+
+      def assert_finder_query_finding(finding, query_method)
+        assert_equal "Post.#{query_method}(post_number, topic_id)", finding.query
+        assert_equal "finder", finding.project_analyzer_metadata.fetch("query_operation")
+        assert_equal query_method, finding.project_analyzer_metadata.fetch("query_method")
+        assert_includes finding.message, "repeats finder query criteria"
+      end
+
+      def with_query_files(sources)
+        Dir.mktmpdir { |dir| yield write_query_files(dir, sources) }
+      end
+
+      def write_query_files(dir, sources)
+        sources.map { |relative_path, source| write_query_file(dir, relative_path, source) }
+      end
+
+      def write_query_file(dir, relative_path, source)
+        File.join(dir, relative_path).tap do |path|
+          FileUtils.mkdir_p(File.dirname(path))
+          File.write(path, source)
+        end
+      end
+    end
+
+    class RepeatedQueryCriteriaNegativeWhereTest < Minitest::Test
+      include RepeatedQueryCriteriaNegativeWhereFixtures
+      include RepeatedQueryCriteriaSmallSourceFixtures
+
+      def test_reports_repeated_negative_where_hash_criteria
+        with_query_files(negative_where_sources) do |files|
+          assert_negative_where_finding(analyze(files).first)
+        end
+      end
+
+      def test_does_not_group_negative_and_positive_where_queries
+        with_query_files(mixed_positive_and_negative_where_sources) do |files|
+          assert_empty analyze(files)
+        end
+      end
+
+      def test_ignores_single_key_negative_where_queries
+        with_query_files(single_key_negative_where_sources) do |files|
+          assert_empty analyze(files)
+        end
+      end
+
+      def test_ignores_dynamic_negative_where_queries
+        with_query_files(dynamic_negative_where_sources) do |files|
+          assert_empty analyze(files)
+        end
+      end
+
+      private
+
+      def analyze(files)
+        RepeatedQueryCriteria.new(index: FakeRepeatedQueryIndex.new(available: true, indexed_files: files)).call
+      end
+
+      def assert_negative_where_finding(finding)
+        assert_equal "Order.active.where.not(account_id, status)", finding.query
+        assert_equal "scope_chain", finding.project_analyzer_metadata.fetch("receiver_shape")
+        assert_equal "negative_filter", finding.project_analyzer_metadata.fetch("query_operation")
+        assert_equal "where.not", finding.project_analyzer_metadata.fetch("query_method")
+        assert_includes finding.message, "repeats negative association-scoped query criteria"
       end
 
       def with_query_files(sources)

@@ -124,7 +124,7 @@ Current project analyzer status:
 | `MetzProject/PackageDependencyPressure` | Candidate | No | Indexed namespaced classes or modules referenced from several files across multiple coarse packages outside their declaration package. |
 | `MetzProject/NamespaceLeakPressure` | Candidate | No | Indexed deeply nested classes or modules referenced from multiple files across packages outside their home namespace. |
 | `MetzProject/ImplicitContextPressure` | Candidate | No | Repeated `Current.*`, namespaced `Current`, or literal `Thread.current[...]` ambient context access across files and coarse packages. |
-| `MetzProject/RepeatedQueryCriteria` | Candidate | No | Repeated constant-receiver or constant-root scope-chain `where` hash criteria across files and coarse packages. |
+| `MetzProject/RepeatedQueryCriteria` | Candidate | No | Repeated constant-receiver or constant-root scope-chain hash criteria in `where`, `where.not`, or finder calls across files and coarse packages. |
 | `MetzProject/SubclassOverridePressure` | Candidate | No | Indexed base classes whose descendants repeatedly override the same method. |
 
 Project analyzers parse Ruby files only. They do not inspect ERB/HAML/SLIM
@@ -178,17 +178,21 @@ calls such as `Current.reset`, `Spree::Current.reset`, and `Current.set(...)`
 are ignored, and dynamic `Thread.current` keys stay out of scope. Category
 metadata distinguishes root vs namespaced `Current` receivers, thread-local
 keys, and whether the repeated access includes writes.
-`RepeatedQueryCriteria` is AST-only and remains candidate opt-in. Its first
-slice reports simple constant-receiver or constant-root scope-chain `where`
-calls with at least two literal hash keys, such as
-`Order.where(account_id: ..., status: ...)` or
-`Order.active.where(account_id: ..., status: ...)`, when the same receiver and
-key set appear in at least three files across at least two coarse packages.
-Dynamic SQL strings, single-key lookups, dynamic scope chains, and non-constant
-receivers are outside this first slice. Category metadata distinguishes
-polymorphic, compound-association, association-scoped, and generic
-hash-criteria repeats, and records whether the receiver is a constant or a
-scope chain.
+`RepeatedQueryCriteria` is AST-only and remains candidate opt-in. Its current
+slice reports simple constant-receiver or constant-root scope-chain hash query
+criteria with at least two literal keys: positive `where` filters, negative
+`where.not` filters, and finder lookups such as `find_by`,
+`find_or_initialize_by`, or `find_or_create_by`. Examples include
+`Order.where(account_id: ..., status: ...)`,
+`Order.active.where.not(account_id: ..., status: ...)`, and
+`Post.find_by(topic_id: ..., post_number: ...)`, when the same receiver, query
+method, and key set appear in at least three files across at least two coarse
+packages. Dynamic SQL strings, single-key lookups, dynamic scope chains,
+non-constant receivers, dynamic hashes, bang finders, and broader relation APIs
+remain outside this slice. Category metadata distinguishes polymorphic,
+compound-association, association-scoped, and generic hash-criteria repeats,
+and records query method, query operation, and whether the receiver is a
+constant or a scope chain.
 `SubclassOverridePressure` requires the optional project index and remains
 candidate opt-in. Its first slice reports base classes whose known descendants
 override the same base-declared method in at least six subclasses. Framework,

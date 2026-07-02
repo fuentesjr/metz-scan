@@ -84,8 +84,18 @@ module MetzScan
             suggested_next_moves: profile.fetch(:suggested_next_moves) }
         end
 
-        def query_message_phrase(category)
+        def query_message_phrase(site, category)
+          return "repeats finder query criteria" if site.query_operation == "finder"
+          return negative_query_message_phrase(category) if site.query_operation == "negative_filter"
+
           MESSAGE_PHRASES.fetch(category)
+        end
+
+        def negative_query_message_phrase(category)
+          { "polymorphic_where_criteria" => "repeats negative polymorphic query criteria",
+            "compound_association_where_criteria" => "repeats negative compound association query criteria",
+            "scoped_association_where_criteria" => "repeats negative association-scoped query criteria",
+            "where_hash_criteria" => "repeats negative query criteria" }.fetch(category)
         end
       end
     end

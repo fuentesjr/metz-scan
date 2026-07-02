@@ -96,7 +96,7 @@ module MetzScan
       end
 
       def message_for(site, grouped, category)
-        "#{site.query} #{query_message_phrase(category)} in #{grouped.referring_files.size} files across " \
+        "#{site.query} #{query_message_phrase(site, category)} in #{grouped.referring_files.size} files across " \
           "#{grouped.referring_packages.size} packages; consider naming the query criteria."
       end
 
@@ -105,11 +105,17 @@ module MetzScan
       end
 
       def query_metadata(site, category)
-        { "project_analyzer_category" => category,
-          "repeated_query_category" => category, "query" => site.query,
-          "receiver" => site.receiver, "criteria_keys" => site.criteria_keys,
-          "receiver_shape" => site.receiver_shape,
-          "criteria_key_shape" => criteria_key_shape_for(site) }
+        query_identity_metadata(site, category).merge(query_shape_metadata(site))
+      end
+
+      def query_identity_metadata(site, category)
+        { "project_analyzer_category" => category, "repeated_query_category" => category, "query" => site.query,
+          "query_method" => site.query_method, "query_operation" => site.query_operation }
+      end
+
+      def query_shape_metadata(site)
+        { "receiver" => site.receiver, "criteria_keys" => site.criteria_keys,
+          "receiver_shape" => site.receiver_shape, "criteria_key_shape" => criteria_key_shape_for(site) }
       end
 
       def query_reference_metadata(grouped)
@@ -143,10 +149,11 @@ module MetzScan
       end
 
       class QuerySiteCollector
-        QuerySite = Struct.new(:receiver, :criteria_keys, :enclosing_name, :method_name, :path, :line,
-                               :expression, keyword_init: true) do
+        FINDER_QUERY_METHODS = %i[find_by find_or_create_by find_or_initialize_by].freeze
+        QuerySite = Struct.new(:receiver, :criteria_keys, :query_method, :query_operation, :enclosing_name,
+                               :method_name, :path, :line, :expression, keyword_init: true) do
           def query
-            "#{receiver}.where(#{criteria_keys.join(', ')})"
+            "#{receiver}.#{query_method}(#{criteria_keys.join(', ')})"
           end
 
           def receiver_shape
@@ -154,7 +161,7 @@ module MetzScan
           end
 
           def fingerprint
-            [receiver, criteria_keys].join(":")
+            [receiver, query_method, criteria_keys].join(":")
           end
 
           def context
@@ -186,13 +193,6 @@ module MetzScan
           ContextualNodeWalker.new(processed_source.ast).nodes
         end
 
-        def repeated_query_site?(node)
-          node.type == :send &&
-            node.method_name == :where &&
-            receiver_fingerprint_for(node.receiver) &&
-            criteria_keys_for(node).size >= MINIMUM_CRITERIA_KEYS
-        end
-
         def receiver_fingerprint_for(node)
           return unless node
           return node.source if node.type == :const
@@ -209,11 +209,59 @@ module MetzScan
 
         def query_site_for(contextual_node)
           node = contextual_node.node
-          return unless repeated_query_site?(node)
+          query_attributes = query_attributes_for(node)
+          return unless query_attributes
 
-          QuerySite.new(receiver: receiver_fingerprint_for(node.receiver), criteria_keys: criteria_keys_for(node),
-                        enclosing_name: contextual_node.enclosing_name, method_name: contextual_node.method_name,
-                        path: path, line: node.loc.expression.line, expression: first_line(node))
+          QuerySite.new(query_attributes.merge(context_attributes_for(contextual_node, node)))
+        end
+
+        def context_attributes_for(contextual_node, node)
+          { enclosing_name: contextual_node.enclosing_name, method_name: contextual_node.method_name,
+            path: path, line: node.loc.expression.line, expression: first_line(node) }
+        end
+
+        def query_attributes_for(node)
+          return unless node.type == :send
+
+          positive_where_query_attributes(node) ||
+            finder_query_attributes(node) ||
+            negative_where_query_attributes(node)
+        end
+
+        def positive_where_query_attributes(node)
+          return unless node.method_name == :where
+
+          query_attributes_for_parts(node.receiver, criteria_keys_for(node), "where", "filter")
+        end
+
+        def finder_query_attributes(node)
+          return unless FINDER_QUERY_METHODS.include?(node.method_name)
+
+          query_attributes_for_parts(node.receiver, criteria_keys_for(node), node.method_name.to_s, "finder")
+        end
+
+        def negative_where_query_attributes(node)
+          return unless node.method_name == :not
+
+          receiver_node = empty_where_receiver_for(node)
+          return unless receiver_node
+
+          query_attributes_for_parts(receiver_node.receiver, criteria_keys_for(node), "where.not", "negative_filter")
+        end
+
+        def empty_where_receiver_for(node)
+          receiver_node = node.receiver
+          receiver_node if receiver_node&.type == :send && receiver_node.method_name == :where &&
+                           receiver_node.arguments.empty?
+        end
+
+        def query_attributes_for_parts(receiver_node, criteria_keys, query_method, query_operation)
+          receiver = receiver_fingerprint_for(receiver_node)
+          return unless receiver
+          return unless criteria_keys.size >= MINIMUM_CRITERIA_KEYS
+
+          { receiver: receiver, criteria_keys: criteria_keys, query_method: query_method,
+            query_operation: query_operation }
         end
 
         def criteria_keys_for(node)

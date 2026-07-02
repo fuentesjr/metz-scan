@@ -775,13 +775,15 @@ did not change.
 
 Result: **Candidate**, behind `--project-analyzers`.
 
-This analyzer reports repeated `where` calls with literal hash criteria. The
-first slice deliberately stays narrow: it accepts constant receivers and
-constant-root no-argument scope chains, ignores dynamic SQL strings,
-single-key lookups, dynamic scope chains, and non-constant receivers; it
-requires the same receiver and sorted criteria-key set to appear in at least
-three files across at least two coarse packages; and it emits one primary
-offense per repeated query fingerprint. The full occurrence list remains in
+This analyzer reports repeated ActiveRecord hash query criteria. The current
+slice deliberately stays narrow: it accepts constant receivers and
+constant-root no-argument scope chains for positive `where` filters, negative
+`where.not` filters, and finder lookups; ignores dynamic SQL strings,
+single-key lookups, dynamic scope chains, non-constant receivers, dynamic
+hashes, bang finders, and broader relation APIs; requires the same receiver,
+query method, and sorted criteria-key set to appear in at least three files
+across at least two coarse packages; and emits one primary offense per
+repeated query fingerprint. The full occurrence list remains in
 project-analyzer metadata.
 
 First active-fixture manifest pass on 2026-07-01 used the generic target
@@ -818,6 +820,17 @@ repeated scope-chain findings at the three-file/two-package threshold, but
 the analyzer now accepts conservative no-argument scope chains such as
 `Order.active.where(...)` and records `receiver_shape` as `constant` or
 `scope_chain` in metadata. Dynamic receiver chains remain out of scope.
+Rollout status and default-output eligibility did not change.
+
+Finder and negative-filter follow-up on 2026-07-02 increased the
+manifest-backed count to 15 findings and 15 offenses. The added findings came
+from repeated multi-key `find_by` lookups; the active fixture set did not add a
+repeated `where.not` finding at the current threshold. Operation metadata now
+splits the current sample into `filter=6` and `finder=9`, with query methods
+`where=6` and `find_by=9`. Overall `project_analyzer_category` is now
+`scoped_association_where_criteria=8`,
+`compound_association_where_criteria=2`,
+`polymorphic_where_criteria=1`, and `where_hash_criteria=4`.
 Rollout status and default-output eligibility did not change.
 
 Decision: keep RepeatedQueryCriteria **Candidate** and opt-in. The first pass

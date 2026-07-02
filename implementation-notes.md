@@ -2136,3 +2136,94 @@ Implementation decisions:
 - Added `receiver_shape` metadata so calibration artifacts can distinguish
   constant receivers from scope-chain receivers without changing category
   semantics.
+
+## 2026-07-02: Finder and negative repeated query criteria
+
+Task: start on the next 2 big tasks, keep using agenticons, commit the
+changes, and provide a detailed comprehensive summary as described in
+AGENTS.md.
+
+Additional user requests: add `.claude/settings.local.json` to
+`~/.gitignore`, then push upstream. The global ignore entry was already present
+at `/Users/sal/.gitignore` line 4, so no home-directory edit was needed.
+
+Scope boundaries:
+
+- Use `tmp/project-analyzer-calibration/apps` as the active calibration fixture
+  home. Treat `/private/tmp` calibration paths as historical only.
+- Keep `MetzProject/RepeatedQueryCriteria` candidate opt-in and not
+  default-output eligible.
+- Do not promote, validate, downrank, or retune thresholds in this pass.
+- Add only multi-key hash criteria for `find_by`,
+  `find_or_initialize_by`, `find_or_create_by`, and simple
+  `where.not(...)` calls whose receiver is a constant or conservative
+  constant-root no-argument scope chain.
+- Keep dynamic SQL strings, single-key lookups, dynamic hashes, bang finders,
+  `exists?`, `take`, association/local receivers, dynamic scope chains,
+  positive/negative query normalization, and broader relation APIs out of
+  scope.
+
+Change type: feature.
+
+Verbatim task statement: "Ok go ahead and start on the next 2 big tasks and
+keep using agenticons and at the end commit the changes. Then give me a detail
+and comprehensive summary as described in AGENTS.md"
+
+Agenticons:
+
+- `planner: next two task selection` recommended repeated multi-key finder
+  hash criteria and negative `where.not` hash criteria as the next bounded
+  analyzer tasks.
+- `helper_worker: analyzer backlog reconnaissance` recommended
+  evidence-first caution on broader analyzer backlog items and warned against
+  promotion/default-output changes without more calibration.
+
+Verification status:
+
+- Red focused test before implementation:
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/analyzers/repeated_query_criteria_test.rb` failed with
+    23 runs, 55 assertions, 0 failures, 2 errors because repeated finder and
+    negative `where.not` examples returned no finding.
+- Green focused test after implementation:
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/analyzers/repeated_query_criteria_test.rb`: 23 runs,
+    76 assertions, 0 failures, 0 errors.
+- Manifest-backed calibration smoke over
+  `tmp/project-analyzer-calibration/project_analyzer_targets.yml` with
+  `--no-write`:
+  - `MetzProject/RepeatedQueryCriteria`: 15 findings and 15 offenses;
+    `project_analyzer_category`:
+    `scoped_association_where_criteria=8`,
+    `compound_association_where_criteria=2`,
+    `polymorphic_where_criteria=1`, `where_hash_criteria=4`.
+  - Operation metadata in the current sample splits as `filter=6` and
+    `finder=9`; query method metadata splits as `where=6` and `find_by=9`.
+    The active fixture set did not add a repeated `where.not` finding at the
+    current threshold.
+- Full local gates passed:
+  - `bundle exec rake`: 444 runs, 1891 assertions, 0 failures, 0 errors,
+    2 skips.
+  - `bundle exec rubocop`: 190 files inspected, no offenses.
+  - `bin/check_dependency_direction`: passed.
+  - `bin/check_sample_app_frozen`: passed.
+  - `bin/check_dogfood`: passed with accepted project-analyzer baseline of
+    0 findings.
+  - `git -c core.fsmonitor=false diff --check`: passed.
+
+Implementation decisions:
+
+- Added query method and query operation metadata to repeated query findings.
+  Current operations are `filter`, `negative_filter`, and `finder`; current
+  methods are `where`, `where.not`, `find_by`, `find_or_initialize_by`, and
+  `find_or_create_by`.
+- Included query method in the repeated-query fingerprint so positive filters,
+  negative filters, and finder lookups with the same receiver and criteria keys
+  do not group together.
+- Kept key-shape categories unchanged and used operation-aware message
+  language for finder and negative-filter findings.
+- Added tests for finder reporting, finder/where separation, ignored
+  single-key and dynamic finder queries, negative `where.not` reporting,
+  positive/negative where separation, and ignored single-key and dynamic
+  negative queries. Finder reporting is covered for `find_by`,
+  `find_or_initialize_by`, and `find_or_create_by`.
