@@ -168,10 +168,6 @@ module MetzScan
         assert summary.fetch("finding_count").positive?
       end
 
-      def test_summary_records_project_analyzer_readiness_boundaries
-        with_tmpdir { |dir| assert_project_analyzer_readiness(summary_with_collaborators(dir, captures)) }
-      end
-
       private
 
       def assert_default_summary_for(dir)
@@ -213,17 +209,6 @@ module MetzScan
         assert_equal "fake", summary.fetch("targets").first.dig("index", "backend")
       end
 
-      def assert_project_analyzer_readiness(summary)
-        readiness = summary.dig("project_analyzers", "readiness")
-        repeated_query = readiness.find { |entry| entry.fetch("rule_id") == "MetzProject/RepeatedQueryCriteria" }
-
-        assert_equal "candidate", repeated_query.fetch("status")
-        assert_equal false, repeated_query.fetch("default_output")
-        assert_includes repeated_query.fetch("disposition"), "Candidate-only"
-        assert_includes repeated_query.fetch("evidence"), "15 findings"
-        assert_includes repeated_query.fetch("not_next"), "Do not add more query forms"
-      end
-
       def assert_skipped_target(target)
         assert_empty target.fetch("scan_paths")
         assert_equal "none", target.dig("index", "backend")
@@ -262,6 +247,50 @@ module MetzScan
 
       def sample_app_path
         File.expand_path("../../fixtures/sample_app", __dir__)
+      end
+    end
+
+    class ProjectAnalyzerEvidenceRunnerReadinessTest < Minitest::Test
+      include ProjectAnalyzerEvidenceRunnerHelpers
+
+      def test_summary_records_project_analyzer_readiness_boundaries
+        with_tmpdir { |dir| assert_project_analyzer_readiness(summary_with_collaborators(dir, captures)) }
+      end
+
+      private
+
+      def assert_project_analyzer_readiness(summary)
+        readiness = summary.dig("project_analyzers", "readiness")
+
+        assert_repeated_query_readiness(readiness)
+        assert_implicit_context_readiness(readiness)
+      end
+
+      def assert_repeated_query_readiness(readiness)
+        entry = readiness_entry(readiness, "MetzProject/RepeatedQueryCriteria")
+
+        assert_candidate_readiness(entry)
+        assert_includes entry.fetch("evidence"), "15 findings"
+        assert_includes entry.fetch("not_next"), "Do not add more query forms"
+      end
+
+      def assert_implicit_context_readiness(readiness)
+        entry = readiness_entry(readiness, "MetzProject/ImplicitContextPressure")
+
+        assert_candidate_readiness(entry)
+        assert_includes entry.fetch("evidence"), "dominated by mechanical framework state"
+        assert_includes entry.fetch("next"), "Keep candidate-only"
+        assert_includes entry.fetch("not_next"), "Do not add suppressions"
+      end
+
+      def assert_candidate_readiness(entry)
+        assert_equal "candidate", entry.fetch("status")
+        assert_equal false, entry.fetch("default_output")
+        assert_includes entry.fetch("disposition"), "Candidate-only"
+      end
+
+      def readiness_entry(readiness, rule_id)
+        readiness.find { |entry| entry.fetch("rule_id") == rule_id }
       end
     end
 
@@ -599,17 +628,18 @@ module MetzScan
       include ProjectAnalyzerEvidenceRunnerHelpers
 
       def test_text_output_renders_readiness_evidence
-        with_tmpdir do |dir|
-          stdout, stderr, status = run_calibration_text(dir)
-
-          assert_predicate status, :success?, stderr
-          assert_includes stdout, "readiness:"
-          assert_includes stdout, "MetzProject/RepeatedQueryCriteria"
-          assert_includes stdout, "evidence=Current active fixtures show 15 findings"
-        end
+        with_tmpdir { |dir| assert_text_output_readiness(run_calibration_text(dir)) }
       end
 
       private
+
+      def assert_text_output_readiness(result)
+        stdout, stderr, status = result
+        assert_predicate status, :success?, stderr
+        assert_includes stdout, "readiness:"
+        assert_includes stdout, "MetzProject/RepeatedQueryCriteria"
+        assert_includes stdout, "evidence=Current active fixtures show 15 findings"
+      end
 
       def run_calibration_text(dir)
         Open3.capture3(

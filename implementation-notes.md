@@ -2479,3 +2479,62 @@ Evidence and decisions:
   Keep candidate-only; do not promote or add app-specific suppressions.
 - `MetzProject/RepeatedQueryCriteria`: 15 findings and 15 offenses, still
   candidate-only; no further query-form expansion.
+
+## 2026-07-02: Implicit context quality pass and readiness catalog
+
+Task: update `logs/repeated-query-criteria-strategy-review.md` and then start
+on the next two substantial tasks while continuing to use agenticons.
+
+Change type: feature.
+
+Verbatim task statement: "Update logs/repeated-query-criteria-strategy-review.md
+and then start on the next 2 big tasks. Keep using agenticons"
+
+Scope boundaries:
+
+- Keep `MetzProject/ImplicitContextPressure` candidate opt-in and not
+  default-output eligible.
+- Do not change analyzer detection, thresholds, status, categories, triage
+  severity, suppressions, or default-output policy.
+- Use active calibration fixtures under `tmp/project-analyzer-calibration/apps`;
+  treat `/private/tmp` calibration paths as historical only.
+- Keep `logs/repeated-query-criteria-strategy-review.md` local-only and
+  uncommitted because `logs/` is locally ignored.
+
+Agenticons:
+
+- `planner: ImplicitContextPressure next-task selection` recommended two tasks:
+  run the focused ImplicitContextPressure quality pass, then refresh generated
+  readiness inputs from that review. It explicitly kept thresholds, status,
+  default-output eligibility, and detector scope unchanged.
+- `helper_worker: ImplicitContextPressure finding classification` classified the
+  11 active findings as mostly framework-state plumbing, with one useful
+  execution-identity prompt and one borderline `Current.user` fallback.
+
+Tasks completed:
+
+- Updated the ignored local strategy report to record that readiness output is
+  complete and that the next evidence work is ImplicitContextPressure quality
+  review plus generated-catalog refresh.
+- Ran the focused active-manifest quality pass for
+  `MetzProject/ImplicitContextPressure` and classified the current 11 findings:
+  9 mechanical framework-state signals, 1 useful design-pressure prompt, and
+  1 needs-context fallback.
+- Updated the generated readiness catalog so compact text, Markdown, and JSON
+  no longer say the current signal still needs its first quality pass.
+- Updated calibration notes with the quality split and explicit not-next
+  boundary.
+
+Evidence and decisions:
+
+- `MetzProject/ImplicitContextPressure` remains candidate-only. The current
+  sample is dominated by mechanical request-boundary, import-job, and
+  infrastructure state.
+- The only clear useful prompt is Chatwoot `Current.executed_by`, because
+  ambient execution identity crosses services, model concerns, and dispatch
+  metadata while changing activity-message content.
+- Chatwoot `Current.user` remains needs-context because the notable
+  `NotificationBuilder` sample is a `secondary_actor` fallback that may be
+  intentional builder API shape.
+- No analyzer behavior change, suppression, promotion, default-output
+  eligibility, or new global-access form is justified by this sample.

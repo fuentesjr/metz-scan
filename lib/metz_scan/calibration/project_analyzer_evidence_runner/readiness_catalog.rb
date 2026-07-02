@@ -23,7 +23,8 @@ module MetzScan
             "not_next" => "Do not make default-output eligible while findings depend on optional indexing."
           },
           "MetzProject/PackageDependencyPressure" => {
-            "evidence" => "Current active fixtures show 39 findings: 1 medium package boundary and 38 low shared dependencies.",
+            "evidence" => "Current active fixtures show 39 findings: 1 medium package boundary and " \
+                          "38 low shared dependencies.",
             "next" => "Reopen when new targets can produce independent medium package-boundary evidence.",
             "not_next" => "Do not promote, retune thresholds, or downrank the sole medium finding from this sample."
           },
@@ -33,19 +34,25 @@ module MetzScan
             "not_next" => "Do not promote or add app-specific namespace suppressions from sparse evidence."
           },
           "MetzProject/ImplicitContextPressure" => {
-            "evidence" => "Current and Thread.current access are detected, but usefulness/noise buckets need review.",
-            "next" => "Run a focused quality pass separating ambient-context design pressure from mechanical globals.",
-            "not_next" => "Do not add more global-access forms before the current signal is calibrated."
+            "evidence" => "Current active fixtures show 11 findings dominated by mechanical framework state: " \
+                          "9 mechanical, 1 useful execution-identity prompt, and 1 needs-context fallback.",
+            "next" => "Keep candidate-only and use broader samples to separate boundary setup from ambient identity " \
+                      "design pressure.",
+            "not_next" => "Do not add suppressions, global-access forms, promotion, or default-output eligibility " \
+                          "from this sample."
           },
           "MetzProject/RepeatedQueryCriteria" => {
             "evidence" => "Current active fixtures show 15 findings: 12 useful prompts and 3 mechanical lookups.",
             "next" => "Keep separating membership-table lookups from business-named lookup concepts.",
-            "not_next" => "Do not add more query forms, dynamic receivers, association receivers, SQL strings, joins, merges, Arel, single-key finders, bang finders, exists?, or take."
+            "not_next" => "Do not add more query forms, dynamic receivers, association receivers, SQL strings, " \
+                          "joins, merges, Arel, single-key finders, bang finders, exists?, or take."
           },
           "MetzProject/SubclassOverridePressure" => {
-            "evidence" => "Current active fixtures show 106 findings: 76 low broad-root and 30 medium manual-review findings.",
+            "evidence" => "Current active fixtures show 106 findings: 76 low broad-root and " \
+                          "30 medium manual-review findings.",
             "next" => "Refine medium-family evidence only when it supports a generic, non-app-specific rule.",
-            "not_next" => "Do not promote, make default-output eligible, suppress medium categories, or retune thresholds."
+            "not_next" => "Do not promote, make default-output eligible, suppress medium categories, or " \
+                          "retune thresholds."
           }
         }.freeze
 

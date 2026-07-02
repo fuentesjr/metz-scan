@@ -813,11 +813,27 @@ same shape: 11 findings and 11 offenses, all medium-confidence manual-review
 signals. Compared with the already-dispositioned repeated-query, package, and
 subclass analyzers, this is the clearest next evidence target because it has
 cross-application coverage but no explicit useful-vs-mechanical quality split
-yet. Next action is a focused quality pass over the 5 Chatwoot root `Current`
+yet. This set up a focused quality pass over the 5 Chatwoot root `Current`
 findings, 5 Spree namespaced `Current` findings, and 1 Mastodon
-`Thread.current[:redis]` finding. Do not add more global-access forms before
-that quality pass decides which findings are design-pressure prompts and which
-are mechanical framework state.
+`Thread.current[:redis]` finding.
+
+Focused quality pass on 2026-07-02 reran the active manifest and kept the same
+11-finding shape, but classified the findings as 9 mechanical framework-state
+signals, 1 useful design-pressure prompt, and 1 needs-context fallback:
+
+| Finding group | Count | Quality bucket | Rationale |
+| --- | ---: | --- | --- |
+| `Current.account`, `Current.account_user`, `Current.contact` | 3 | Mechanical framework state | Chatwoot account, authorization, and contact setup are request/bootstrap boundaries. |
+| `Spree::Current.channel`, `Spree::Current.currency`, `Spree::Current.locale`, `Spree::Current.market`, `Spree::Current.store` | 5 | Mechanical framework state | Spree uses its namespaced `Current` surface for API request context, fallback resolution, and import-job store setup/cleanup. |
+| `Thread.current[:redis]` | 1 | Mechanical framework state | Mastodon's thread-local value is an infrastructure connection cache. |
+| `Current.executed_by` | 1 | Useful design-pressure prompt | Chatwoot ambient execution identity crosses assignment/automation services, model concerns, and event dispatch metadata, and it changes activity-message content. |
+| `Current.user` | 1 | Needs context | Chatwoot has broad current-user usage, but the notable `NotificationBuilder` sample is a fallback for `secondary_actor`, which may be intentional builder API shape. |
+
+Decision: keep ImplicitContextPressure **Candidate** and opt-in. Do not promote,
+make default-output eligible, add suppressions, retune thresholds, or add more
+global-access forms from this sample. Future work should use broader samples to
+separate generic boundary/setup state from ambient identity dependencies before
+changing analyzer behavior.
 
 ## `MetzProject/RepeatedQueryCriteria`
 
