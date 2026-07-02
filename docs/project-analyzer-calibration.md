@@ -611,7 +611,7 @@ for `OpenFoodNetwork::ScopeVariantToHub`.
 
 Current decision:
 
-- Promote PackageDependencyPressure to **Candidate** and keep it opt-in.
+- Keep PackageDependencyPressure **Candidate** and keep it opt-in.
 - Treat findings as dependency-pressure prompts, not dependency-direction
   violations. The first slice deliberately does not infer whether a reference
   is architecturally wrong.
@@ -626,6 +626,19 @@ one medium `package_boundary` finding for
 and reference-metadata helpers with `NamespaceLeakPressure`, and its metadata
 includes `reference_shape` for source-derived package-spread evidence. Rollout
 status and default-output eligibility did not change.
+
+Evidence-gap follow-up on 2026-07-02 reran the active manifest and confirmed
+the same readiness shape: 39 findings and 39 offenses, with 38 low-confidence
+`shared_dependency` findings and one medium `package_boundary` finding for
+`OpenFoodNetwork::ScopeVariantToHub`. This is useful as a regression lock but
+still too thin for analyzer promotion. The only medium finding is concentrated
+in OpenFoodNetwork, while the rest of the sample is broad shared API,
+infrastructure, value-object, or protocol-surface pressure already downranked
+by the generic shared-surface rules. Next action is more evidence, not another
+classifier change: either add broader targets that can produce independent
+medium package-boundary examples, or park the analyzer as candidate until such
+evidence appears. Rollout status, thresholds, and default-output eligibility
+did not change.
 
 ## `MetzProject/NamespaceLeakPressure`
 
@@ -939,6 +952,27 @@ design-review blocker and changed the manifest-backed calibration count from
 eligibility. A follow-up body-facts fix uses the AST node body API for both
 instance and singleton methods, keeping the final count at 106 while classifying
 18 abstract hooks, 5 cooperative overrides, and 7 replacement overrides.
+
+Medium-finding quality follow-up on 2026-07-02 reran the active manifest and
+confirmed the same shape: 106 findings and 106 offenses, with 76 low-confidence
+`broad_root_override` findings and 30 medium manual-review findings. The
+medium sample is concrete and readable, but still mixed enough to keep the
+analyzer candidate-only:
+
+| Family | Representative targets | Quality read |
+| --- | --- | --- |
+| Auth/provider hook protocols | Discourse `Auth::Authenticator`, Forem `Authentication::Providers::Provider` | Useful manual-review prompts; repeated provider methods are explicit hook protocols, though many may be deliberate extension points. |
+| Dev/setup record generators | Discourse `DiscourseDev::Record` | Likely mechanical or setup-specific; useful evidence that setup/dev families may need softer triage if they grow. |
+| Settings and theme managers | Discourse `EnumSiteSetting`, `ThemeSettingsManager` | Needs context; repeated hooks are readable, but setting/theme extension APIs can be intentional platform surfaces. |
+| Problem checks and ActivityPub activities | Discourse `ProblemCheck`, Mastodon `ActivityPub::Activity` | Useful protocol prompts; repeated `call`, `translation_data`, or `perform` methods reveal implicit subclass contracts. |
+| Reporting templates and model sets | OpenFoodNetwork `Reporting::ReportTemplate`, `Sets::ModelSet` | Useful but app-concentrated; reporting templates show a strong hook protocol, while constructor cooperation needs context. |
+| Commerce extension points | OpenFoodNetwork/Spree `Spree::Calculator`, `Spree::Export`, `Spree::PromotionRule`, `Spree::ShippingCalculator` | Needs context; these look like deliberate extension APIs and should not drive promotion without broader evidence. |
+
+Readiness boundary: keep `MetzProject/SubclassOverridePressure` candidate-only.
+Do not retune thresholds, suppress medium categories, or add app-specific
+classifier rules from this sample alone. The next useful step is to separate
+deliberate extension-point families from design-pressure hook protocols across
+more targets, while preserving the current broad-root downranking.
 
 ## `MetzProject/RepeatedBranching`
 

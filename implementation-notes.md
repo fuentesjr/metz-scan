@@ -2271,3 +2271,61 @@ Decision:
 - Before changing analyzer mechanics, run a follow-up calibration slice that
   separates pure association-table membership lookups from business-named
   lookup concepts.
+
+## 2026-07-02: Package and subclass pressure evidence loops
+
+Task: review `logs/repeated-query-criteria-strategy-review.md` and start on
+the next two big tasks while continuing to use agenticons.
+
+Scope boundaries:
+
+- Treat the repeated-query strategy review as local log context only; `logs/`
+  remains ignored.
+- Use `tmp/project-analyzer-calibration/apps` as the active fixture home.
+- Do not expand `RepeatedQueryCriteria` further in this pass.
+- Make no analyzer behavior, threshold, status, or default-output changes.
+- Treat `/private/tmp` calibration paths as historical only.
+
+Agenticons:
+
+- `planner: next two task selection after repeated-query strategy` recommended
+  `SubclassOverridePressure` medium-finding calibration quality first, then
+  `PackageDependencyPressure` evidence-gap review.
+- `helper_worker: package and subclass pressure evidence` confirmed both
+  analyzers look behavior-stable and that the next useful work is calibration
+  documentation, not detector logic.
+
+Evidence:
+
+- `MetzProject/SubclassOverridePressure` active-manifest calibration:
+  106 findings and 106 offenses; `low=76`, `medium=30`;
+  `project_analyzer_category`: `broad_root_override=76`,
+  `abstract_hook_override=18`, `cooperative_override=5`,
+  `replacement_override=7`.
+- The 30 medium subclass findings are concrete but mixed:
+  - useful hook-protocol prompts include Discourse auth/provider hooks,
+    Discourse `ProblemCheck`, Mastodon `ActivityPub::Activity`,
+    OpenFoodNetwork reporting templates, and some Spree calculator/export
+    hooks;
+  - likely mechanical or context-heavy families include
+    `DiscourseDev::Record`, settings/theme extension APIs, constructor
+    cooperation, and commerce extension-point APIs.
+- `MetzProject/PackageDependencyPressure` active-manifest calibration:
+  39 findings and 39 offenses; `low=38`, `medium=1`;
+  `project_analyzer_category`: `shared_dependency=38`,
+  `package_boundary=1`.
+- The only medium package-boundary finding remains
+  `OpenFoodNetwork::ScopeVariantToHub`; the rest of the sample is broad shared
+  dependency pressure already downranked.
+
+Decisions:
+
+- Keep both analyzers candidate-only and opt-in.
+- Do not promote either analyzer or make either default-output eligible.
+- Do not change thresholds or add classifier rules from this evidence alone.
+- For `SubclassOverridePressure`, the next evidence task is to separate
+  deliberate extension-point families from design-pressure hook protocols
+  across more targets while preserving broad-root downranking.
+- For `PackageDependencyPressure`, the next evidence task is to find broader
+  independent medium package-boundary examples or park the analyzer until such
+  evidence appears.
