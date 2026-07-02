@@ -2227,3 +2227,47 @@ Implementation decisions:
   positive/negative where separation, and ignored single-key and dynamic
   negative queries. Finder reporting is covered for `find_by`,
   `find_or_initialize_by`, and `find_or_create_by`.
+
+## 2026-07-02: Repeated query criteria calibration-quality checkpoint
+
+Task: proceed with the recommendation to review the 15
+`MetzProject/RepeatedQueryCriteria` calibration findings before expanding the
+analyzer again, while keeping loops and agenticons in use.
+
+Scope boundaries:
+
+- Use `tmp/project-analyzer-calibration/apps` and the local calibration
+  artifact from the finder/negative-filter slice as active evidence.
+- Leave `docs/repeated-query-criteria-strategy-review.md` untracked and
+  unstaged per user request.
+- Do not add an ignore rule for the untracked strategy report.
+- Make no analyzer behavior, threshold, status, or default-output changes in
+  this checkpoint.
+
+Agenticons:
+
+- `helper_worker: repeated query calibration quality review` independently
+  classified the 15 current findings for usefulness/noise and recommended
+  readiness boundaries.
+
+Evidence summary:
+
+- The helper classified 12 of 15 findings as useful manual-review design
+  prompts and 3 as mostly mechanical or expected.
+- Mechanical/expected findings were `Badge.find_by(enabled, id)`,
+  `GroupUser.where(group_id, user_id)`, and
+  `TopicUser.where(topic_id, user_id)`.
+- Useful prompt families included post-within-topic lookups, locale-scoped
+  localization lookups, polymorphic comment lookups, domain-block lookups,
+  custom emoji domain/shortcode lookups, and follow-graph lookups.
+- The evidence does not justify validated status, default-output eligibility,
+  more query-form expansion, or threshold changes.
+
+Decision:
+
+- Keep `MetzProject/RepeatedQueryCriteria` candidate-only.
+- Do not expand to dynamic receivers, association receivers, SQL strings,
+  joins, merges, Arel, single-key finders, `exists?`, `take`, or bang finders.
+- Before changing analyzer mechanics, run a follow-up calibration slice that
+  separates pure association-table membership lookups from business-named
+  lookup concepts.

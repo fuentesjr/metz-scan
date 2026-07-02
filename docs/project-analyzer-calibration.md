@@ -833,6 +833,39 @@ splits the current sample into `filter=6` and `finder=9`, with query methods
 `polymorphic_where_criteria=1`, and `where_hash_criteria=4`.
 Rollout status and default-output eligibility did not change.
 
+Calibration-quality follow-up on 2026-07-02 reviewed the 15 findings for
+Sandi-Metz-style design-pressure usefulness rather than detector coverage.
+The sample is promising but still mixed: 12 findings looked like useful manual
+review prompts, 3 looked mostly mechanical or expected, and none justified
+validated status or default-output eligibility.
+
+| Target | Query fingerprint | Operation | Quality read |
+| --- | --- | --- | --- |
+| `discourse` | `Badge.find_by(enabled, id)` | finder | Mechanical/expected enabled-id lookup. |
+| `discourse` | `Draft.where(draft_key, user_id)` | filter | Useful domain lookup prompt. |
+| `discourse` | `GroupUser.where(group_id, user_id)` | filter | Mechanical/expected join-table membership lookup. |
+| `discourse` | `Post.find_by(post_number, topic_id)` | finder | Useful post-within-topic lookup prompt. |
+| `discourse` | `Post.where(post_number, topic_id)` | filter | Useful post-within-topic lookup prompt. |
+| `discourse` | `PostLocalization.find_by(locale, post_id)` | finder | Useful locale-scoped content lookup prompt. |
+| `discourse` | `PostRevision.find_by(number, post_id)` | finder | Useful revision lookup prompt. |
+| `discourse` | `TagLocalization.find_by(locale, tag_id)` | finder | Useful locale-scoped tag lookup prompt. |
+| `discourse` | `TopicLocalization.find_by(locale, topic_id)` | finder | Useful locale-scoped topic lookup prompt. |
+| `discourse` | `TopicUser.where(topic_id, user_id)` | filter | Mechanical/expected join-table membership lookup. |
+| `forem` | `Comment.where(commentable_id, commentable_type)` | filter | Useful polymorphic lookup prompt. |
+| `mastodon` | `AccountDomainBlock.where(account_id, domain)` | filter | Useful domain-blocking lookup prompt. |
+| `mastodon` | `CustomEmoji.find_by(domain, shortcode)` | finder | Useful domain-shortcode lookup prompt. |
+| `mastodon` | `Follow.find_by(account, target_account)` | finder | Useful follow-graph lookup prompt. |
+| `mastodon` | `FollowRequest.find_by(account, target_account)` | finder | Useful follow-request lookup prompt. |
+
+Readiness boundary: keep `MetzProject/RepeatedQueryCriteria` candidate-only.
+Do not add more query forms until another calibration pass isolates pure
+association-table lookups from business-named lookups and confirms whether the
+mechanical bucket dominates. If the mechanical bucket stays small, keep
+polymorphic lookups, localization lookups, follow-graph lookups, and
+domain-block lookups in the main manual-review bucket. If join-table lookups
+grow, consider a lighter triage bucket or softer wording for pure membership
+tables before changing thresholds.
+
 Decision: keep RepeatedQueryCriteria **Candidate** and opt-in. The first pass
 is sparse and readable, but repeated query criteria can be intentional local
 lookup duplication. It needs more calibration before validated status or
