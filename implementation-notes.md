@@ -2599,3 +2599,71 @@ Evidence and decisions:
   wiring.
 - Broader approved calibration targets are the next evidence task before any
   status/default-output discussion for namespace leaks.
+
+## 2026-07-02: Redmine calibration target intake and expanded evidence
+
+Task: start on the next two substantial tasks while continuing to use
+agenticons.
+
+Change type: feature.
+
+Verbatim task statement: "Start on the next 2 big tasks. Keep using agenticons"
+
+Scope boundaries:
+
+- Add evidence, not analyzer behavior. Do not change detector logic, thresholds,
+  statuses, default-output policy, or classifier rules.
+- Add exactly one new active calibration target so evidence deltas stay
+  attributable.
+- Use active calibration fixtures under `tmp/project-analyzer-calibration/apps`;
+  treat `/private/tmp` calibration paths as historical only.
+- Keep generated fixture checkouts and result artifacts ignored; commit only the
+  tracked manifest, readiness/catalog tests, and docs.
+
+Agenticons:
+
+- `planner: next evidence target selection` recommended adding one
+  domain-distinct calibration fixture first, then updating readiness/backlog
+  guidance from the new evidence. It suggested Redmine as a good first candidate
+  because project/issue tracking differs from the current support, social/forum,
+  and commerce-heavy targets.
+- `helper_worker: calibration target gap analysis` confirmed the current active
+  manifest is mostly support, forum/social, and commerce, and identified package
+  dependency, namespace leak, implicit context, and repeated query criteria as
+  evidence-bound rather than detector-bound.
+
+Tasks completed:
+
+- Added `redmine/redmine` at revision `3386d9595767` to the tracked active target
+  manifest with `app` and `lib` scan paths.
+- Restored the previously documented initial target checkouts under ignored
+  local scratch space for future use, but did not add them to the manifest in
+  this slice.
+- Ran the five parked candidate analyzers over the expanded manifest. The run
+  produced 220 findings and 220 offenses across PackageDependencyPressure,
+  NamespaceLeakPressure, ImplicitContextPressure, RepeatedQueryCriteria, and
+  SubclassOverridePressure.
+- Updated the generated readiness catalog, readiness tests, and calibration docs
+  from the Redmine evidence.
+
+Evidence and decisions:
+
+- `MetzProject/PackageDependencyPressure`: 40 findings, with 39 low shared
+  dependencies and the same single medium package-boundary prompt. Redmine added
+  no independent medium package-boundary finding, so this analyzer remains
+  parked pending another domain-distinct target.
+- `MetzProject/NamespaceLeakPressure`: 39 findings, with 33 low shared
+  namespaces and 6 medium namespace-boundary findings. Redmine added one useful
+  `Redmine::Activity::Fetcher` prompt and two needs-context SCM extension
+  prompts, `Redmine::Scm::Adapters` and `Redmine::Scm::Base`.
+- `MetzProject/ImplicitContextPressure`: unchanged at 11 findings. Redmine did
+  not add ambient-context evidence at the current threshold.
+- `MetzProject/RepeatedQueryCriteria`: 16 findings. Redmine added
+  `Token.where(action, user_id)`, classified as a useful token-lifecycle lookup
+  prompt, moving the quality split to 13 useful prompts and 3 mechanical lookups.
+- `MetzProject/SubclassOverridePressure`: 114 findings, with 80 low broad-root
+  and 34 medium manual-review findings. Redmine added a useful
+  `CustomField#type_name` abstract hook plus three SCM adapter replacement
+  families that are plausible but likely intentional extension APIs.
+- None of the new evidence justifies promotion, default-output eligibility,
+  threshold changes, app-specific suppressions, or detector expansion.

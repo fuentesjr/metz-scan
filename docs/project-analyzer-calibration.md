@@ -114,6 +114,17 @@ and scanned with the same commands:
 | `openfoodfoundation/openfoodnetwork` | `be9d51ab32a6` | 0 | 1 |
 | `solidusio/solidus` | `8d781ac742e3` | 0 | 0 |
 
+Redmine target-intake follow-up on 2026-07-02 added `redmine/redmine` at
+`3386d9595767` to the active target manifest with `app` and `lib` scan paths.
+This target was chosen as a project/issue-tracking Rails app outside the
+current support, social/forum, and commerce-heavy fixture families. The focused
+candidate-analyzer run over the expanded manifest produced 220 findings and
+220 offenses across the five parked candidate analyzers:
+`PackageDependencyPressure=40`, `NamespaceLeakPressure=39`,
+`ImplicitContextPressure=11`, `RepeatedQueryCriteria=16`, and
+`SubclassOverridePressure=114`. The added target changed evidence, not analyzer
+behavior, rollout status, thresholds, or default-output eligibility.
+
 Triage-output follow-up on 2026-06-23: adding project-analyzer status,
 confidence, triage severity, triage summary, and `summary.project_analyzers`
 output metadata did not change the expanded calibration counts above.
@@ -664,6 +675,15 @@ package-boundary evidence outside the current OpenFoodNetwork-heavy sample.
 Rollout status, thresholds, classifier rules, and default-output eligibility
 did not change.
 
+Redmine target-intake follow-up on 2026-07-02 increased the manifest-backed
+count to 40 findings and 40 offenses: 39 low-confidence `shared_dependency`
+findings and the same single medium `package_boundary` finding for
+`OpenFoodNetwork::ScopeVariantToHub`. Redmine added shared-dependency evidence
+but no independent medium package-boundary prompt. Decision: keep
+PackageDependencyPressure **Candidate** and parked; add another domain-distinct
+target before reopening package-boundary rules, and do not retune thresholds or
+downrank the sole medium finding from this expanded sample.
+
 ## `MetzProject/NamespaceLeakPressure`
 
 Result: **Candidate**, behind `--project-analyzers`.
@@ -747,6 +767,23 @@ or default-output eligibility. Future evidence work should add or refresh
 approved calibration targets that can produce non-commerce namespace-boundary
 examples; do not add app-specific suppressions or downrank payment namespaces
 from this sample alone.
+
+Redmine target-intake follow-up on 2026-07-02 increased the manifest-backed
+count to 39 findings and 39 offenses: 33 low-confidence `shared_namespace`
+findings and 6 medium `namespace_boundary` findings. Redmine added three
+medium findings:
+
+| Target | Declaration | Quality bucket | Rationale |
+| --- | --- | --- | --- |
+| `redmine` | `Redmine::Activity::Fetcher` | Useful design-pressure prompt | Activity controllers, helpers, and project/user models construct the activity fetcher directly, making application code know the nested activity service namespace. |
+| `redmine` | `Redmine::Scm::Adapters` | Needs context | Repository controllers and version/info helpers reach into SCM adapter constants and exceptions, but SCM adapters are likely an intentional extension surface. |
+| `redmine` | `Redmine::Scm::Base` | Needs context | Repository helpers, repository models, and settings views use the SCM registry, which may be the intended public interface for source-control integration. |
+
+Decision: keep NamespaceLeakPressure **Candidate** and opt-in. Redmine improves
+the evidence by adding non-commerce namespace-boundary examples, but two of its
+three medium findings are still SCM extension infrastructure. Compare the
+Redmine activity and SCM prompts against at least one more non-commerce target
+before status, default-output, threshold, or classifier discussions.
 
 ## `MetzProject/ImplicitContextPressure`
 
@@ -961,6 +998,15 @@ a suppression rule: the current sample is too small for generic membership-table
 downranking, but large enough to keep those cases separate from the stronger
 domain lookup prompts in future reviews.
 
+Redmine target-intake follow-up on 2026-07-02 increased the manifest-backed
+count to 16 findings and 16 offenses by adding
+`Token.where(action, user_id)` across 4 files and 2 packages. Source review
+classified the new Redmine finding as a useful token-lifecycle lookup prompt:
+session, autologin, email-address, and two-factor code flows all repeat the same
+token action/user criteria. The expanded quality split is now 13 useful
+manual-review prompts and 3 mechanical lookups. Rollout status, thresholds,
+detector scope, and default-output eligibility did not change.
+
 Decision: keep RepeatedQueryCriteria **Candidate** and opt-in. The first pass
 is sparse and readable, but repeated query criteria can be intentional local
 lookup duplication. It needs more calibration before validated status or
@@ -1055,6 +1101,18 @@ Do not retune thresholds, suppress medium categories, or add app-specific
 classifier rules from this sample alone. The next useful step is to separate
 deliberate extension-point families from design-pressure hook protocols across
 more targets, while preserving the current broad-root downranking.
+
+Redmine target-intake follow-up on 2026-07-02 increased the manifest-backed
+count to 114 findings and 114 offenses: 80 low-confidence
+`broad_root_override` findings and 34 medium manual-review findings. Redmine
+added 8 findings overall: 4 low broad-root findings and 4 medium findings. The
+medium additions are one useful `CustomField#type_name` abstract-hook family and
+three `Redmine::Scm::Adapters::AbstractAdapter` replacement families for
+`cat`, `entries`, and `info`. The SCM adapter findings are plausible manual
+review prompts but also likely intentional adapter extension points, so they do
+not change readiness. Keep the analyzer candidate-only and continue separating
+generic hook-protocol evidence from deliberate extension APIs before any
+promotion, suppression, or threshold discussion.
 
 ## `MetzProject/RepeatedBranching`
 

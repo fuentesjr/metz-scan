@@ -22,6 +22,10 @@ targets:
     scan_paths:
       - app
       - lib
+  - root: tmp/project-analyzer-calibration/apps/redmine
+    scan_paths:
+      - app
+      - lib
   - root: tmp/project-analyzer-calibration/apps/solidus
     scan_paths:
       - lib

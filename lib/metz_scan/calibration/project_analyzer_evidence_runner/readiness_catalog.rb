@@ -23,16 +23,16 @@ module MetzScan
             "not_next" => "Do not make default-output eligible while findings depend on optional indexing."
           },
           "MetzProject/PackageDependencyPressure" => {
-            "evidence" => "Current active fixtures show 39 findings: 1 medium package boundary and " \
-                          "38 low shared dependencies.",
-            "next" => "Reopen when new targets can produce independent medium package-boundary evidence.",
+            "evidence" => "Expanded active fixtures show 40 findings: 1 medium package boundary and " \
+                          "39 low shared dependencies; Redmine added no independent medium package-boundary prompt.",
+            "next" => "Add another domain-distinct target before reopening package-boundary rules.",
             "not_next" => "Do not promote, retune thresholds, or downrank the sole medium finding from this sample."
           },
           "MetzProject/NamespaceLeakPressure" => {
-            "evidence" => "Current active fixtures show 34 findings: 3 medium namespace-boundary prompts " \
-                          "and 31 low shared namespaces.",
-            "next" => "Broaden calibration targets beyond commerce/payment examples before status or " \
-                      "default-output discussion.",
+            "evidence" => "Expanded active fixtures show 39 findings: 6 medium namespace-boundary prompts " \
+                          "and 33 low shared namespaces; Redmine adds activity and SCM examples.",
+            "next" => "Compare the Redmine activity and SCM prompts against one more non-commerce target before " \
+                      "status or default-output discussion.",
             "not_next" => "Do not promote, add app-specific suppressions, downrank payment namespaces, or " \
                           "retune thresholds from this narrow sample."
           },
@@ -45,15 +45,16 @@ module MetzScan
                           "from this sample."
           },
           "MetzProject/RepeatedQueryCriteria" => {
-            "evidence" => "Current active fixtures show 15 findings: 12 useful prompts and 3 mechanical lookups.",
-            "next" => "Keep separating membership-table lookups from business-named lookup concepts.",
+            "evidence" => "Expanded active fixtures show 16 findings: 13 useful prompts and 3 mechanical lookups.",
+            "next" => "Keep separating membership-table lookups from business-named and lifecycle lookup concepts.",
             "not_next" => "Do not add more query forms, dynamic receivers, association receivers, SQL strings, " \
                           "joins, merges, Arel, single-key finders, bang finders, exists?, or take."
           },
           "MetzProject/SubclassOverridePressure" => {
-            "evidence" => "Current active fixtures show 106 findings: 76 low broad-root and " \
-                          "30 medium manual-review findings.",
-            "next" => "Refine medium-family evidence only when it supports a generic, non-app-specific rule.",
+            "evidence" => "Expanded active fixtures show 114 findings: 80 low broad-root and " \
+                          "34 medium manual-review findings.",
+            "next" => "Refine CustomField and SCM adapter extension-point evidence only when it supports a " \
+                      "generic, non-app-specific rule.",
             "not_next" => "Do not promote, make default-output eligible, suppress medium categories, or " \
                           "retune thresholds."
           }

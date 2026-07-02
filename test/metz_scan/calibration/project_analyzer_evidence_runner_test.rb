@@ -253,6 +253,14 @@ module MetzScan
     class ProjectAnalyzerEvidenceRunnerReadinessTest < Minitest::Test
       include ProjectAnalyzerEvidenceRunnerHelpers
 
+      READINESS_ASSERTIONS = %i[
+        assert_package_dependency_readiness
+        assert_namespace_leak_readiness
+        assert_repeated_query_readiness
+        assert_implicit_context_readiness
+        assert_subclass_override_readiness
+      ].freeze
+
       def test_summary_records_project_analyzer_readiness_boundaries
         with_tmpdir { |dir| assert_project_analyzer_readiness(summary_with_collaborators(dir, captures)) }
       end
@@ -261,18 +269,23 @@ module MetzScan
 
       def assert_project_analyzer_readiness(summary)
         readiness = summary.dig("project_analyzers", "readiness")
+        READINESS_ASSERTIONS.each { |assertion| send(assertion, readiness) }
+      end
 
-        assert_namespace_leak_readiness(readiness)
-        assert_repeated_query_readiness(readiness)
-        assert_implicit_context_readiness(readiness)
+      def assert_package_dependency_readiness(readiness)
+        entry = readiness_entry(readiness, "MetzProject/PackageDependencyPressure")
+
+        assert_candidate_readiness(entry)
+        assert_includes entry.fetch("evidence"), "40 findings"
+        assert_includes entry.fetch("next"), "another domain-distinct target"
       end
 
       def assert_namespace_leak_readiness(readiness)
         entry = readiness_entry(readiness, "MetzProject/NamespaceLeakPressure")
 
         assert_candidate_readiness(entry)
-        assert_includes entry.fetch("evidence"), "3 medium namespace-boundary prompts"
-        assert_includes entry.fetch("next"), "Broaden calibration targets"
+        assert_includes entry.fetch("evidence"), "6 medium namespace-boundary prompts"
+        assert_includes entry.fetch("next"), "one more non-commerce target"
         assert_includes entry.fetch("not_next"), "Do not promote"
       end
 
@@ -280,7 +293,8 @@ module MetzScan
         entry = readiness_entry(readiness, "MetzProject/RepeatedQueryCriteria")
 
         assert_candidate_readiness(entry)
-        assert_includes entry.fetch("evidence"), "15 findings"
+        assert_includes entry.fetch("evidence"), "16 findings"
+        assert_includes entry.fetch("next"), "lifecycle lookup concepts"
         assert_includes entry.fetch("not_next"), "Do not add more query forms"
       end
 
@@ -291,6 +305,14 @@ module MetzScan
         assert_includes entry.fetch("evidence"), "dominated by mechanical framework state"
         assert_includes entry.fetch("next"), "Keep candidate-only"
         assert_includes entry.fetch("not_next"), "Do not add suppressions"
+      end
+
+      def assert_subclass_override_readiness(readiness)
+        entry = readiness_entry(readiness, "MetzProject/SubclassOverridePressure")
+
+        assert_candidate_readiness(entry)
+        assert_includes entry.fetch("evidence"), "114 findings"
+        assert_includes entry.fetch("next"), "SCM adapter"
       end
 
       def assert_candidate_readiness(entry)
@@ -648,7 +670,7 @@ module MetzScan
         assert_predicate status, :success?, stderr
         assert_includes stdout, "readiness:"
         assert_includes stdout, "MetzProject/RepeatedQueryCriteria"
-        assert_includes stdout, "evidence=Current active fixtures show 15 findings"
+        assert_includes stdout, "evidence=Expanded active fixtures show 16 findings"
       end
 
       def run_calibration_text(dir)
