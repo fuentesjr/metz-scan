@@ -17,7 +17,8 @@ module MetzScan
         attr_reader :summary
 
         def sections
-          [header_section, target_section, rule_section, notable_findings_section, breakdown_section].flatten
+          [header_section, target_section, rule_section, readiness_section, notable_findings_section,
+           breakdown_section].flatten
         end
 
         def header_section
@@ -94,6 +95,28 @@ module MetzScan
             "#{rule.fetch('triage_severity', '?')} |"
         end
 
+        def readiness_section
+          readiness = summary.fetch("project_analyzers").fetch("readiness", [])
+          return [] if readiness.empty?
+
+          ["", "## Readiness", "", readiness_header, *readiness_rows(readiness), ""]
+        end
+
+        def readiness_header
+          "| Rule | Disposition | Evidence | Next | Not next |\n" \
+            "| --- | --- | --- | --- | --- |"
+        end
+
+        def readiness_rows(readiness)
+          readiness.map { |entry| readiness_row(entry) }
+        end
+
+        def readiness_row(entry)
+          "| #{cell(entry.fetch('rule_id'))} | #{cell(entry.fetch('disposition'))} | " \
+            "#{cell(entry.fetch('evidence'))} | #{cell(entry.fetch('next'))} | " \
+            "#{cell(entry.fetch('not_next'))} |"
+        end
+
         def notable_findings_section
           notable_findings = summary.fetch("notable_findings", [])
           return [] if notable_findings.empty?
@@ -127,6 +150,10 @@ module MetzScan
 
         def breakdown_row(value)
           "| #{value.fetch('value')} | #{value.fetch('finding_count')} |"
+        end
+
+        def cell(value)
+          value.to_s.gsub("|", "\\|")
         end
       end
 

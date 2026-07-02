@@ -2,6 +2,8 @@
 
 require "fileutils"
 require "minitest/autorun"
+require "open3"
+require "rbconfig"
 require "tmpdir"
 require "yaml"
 
@@ -166,6 +168,10 @@ module MetzScan
         assert summary.fetch("finding_count").positive?
       end
 
+      def test_summary_records_project_analyzer_readiness_boundaries
+        with_tmpdir { |dir| assert_project_analyzer_readiness(summary_with_collaborators(dir, captures)) }
+      end
+
       private
 
       def assert_default_summary_for(dir)
@@ -205,6 +211,17 @@ module MetzScan
         assert_equal 2, summary.fetch("finding_count")
         assert_equal 2, summary.dig("project_analyzers", "finding_count")
         assert_equal "fake", summary.fetch("targets").first.dig("index", "backend")
+      end
+
+      def assert_project_analyzer_readiness(summary)
+        readiness = summary.dig("project_analyzers", "readiness")
+        repeated_query = readiness.find { |entry| entry.fetch("rule_id") == "MetzProject/RepeatedQueryCriteria" }
+
+        assert_equal "candidate", repeated_query.fetch("status")
+        assert_equal false, repeated_query.fetch("default_output")
+        assert_includes repeated_query.fetch("disposition"), "Candidate-only"
+        assert_includes repeated_query.fetch("evidence"), "15 findings"
+        assert_includes repeated_query.fetch("not_next"), "Do not add more query forms"
       end
 
       def assert_skipped_target(target)
@@ -490,6 +507,10 @@ module MetzScan
         with_tmpdir { |dir| assert_markdown_notable_findings(dir) }
       end
 
+      def test_markdown_renders_readiness_section
+        with_tmpdir { |dir| assert_markdown_readiness(dir) }
+      end
+
       private
 
       def assert_summary_notable_findings(dir)
@@ -538,6 +559,14 @@ module MetzScan
         assert_includes rendered, "package_boundary"
       end
 
+      def assert_markdown_readiness(dir)
+        rendered = rendered_markdown_for(dir)
+
+        assert_includes rendered, "## Readiness"
+        assert_includes rendered, "MetzProject/RepeatedQueryCriteria"
+        assert_includes rendered, "Do not add more query forms"
+      end
+
       def rendered_markdown_for(dir)
         FileUtils.mkdir_p(dir)
         summary = summary_with_collaborators(dir, captures, findings: [PACKAGE_BOUNDARY_FINDING])
@@ -563,6 +592,30 @@ module MetzScan
         assert_path_exists artifacts.fetch("markdown")
         assert_includes File.read(artifacts.fetch("json")), %("artifacts")
         assert_includes File.read(artifacts.fetch("markdown")), "Project analyzer evidence"
+      end
+    end
+
+    class ProjectAnalyzerCalibrationCommandTest < Minitest::Test
+      include ProjectAnalyzerEvidenceRunnerHelpers
+
+      def test_text_output_renders_readiness_evidence
+        with_tmpdir do |dir|
+          stdout, stderr, status = run_calibration_text(dir)
+
+          assert_predicate status, :success?, stderr
+          assert_includes stdout, "readiness:"
+          assert_includes stdout, "MetzProject/RepeatedQueryCriteria"
+          assert_includes stdout, "evidence=Current active fixtures show 15 findings"
+        end
+      end
+
+      private
+
+      def run_calibration_text(dir)
+        Open3.capture3(
+          RbConfig.ruby, "bin/check_project_analyzer_calibration", "--text", "--no-write",
+          "--analyzer", "MetzProject/RepeatedQueryCriteria", dir
+        )
       end
     end
 

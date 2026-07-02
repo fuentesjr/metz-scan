@@ -73,7 +73,8 @@ end
 
 def text_lines(summary)
   [target_line(summary), targets_file_line(summary), analyzer_filter_line(summary), finding_line(summary),
-   *rule_section(summary), *notable_finding_lines(summary), *breakdown_lines(summary), artifact_line(summary)].compact
+   *rule_section(summary), *readiness_lines(summary), *notable_finding_lines(summary),
+   *breakdown_lines(summary), artifact_line(summary)].compact
 end
 
 def target_line(summary)
@@ -107,6 +108,18 @@ def rule_line(rule)
   "  - #{rule.fetch('cop_name')}: #{rule.fetch('finding_count')} finding(s), " \
     "#{rule.fetch('offense_count')} offense(s), status=#{rule.fetch('status', '?')}, " \
     "confidence=#{rule.fetch('confidence', '?')}, severity=#{rule.fetch('triage_severity', '?')}"
+end
+
+def readiness_lines(summary)
+  readiness = summary.fetch("project_analyzers", {}).fetch("readiness", [])
+  return [] if readiness.empty?
+
+  ["readiness:", *readiness.map { |entry| readiness_line(entry) }]
+end
+
+def readiness_line(entry)
+  "  - #{entry.fetch('rule_id')}: #{entry.fetch('disposition')} evidence=#{entry.fetch('evidence')} " \
+    "next=#{entry.fetch('next')} not_next=#{entry.fetch('not_next')}"
 end
 
 def notable_finding_lines(summary)

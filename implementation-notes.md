@@ -2430,3 +2430,52 @@ Evidence and decisions:
   targets can produce independent medium package-boundary evidence.
 - `MetzProject/SubclassOverridePressure` remains candidate-only; the previous
   disposition pass already documented the current medium-family split.
+
+## 2026-07-02: Calibration readiness output and evidence-led backlog
+
+Task: update `logs/repeated-query-criteria-strategy-review.md` and then start
+the next two substantial tasks while continuing to use agenticons.
+
+Change type: feature.
+
+Scope boundaries:
+
+- Keep analyzer behavior, status, thresholds, classifiers, and default-output
+  policy unchanged.
+- Do not expand `MetzProject/RepeatedQueryCriteria`.
+- Use active calibration fixtures under `tmp/project-analyzer-calibration/apps`.
+- Treat `/private/tmp` calibration paths as historical only.
+
+Agenticons:
+
+- `planner: readiness/backlog task selection` recommended making
+  project-analyzer readiness visible and then running an evidence-led backlog
+  selection pass.
+- `helper_worker: readiness reporting surface` recommended putting readiness
+  in the calibration artifact pipeline rather than `scan` output or analyzer
+  logic, so the surface stays tied to evidence.
+
+Tasks completed:
+
+- Updated the ignored local strategy report to record that the repeated-query
+  quality checkpoint is complete and that the next work should be readiness
+  visibility plus evidence-led backlog selection.
+- Added a structured readiness catalog to the calibration evidence runner.
+  `summary.json`, generated `summary.md`, and compact `--text` output now carry
+  analyzer disposition, evidence boundary, next useful task, and explicit
+  not-next boundary.
+- Ran the evidence-led backlog pass over unresolved candidates. The next
+  evidence target is `MetzProject/ImplicitContextPressure`, not another
+  repeated-query expansion.
+
+Evidence and decisions:
+
+- `MetzProject/ImplicitContextPressure`: 11 findings and 11 offenses, all
+  medium manual-review findings; category split is `root_current_write=5`,
+  `namespaced_current_write=5`, and `thread_current_write=1`. This should get
+  the next focused useful-vs-mechanical quality review.
+- `MetzProject/NamespaceLeakPressure`: 34 findings and 34 offenses, with
+  `low=31`, `medium=3`, `shared_namespace=31`, and `namespace_boundary=3`.
+  Keep candidate-only; do not promote or add app-specific suppressions.
+- `MetzProject/RepeatedQueryCriteria`: 15 findings and 15 offenses, still
+  candidate-only; no further query-form expansion.

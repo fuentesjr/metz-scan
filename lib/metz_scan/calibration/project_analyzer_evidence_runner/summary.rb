@@ -7,6 +7,7 @@ require_relative "../../project_index"
 require_relative "../../commands/scan/project_analyzer_metadata"
 require_relative "../../commands/scan/project_analyzer_offenses"
 require_relative "../../commands/scan/project_analyzer_runner"
+require_relative "readiness_catalog"
 
 module MetzScan
   module Calibration
@@ -156,7 +157,7 @@ module MetzScan
         end
 
         def project_fields
-          { "project_analyzers" => project_analyzer_summary, "finding_count" => findings.size,
+          { "project_analyzers" => project_analyzer_summary_with_readiness, "finding_count" => findings.size,
             "offense_count" => offenses.size, "breakdowns" => breakdowns,
             "notable_findings" => notable_findings }
         end
@@ -169,6 +170,14 @@ module MetzScan
 
         def project_analyzer_summary
           Commands::Scan::ProjectAnalyzerMetadata.summary(findings, offenses)
+        end
+
+        def project_analyzer_summary_with_readiness
+          project_analyzer_summary.merge("readiness" => readiness_entries)
+        end
+
+        def readiness_entries
+          ReadinessCatalog.new(analyzer_names: analyzer_names).to_a
         end
 
         def breakdowns

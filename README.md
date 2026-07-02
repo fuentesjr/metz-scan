@@ -216,7 +216,10 @@ candidates, validated opt-in-only analyzers, and lower-confidence findings too.
 Text output shows a project-analyzer summary before rule blocks; JSON and SARIF
 output include machine-readable
 project-analyzer metadata, and GitHub annotations append the same triage context
-to the annotation message.
+to the annotation message. Calibration evidence summaries from
+`bin/check_project_analyzer_calibration` also include a readiness/backlog section
+that records the current analyzer disposition, evidence boundary, next useful
+task, and explicit not-next boundary without changing scan output.
 
 Run safe auto-correction or preview it first:
 
