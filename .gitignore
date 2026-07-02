@@ -6,4 +6,5 @@ tmp/
 factory-ai-artifacts
 .context/
 .handoffs/
+logs/
 loops/
