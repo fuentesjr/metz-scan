@@ -137,6 +137,17 @@ the five parked candidate analyzers: `PackageDependencyPressure=40`,
 target changed evidence, not analyzer behavior, rollout status, thresholds, or
 default-output eligibility.
 
+ManageIQ target-intake follow-up on 2026-07-02 added `ManageIQ/manageiq` at
+`67749d3468ce` to the active target manifest with `app` and `lib` scan paths.
+This target was chosen as an infrastructure/operations Rails app after
+Rubygems.org still left package-boundary evidence too narrow. The focused
+candidate-analyzer run over the expanded manifest produced 248 findings and
+248 offenses across the five parked candidate analyzers:
+`PackageDependencyPressure=43`, `NamespaceLeakPressure=44`,
+`ImplicitContextPressure=12`, `RepeatedQueryCriteria=16`, and
+`SubclassOverridePressure=133`. The added target changed evidence, not analyzer
+behavior, rollout status, thresholds, or default-output eligibility.
+
 Triage-output follow-up on 2026-06-23: adding project-analyzer status,
 confidence, triage severity, triage summary, and `summary.project_analyzers`
 output metadata did not change the expanded calibration counts above.
@@ -702,8 +713,23 @@ findings and the same single medium `package_boundary` finding for
 `OpenFoodNetwork::ScopeVariantToHub`. Rubygems.org added no package-pressure
 evidence at the current threshold. Decision: keep PackageDependencyPressure
 **Candidate** and parked; the next target should be an infrastructure or
-operations app, with `ManageIQ/manageiq` currently the strongest candidate,
-before reopening package-boundary rules.
+operations app before reopening package-boundary rules.
+
+ManageIQ target-intake follow-up on 2026-07-02 increased the manifest-backed
+count to 43 findings and 43 offenses: 40 low-confidence `shared_dependency`
+findings and 3 medium `package_boundary` findings. ManageIQ added two medium
+package-boundary prompts:
+
+| Target | Declaration | Quality bucket | Rationale |
+| --- | --- | --- | --- |
+| `manageiq` | `ActiveRecord::Base` | Needs context | The finding captures many database and migration references plus ManageIQ's `lib/extensions/ar_base.rb` patch, but `ActiveRecord::Base` is a framework root and may be expected infrastructure coupling. |
+| `manageiq` | `Vmdb::Logging` | Useful design-pressure prompt | Logging is mixed into framework extensions, workers, inventory parsers, importers, mailers, and models across many packages, making a cross-cutting logging dependency visible throughout the app. |
+
+Decision: keep PackageDependencyPressure **Candidate** and opt-in. ManageIQ
+finally adds independent infrastructure package-boundary evidence, but one of
+the new prompts is a framework root and the other is cross-cutting logging.
+Compare these prompts against one more infrastructure or operations target
+before promotion, threshold, or framework-root downranking discussions.
 
 ## `MetzProject/NamespaceLeakPressure`
 
@@ -824,6 +850,21 @@ security-policy value objects. Compare the Redmine SCM and Rubygems.org OIDC
 prompts against an infrastructure target before status, default-output,
 threshold, or classifier discussions.
 
+ManageIQ target-intake follow-up on 2026-07-02 increased the manifest-backed
+count to 44 findings and 44 offenses: 33 low-confidence `shared_namespace`
+findings and 11 medium `namespace_boundary` findings. ManageIQ added two
+medium reporting findings:
+
+| Target | Declaration | Quality bucket | Rationale |
+| --- | --- | --- | --- |
+| `manageiq` | `ManageIQ::Reporting::Charting` | Needs context | The charting facade delegates to a detected plugin and is referenced by reporting/chart content code, but it may be an intentional public reporting entry point. |
+| `manageiq` | `ManageIQ::Reporting::Formatter` | Needs context | Reporting formatters are referenced from report models and legacy compatibility aliases, so the spread may be intentional migration/public API wiring rather than namespace leakage. |
+
+Decision: keep NamespaceLeakPressure **Candidate** and opt-in. ManageIQ adds
+infrastructure reporting examples, but the medium set still mixes useful domain
+prompts with likely public facades, extension points, and legacy compatibility
+surfaces. Do not promote, downrank, suppress, or retune from this target alone.
+
 ## `MetzProject/ImplicitContextPressure`
 
 Result: **Candidate**, behind `--project-analyzers`.
@@ -940,6 +981,13 @@ it. The expanded quality split is now 9 mechanical framework-state signals,
 1 useful execution-identity prompt, and 2 needs-context identity prompts.
 Rollout status, thresholds, detector scope, and default-output eligibility did
 not change.
+
+ManageIQ target-intake follow-up on 2026-07-02 kept the manifest-backed count
+at 12 findings and 12 offenses. It added no implicit-context findings at the
+current threshold. The quality split remains 9 mechanical framework-state
+signals, 1 useful execution-identity prompt, and 2 needs-context identity
+prompts. Rollout status, thresholds, detector scope, and default-output
+eligibility did not change.
 
 ## `MetzProject/RepeatedQueryCriteria`
 
@@ -1059,6 +1107,12 @@ detector scope, and default-output eligibility did not change.
 Rubygems.org target-intake follow-up on 2026-07-02 kept the manifest-backed
 count at 16 findings and 16 offenses. It added no repeated-query findings at
 the current threshold, so the expanded quality split remains 13 useful
+manual-review prompts and 3 mechanical lookups. Detector scope, thresholds,
+rollout status, and default-output eligibility did not change.
+
+ManageIQ target-intake follow-up on 2026-07-02 kept the manifest-backed count
+at 16 findings and 16 offenses. It added no repeated-query findings at the
+current threshold, so the expanded quality split remains 13 useful
 manual-review prompts and 3 mechanical lookups. Detector scope, thresholds,
 rollout status, and default-output eligibility did not change.
 
@@ -1182,6 +1236,21 @@ and social/forum apps, but they are also likely intentional extension APIs.
 Keep the analyzer candidate-only and continue separating generic hook-protocol
 evidence from deliberate framework or admin-tool extension points before any
 promotion, suppression, or threshold discussion.
+
+ManageIQ target-intake follow-up on 2026-07-02 increased the manifest-backed
+count to 133 findings and 133 offenses: 86 low-confidence
+`broad_root_override` findings and 47 medium manual-review findings. ManageIQ
+added 12 findings overall: 3 low broad-root findings and 9 medium findings.
+The medium additions include Ansible credential hooks (`env_vars` and
+`write_config_files`), ManageIQ request hooks (`my_zone`, `my_queue_name`,
+`my_role`, and `requested_task_idx`), request-task hooks
+(`after_request_task_create`), and request-workflow hooks
+(`automate_dialog_request` and `get_source_and_targets`). These are useful
+calibration evidence for hook protocols in an infrastructure app, but they are
+also likely intentional variation points. Keep the analyzer candidate-only and
+continue separating generic hook-protocol evidence from deliberate workflow or
+provider extension APIs before any promotion, suppression, or threshold
+discussion.
 
 ## `MetzProject/RepeatedBranching`
 

@@ -2737,3 +2737,63 @@ Evidence and decisions:
   intentional extension APIs.
 - None of the new evidence justifies promotion, default-output eligibility,
   threshold changes, app-specific suppressions, or detector expansion.
+
+## 2026-07-02: ManageIQ calibration target intake and expanded evidence
+
+Task: start on the next four substantial tasks while continuing to use
+agenticons.
+
+Change type: feature.
+
+Verbatim task statement: "Start on the next 4 big tasks. Keep using agenticons"
+
+Scope boundaries:
+
+- Add evidence, not analyzer behavior. Do not change detector logic, thresholds,
+  statuses, default-output policy, or classifier rules.
+- Add exactly one active calibration target so evidence deltas stay attributable.
+- Keep ignored fixture checkouts and result artifacts out of the commit.
+- Treat ManageIQ as an infrastructure/operations sample, not a reason to
+  app-special-case findings.
+
+Agenticons:
+
+- `planner: ManageIQ four-task slice review` confirmed the four-task plan:
+  materialize ManageIQ `app` and `lib`, add one manifest entry, run the five
+  parked candidate analyzers, classify only the ManageIQ deltas, and refresh
+  readiness/docs/tests from evidence.
+
+Tasks completed:
+
+- Added `ManageIQ/manageiq` at revision `67749d3468ce` to the tracked active
+  target manifest with `app` and `lib` scan paths.
+- Hydrated the sparse checkout for `app` and `lib`; the checkout is ignored
+  local calibration scratch space.
+- Ran the five parked candidate analyzers over the expanded ManageIQ manifest.
+  The run produced 248 findings and 248 offenses across
+  PackageDependencyPressure, NamespaceLeakPressure, ImplicitContextPressure,
+  RepeatedQueryCriteria, and SubclassOverridePressure.
+- Source-reviewed the ManageIQ deltas and updated the generated readiness
+  catalog, readiness tests, calibration docs, and local strategy notes.
+
+Evidence and decisions:
+
+- `MetzProject/PackageDependencyPressure`: increased to 43 findings, with 40 low
+  shared dependencies and 3 medium package-boundary findings. ManageIQ added
+  `ActiveRecord::Base`, classified as needs-context framework-root evidence,
+  and `Vmdb::Logging`, classified as useful cross-cutting logging dependency
+  pressure.
+- `MetzProject/NamespaceLeakPressure`: increased to 44 findings, with 33 low
+  shared namespaces and 11 medium namespace-boundary findings. ManageIQ added
+  `ManageIQ::Reporting::Charting` and `ManageIQ::Reporting::Formatter`, both
+  classified as needs-context reporting facade or legacy compatibility surfaces.
+- `MetzProject/ImplicitContextPressure`: unchanged at 12 findings. ManageIQ
+  added no implicit-context findings at the current threshold.
+- `MetzProject/RepeatedQueryCriteria`: unchanged at 16 findings. ManageIQ added
+  no repeated-query findings at the current threshold.
+- `MetzProject/SubclassOverridePressure`: increased to 133 findings, with 86 low
+  broad-root and 47 medium manual-review findings. ManageIQ added credential,
+  request, request-task, and request-workflow hook evidence that is useful for
+  calibration but likely includes intentional extension points.
+- None of the new evidence justifies promotion, default-output eligibility,
+  threshold changes, app-specific suppressions, or detector expansion.

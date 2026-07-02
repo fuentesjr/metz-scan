@@ -276,16 +276,16 @@ module MetzScan
         entry = readiness_entry(readiness, "MetzProject/PackageDependencyPressure")
 
         assert_candidate_readiness(entry)
-        assert_includes entry.fetch("evidence"), "40 findings"
-        assert_includes entry.fetch("next"), "infrastructure or operations target"
+        assert_includes entry.fetch("evidence"), "43 findings"
+        assert_includes entry.fetch("next"), "framework-root and logging prompts"
       end
 
       def assert_namespace_leak_readiness(readiness)
         entry = readiness_entry(readiness, "MetzProject/NamespaceLeakPressure")
 
         assert_candidate_readiness(entry)
-        assert_includes entry.fetch("evidence"), "9 medium namespace-boundary prompts"
-        assert_includes entry.fetch("next"), "Rubygems.org OIDC prompts"
+        assert_includes entry.fetch("evidence"), "11 medium namespace-boundary prompts"
+        assert_includes entry.fetch("next"), "ManageIQ reporting prompts"
         assert_includes entry.fetch("not_next"), "Do not promote"
       end
 
@@ -311,8 +311,8 @@ module MetzScan
         entry = readiness_entry(readiness, "MetzProject/SubclassOverridePressure")
 
         assert_candidate_readiness(entry)
-        assert_includes entry.fetch("evidence"), "121 findings"
-        assert_includes entry.fetch("next"), "Avo action"
+        assert_includes entry.fetch("evidence"), "133 findings"
+        assert_includes entry.fetch("next"), "credential hook"
       end
 
       def assert_candidate_readiness(entry)
