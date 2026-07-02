@@ -2538,3 +2538,64 @@ Evidence and decisions:
   intentional builder API shape.
 - No analyzer behavior change, suppression, promotion, default-output
   eligibility, or new global-access form is justified by this sample.
+
+## 2026-07-02: Namespace leak quality pass and next evidence boundary
+
+Task: update `logs/repeated-query-criteria-strategy-review.md` and then start
+on the next two substantial tasks while continuing to use agenticons.
+
+Change type: feature.
+
+Verbatim task statement: "Update logs/repeated-query-criteria-strategy-review.md
+and then start on the next 2 big tasks. Keep using agenticons"
+
+Scope boundaries:
+
+- Keep `MetzProject/NamespaceLeakPressure` candidate opt-in and not
+  default-output eligible.
+- Do not change analyzer detection, thresholds, status, shared-namespace
+  classifier rules, suppressions, or default-output policy.
+- Use active calibration fixtures under `tmp/project-analyzer-calibration/apps`;
+  treat `/private/tmp` calibration paths as historical only.
+- Keep `logs/repeated-query-criteria-strategy-review.md` local-only and
+  uncommitted because `logs/` is locally ignored.
+
+Agenticons:
+
+- `planner: next task selection after ImplicitContextPressure boundary`
+  recommended a focused `NamespaceLeakPressure` quality pass as the next
+  project-direction task, followed by broader approved calibration evidence
+  before reopening parked analyzers.
+- `helper_worker: calibration artifact renderer reconnaissance` confirmed the
+  full-RuboCop `MarkdownRenderer` class-length issue is isolated maintenance
+  debt, not a project-direction task. It recommended preserving artifact output
+  with exact tests if that cleanup is handled later.
+
+Tasks completed:
+
+- Updated the ignored local strategy report to mark `9cce511` as completed and
+  stop pointing back at the already-finished ImplicitContextPressure work.
+- Ran the active-manifest `MetzProject/NamespaceLeakPressure` quality pass:
+  34 findings and 34 offenses, with `namespace_boundary=3` medium findings and
+  `shared_namespace=31` low findings.
+- Classified the three medium findings: 1 useful design-pressure prompt
+  (`Badge::Trigger::PostRevision`) and 2 needs-context payment extension/provider
+  prompts (`Spree::Gateway::StripeSCA` and
+  `Spree::PaymentMethod::StoreCredit`).
+- Updated the generated readiness catalog and calibration notes so the next
+  step is broader calibration targets, not promotion, suppressions, payment
+  downranking, threshold changes, or detector expansion.
+
+Evidence and decisions:
+
+- `MetzProject/NamespaceLeakPressure` remains candidate-only. The current
+  medium evidence is plausible but too narrow because two of three examples are
+  commerce/payment extension types.
+- `Badge::Trigger::PostRevision` is useful because post creation and revision
+  flows pass a nested badge trigger constant into `BadgeGranter`, making caller
+  code know the trigger namespace.
+- The Spree/OpenFoodNetwork payment findings need more context because concrete
+  provider/payment-method class selection may be intentional framework extension
+  wiring.
+- Broader approved calibration targets are the next evidence task before any
+  status/default-output discussion for namespace leaks.

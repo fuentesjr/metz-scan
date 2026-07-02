@@ -29,9 +29,12 @@ module MetzScan
             "not_next" => "Do not promote, retune thresholds, or downrank the sole medium finding from this sample."
           },
           "MetzProject/NamespaceLeakPressure" => {
-            "evidence" => "Shared-namespace downranking improved triage, but medium evidence is still narrow.",
-            "next" => "Calibrate broader namespace-boundary samples before status or default-output discussion.",
-            "not_next" => "Do not promote or add app-specific namespace suppressions from sparse evidence."
+            "evidence" => "Current active fixtures show 34 findings: 3 medium namespace-boundary prompts " \
+                          "and 31 low shared namespaces.",
+            "next" => "Broaden calibration targets beyond commerce/payment examples before status or " \
+                      "default-output discussion.",
+            "not_next" => "Do not promote, add app-specific suppressions, downrank payment namespaces, or " \
+                          "retune thresholds from this narrow sample."
           },
           "MetzProject/ImplicitContextPressure" => {
             "evidence" => "Current active fixtures show 11 findings dominated by mechanical framework state: " \

@@ -728,6 +728,26 @@ reference-set and reference-metadata helpers with `PackageDependencyPressure`,
 and its metadata includes `reference_shape` for source-derived package-spread
 evidence. Rollout status and default-output eligibility did not change.
 
+Medium-finding quality follow-up on 2026-07-02 reran the active manifest and
+kept the same 34-finding shape. The 31 low-confidence `shared_namespace`
+findings remain intentionally downranked public constants, exception families,
+or framework/extension namespaces. The three medium `namespace_boundary`
+findings are plausible but still too narrow for promotion:
+
+| Target | Declaration | Quality bucket | Rationale |
+| --- | --- | --- | --- |
+| `discourse` | `Badge::Trigger::PostRevision` | Useful design-pressure prompt | Post creation and revision flows pass a nested badge trigger constant into `BadgeGranter`, making caller code know the trigger namespace. |
+| `openfoodnetwork` | `Spree::Gateway::StripeSCA` | Needs context | Admin payment-method flows, serializers, and subscription jobs select a concrete Stripe payment provider; this may be intentional extension-point wiring. |
+| `spree` | `Spree::PaymentMethod::StoreCredit` | Needs context | Store-credit setup and checkout code reference a concrete payment method type across packages, but it is a core Spree payment extension concept. |
+
+Decision: keep NamespaceLeakPressure **Candidate** and opt-in. The medium
+bucket has one useful prompt and two commerce/payment extension examples that
+need broader comparison before changing status, thresholds, classifier rules,
+or default-output eligibility. Future evidence work should add or refresh
+approved calibration targets that can produce non-commerce namespace-boundary
+examples; do not add app-specific suppressions or downrank payment namespaces
+from this sample alone.
+
 ## `MetzProject/ImplicitContextPressure`
 
 Result: **Candidate**, behind `--project-analyzers`.

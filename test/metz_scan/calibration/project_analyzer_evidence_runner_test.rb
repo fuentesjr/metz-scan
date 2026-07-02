@@ -262,8 +262,18 @@ module MetzScan
       def assert_project_analyzer_readiness(summary)
         readiness = summary.dig("project_analyzers", "readiness")
 
+        assert_namespace_leak_readiness(readiness)
         assert_repeated_query_readiness(readiness)
         assert_implicit_context_readiness(readiness)
+      end
+
+      def assert_namespace_leak_readiness(readiness)
+        entry = readiness_entry(readiness, "MetzProject/NamespaceLeakPressure")
+
+        assert_candidate_readiness(entry)
+        assert_includes entry.fetch("evidence"), "3 medium namespace-boundary prompts"
+        assert_includes entry.fetch("next"), "Broaden calibration targets"
+        assert_includes entry.fetch("not_next"), "Do not promote"
       end
 
       def assert_repeated_query_readiness(readiness)
