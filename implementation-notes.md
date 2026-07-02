@@ -2329,3 +2329,53 @@ Decisions:
 - For `PackageDependencyPressure`, the next evidence task is to find broader
   independent medium package-boundary examples or park the analyzer until such
   evidence appears.
+
+## 2026-07-02: Pressure evidence disposition follow-up
+
+Task: review `logs/repeated-query-criteria-strategy-review.md` and start on
+the next two big tasks while continuing to use agenticons.
+
+Prerequisite completed:
+
+- Pushed the existing local baseline commits before starting new work:
+  `24dcc46` (`Ignore local logs directory`) and `9e26da0`
+  (`Record pressure analyzer evidence loops`).
+
+Scope boundaries:
+
+- Keep `RepeatedQueryCriteria` parked; do not expand query forms.
+- Use only active fixtures under `tmp/project-analyzer-calibration/apps`.
+- Treat `/private/tmp` calibration paths as historical only.
+- Make no analyzer behavior, threshold, status, classifier, or default-output
+  changes.
+
+Agenticons:
+
+- `planner: next task selection after pressure evidence loops` recommended
+  `SubclassOverridePressure` extension-point calibration and
+  `PackageDependencyPressure` evidence-gap disposition.
+- `helper_worker: next evidence candidates` agreed that existing commits should
+  be pushed first and that readiness reporting is already adequate; the next
+  value is evidence expansion/refinement.
+- `helper_worker: subclass extension-point calibration` split the 30 medium
+  subclass findings into 18 design-pressure hook protocols, 5 deliberate
+  extension APIs, 5 setup/mechanical families, and 2 needs-context
+  replacements.
+- `helper_worker: package evidence-gap disposition` found no unused active
+  fixture scan paths likely to produce another independent medium
+  package-boundary example.
+
+Evidence and decisions:
+
+- `MetzProject/SubclassOverridePressure` remains candidate-only. The 18
+  abstract-hook findings are useful design-pressure prompts, while provider,
+  rule, setup, settings, and constructor families show that the medium bucket
+  still mixes intentional extension APIs and mechanical bookkeeping. No
+  behavior change is justified from this pass alone.
+- `MetzProject/PackageDependencyPressure` remains candidate-only and should be
+  parked pending new approved targets. The active manifest already covers the
+  meaningful repo-local Ruby roots; remaining omitted paths are setup/test
+  noise already excluded by analyzer design. The only medium finding remains
+  `OpenFoodNetwork::ScopeVariantToHub`.
+- Neither analyzer should be promoted, made default-output eligible, retuned,
+  or given app-specific suppressions from this evidence.

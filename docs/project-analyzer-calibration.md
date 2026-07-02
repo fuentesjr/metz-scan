@@ -634,10 +634,19 @@ the same readiness shape: 39 findings and 39 offenses, with 38 low-confidence
 still too thin for analyzer promotion. The only medium finding is concentrated
 in OpenFoodNetwork, while the rest of the sample is broad shared API,
 infrastructure, value-object, or protocol-surface pressure already downranked
-by the generic shared-surface rules. Next action is more evidence, not another
-classifier change: either add broader targets that can produce independent
-medium package-boundary examples, or park the analyzer as candidate until such
-evidence appears. Rollout status, thresholds, and default-output eligibility
+by the generic shared-surface rules.
+
+Disposition follow-up on 2026-07-02 checked the active fixture manifest for
+unused evidence sources. The current manifest already covers the meaningful
+repo-local Ruby roots: Chatwoot, Discourse, Forem, Mastodon, and
+OpenFoodNetwork `app`/`lib`, Decidim and Solidus `lib`, and the nested Spree
+engine roots. The remaining excluded paths are intentional setup or test noise
+such as `spec`, `test`, `lib/tasks`, seed data, generators, and
+`testing_support`. Current fixtures therefore do not provide a second
+independent medium package-boundary example. Park the analyzer as
+candidate-only until new approved targets produce broader medium
+package-boundary evidence outside the current OpenFoodNetwork-heavy sample.
+Rollout status, thresholds, classifier rules, and default-output eligibility
 did not change.
 
 ## `MetzProject/NamespaceLeakPressure`
@@ -955,18 +964,18 @@ instance and singleton methods, keeping the final count at 106 while classifying
 
 Medium-finding quality follow-up on 2026-07-02 reran the active manifest and
 confirmed the same shape: 106 findings and 106 offenses, with 76 low-confidence
-`broad_root_override` findings and 30 medium manual-review findings. The
-medium sample is concrete and readable, but still mixed enough to keep the
-analyzer candidate-only:
+`broad_root_override` findings and 30 medium manual-review findings. A
+second-pass source review split the 30 medium findings into 18 design-pressure
+hook protocol prompts, 5 deliberate extension APIs, 5 setup/mechanical
+families, and 2 needs-context replacements. The medium sample is concrete and
+readable, but still mixed enough to keep the analyzer candidate-only:
 
-| Family | Representative targets | Quality read |
-| --- | --- | --- |
-| Auth/provider hook protocols | Discourse `Auth::Authenticator`, Forem `Authentication::Providers::Provider` | Useful manual-review prompts; repeated provider methods are explicit hook protocols, though many may be deliberate extension points. |
-| Dev/setup record generators | Discourse `DiscourseDev::Record` | Likely mechanical or setup-specific; useful evidence that setup/dev families may need softer triage if they grow. |
-| Settings and theme managers | Discourse `EnumSiteSetting`, `ThemeSettingsManager` | Needs context; repeated hooks are readable, but setting/theme extension APIs can be intentional platform surfaces. |
-| Problem checks and ActivityPub activities | Discourse `ProblemCheck`, Mastodon `ActivityPub::Activity` | Useful protocol prompts; repeated `call`, `translation_data`, or `perform` methods reveal implicit subclass contracts. |
-| Reporting templates and model sets | OpenFoodNetwork `Reporting::ReportTemplate`, `Sets::ModelSet` | Useful but app-concentrated; reporting templates show a strong hook protocol, while constructor cooperation needs context. |
-| Commerce extension points | OpenFoodNetwork/Spree `Spree::Calculator`, `Spree::Export`, `Spree::PromotionRule`, `Spree::ShippingCalculator` | Needs context; these look like deliberate extension APIs and should not drive promotion without broader evidence. |
+| Quality bucket | Count | Representative families | Read |
+| --- | ---: | --- | --- |
+| Design-pressure hook protocols | 18 | Discourse `Auth::Authenticator`, Discourse `ProblemCheck`, Mastodon `ActivityPub::Activity`, OpenFoodNetwork `Reporting::ReportTemplate`, Spree `Spree::Calculator`, `Spree::Export`, and `Spree::ShippingCalculator` | Useful manual-review prompts. The base methods raise abstract errors, return documented defaults, or otherwise define an implicit subclass protocol. |
+| Deliberate extension APIs | 5 | Forem `Authentication::Providers::Provider`, Spree `Spree::PromotionRule` | Likely intentional adapter or rule extension surfaces. Keep visible for manual review, but do not treat as promotion evidence by themselves. |
+| Setup/mechanical families | 5 | Discourse `DiscourseDev::Record`, Discourse `ThemeSettingsManager`, OpenFoodNetwork `Sets::ModelSet` | Mostly setup, coercion, or `super`-threading bookkeeping. Useful evidence that these families may need softer triage if they grow. |
+| Needs context | 2 | Discourse `Auth::Authenticator#display_name`, OpenFoodNetwork `Reporting::ReportTemplate#search` | Intentional overrides, but local source alone does not decide whether a named formatter/query strategy would be clearer. |
 
 Readiness boundary: keep `MetzProject/SubclassOverridePressure` candidate-only.
 Do not retune thresholds, suppress medium categories, or add app-specific
