@@ -15,6 +15,7 @@ module MetzScan
         def dependency_metadata(declaration, reference_set, dependency_pressure_category)
           { "declaration" => declaration_metadata(declaration),
             "declared_package" => PackageMap.package_for(declaration.path),
+            "project_analyzer_category" => dependency_pressure_category,
             "dependency_pressure_category" => dependency_pressure_category,
             "references" => references_metadata(reference_set) }
         end

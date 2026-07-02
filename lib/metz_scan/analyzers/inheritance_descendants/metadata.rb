@@ -10,6 +10,7 @@ module MetzScan
           { "base_name" => base_name, "descendants" => descendants,
             "descendant_count" => descendants.size,
             "descendant_locations" => location_metadata(descendant_locations),
+            "project_analyzer_category" => context.fetch(:root_kind),
             "root_kind" => context.fetch(:root_kind), "source" => context.fetch(:source) }.compact
         end
 

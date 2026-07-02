@@ -43,9 +43,10 @@ first slice is index-backed and detects base classes whose known descendants
 override the same base-declared method in at least six subclasses. It now
 records conservative base-method body facts and descendant `super` usage so
 override families can be classified as broad-root, abstract-hook, cooperative,
-replacement, or unclassified signals. It remains behind `--project-analyzers`;
-narrower calibration of deliberate framework extension points and any future
-triage weighting are future scope.
+replacement, or unclassified signals with category-specific report language.
+It remains behind `--project-analyzers`; narrower calibration of deliberate
+framework extension points and any future confidence or severity weighting are
+future scope.
 
 ## Candidate shortlist
 

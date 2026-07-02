@@ -36,6 +36,33 @@ module MetzScan
         assert_equal "default_value", metadata.fetch("base_method_body_kind")
         assert_equal 0, metadata.fetch("overrides_calling_super_count")
       end
+
+      def assert_abstract_hook_triage(finding)
+        assert_includes finding.message, "implement build_client as an abstract hook"
+        assert_includes finding.triage_summary, "abstract hook"
+        assert_includes finding.why_it_matters, "implicit protocol"
+        assert_includes finding.suggested_next_moves.join(" "), "Name the hook contract"
+      end
+
+      def assert_cooperative_triage(finding)
+        assert_includes finding.message, "extend normalize with super"
+        assert_includes finding.triage_summary, "super"
+        assert_includes finding.why_it_matters, "template-method"
+        assert_includes finding.suggested_next_moves.join(" "), "Keep cooperative hooks"
+      end
+
+      def assert_replacement_metadata(metadata)
+        assert_equal "replacement_override", metadata.fetch("subclass_override_category")
+        assert_equal "concrete", metadata.fetch("base_method_body_kind")
+        assert_equal 0, metadata.fetch("overrides_calling_super_count")
+      end
+
+      def assert_replacement_triage(finding)
+        assert_includes finding.message, "replace concrete serialize behavior"
+        assert_includes finding.triage_summary, "replace concrete base behavior"
+        assert_includes finding.why_it_matters, "substitution"
+        assert_includes finding.suggested_next_moves.join(" "), "composition"
+      end
     end
 
     module SubclassOverridePressureBodyFactsSupport
@@ -157,9 +184,34 @@ module MetzScan
       end
     end
 
+    module SubclassOverridePressureReplacementFactsSupport
+      private
+
+      def replacement_index
+        body_fact_index("PayloadRenderer", "serialize", concrete_renderer_source, replacement_override_sources)
+      end
+
+      def concrete_renderer_source
+        <<~RUBY
+          class PayloadRenderer
+            def serialize(payload)
+              payload.to_h
+            end
+          end
+        RUBY
+      end
+
+      def replacement_override_sources
+        { "JsonRenderer" => override_source("serialize", "JSON.generate(payload)"),
+          "XmlRenderer" => override_source("serialize", "XmlDocument.build(payload)"),
+          "CsvRenderer" => override_source("serialize", "CsvDocument.build(payload)") }
+      end
+    end
+
     class SubclassOverridePressureBodyFactsTest < Minitest::Test
       include SubclassOverridePressureBodyFactsAssertions
       include SubclassOverridePressureBodyFactsSupport
+      include SubclassOverridePressureReplacementFactsSupport
 
       def setup
         @tmpdir = Dir.mktmpdir("subclass-override-body-facts")
@@ -170,15 +222,28 @@ module MetzScan
       end
 
       def test_records_abstract_base_method_and_super_call_metadata
-        assert_abstract_hook_metadata(analyze(abstract_hook_index).first.project_analyzer_metadata)
+        finding = analyze(abstract_hook_index).first
+
+        assert_abstract_hook_metadata(finding.project_analyzer_metadata)
+        assert_abstract_hook_triage(finding)
       end
 
       def test_classifies_concrete_override_families_with_super_as_cooperative
-        assert_cooperative_metadata(analyze(cooperative_index).first.project_analyzer_metadata)
+        finding = analyze(cooperative_index).first
+
+        assert_cooperative_metadata(finding.project_analyzer_metadata)
+        assert_cooperative_triage(finding)
       end
 
       def test_classifies_default_value_base_methods_as_abstract_hooks
         assert_default_hook_metadata(analyze(default_hook_index).first.project_analyzer_metadata)
+      end
+
+      def test_classifies_concrete_override_families_without_super_as_replacements
+        finding = analyze(replacement_index).first
+
+        assert_replacement_metadata(finding.project_analyzer_metadata)
+        assert_replacement_triage(finding)
       end
     end
 

@@ -7,6 +7,7 @@ require_relative "subclass_override_pressure/family_builder"
 require_relative "subclass_override_pressure/finding"
 require_relative "subclass_override_pressure/metadata"
 require_relative "subclass_override_pressure/method_body_facts"
+require_relative "subclass_override_pressure/triage"
 
 module MetzScan
   module Analyzers
@@ -15,6 +16,7 @@ module MetzScan
       include ProjectAnalyzerTriage
       include FamilyBuilder
       include Metadata
+      include Triage
 
       RULE_ID = "MetzProject/SubclassOverridePressure"
       PROJECT_ANALYZER_STATUS = "candidate"
@@ -70,7 +72,7 @@ module MetzScan
 
       def finding_attributes(family)
         core_finding_attributes(family)
-          .merge(triage_attributes_for(family.root_kind))
+          .merge(triage_attributes_for(family))
           .merge(project_analyzer_context_attributes(family))
       end
 

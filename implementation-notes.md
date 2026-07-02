@@ -1659,3 +1659,211 @@ Implementation decisions:
 - Did not change analyzer status, default-output eligibility, or confidence
   policy for medium findings. The new categories are for manual-review
   calibration and triage.
+
+## 2026-07-01: Category-aware override triage and generic shared surfaces
+
+Task: start on the next 2 big tasks and keep using agenticons, commit the
+changes, then provide a detailed comprehensive summary as described in
+AGENTS.md.
+
+Scope boundaries:
+
+- Use `tmp/project-analyzer-calibration/apps` as the active calibration fixture
+  home. Treat `/private/tmp` calibration paths as historical only.
+- Keep analyzer rollout statuses and default-output eligibility unchanged.
+- Do not delete RuboCop caches.
+- Do not promote analyzers or change the default-output policy.
+- Prefer generic shared-surface rules over app-specific calibrated constant
+  checks in production analyzer behavior.
+
+Change type: feature.
+
+Verbatim task statement: "Ok go ahead and start on the next 2 big tasks and
+keep using agenticons and at the end commit the changes. Then give me a detail
+and comprehensive summary as described in AGENTS.md"
+
+Plan:
+
+1. Use `planner: next two task selection` and `helper_worker: next task
+   evidence` to select the next pair of tasks from the current backlog.
+2. Implement category-aware `SubclassOverridePressure` report language for the
+   existing abstract-hook, cooperative, replacement, broad-root, and fallback
+   categories.
+3. Replace `PackageDependencyPressure`'s calibrated shared-surface constant
+   list with generic shared-surface predicates for conventional domain models,
+   value objects, and protocol-manager surfaces.
+4. Update docs and notes with the unchanged calibration counts and refined
+   semantics.
+5. Run focused tests, calibration smokes, full gates, strategic validation,
+   agenticon reviews, and commit.
+
+Verification status:
+
+- `planner: next two task selection` recommended category-aware
+  `SubclassOverridePressure` triage plus `PackageDependencyPressure`
+  shared-surface cleanup. It explicitly warned not to delete RuboCop caches,
+  use `/private/tmp` calibration paths, promote analyzers, change
+  default-output policy, or start a new analyzer in this slice.
+- `helper_worker: next task evidence` agreed that `PackageDependencyPressure`
+  cleanup was the highest-confidence task. It ranked a `NamespaceLeakPressure`
+  evidence pass second and considered subclass override mechanically stable.
+  I kept the planner's subclass triage task because it turns the previous
+  commit's new categories into report behavior, while the namespace pass was
+  mostly calibration evidence without a clear implementation change.
+- Red run before production implementation:
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/analyzers/subclass_override_pressure_body_facts_test.rb`
+    failed with 4 runs, 16 assertions, 3 failures. The missing behavior was
+    category-specific message/summary/why/next-move output; one replacement
+    fixture was also corrected to avoid the existing broad-root serializer
+    triage path.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/analyzers/package_dependency_pressure_test.rb` failed with
+    18 runs, 112 assertions, 3 failures because generic conventional domain
+    model, value object, and protocol-manager surfaces were still
+    medium-confidence package-boundary findings.
+- Green focused tests after implementation:
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/analyzers/subclass_override_pressure_body_facts_test.rb`:
+    4 runs, 38 assertions, 0 failures, 0 errors.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/analyzers/subclass_override_pressure_test.rb`: 4 runs,
+    29 assertions, 0 failures, 0 errors.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/analyzers/package_dependency_pressure_test.rb`: 18 runs,
+    124 assertions, 0 failures, 0 errors.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/commands/scan_project_analyzer_runner_package_dependency_test.rb`:
+    2 runs, 18 assertions, 0 failures, 0 errors.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/commands/scan_project_analyzer_runner_test.rb`: 12 runs,
+    36 assertions, 0 failures, 0 errors.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/calibration/project_analyzer_evidence_runner_test.rb`:
+    14 runs, 63 assertions, 0 failures, 0 errors.
+- Focused RuboCop over touched Ruby files passed: 6 files inspected, no
+  offenses.
+- Manifest-backed `MetzProject/PackageDependencyPressure` calibration over the
+  active fixtures passed with 39 findings and 39 offenses:
+  `shared_dependency=38`, `package_boundary=1`; `low=38`, `medium=1`; the only
+  medium finding remained `OpenFoodNetwork::ScopeVariantToHub`.
+- Manifest-backed `MetzProject/SubclassOverridePressure` calibration over the
+  active fixtures passed with 104 findings and 104 offenses:
+  `broad_root_override=75`, `abstract_hook_override=17`,
+  `cooperative_override=5`, `replacement_override=7`.
+
+Implementation decisions:
+
+- Kept `SubclassOverridePressure` categories and counts unchanged, but moved
+  category-specific message, triage summary, why-it-matters, and suggested
+  next moves into a dedicated `Triage` collaborator.
+- Kept `SubclassOverridePressure` candidate opt-in and not default-output
+  eligible; the category wording supports manual review rather than promotion.
+- Removed the `PackageDependencyPressure` calibrated shared-surface constant
+  map from `SharedDependencyTriage`.
+- Replaced app-specific shared-surface checks with generic predicates for
+  conventional `app/models` domain models, `lib/...` value objects such as
+  money/currency/amount/price, and `app/lib` protocol manager/registry/router
+  surfaces.
+- Preserved the calibration shape for `PackageDependencyPressure`: the cleanup
+  addresses the prior design-review concern without changing the single
+  medium package-boundary finding.
+- Full local gates before strategic review passed:
+  - `bundle exec rake`: 423 runs, 1800 assertions, 0 failures, 0 errors,
+    2 skips.
+  - `bundle exec rubocop`: 181 files inspected, no offenses.
+  - `bin/check_dependency_direction`: passed.
+  - `bin/check_sample_app_frozen`: passed.
+  - `bin/check_dogfood`: passed with accepted project-analyzer baseline of
+    0 findings.
+  - `git -c core.fsmonitor=false diff --check`: passed.
+- Strategic validation passed for change type `feature`: slice tests,
+  red/green proof, lint, and task-comment gates passed; warnings 0; review
+  required by diff size and public-interface surface in the unpushed branch
+  stack.
+- `doc_reviewer: documentation drift` found no documentation drift.
+- Initial `reviewer: strategic design validation` returned two blockers:
+  - `rubric_id`: `DEP-1`
+  - `location`:
+    `lib/metz_scan/calibration/project_analyzer_evidence_runner.rb:35-39`
+  - `severity`: `blocker`
+  - `rationale`: "`summary_options` hard-codes the project-index builder and
+    finding runner, so tests and callers that need a controlled calibration
+    run have to replace global singleton methods instead of injecting
+    collaborators."
+  - `suggested_change`: "Make the public runner path accept injectable
+    collaborators with production defaults, or introduce an instance runner
+    initialized with `index_builder:` and `finding_runner:` and have
+    `summarize` delegate to it."
+  - `rubric_id`: `LEAK-1`
+  - `location`: `lib/metz_scan/commands/scan/project_analyzer_metadata.rb:10-18`
+  - `severity`: `blocker`
+  - `rationale`: "The command layer now enumerates analyzer-specific category
+    keys that are also authored inside each analyzer's metadata hash, so adding
+    or renaming an analyzer category requires coordinated edits across producer
+    and renderer/summary code or the category silently disappears from
+    breakdowns."
+  - `suggested_change`: "Move the category contract onto the finding/analyzer
+    itself, for example by emitting a common `category` metadata field or
+    exposing `project_analyzer_category`, and have breakdown/notable summaries
+    read that common interface instead of listing every analyzer's key."
+- Blocker fixes:
+  - `ProjectAnalyzerEvidenceRunner.summarize` now accepts `index_builder:` and
+    `finding_runner:` collaborators with production defaults.
+  - Project analyzer metadata producers now emit a common
+    `project_analyzer_category` field alongside their existing analyzer-specific
+    category keys.
+  - Summary breakdowns and notable-finding categories now read
+    `project_analyzer_category`; analyzer-specific keys remain in full metadata
+    for compatibility.
+- Focused blocker-fix tests after implementation:
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/calibration/project_analyzer_evidence_runner_test.rb`:
+    15 runs, 64 assertions, 0 failures, 0 errors.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/commands/scan_project_analyzer_triage_test.rb`: 2 runs,
+    8 assertions, 0 failures, 0 errors.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/analyzers/repeated_query_criteria_test.rb`: 8 runs,
+    25 assertions, 0 failures, 0 errors.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/analyzers/implicit_context_pressure_test.rb`: 10 runs,
+    32 assertions, 0 failures, 0 errors.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/analyzers/namespace_leak_pressure_test.rb`: 15 runs,
+    67 assertions, 0 failures, 0 errors.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/analyzers/inheritance_descendants_test.rb`: 12 runs,
+    133 assertions, 0 failures, 0 errors.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/analyzers/repeated_branching_subject_test.rb`: 2 runs,
+    6 assertions, 0 failures, 0 errors.
+- Post-blocker-fix calibration smoke kept the same counts, but summary
+  breakdowns now use `project_analyzer_category`:
+  - `MetzProject/PackageDependencyPressure`: 39 findings and 39 offenses;
+    `project_analyzer_category`: `package_boundary=1`, `shared_dependency=38`.
+  - `MetzProject/SubclassOverridePressure`: 104 findings and 104 offenses;
+    `project_analyzer_category`: `abstract_hook_override=17`,
+    `broad_root_override=75`, `cooperative_override=5`,
+    `replacement_override=7`.
+- Post-blocker full local gates passed:
+  - `bundle exec rake`: 424 runs, 1801 assertions, 0 failures, 0 errors,
+    2 skips.
+  - `bundle exec rubocop`: 181 files inspected, no offenses.
+  - `bin/check_dependency_direction`: passed.
+  - `bin/check_sample_app_frozen`: passed.
+  - `bin/check_dogfood`: passed with accepted project-analyzer baseline of
+    0 findings.
+  - `git -c core.fsmonitor=false diff --check`: passed.
+- Final post-blocker strategic validation passed with warnings 0. Review was
+  still required by diff size and public-interface surface in the unpushed
+  branch stack.
+- Final `doc_reviewer: documentation drift` was clean.
+- Final `reviewer: strategic design validation` verdict was clean with no
+  findings.
+- Final post-note strategic validation rerun passed with warnings 0. The final
+  `reviewer: strategic design validation` verdict was clean with no findings:
+  "No blockers found. The change keeps project-analyzer rollout policy
+  explicit, consolidates shared AST context and category metadata instead of
+  leaking those decisions across consumers, and the load-red tests assert
+  concrete analyzer behavior rather than mere constant existence."

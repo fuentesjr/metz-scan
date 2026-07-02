@@ -13,11 +13,24 @@ module MetzScan
         end
 
         def namespace_metadata(declaration, reference_set, namespace_leak_category)
+          base_namespace_metadata(declaration)
+            .merge(category_metadata(namespace_leak_category))
+            .merge(references_metadata(reference_set))
+        end
+
+        def base_namespace_metadata(declaration)
           { "declaration" => declaration_metadata(declaration),
             "home_namespace" => Namespace.new(declaration.name).home_name,
-            "declared_package" => PackageMap.package_for(declaration.path),
-            "namespace_leak_category" => namespace_leak_category,
-            "references" => reference_set.references.map { |reference| reference_metadata(reference) } }
+            "declared_package" => PackageMap.package_for(declaration.path) }
+        end
+
+        def category_metadata(namespace_leak_category)
+          { "project_analyzer_category" => namespace_leak_category,
+            "namespace_leak_category" => namespace_leak_category }
+        end
+
+        def references_metadata(reference_set)
+          { "references" => reference_set.references.map { |reference| reference_metadata(reference) } }
         end
 
         def counts(referring_files, referring_packages)

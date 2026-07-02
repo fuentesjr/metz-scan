@@ -7,19 +7,15 @@ module MetzScan
   module Commands
     class Scan
       module ProjectAnalyzerMetadata
-        CATEGORY_METADATA_KEYS = %w[
-          decision_subject_kind
-          dependency_pressure_category
-          implicit_context_category
-          namespace_leak_category
-          repeated_query_category
-          root_kind
-          subclass_override_category
-        ].freeze
+        CATEGORY_METADATA_KEY = "project_analyzer_category"
 
         module_function
 
-        def category_metadata_keys = CATEGORY_METADATA_KEYS
+        def category_metadata_keys = [CATEGORY_METADATA_KEY]
+
+        def category_for(finding)
+          analyzer_metadata(finding)[CATEGORY_METADATA_KEY]
+        end
 
         def offense_metadata(finding)
           triage_metadata(finding).merge(analyzer_metadata(finding))

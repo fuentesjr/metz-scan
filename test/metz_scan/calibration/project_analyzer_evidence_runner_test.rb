@@ -37,7 +37,7 @@ module MetzScan
       report_occurrences: [OccurrenceFixture.new(path: "app/models/order.rb", line: 10, context: "Order")],
       project_analyzer_status: "validated", confidence: "medium", triage_severity: "design pressure",
       triage_summary: "design pressure candidate",
-      project_analyzer_metadata: { "decision_subject_kind" => "state" },
+      project_analyzer_metadata: { "project_analyzer_category" => "state", "decision_subject_kind" => "state" },
       why_it_matters: "Repeated branching makes change ripple.",
       suggested_next_moves: ["Consolidate repeated logic."]
     )
@@ -46,7 +46,8 @@ module MetzScan
       report_occurrences: [OccurrenceFixture.new(path: "app/services/order_sync.rb", line: 15, context: "OrderSync")],
       project_analyzer_status: "candidate", confidence: "low", triage_severity: "shared dependency",
       triage_summary: "shared dependency candidate",
-      project_analyzer_metadata: { "dependency_pressure_category" => "shared_dependency" },
+      project_analyzer_metadata: { "project_analyzer_category" => "shared_dependency",
+                                   "dependency_pressure_category" => "shared_dependency" },
       why_it_matters: "Broad shared dependencies can reveal global APIs.",
       suggested_next_moves: ["Review broad API callers."]
     )
@@ -57,7 +58,8 @@ module MetzScan
                                                  line: 21, context: "OpenFoodNetwork::ScopeVariantToHub")],
       project_analyzer_status: "candidate", confidence: "medium", triage_severity: "manual review",
       triage_summary: "manual package-boundary review candidate",
-      project_analyzer_metadata: { "dependency_pressure_category" => "package_boundary",
+      project_analyzer_metadata: { "project_analyzer_category" => "package_boundary",
+                                   "dependency_pressure_category" => "package_boundary",
                                    "declaration" => "OpenFoodNetwork::ScopeVariantToHub" },
       why_it_matters: "Package pressure can reveal an adapter that knows too many callers.",
       suggested_next_moves: ["Review package boundaries."]
@@ -335,6 +337,10 @@ module MetzScan
         with_tmpdir { |dir| assert_injected_collaborators_used(dir) }
       end
 
+      def test_summary_accepts_public_injected_collaborators
+        with_tmpdir { |dir| assert_public_injected_collaborators_used(dir) }
+      end
+
       def test_summary_restricts_project_analyzers_by_rule_id
         with_tmpdir { |dir| assert_analyzer_filter_forwarded(dir) }
       end
@@ -362,6 +368,22 @@ module MetzScan
 
         assert_equal 1, summary.fetch("finding_count")
         assert_injected_collaborator_calls(summary, call_captures)
+      end
+
+      def assert_public_injected_collaborators_used(dir)
+        FileUtils.mkdir_p(File.join(dir, "app"))
+        call_captures = captures
+        summary = public_injected_summary(dir, call_captures)
+
+        assert_equal 1, summary.fetch("finding_count")
+        assert_injected_collaborator_calls(summary, call_captures)
+      end
+
+      def public_injected_summary(dir, call_captures)
+        ProjectAnalyzerEvidenceRunner.summarize(
+          paths: [dir], default_output: true, index_builder: index_builder(call_captures),
+          finding_runner: finding_runner(call_captures, [REPEATED_BRANCHING_FINDING])
+        )
       end
 
       def assert_injected_collaborator_calls(summary, call_captures)
@@ -448,9 +470,8 @@ module MetzScan
       end
 
       def assert_metadata_breakdowns(aggregate_breakdowns)
-        assert_breakdown [["state", 1]], aggregate_breakdowns.dig("metadata", "decision_subject_kind")
-        assert_breakdown [["shared_dependency", 1]],
-                         aggregate_breakdowns.dig("metadata", "dependency_pressure_category")
+        assert_breakdown [["shared_dependency", 1], ["state", 1]],
+                         aggregate_breakdowns.dig("metadata", "project_analyzer_category")
       end
 
       def assert_breakdown(expected, actual)
@@ -501,8 +522,7 @@ module MetzScan
       def assert_notable_package_boundary(finding)
         assert_equal "package_boundary", finding.fetch("category")
         assert_equal "OpenFoodNetwork::ScopeVariantToHub", finding.dig("metadata", "declaration")
-        assert_includes Commands::Scan::ProjectAnalyzerMetadata.category_metadata_keys,
-                        "dependency_pressure_category"
+        assert_equal ["project_analyzer_category"], Commands::Scan::ProjectAnalyzerMetadata.category_metadata_keys
       end
 
       def refute_low_confidence_notable(notable_findings)

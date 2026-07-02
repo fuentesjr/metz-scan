@@ -68,7 +68,7 @@ module MetzScan
         rule = repeated_branching_summary.fetch("rules").first
 
         assert_equal REPEATED_BRANCHING_SUMMARY, rule.slice(*REPEATED_BRANCHING_SUMMARY.keys)
-        assert_equal "state", rule.dig("breakdowns", "metadata", "decision_subject_kind").first.fetch("value")
+        assert_equal "state", rule.dig("breakdowns", "metadata", "project_analyzer_category").first.fetch("value")
       end
 
       def merged_service_soup

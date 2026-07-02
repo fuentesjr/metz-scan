@@ -98,7 +98,8 @@ module MetzScan
       end
 
       def project_analyzer_metadata_for(site, grouped)
-        { "repeated_query_category" => "where_hash_criteria", "query" => site.query,
+        { "project_analyzer_category" => "where_hash_criteria",
+          "repeated_query_category" => "where_hash_criteria", "query" => site.query,
           "receiver" => site.receiver, "criteria_keys" => site.criteria_keys,
           "referring_files" => grouped.referring_files, "referring_packages" => grouped.referring_packages,
           "occurrences" => occurrences_metadata(grouped) }

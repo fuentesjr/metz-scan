@@ -119,7 +119,8 @@ module MetzScan
 
       def project_analyzer_metadata_for(site, sites, subject)
         { "decision" => site.decision, "kind" => site.kind.to_s,
-          "branch_values" => site.branch_values, "decision_subject_kind" => subject.kind,
+          "branch_values" => site.branch_values, "project_analyzer_category" => subject.kind,
+          "decision_subject_kind" => subject.kind,
           "decision_subject_label" => subject.label, "decision_subject_summary" => subject.summary,
           "occurrences" => sites.map { |occurrence| occurrence_metadata(occurrence) } }
       end

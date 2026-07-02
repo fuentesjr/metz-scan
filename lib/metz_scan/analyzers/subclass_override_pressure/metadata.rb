@@ -4,23 +4,6 @@ module MetzScan
   module Analyzers
     class SubclassOverridePressure
       module Metadata
-        def triage_attributes_for(root_kind)
-          return project_analyzer_triage_attributes unless root_kind
-
-          { project_analyzer_status: PROJECT_ANALYZER_STATUS, confidence: BROAD_ROOT_CONFIDENCE,
-            triage_severity: BROAD_ROOT_TRIAGE_SEVERITY, triage_summary: BROAD_ROOT_TRIAGE_SUMMARY }
-        end
-
-        def project_analyzer_context_attributes(family)
-          { project_analyzer_metadata: project_analyzer_metadata_for(family),
-            why_it_matters: WHY, suggested_next_moves: SUGGESTED_NEXT_MOVES }
-        end
-
-        def message_for(family)
-          "#{family.base.name} descendants override #{family.method_name} in #{family.overrides.size} subclasses; " \
-            "consider whether the hook protocol should be explicit."
-        end
-
         def project_analyzer_metadata_for(family)
           core_project_analyzer_metadata(family)
             .merge("overriding_descendants" => family.overrides.map(&:owner_name),
@@ -29,11 +12,30 @@ module MetzScan
         end
 
         def core_project_analyzer_metadata(family)
-          { "subclass_override_category" => subclass_override_category(family), "base_name" => family.base.name,
-            "method_name" => family.method_name, "root_kind" => family.root_kind,
-            "base_method_body_kind" => family.base_method_body_kind,
-            "overrides_calling_super_count" => family.overrides_calling_super_count,
-            "descendant_count" => family.descendants.size, "override_count" => family.overrides.size }
+          category_metadata(subclass_override_category(family)).merge(family_metadata(family))
+        end
+
+        def category_metadata(category)
+          { "project_analyzer_category" => category, "subclass_override_category" => category }
+        end
+
+        def family_metadata(family)
+          family_identity_metadata(family)
+            .merge(body_fact_metadata(family))
+            .merge(count_metadata(family))
+        end
+
+        def family_identity_metadata(family)
+          { "base_name" => family.base.name, "method_name" => family.method_name, "root_kind" => family.root_kind }
+        end
+
+        def body_fact_metadata(family)
+          { "base_method_body_kind" => family.base_method_body_kind,
+            "overrides_calling_super_count" => family.overrides_calling_super_count }
+        end
+
+        def count_metadata(family)
+          { "descendant_count" => family.descendants.size, "override_count" => family.overrides.size }
         end
 
         def override_locations(family)

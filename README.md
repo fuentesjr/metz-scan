@@ -154,9 +154,9 @@ declarations under `app/` and `lib/` packages, and it ignores references from
 `testing_support` paths when measuring cross-package pressure.
 Its default threshold is at least 12 referring files across at least 5 packages.
 Broad shared dependencies such as configuration, settings, event registries,
-exception families, infrastructure hubs, and calibrated broad domain or protocol
-surfaces are still reported, but with lower confidence and shared-dependency
-triage.
+exception families, infrastructure hubs, conventional domain model surfaces,
+value objects, and protocol-manager surfaces are still reported, but with lower
+confidence and shared-dependency triage.
 `NamespaceLeakPressure` also requires the optional project index and contributes
 no findings when the index is unavailable. It reports deeply nested declarations
 such as `Billing::Ledger::PrivateFormatter` when references spread outside the
@@ -186,7 +186,7 @@ and are reported with lower confidence and `broad base` triage. It also records
 whether the base method is abstract, empty, default-valued, or concrete, and
 whether descendant overrides call `super`, so repeated override families can be
 triaged as broad-root, abstract-hook, cooperative, replacement, or unclassified
-override pressure.
+override pressure with category-specific report language and next steps.
 
 Project analyzer output includes status, confidence, triage severity, and triage
 summary metadata. Default output includes only explicitly eligible, validated,

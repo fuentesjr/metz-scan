@@ -228,12 +228,7 @@ module MetzScan
         end
 
         def category_for(finding)
-          metadata = analyzer_metadata(finding)
-          category_metadata_keys.filter_map { |key| metadata[key] }.first
-        end
-
-        def category_metadata_keys
-          Commands::Scan::ProjectAnalyzerMetadata.category_metadata_keys
+          Commands::Scan::ProjectAnalyzerMetadata.category_for(finding)
         end
 
         def occurrence_metadata(finding)

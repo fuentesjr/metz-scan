@@ -18,10 +18,11 @@ module MetzScan
 
       def self.default_results_path = File.expand_path(DEFAULT_RESULTS_PATH)
 
-      def self.summarize(paths: nil, default_output: false, analyzer_names: nil, targets_file: nil)
-        targets = target_set(paths, targets_file)
+      def self.summarize(**options)
+        options = summarize_options(options)
+        targets = target_set(options[:paths], options[:targets_file])
         targets.ensure_present!
-        Summary.new(summary_options(targets, default_output, analyzer_names)).to_h
+        Summary.new(summary_options(targets, options)).to_h
       end
 
       def self.write_artifacts(summary, output_dir: default_results_path, run_id: nil)
@@ -32,11 +33,21 @@ module MetzScan
         TargetSet.new(paths: paths, default_apps_path: default_apps_path, targets_file: targets_file)
       end
 
-      def self.summary_options(targets, default_output, analyzer_names)
-        analyzer_names = Array(analyzer_names).compact
+      def self.summarize_options(options)
+        { paths: nil, default_output: false, analyzer_names: nil, targets_file: nil,
+          index_builder: nil, finding_runner: nil }.merge(options)
+      end
+
+      def self.summary_options(targets, options)
+        analyzer_names = Array(options[:analyzer_names]).compact
         analyzers = AnalyzerSelection.new(analyzer_names).call
-        base_summary_options(targets, default_output, analyzer_names)
-          .merge(index_builder: ProjectIndex.method(:build), finding_runner: FindingRunner.new(analyzers: analyzers))
+        base_summary_options(targets, options[:default_output], analyzer_names)
+          .merge(collaborator_options(options, analyzers))
+      end
+
+      def self.collaborator_options(options, analyzers)
+        { index_builder: options[:index_builder] || ProjectIndex.method(:build),
+          finding_runner: options[:finding_runner] || FindingRunner.new(analyzers: analyzers) }
       end
 
       def self.base_summary_options(targets, default_output, analyzer_names)

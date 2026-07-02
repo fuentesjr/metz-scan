@@ -145,6 +145,17 @@ module MetzScan
       end
     end
 
+    module PackageDependencyPressureSharedDependencyAssertions
+      private
+
+      def assert_shared_dependency_triage(finding)
+        assert_equal "low", finding.confidence
+        assert_equal "shared dependency", finding.triage_severity
+        assert_includes finding.triage_summary, "Shared dependency signal"
+        assert_equal "shared_dependency", finding.project_analyzer_metadata.fetch("dependency_pressure_category")
+      end
+    end
+
     class PackageDependencyPressureTest < Minitest::Test
       include PackageDependencyPressureAssertions
       include PackageDependencyPressureFixtures
@@ -188,6 +199,7 @@ module MetzScan
     end
 
     class PackageDependencyPressureSharedDependencyTest < Minitest::Test
+      include PackageDependencyPressureSharedDependencyAssertions
       include PackageDependencyPressureFixtures
 
       SPREE_SHARED_DOMAIN_MODELS = {
@@ -253,13 +265,6 @@ module MetzScan
 
       private
 
-      def assert_shared_dependency_triage(finding)
-        assert_equal "low", finding.confidence
-        assert_equal "shared dependency", finding.triage_severity
-        assert_includes finding.triage_summary, "Shared dependency signal"
-        assert_equal "shared_dependency", finding.project_analyzer_metadata.fetch("dependency_pressure_category")
-      end
-
       def shared_dependency_index
         pressure_index(name: "Settings::General", path: "/project/app/models/settings/general.rb",
                        references: external_references)
@@ -299,6 +304,46 @@ module MetzScan
       def scope_variant_to_hub_index
         pressure_index(name: "OpenFoodNetwork::ScopeVariantToHub",
                        path: "/project/lib/open_food_network/scope_variant_to_hub.rb",
+                       references: external_references)
+      end
+    end
+
+    class PackageDependencyPressureSharedSurfaceTest < Minitest::Test
+      include PackageDependencyPressureSharedDependencyAssertions
+      include PackageDependencyPressureFixtures
+
+      def test_downranks_conventional_domain_model_surfaces
+        finding = PackageDependencyPressure.new(index: commerce_order_index).call.first
+
+        assert_shared_dependency_triage(finding)
+      end
+
+      def test_downranks_conventional_domain_value_objects
+        finding = PackageDependencyPressure.new(index: commerce_money_index).call.first
+
+        assert_shared_dependency_triage(finding)
+      end
+
+      def test_downranks_protocol_manager_surfaces
+        finding = PackageDependencyPressure.new(index: messaging_tag_manager_index).call.first
+
+        assert_shared_dependency_triage(finding)
+      end
+
+      private
+
+      def commerce_order_index
+        pressure_index(name: "Commerce::Order", path: "/project/app/models/commerce/order.rb",
+                       references: external_references)
+      end
+
+      def commerce_money_index
+        pressure_index(name: "Commerce::Money", path: "/project/lib/commerce/money.rb",
+                       references: external_references)
+      end
+
+      def messaging_tag_manager_index
+        pressure_index(name: "Messaging::TagManager", path: "/project/app/lib/messaging/tag_manager.rb",
                        references: external_references)
       end
     end

@@ -51,10 +51,13 @@ With no paths, the runner discovers target checkouts under
 `tmp/project-analyzer-calibration/apps/`, scans each target's `app/` and `lib/`
 directories when present, records checkout revisions, index metadata, finding
 counts, triage summaries, and breakdowns by rule, confidence, severity, and
-known analyzer-specific metadata categories such as `decision_subject_kind`,
-`dependency_pressure_category`, `namespace_leak_category`,
-`implicit_context_category`, `repeated_query_category`, and `root_kind`.
-`subclass_override_category` is also included for subclass override findings.
+the common `project_analyzer_category` metadata field. Individual analyzer
+metadata still preserves analyzer-specific category keys such as
+`decision_subject_kind`, `dependency_pressure_category`, `namespace_leak_category`,
+`implicit_context_category`, `repeated_query_category`, `root_kind`, and
+`subclass_override_category` for compatibility and detailed inspection, but
+summary breakdowns use the common category field so renderer code does not
+need to know every analyzer-specific metadata key.
 Discovered targets without top-level `app/` or `lib/` are recorded with
 no-scan metadata instead of falling back to a whole-root scan. Pass explicit
 paths for intentional one-off scans, `--analyzer` one or more times for a
@@ -480,9 +483,12 @@ it ignores references from `spec/`, `test/`, `lib/tasks/`, `lib/seeders/`,
 `lib/seed_data/`, `lib/test_data/`, `lib/generators/`, nested seed paths, and
 nested `testing_support` paths when measuring cross-package pressure. Broad
 shared dependencies such as configuration, settings, event registries,
-exception families, infrastructure hubs, and calibrated broad domain or
+exception families, infrastructure hubs, broad domain surfaces, and broad
 protocol surfaces are reported with lower confidence and `shared dependency`
-triage rather than suppressed.
+triage rather than suppressed. The current implementation expresses those
+surface rules generically for conventional `app/models` domain models,
+`lib/...` value objects, and `app/lib` protocol-manager style surfaces rather
+than by checking active-fixture constant names.
 
 Initial real-project calibration before threshold tuning used 4 files across 2
 packages. It produced high-volume output on most full applications:
@@ -589,6 +595,14 @@ Decision: keep PackageDependencyPressure **Candidate** and opt-in. The
 calibrated output is now sparse enough to review, but the only remaining
 medium package-boundary finding is `OpenFoodNetwork::ScopeVariantToHub`, so
 there is not enough cross-application positive evidence for validated status.
+
+Targeted triage cleanup on 2026-07-01 removed the app-specific calibrated
+shared-surface constant list from the analyzer and replaced it with generic
+shared-surface predicates for conventional domain models, value objects, and
+protocol-manager surfaces. A manifest-backed smoke run after that cleanup kept
+the same review shape: 39 findings and 39 offenses, with 38 low-confidence
+`shared_dependency` findings and the single medium `package_boundary` finding
+for `OpenFoodNetwork::ScopeVariantToHub`.
 
 Current decision:
 
@@ -798,6 +812,13 @@ Overall category mix:
 | `abstract_hook_override` | 17 | The base method is empty, raises an abstract-method error, or returns a default literal value. |
 | `cooperative_override` | 5 | At least one descendant override calls `super`, suggesting an extension protocol rather than pure replacement. |
 | `replacement_override` | 7 | The base method is concrete and the sampled descendant overrides do not call `super`. |
+
+Category-specific follow-up on 2026-07-01 kept the finding counts and category
+mix unchanged, but now uses each medium category to render clearer report
+messages, triage summaries, why-it-matters text, and suggested next moves. For
+example, abstract hooks now say descendants implement an abstract hook,
+cooperative overrides say descendants extend behavior with `super`, and
+replacement overrides say descendants replace concrete base behavior.
 
 Decision: keep SubclassOverridePressure **Candidate** and opt-in. The signal is
 useful for identifying hook protocols, but the first pass is still too broad

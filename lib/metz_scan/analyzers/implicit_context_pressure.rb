@@ -85,7 +85,8 @@ module MetzScan
       end
 
       def project_analyzer_metadata_for(ambient_context, grouped)
-        { "implicit_context_category" => "current_attributes", "ambient_context" => ambient_context }
+        { "project_analyzer_category" => "current_attributes",
+          "implicit_context_category" => "current_attributes", "ambient_context" => ambient_context }
           .merge(grouped_metadata(grouped))
       end
 
