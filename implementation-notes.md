@@ -2667,3 +2667,73 @@ Evidence and decisions:
   families that are plausible but likely intentional extension APIs.
 - None of the new evidence justifies promotion, default-output eligibility,
   threshold changes, app-specific suppressions, or detector expansion.
+
+## 2026-07-02: Rubygems.org calibration target intake and expanded evidence
+
+Task: start on the next three substantial tasks while continuing to use
+agenticons.
+
+Change type: feature.
+
+Verbatim task statement: "Start on the next 3 big tasks. Keep using agenticons"
+
+Scope boundaries:
+
+- Add evidence, not analyzer behavior. Do not change detector logic, thresholds,
+  statuses, default-output policy, or classifier rules.
+- Add exactly one active calibration target so evidence deltas stay attributable.
+- Keep ignored fixture checkouts and result artifacts out of the commit.
+- Use the generated readiness catalog as the source for readiness/backlog output.
+
+Agenticons:
+
+- `planner: post-Redmine evidence plan` recommended another one-target evidence
+  intake, source-review of only the new or changed medium findings, and a
+  readiness/docs refresh. It recommended the already-restored
+  `rubygems/rubygems.org` fixture because a package registry broadens the
+  domain mix without another issue-tracking target.
+- `helper_worker: next target feasibility` recommended `ManageIQ/manageiq` as
+  the stronger fresh infrastructure/operations target and `opf/openproject` as
+  a larger backup. The slice kept Rubygems.org because it was already restored
+  locally and produced useful namespace, implicit-context, and subclass evidence;
+  ManageIQ remains the next fresh-target candidate.
+
+Tasks completed:
+
+- Added `rubygems/rubygems.org` at revision `757047af5070` to the tracked active
+  target manifest with `app` and `lib` scan paths.
+- Ran a discarded signal check with Huginn before the final target decision. It
+  added only subclass evidence, so it was not kept in the manifest.
+- Ran the five parked candidate analyzers over the expanded Rubygems.org
+  manifest. The run produced 231 findings and 231 offenses across
+  PackageDependencyPressure, NamespaceLeakPressure, ImplicitContextPressure,
+  RepeatedQueryCriteria, and SubclassOverridePressure.
+- Source-reviewed the Rubygems.org deltas and updated the generated readiness
+  catalog, readiness tests, calibration docs, and local strategy notes.
+
+Evidence and decisions:
+
+- `MetzProject/PackageDependencyPressure`: unchanged at 40 findings, with 39 low
+  shared dependencies and the same single medium package-boundary prompt.
+  Rubygems.org added no package-pressure evidence at the current threshold, so
+  this analyzer remains parked pending a broader infrastructure or operations
+  target.
+- `MetzProject/NamespaceLeakPressure`: increased to 42 findings, with 33 low
+  shared namespaces and 9 medium namespace-boundary findings. Rubygems.org added
+  three useful OIDC/security-policy prompts:
+  `OIDC::AccessPolicy::Statement`,
+  `OIDC::AccessPolicy::Statement::Condition`, and
+  `OIDC::TrustedPublisher::GitHubAction`.
+- `MetzProject/ImplicitContextPressure`: increased to 12 findings. Rubygems.org
+  added `Current.user` from API authentication and ownership/transfer flows,
+  classified as a needs-context identity prompt. The quality split is now 9
+  mechanical framework-state signals, 1 useful execution-identity prompt, and
+  2 needs-context identity prompts.
+- `MetzProject/RepeatedQueryCriteria`: unchanged at 16 findings. Rubygems.org
+  added no repeated-query findings at the current threshold.
+- `MetzProject/SubclassOverridePressure`: increased to 121 findings, with 83 low
+  broad-root and 38 medium manual-review findings. Rubygems.org added policy and
+  Avo action hook evidence that is useful for calibration but likely includes
+  intentional extension APIs.
+- None of the new evidence justifies promotion, default-output eligibility,
+  threshold changes, app-specific suppressions, or detector expansion.

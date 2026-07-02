@@ -277,15 +277,15 @@ module MetzScan
 
         assert_candidate_readiness(entry)
         assert_includes entry.fetch("evidence"), "40 findings"
-        assert_includes entry.fetch("next"), "another domain-distinct target"
+        assert_includes entry.fetch("next"), "infrastructure or operations target"
       end
 
       def assert_namespace_leak_readiness(readiness)
         entry = readiness_entry(readiness, "MetzProject/NamespaceLeakPressure")
 
         assert_candidate_readiness(entry)
-        assert_includes entry.fetch("evidence"), "6 medium namespace-boundary prompts"
-        assert_includes entry.fetch("next"), "one more non-commerce target"
+        assert_includes entry.fetch("evidence"), "9 medium namespace-boundary prompts"
+        assert_includes entry.fetch("next"), "Rubygems.org OIDC prompts"
         assert_includes entry.fetch("not_next"), "Do not promote"
       end
 
@@ -302,7 +302,7 @@ module MetzScan
         entry = readiness_entry(readiness, "MetzProject/ImplicitContextPressure")
 
         assert_candidate_readiness(entry)
-        assert_includes entry.fetch("evidence"), "dominated by mechanical framework state"
+        assert_includes entry.fetch("evidence"), "12 findings"
         assert_includes entry.fetch("next"), "Keep candidate-only"
         assert_includes entry.fetch("not_next"), "Do not add suppressions"
       end
@@ -311,8 +311,8 @@ module MetzScan
         entry = readiness_entry(readiness, "MetzProject/SubclassOverridePressure")
 
         assert_candidate_readiness(entry)
-        assert_includes entry.fetch("evidence"), "114 findings"
-        assert_includes entry.fetch("next"), "SCM adapter"
+        assert_includes entry.fetch("evidence"), "121 findings"
+        assert_includes entry.fetch("next"), "Avo action"
       end
 
       def assert_candidate_readiness(entry)

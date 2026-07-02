@@ -26,6 +26,10 @@ targets:
     scan_paths:
       - app
       - lib
+  - root: tmp/project-analyzer-calibration/apps/rubygems.org
+    scan_paths:
+      - app
+      - lib
   - root: tmp/project-analyzer-calibration/apps/solidus
     scan_paths:
       - lib

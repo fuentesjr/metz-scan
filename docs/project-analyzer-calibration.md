@@ -125,6 +125,18 @@ candidate-analyzer run over the expanded manifest produced 220 findings and
 `SubclassOverridePressure=114`. The added target changed evidence, not analyzer
 behavior, rollout status, thresholds, or default-output eligibility.
 
+Rubygems.org target-intake follow-up on 2026-07-02 added
+`rubygems/rubygems.org` at `757047af5070` to the active target manifest with
+`app` and `lib` scan paths. This target was chosen as a package-registry and
+supply-chain security Rails app outside the current support, social/forum,
+commerce, and issue-tracking fixture families. The focused candidate-analyzer
+run over the expanded manifest produced 231 findings and 231 offenses across
+the five parked candidate analyzers: `PackageDependencyPressure=40`,
+`NamespaceLeakPressure=42`, `ImplicitContextPressure=12`,
+`RepeatedQueryCriteria=16`, and `SubclassOverridePressure=121`. The added
+target changed evidence, not analyzer behavior, rollout status, thresholds, or
+default-output eligibility.
+
 Triage-output follow-up on 2026-06-23: adding project-analyzer status,
 confidence, triage severity, triage summary, and `summary.project_analyzers`
 output metadata did not change the expanded calibration counts above.
@@ -684,6 +696,15 @@ PackageDependencyPressure **Candidate** and parked; add another domain-distinct
 target before reopening package-boundary rules, and do not retune thresholds or
 downrank the sole medium finding from this expanded sample.
 
+Rubygems.org target-intake follow-up on 2026-07-02 kept the manifest-backed
+count at 40 findings and 40 offenses: 39 low-confidence `shared_dependency`
+findings and the same single medium `package_boundary` finding for
+`OpenFoodNetwork::ScopeVariantToHub`. Rubygems.org added no package-pressure
+evidence at the current threshold. Decision: keep PackageDependencyPressure
+**Candidate** and parked; the next target should be an infrastructure or
+operations app, with `ManageIQ/manageiq` currently the strongest candidate,
+before reopening package-boundary rules.
+
 ## `MetzProject/NamespaceLeakPressure`
 
 Result: **Candidate**, behind `--project-analyzers`.
@@ -784,6 +805,24 @@ the evidence by adding non-commerce namespace-boundary examples, but two of its
 three medium findings are still SCM extension infrastructure. Compare the
 Redmine activity and SCM prompts against at least one more non-commerce target
 before status, default-output, threshold, or classifier discussions.
+
+Rubygems.org target-intake follow-up on 2026-07-02 increased the
+manifest-backed count to 42 findings and 42 offenses: 33 low-confidence
+`shared_namespace` findings and 9 medium `namespace_boundary` findings.
+Rubygems.org added three medium OIDC/security-policy findings:
+
+| Target | Declaration | Quality bucket | Rationale |
+| --- | --- | --- | --- |
+| `rubygems.org` | `OIDC::AccessPolicy::Statement` | Useful design-pressure prompt | OIDC controllers, models, and form views construct policy statements directly, making policy-language internals visible outside the access-policy model. |
+| `rubygems.org` | `OIDC::AccessPolicy::Statement::Condition` | Useful design-pressure prompt | Controllers, Avo resources, models, and form views construct conditions directly, spreading low-level claim/operator details across the app. |
+| `rubygems.org` | `OIDC::TrustedPublisher::GitHubAction` | Useful design-pressure prompt | Controllers, helpers, views, Avo resources, and policies reference the concrete trusted-publisher subtype across several packages. |
+
+Decision: keep NamespaceLeakPressure **Candidate** and opt-in. Rubygems.org
+adds a useful non-commerce security-policy sample, but the current medium set
+still mixes domain prompts, intentional SCM/public extension surfaces, and
+security-policy value objects. Compare the Redmine SCM and Rubygems.org OIDC
+prompts against an infrastructure target before status, default-output,
+threshold, or classifier discussions.
 
 ## `MetzProject/ImplicitContextPressure`
 
@@ -891,6 +930,16 @@ make default-output eligible, add suppressions, retune thresholds, or add more
 global-access forms from this sample. Future work should use broader samples to
 separate generic boundary/setup state from ambient identity dependencies before
 changing analyzer behavior.
+
+Rubygems.org target-intake follow-up on 2026-07-02 increased the
+manifest-backed count to 12 findings and 12 offenses by adding
+`Current.user` from `Api::BaseController` authentication. The new finding is a
+needs-context identity prompt, not a promotion signal: API authentication writes
+the current user, while ownership auditing and transfer/onboarding flows read
+it. The expanded quality split is now 9 mechanical framework-state signals,
+1 useful execution-identity prompt, and 2 needs-context identity prompts.
+Rollout status, thresholds, detector scope, and default-output eligibility did
+not change.
 
 ## `MetzProject/RepeatedQueryCriteria`
 
@@ -1007,6 +1056,12 @@ token action/user criteria. The expanded quality split is now 13 useful
 manual-review prompts and 3 mechanical lookups. Rollout status, thresholds,
 detector scope, and default-output eligibility did not change.
 
+Rubygems.org target-intake follow-up on 2026-07-02 kept the manifest-backed
+count at 16 findings and 16 offenses. It added no repeated-query findings at
+the current threshold, so the expanded quality split remains 13 useful
+manual-review prompts and 3 mechanical lookups. Detector scope, thresholds,
+rollout status, and default-output eligibility did not change.
+
 Decision: keep RepeatedQueryCriteria **Candidate** and opt-in. The first pass
 is sparse and readable, but repeated query criteria can be intentional local
 lookup duplication. It needs more calibration before validated status or
@@ -1112,6 +1167,20 @@ three `Redmine::Scm::Adapters::AbstractAdapter` replacement families for
 review prompts but also likely intentional adapter extension points, so they do
 not change readiness. Keep the analyzer candidate-only and continue separating
 generic hook-protocol evidence from deliberate extension APIs before any
+promotion, suppression, or threshold discussion.
+
+Rubygems.org target-intake follow-up on 2026-07-02 increased the
+manifest-backed count to 121 findings and 121 offenses: 83 low-confidence
+`broad_root_override` findings and 38 medium manual-review findings. Rubygems.org
+added 7 findings overall: 3 low broad-root findings and 4 medium findings. The
+medium additions are `Admin::ApplicationPolicy::Scope#resolve`,
+`Avo::Actions::ActionHandler#handle_record`,
+`Avo::Actions::ActionHandler#handle_standalone`, and cooperative
+`Avo::Actions::ApplicationAction#fields` overrides. These are useful as
+evidence that the analyzer finds policy/action hook protocols outside commerce
+and social/forum apps, but they are also likely intentional extension APIs.
+Keep the analyzer candidate-only and continue separating generic hook-protocol
+evidence from deliberate framework or admin-tool extension points before any
 promotion, suppression, or threshold discussion.
 
 ## `MetzProject/RepeatedBranching`
