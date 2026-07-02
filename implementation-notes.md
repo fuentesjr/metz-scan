@@ -2379,3 +2379,54 @@ Evidence and decisions:
   `OpenFoodNetwork::ScopeVariantToHub`.
 - Neither analyzer should be promoted, made default-output eligible, retuned,
   or given app-specific suppressions from this evidence.
+
+## 2026-07-02: Repeated query readiness and backlog boundary
+
+Task: review `logs/repeated-query-criteria-strategy-review.md` again and start
+the next two substantial tasks while continuing to use agenticons.
+
+Scope boundaries:
+
+- Keep `MetzProject/RepeatedQueryCriteria` candidate opt-in and not
+  default-output eligible.
+- Do not expand repeated-query detector scope.
+- Make no analyzer behavior, threshold, status, classifier, or default-output
+  changes.
+- Use active calibration fixtures under `tmp/project-analyzer-calibration/apps`;
+  treat `/private/tmp` calibration paths as historical only.
+
+Agenticons:
+
+- `planner: next two tasks after pressure disposition` recommended
+  membership-vs-domain calibration for `RepeatedQueryCriteria` as the highest
+  priority. It also identified another subclass extension-point pass, but that
+  had already been completed and committed in `4976e46`.
+- `helper_worker: repeated query readiness evidence` confirmed the active
+  repeated-query evidence shape: 15 candidate medium manual-review findings,
+  with 12 useful prompts and 3 mechanical or expected lookups. It also flagged
+  that README/user-facing docs blurred supported `where.not` behavior with
+  active-fixture evidence.
+
+Tasks completed:
+
+- Updated user-facing repeated-query documentation to distinguish detector
+  support from active-fixture evidence: `where.not` remains supported and
+  test-covered, but no active fixture currently produces a repeated
+  `where.not` finding at the current threshold.
+- Added an explicit readiness/backlog boundary for the current candidate
+  analyzer set so future work does not keep reopening already-parked analyzers
+  without new evidence.
+- Recorded the repeated-query membership-vs-domain split as a calibration
+  boundary: business-named lookup concepts currently form the stronger signal,
+  while `Badge.find_by(enabled, id)` and join-table membership lookups remain
+  mechanical examples to watch rather than suppress.
+
+Evidence and decisions:
+
+- `MetzProject/RepeatedQueryCriteria` remains candidate-only. The current
+  evidence does not justify validated status, default-output eligibility, query
+  form expansion, membership-table suppression, or threshold changes.
+- `MetzProject/PackageDependencyPressure` remains parked until new approved
+  targets can produce independent medium package-boundary evidence.
+- `MetzProject/SubclassOverridePressure` remains candidate-only; the previous
+  disposition pass already documented the current medium-family split.

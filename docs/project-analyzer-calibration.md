@@ -195,10 +195,13 @@ Readiness by analyzer:
   evidence.
 - `MetzProject/RepeatedQueryCriteria` is candidate for opt-in project-analyzer
   output. The first slice is AST-only and reports simple constant-receiver
-  `where` calls with at least two literal hash keys repeated across at least
-  three files and two coarse packages. It is not default-output eligible and
-  should not move toward validated status until broader calibration confirms
-  the query-repetition signal is sparse and consistently actionable.
+  query criteria with at least two literal hash keys repeated across at least
+  three files and two coarse packages. Active-fixture evidence currently covers
+  positive `where` filters and `find_by` lookups; negative `where.not` is
+  supported by tests but not yet fixture-evidenced at the current threshold. It
+  is not default-output eligible and should not move toward validated status
+  until broader calibration confirms the query-repetition signal is sparse and
+  consistently actionable.
 - `MetzProject/SubclassOverridePressure` is candidate for opt-in
   project-analyzer output. The first slice is index-backed and reports base
   classes whose known descendants override the same base-declared method in at
@@ -210,6 +213,14 @@ Readiness by analyzer:
   It is not default-output eligible and should not move toward validated status
   until follow-up calibration confirms those classified medium-confidence
   families are consistently actionable.
+
+Current readiness/backlog boundary after the 2026-07-02 evidence loops:
+
+| Analyzer | Current disposition | Next useful task | Not next |
+| --- | --- | --- | --- |
+| `MetzProject/RepeatedQueryCriteria` | Candidate-only. Active fixtures show 15 findings: 12 useful manual-review prompts and 3 mechanical or expected lookups. Current fixture evidence covers `where` and `find_by`; `where.not` is supported but not fixture-evidenced yet. | Keep separating membership-table lookups from business-named lookup concepts in calibration, especially before changing triage wording or thresholds. | Do not add more query forms, dynamic receivers, association receivers, SQL strings, joins, merges, Arel, single-key finders, bang finders, `exists?`, or `take`. |
+| `MetzProject/PackageDependencyPressure` | Candidate-only and parked pending new approved targets. Current active fixtures have one medium package-boundary finding and 38 low shared-dependency findings. | Reopen only when new target coverage can produce independent medium package-boundary evidence outside the current OpenFoodNetwork-heavy sample. | Do not promote, retune thresholds, add app-specific suppressions, or downrank the sole medium finding from this sample alone. |
+| `MetzProject/SubclassOverridePressure` | Candidate-only. Current active fixtures have 106 findings: 76 low broad-root findings and 30 medium manual-review findings split across hook protocols, deliberate extension APIs, setup/mechanical families, and needs-context replacements. | Continue source-reviewing medium families only if new evidence can justify a generic, non-app-specific refinement. | Do not promote, make default-output eligible, suppress medium categories, or retune thresholds from the current mixed sample. |
 
 Reporting-language follow-up on 2026-06-24: text output now labels each
 project-analyzer summary with status, confidence, and severity, and the summary
@@ -887,6 +898,17 @@ polymorphic lookups, localization lookups, follow-graph lookups, and
 domain-block lookups in the main manual-review bucket. If join-table lookups
 grow, consider a lighter triage bucket or softer wording for pure membership
 tables before changing thresholds.
+
+Membership-vs-domain follow-up on 2026-07-02 confirmed that the current 15
+finding sample does not justify a Ruby behavior change yet. The useful bucket
+is dominated by business-named lookup concepts: post-within-topic, localization,
+revision, polymorphic comment, domain-block, custom emoji, and follow-graph
+lookups. The mechanical bucket is limited to `Badge.find_by(enabled, id)` and
+join-table membership lookups such as `GroupUser.where(group_id, user_id)` and
+`TopicUser.where(topic_id, user_id)`. Treat this as a calibration boundary, not
+a suppression rule: the current sample is too small for generic membership-table
+downranking, but large enough to keep those cases separate from the stronger
+domain lookup prompts in future reviews.
 
 Decision: keep RepeatedQueryCriteria **Candidate** and opt-in. The first pass
 is sparse and readable, but repeated query criteria can be intentional local

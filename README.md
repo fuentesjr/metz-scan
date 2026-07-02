@@ -124,7 +124,7 @@ Current project analyzer status:
 | `MetzProject/PackageDependencyPressure` | Candidate | No | Indexed namespaced classes or modules referenced from several files across multiple coarse packages outside their declaration package. |
 | `MetzProject/NamespaceLeakPressure` | Candidate | No | Indexed deeply nested classes or modules referenced from multiple files across packages outside their home namespace. |
 | `MetzProject/ImplicitContextPressure` | Candidate | No | Repeated `Current.*`, namespaced `Current`, or literal `Thread.current[...]` ambient context access across files and coarse packages. |
-| `MetzProject/RepeatedQueryCriteria` | Candidate | No | Repeated constant-receiver or constant-root scope-chain hash criteria in `where`, `where.not`, or finder calls across files and coarse packages. |
+| `MetzProject/RepeatedQueryCriteria` | Candidate | No | Repeated constant-receiver or constant-root scope-chain hash criteria in `where`, `where.not`, or finder calls across files and coarse packages. Current fixture evidence is `where` plus `find_by`; `where.not` is supported and test-covered but not yet active-fixture evidenced. |
 | `MetzProject/SubclassOverridePressure` | Candidate | No | Indexed base classes whose descendants repeatedly override the same method. |
 
 Project analyzers parse Ruby files only. They do not inspect ERB/HAML/SLIM
@@ -192,7 +192,12 @@ non-constant receivers, dynamic hashes, bang finders, and broader relation APIs
 remain outside this slice. Category metadata distinguishes polymorphic,
 compound-association, association-scoped, and generic hash-criteria repeats,
 and records query method, query operation, and whether the receiver is a
-constant or a scope chain.
+constant or a scope chain. The active fixture calibration currently contains 15
+findings: 6 positive `where` filters and 9 `find_by` lookups. No repeated
+`where.not` finding appears in the active fixtures at the current threshold.
+The current quality read is 12 useful manual-review prompts and 3 mechanical or
+expected lookups, so the analyzer stays candidate-only while membership-table
+lookups and business-named lookup concepts are kept separate in calibration.
 `SubclassOverridePressure` requires the optional project index and remains
 candidate opt-in. Its first slice reports base classes whose known descendants
 override the same base-declared method in at least six subclasses. Framework,

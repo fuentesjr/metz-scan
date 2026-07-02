@@ -41,7 +41,9 @@ compound-association, association-scoped, and generic hash-criteria repeats,
 and records query method, query operation, and receiver shape. It remains
 behind `--project-analyzers`; dynamic SQL strings, dynamic scope chains,
 non-constant receivers, dynamic hashes, bang finders, and broader relation APIs
-are future scope.
+are future scope. Current active-fixture evidence covers positive `where`
+filters and `find_by` lookups; negative `where.not` remains supported by tests
+but does not yet have an active-fixture finding at the current threshold.
 
 ### `SubclassOverridePressure`
 
