@@ -41,23 +41,27 @@ module MetzScan
         end
 
         def base_methods(base)
-          methods_by_owner.fetch(base.name, []).uniq(&:method_name).sort_by(&:method_name)
+          methods = methods_by_owner.fetch(base.name, [])
+          methods.uniq { |method| method_identity_for(method) }
+                 .sort_by { |method| method_identity_for(method) }
         end
 
         def finding_for(base, base_method, descendants)
-          overrides = overrides_for(base_method.method_name, descendants)
+          overrides = overrides_for(method_identity_for(base_method), descendants)
           return if overrides.size < minimum_overriding_descendants
 
           Finding.new(finding_attributes(override_family(base, base_method, descendants, overrides)))
         end
 
-        def overrides_for(method_name, descendants)
-          descendants.filter_map { |descendant| method_declaration_for(descendant, method_name) }
+        def overrides_for(method_identity, descendants)
+          descendants.filter_map { |descendant| method_declaration_for(descendant, method_identity) }
                      .sort_by { |declaration| declaration.owner_name.to_s }
         end
 
-        def method_declaration_for(owner_name, method_name)
-          methods_by_owner.fetch(owner_name, []).find { |declaration| declaration.method_name == method_name }
+        def method_declaration_for(owner_name, method_identity)
+          methods_by_owner.fetch(owner_name, []).find do |declaration|
+            method_identity_for(declaration) == method_identity
+          end
         end
       end
     end

@@ -73,20 +73,28 @@ module MetzScan
       end
 
       def abstract_hook_index
-        body_fact_index("PaymentProcessor", "build_client", abstract_base_source, abstract_override_sources)
+        body_fact_index(index_options("PaymentProcessor", "build_client", abstract_base_source,
+                                      abstract_override_sources))
       end
 
       def cooperative_index
-        body_fact_index("EnvelopeNormalizer", "normalize", concrete_base_source, cooperative_override_sources)
+        body_fact_index(index_options("EnvelopeNormalizer", "normalize", concrete_base_source,
+                                      cooperative_override_sources))
       end
 
       def default_hook_index
-        body_fact_index("TagRule", "tags", default_base_source, default_override_sources)
+        body_fact_index(index_options("TagRule", "tags", default_base_source, default_override_sources))
       end
 
-      def body_fact_index(base_name, method_name, base_source, override_sources)
-        BodyFactIndex.new(base_declaration(base_name), descendants_for(override_sources),
-                          method_declarations(base_name, method_name, base_source, override_sources))
+      def index_options(base_name, method_name, base_source, override_sources)
+        { base_name: base_name, method_name: method_name, base_source: base_source,
+          override_sources: override_sources, receiver_kind: "instance" }
+      end
+
+      def body_fact_index(options)
+        BodyFactIndex.new(base_declaration(options.fetch(:base_name)),
+                          descendants_for(options.fetch(:override_sources)),
+                          method_declarations(options))
       end
 
       def base_declaration(base_name)
@@ -95,34 +103,6 @@ module MetzScan
 
       def descendants_for(override_sources)
         override_sources.keys.sort
-      end
-
-      def method_declarations(base_name, method_name, base_source, override_sources)
-        [method_declaration(base_name, method_name, write_source(base_name, base_source))] +
-          override_sources.map do |owner_name, source|
-            method_declaration(owner_name, method_name, write_source(owner_name, source))
-          end
-      end
-
-      def method_declaration(owner_name, method_name, path)
-        ProjectIndex::MethodDeclaration.new(name: "#{owner_name}##{method_name}()", owner_name: owner_name,
-                                            method_name: method_name, signature: "#{method_name}()",
-                                            path: path, line: method_line(path, method_name), column: 3)
-      end
-
-      def write_source(owner_name, source)
-        path_for("#{owner_name}.rb").tap do |path|
-          FileUtils.mkdir_p(File.dirname(path))
-          File.write(path, source)
-        end
-      end
-
-      def method_line(path, method_name)
-        File.readlines(path).find_index { |line| line.include?("def #{method_name}") } + 1
-      end
-
-      def path_for(filename)
-        File.join(@tmpdir, filename)
       end
 
       def abstract_base_source
@@ -184,11 +164,104 @@ module MetzScan
       end
     end
 
+    module SubclassOverridePressureMethodDeclarationSupport
+      private
+
+      def method_declarations(options)
+        [method_declaration(options.fetch(:base_name), write_source(options.fetch(:base_name),
+                                                                    options.fetch(:base_source)), options)] +
+          options.fetch(:override_sources).map do |owner_name, source|
+            method_declaration(owner_name, write_source(owner_name, source), options)
+          end
+      end
+
+      def method_declaration(owner_name, path, options)
+        ProjectIndex::MethodDeclaration.new(method_declaration_attributes(owner_name, path, options))
+      end
+
+      def method_declaration_attributes(owner_name, path, options)
+        method_name = options.fetch(:method_name)
+        receiver_kind = options.fetch(:receiver_kind)
+        method_identity_attributes(owner_name, method_name, receiver_kind)
+          .merge(path: path, line: method_line(path, method_name), column: 3)
+      end
+
+      def method_identity_attributes(owner_name, method_name, receiver_kind)
+        { name: method_declaration_name(owner_name, method_name, receiver_kind), owner_name: owner_name,
+          method_name: method_name, signature: "#{method_name}()", receiver_kind: receiver_kind,
+          method_identity: "#{receiver_kind}:#{method_name}" }
+      end
+
+      def method_declaration_name(owner_name, method_name, receiver_kind)
+        separator = receiver_kind == "singleton" ? "." : "#"
+        "#{owner_name}#{separator}#{method_name}()"
+      end
+
+      def write_source(owner_name, source)
+        path_for("#{owner_name}.rb").tap do |path|
+          FileUtils.mkdir_p(File.dirname(path))
+          File.write(path, source)
+        end
+      end
+
+      def method_line(path, method_name)
+        File.readlines(path).find_index { |line| method_definition_line?(line, method_name) } + 1
+      end
+
+      def method_definition_line?(line, method_name)
+        line.include?("def #{method_name}") || line.include?("def self.#{method_name}")
+      end
+
+      def path_for(filename)
+        File.join(@tmpdir, filename)
+      end
+    end
+
+    module SubclassOverridePressureSingletonBodyFactsSupport
+      private
+
+      def singleton_cooperative_index
+        body_fact_index(singleton_index_options)
+      end
+
+      def singleton_index_options
+        index_options("EnvelopeNormalizer", "normalize", singleton_concrete_base_source,
+                      singleton_cooperative_override_sources).merge(receiver_kind: "singleton")
+      end
+
+      def singleton_concrete_base_source
+        <<~RUBY
+          class EnvelopeNormalizer
+            def self.normalize(payload)
+              payload.compact
+            end
+          end
+        RUBY
+      end
+
+      def singleton_cooperative_override_sources
+        { "JsonNormalizer" => singleton_override_source("normalize", "super.merge(format: :json)"),
+          "XmlNormalizer" => singleton_override_source("normalize", "super.merge(format: :xml)"),
+          "CsvNormalizer" => singleton_override_source("normalize", "{ format: :csv }") }
+      end
+
+      def singleton_override_source(method_name, body)
+        <<~RUBY
+          class Example
+            def self.#{method_name}
+              #{body}
+            end
+          end
+        RUBY
+      end
+    end
+
     module SubclassOverridePressureReplacementFactsSupport
       private
 
       def replacement_index
-        body_fact_index("PayloadRenderer", "serialize", concrete_renderer_source, replacement_override_sources)
+        body_fact_index(index_options("PayloadRenderer", "serialize", concrete_renderer_source,
+                                      replacement_override_sources))
       end
 
       def concrete_renderer_source
@@ -211,6 +284,8 @@ module MetzScan
     class SubclassOverridePressureBodyFactsTest < Minitest::Test
       include SubclassOverridePressureBodyFactsAssertions
       include SubclassOverridePressureBodyFactsSupport
+      include SubclassOverridePressureMethodDeclarationSupport
+      include SubclassOverridePressureSingletonBodyFactsSupport
       include SubclassOverridePressureReplacementFactsSupport
 
       def setup
@@ -237,6 +312,12 @@ module MetzScan
 
       def test_classifies_default_value_base_methods_as_abstract_hooks
         assert_default_hook_metadata(analyze(default_hook_index).first.project_analyzer_metadata)
+      end
+
+      def test_classifies_singleton_method_bodies_and_super_calls
+        finding = analyze(singleton_cooperative_index).first
+
+        assert_cooperative_metadata(finding.project_analyzer_metadata)
       end
 
       def test_classifies_concrete_override_families_without_super_as_replacements

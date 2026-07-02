@@ -156,7 +156,10 @@ Its default threshold is at least 12 referring files across at least 5 packages.
 Broad shared dependencies such as configuration, settings, event registries,
 exception families, infrastructure hubs, conventional domain model surfaces,
 value objects, and protocol-manager surfaces are still reported, but with lower
-confidence and shared-dependency triage.
+confidence and shared-dependency triage. Metadata includes a shared
+`reference_shape` summary so package- and namespace-pressure calibration can
+compare referring file counts, package counts, package roots, and package
+leafs consistently.
 `NamespaceLeakPressure` also requires the optional project index and contributes
 no findings when the index is unavailable. It reports deeply nested declarations
 such as `Billing::Ledger::PrivateFormatter` when references spread outside the
@@ -164,19 +167,22 @@ home namespace into at least three files across three coarse packages.
 References from the same namespace path, test roots, and setup/support paths
 such as nested seed and `testing_support` paths are ignored. Public constants,
 nested exception families, and framework or extension namespaces are reported
-with lower-confidence shared-namespace triage.
+with lower-confidence shared-namespace triage. Metadata includes the same
+shared `reference_shape` summary used by `PackageDependencyPressure`.
 `ImplicitContextPressure` is AST-only and remains candidate opt-in. Its first
 slice reports repeated Rails `CurrentAttributes`-style access, such as
 `Current.account` or `Spree::Current.store`, only when the same ambient context
 appears in at least three files across at least two coarse packages. Lifecycle
 calls such as `Current.reset`, `Spree::Current.reset`, and `Current.set(...)`
-are ignored.
+are ignored. Category metadata distinguishes root vs namespaced `Current`
+receivers and whether the repeated access includes writes.
 `RepeatedQueryCriteria` is AST-only and remains candidate opt-in. Its first
 slice reports simple constant-receiver `where` calls with at least two literal
 hash keys, such as `Order.where(account_id: ..., status: ...)`, when the same
 receiver and key set appear in at least three files across at least two coarse
 packages. Dynamic SQL strings, single-key lookups, and non-constant receivers
-are outside this first slice.
+are outside this first slice. Category metadata distinguishes polymorphic,
+compound-association, association-scoped, and generic hash-criteria repeats.
 `SubclassOverridePressure` requires the optional project index and remains
 candidate opt-in. Its first slice reports base classes whose known descendants
 override the same base-declared method in at least six subclasses. Framework,

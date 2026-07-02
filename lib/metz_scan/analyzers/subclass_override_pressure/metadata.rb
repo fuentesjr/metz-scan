@@ -26,7 +26,9 @@ module MetzScan
         end
 
         def family_identity_metadata(family)
-          { "base_name" => family.base.name, "method_name" => family.method_name, "root_kind" => family.root_kind }
+          { "base_name" => family.base.name, "method_name" => family.method_name,
+            "method_identity" => family.method_identity, "receiver_kind" => family.receiver_kind,
+            "root_kind" => family.root_kind }
         end
 
         def body_fact_metadata(family)
@@ -39,10 +41,19 @@ module MetzScan
         end
 
         def override_locations(family)
-          family.overrides.map do |declaration|
-            { "owner_name" => declaration.owner_name, "path" => declaration.path, "line" => declaration.line,
-              "calls_super" => family.override_body_facts.fetch(declaration.owner_name).calls_super }.compact
-          end
+          family.overrides.map { |declaration| override_location(family, declaration) }
+        end
+
+        def override_location(family, declaration)
+          override_identity_location(declaration)
+            .merge("calls_super" => family.override_body_facts.fetch(declaration.owner_name).calls_super)
+            .compact
+        end
+
+        def override_identity_location(declaration)
+          { "owner_name" => declaration.owner_name, "path" => declaration.path, "line" => declaration.line,
+            "receiver_kind" => receiver_kind_for(declaration),
+            "method_identity" => method_identity_for(declaration) }
         end
 
         def subclass_override_category(family)

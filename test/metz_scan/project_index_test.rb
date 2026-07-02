@@ -140,25 +140,49 @@ module MetzScan
     end
 
     def method_fixture_source
-      "class Parent\n  def perform; end\nend\nclass Child < Parent\n  def perform; end\nend\n"
+      <<~RUBY
+        class Parent
+          def perform; end
+          def self.perform; end
+        end
+
+        class Child < Parent
+          def perform; end
+          def self.perform; end
+        end
+      RUBY
     end
 
     def assert_method_declarations(index)
-      assert_method_declaration(index, "Parent", "perform", 2)
-      assert_method_declaration(index, "Child", "perform", 5)
+      assert_method_declaration(index, method_expectation("Parent", "perform", "instance", 2))
+      assert_method_declaration(index, method_expectation("Parent", "perform", "singleton", 3))
+      assert_method_declaration(index, method_expectation("Child", "perform", "instance", 7))
+      assert_method_declaration(index, method_expectation("Child", "perform", "singleton", 8))
     end
 
-    def assert_method_declaration(index, owner, method_name, line)
-      declaration = method_declaration(index, owner, method_name)
+    def assert_method_declaration(index, expected)
+      declaration = method_declaration(index, expected)
       assert declaration
-      assert_equal "#{owner}##{method_name}()", declaration.name
-      assert_equal "#{method_name}()", declaration.signature
-      assert_equal line, declaration.line
+      assert_method_identity(declaration, expected)
+      assert_equal "#{expected.fetch(:method_name)}()", declaration.signature
+      assert_equal expected.fetch(:line), declaration.line
     end
 
-    def method_declaration(index, owner, method_name)
+    def assert_method_identity(declaration, expected)
+      assert_equal expected.fetch(:receiver_kind), declaration.receiver_kind
+      assert_equal expected.fetch(:method_identity), declaration.method_identity
+    end
+
+    def method_expectation(owner_name, method_name, receiver_kind, line)
+      { owner_name: owner_name, method_name: method_name, receiver_kind: receiver_kind, line: line,
+        method_identity: "#{receiver_kind}:#{method_name}" }
+    end
+
+    def method_declaration(index, expected)
       index.method_declarations.find do |declaration|
-        declaration.owner_name == owner && declaration.method_name == method_name
+        declaration.owner_name == expected.fetch(:owner_name) &&
+          declaration.method_name == expected.fetch(:method_name) &&
+          declaration.receiver_kind == expected.fetch(:receiver_kind)
       end
     end
   end

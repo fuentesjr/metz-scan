@@ -128,11 +128,24 @@ module MetzScan
       end
 
       def assert_package_pressure_counts(metadata)
+        assert_package_pressure_count_values(metadata)
+        assert_reference_shape(metadata.fetch("reference_shape"))
+        assert_package_pressure_references(metadata)
+      end
+
+      def assert_package_pressure_count_values(metadata)
         assert_equal "app/services", metadata.fetch("declared_package")
         assert_equal 12, metadata.fetch("referring_file_count")
         assert_equal 6, metadata.fetch("referring_package_count")
         assert_equal "package_boundary", metadata.fetch("dependency_pressure_category")
-        assert_package_pressure_references(metadata)
+      end
+
+      def assert_reference_shape(reference_shape)
+        assert_equal 12, reference_shape.fetch("referring_file_count")
+        assert_equal 6, reference_shape.fetch("referring_package_count")
+        assert_equal ["app"], reference_shape.fetch("referring_package_roots")
+        assert_equal %w[controllers jobs mailers policies serializers workers],
+                     reference_shape.fetch("referring_package_leafs")
       end
 
       def assert_package_pressure_references(metadata)

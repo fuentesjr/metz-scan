@@ -44,6 +44,8 @@ module MetzScan
         assert_equal "subclass_override", metadata.fetch("subclass_override_category")
         assert_equal "PaymentProcessor", metadata.fetch("base_name")
         assert_equal "build_client", metadata.fetch("method_name")
+        assert_equal "instance:build_client", metadata.fetch("method_identity")
+        assert_equal "instance", metadata.fetch("receiver_kind")
       end
 
       def assert_metadata_counts(metadata)
@@ -64,9 +66,14 @@ module MetzScan
       end
 
       def expected_override_locations
-        [{ "owner_name" => "BraintreeProcessor", "path" => "/lib/braintree_processor.rb", "line" => 11 },
-         { "owner_name" => "PaypalProcessor", "path" => "/app/models/paypal_processor.rb", "line" => 8 },
-         { "owner_name" => "StripeProcessor", "path" => "/app/services/stripe_processor.rb", "line" => 5 }]
+        [override_location("BraintreeProcessor", "/lib/braintree_processor.rb", 11),
+         override_location("PaypalProcessor", "/app/models/paypal_processor.rb", 8),
+         override_location("StripeProcessor", "/app/services/stripe_processor.rb", 5)]
+      end
+
+      def override_location(owner_name, path, line)
+        { "owner_name" => owner_name, "path" => path, "line" => line,
+          "receiver_kind" => "instance", "method_identity" => "instance:build_client" }
       end
     end
 
@@ -82,6 +89,12 @@ module MetzScan
         FakeOverrideIndex.new(available: true, descendants: fake_descendants,
                               declarations: fake_declarations,
                               method_declarations: fake_method_declarations.first(3))
+      end
+
+      def mixed_receiver_index
+        FakeOverrideIndex.new(available: true, descendants: fake_descendants,
+                              declarations: fake_declarations,
+                              method_declarations: mixed_receiver_method_declarations)
       end
 
       def unavailable_index
@@ -117,6 +130,13 @@ module MetzScan
          method_declaration("OtherProcessor", "render", "/app/controllers/other_processor.rb", 14)]
       end
 
+      def mixed_receiver_method_declarations
+        [method_declaration("PaymentProcessor", "build_client", "/app/models/payment_processor.rb", 2),
+         singleton_method_declaration("StripeProcessor", "build_client", "/app/services/stripe_processor.rb", 5),
+         singleton_method_declaration("PaypalProcessor", "build_client", "/app/models/paypal_processor.rb", 8),
+         singleton_method_declaration("BraintreeProcessor", "build_client", "/lib/braintree_processor.rb", 11)]
+      end
+
       def broad_root_declarations
         [declaration("ApplicationPolicy", "/app/policies/application_policy.rb")] +
           broad_root_descendants.fetch("ApplicationPolicy").map do |name|
@@ -138,6 +158,14 @@ module MetzScan
       def method_declaration(owner_name, method_name, path, line)
         ProjectIndex::MethodDeclaration.new(name: "#{owner_name}##{method_name}()", owner_name: owner_name,
                                             method_name: method_name, signature: "#{method_name}()",
+                                            receiver_kind: "instance", method_identity: "instance:#{method_name}",
+                                            path: path, line: line, column: 3)
+      end
+
+      def singleton_method_declaration(owner_name, method_name, path, line)
+        ProjectIndex::MethodDeclaration.new(name: "#{owner_name}.#{method_name}()", owner_name: owner_name,
+                                            method_name: method_name, signature: "#{method_name}()",
+                                            receiver_kind: "singleton", method_identity: "singleton:#{method_name}",
                                             path: path, line: line, column: 3)
       end
     end
@@ -152,6 +180,12 @@ module MetzScan
 
       def test_skips_when_too_few_descendants_override_the_method
         analyzer = SubclassOverridePressure.new(index: sparse_index, minimum_overriding_descendants: 3)
+
+        assert_empty analyzer.call
+      end
+
+      def test_does_not_mix_instance_and_singleton_method_overrides
+        analyzer = SubclassOverridePressure.new(index: mixed_receiver_index, minimum_overriding_descendants: 3)
 
         assert_empty analyzer.call
       end

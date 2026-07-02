@@ -3,6 +3,7 @@
 require "rubocop"
 
 require_relative "contextual_node_walker"
+require_relative "implicit_context_pressure/triage"
 require_relative "occurrence"
 require_relative "package_map"
 require_relative "project_analyzer_triage"
@@ -13,6 +14,7 @@ module MetzScan
     # Reports repeated ambient CurrentAttributes-style context access.
     class ImplicitContextPressure
       include ProjectAnalyzerTriage
+      include Triage
 
       RULE_ID = "MetzProject/ImplicitContextPressure"
       PROJECT_ANALYZER_STATUS = "candidate"
@@ -72,22 +74,43 @@ module MetzScan
       end
 
       def finding_attributes(ambient_context, grouped)
+        category = implicit_context_category_for(ambient_context, grouped)
+
+        finding_core_attributes(ambient_context, grouped, category)
+          .merge(project_analyzer_triage_attributes)
+          .merge(category_triage_attributes(category))
+      end
+
+      def finding_core_attributes(ambient_context, grouped, category)
+        finding_identity_attributes(ambient_context, grouped)
+          .merge(finding_reference_attributes(ambient_context, grouped, category))
+      end
+
+      def finding_identity_attributes(ambient_context, grouped)
         { source: source_name, rule_id: RULE_ID, message: message_for(ambient_context, grouped),
-          ambient_context: ambient_context, referring_files: grouped.referring_files,
-          referring_packages: grouped.referring_packages, occurrences: grouped.references,
-          project_analyzer_metadata: project_analyzer_metadata_for(ambient_context, grouped),
-          why_it_matters: WHY, suggested_next_moves: SUGGESTED_NEXT_MOVES }.merge(project_analyzer_triage_attributes)
+          ambient_context: ambient_context }
+      end
+
+      def finding_reference_attributes(ambient_context, grouped, category)
+        { referring_files: grouped.referring_files, referring_packages: grouped.referring_packages,
+          occurrences: grouped.references,
+          project_analyzer_metadata: project_analyzer_metadata_for(ambient_context, grouped, category) }
       end
 
       def message_for(ambient_context, grouped)
-        "#{ambient_context} is accessed from #{grouped.referring_files.size} files across " \
+        "#{ambient_context} is #{access_phrase(grouped)} from #{grouped.referring_files.size} files across " \
           "#{grouped.referring_packages.size} packages; consider passing context explicitly."
       end
 
-      def project_analyzer_metadata_for(ambient_context, grouped)
-        { "project_analyzer_category" => "current_attributes",
-          "implicit_context_category" => "current_attributes", "ambient_context" => ambient_context }
-          .merge(grouped_metadata(grouped))
+      def project_analyzer_metadata_for(ambient_context, grouped, category)
+        implicit_context_metadata(ambient_context, category).merge(grouped_metadata(grouped))
+      end
+
+      def implicit_context_metadata(ambient_context, category)
+        { "project_analyzer_category" => category,
+          "implicit_context_category" => category, "ambient_context" => ambient_context,
+          "current_receiver_scope" => current_receiver_scope_for(ambient_context),
+          "current_attribute" => current_attribute_for(ambient_context) }
       end
 
       def grouped_metadata(grouped)

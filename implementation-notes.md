@@ -1867,3 +1867,142 @@ Implementation decisions:
   explicit, consolidates shared AST context and category metadata instead of
   leaking those decisions across consumers, and the load-red tests assert
   concrete analyzer behavior rather than mere constant existence."
+
+## 2026-07-02: Pressure reference shape and AST candidate categories
+
+Task: start on the next 2 big tasks and keep using agenticons, commit the
+changes, then provide a detailed comprehensive summary as described in
+AGENTS.md.
+
+Scope boundaries:
+
+- Use `tmp/project-analyzer-calibration/apps` as the active calibration fixture
+  home. Treat `/private/tmp` calibration paths as historical only.
+- Keep analyzer rollout statuses and default-output eligibility unchanged.
+- Do not promote analyzers or downrank the remaining medium pressure findings
+  without new generalized evidence.
+- Keep `ImplicitContextPressure` and `RepeatedQueryCriteria` detector scope
+  unchanged; improve category metadata and report language only.
+- Use agenticon delegation shallowly and record each result.
+
+Change type: feature.
+
+Verbatim task statement: "Ok go ahead and start on the next 2 big tasks and
+keep using agenticons and at the end commit the changes. Then give me a detail
+and comprehensive summary as described in AGENTS.md"
+
+Plan:
+
+1. Use `planner: next two task selection` and
+   `helper_worker: analyzer backlog reconnaissance` to select the next task
+   pair after the category-contract cleanup.
+2. Share safe cross-package reference-set and reference-metadata behavior
+   between `PackageDependencyPressure` and `NamespaceLeakPressure`, adding
+   source-derived `reference_shape` metadata without changing findings.
+3. Add category-aware manual-review metadata and language for
+   `ImplicitContextPressure` root/namespaced Current access and
+   `RepeatedQueryCriteria` query-key shapes.
+4. Update README, candidate notes, calibration docs, and implementation notes;
+   run focused tests, manifest-backed calibration smokes, full gates,
+   strategic validation, reviews, and commit.
+
+Verification status:
+
+- `planner: next two task selection` recommended a shared cross-package
+  reference-pressure foundation plus category-aware triage for the newest
+  AST-only candidates. It explicitly deferred analyzer promotion,
+  default-output changes, pressure-analyzer downranking, `DeadCodeCandidates`,
+  and broader detector expansion.
+- `helper_worker: analyzer backlog reconnaissance` ranked calibration evidence
+  expansion above code surgery, especially for `NamespaceLeakPressure`,
+  `ImplicitContextPressure`, and `RepeatedQueryCriteria`. It warned not to use
+  `/private/tmp` calibration paths or downrank remaining pressure findings
+  without generalized evidence.
+- Red runs before implementation:
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/analyzers/package_dependency_pressure_test.rb` failed
+    because package-pressure metadata lacked `reference_shape`.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/analyzers/namespace_leak_pressure_test.rb` failed because
+    namespace-leak metadata lacked `reference_shape`.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/analyzers/implicit_context_pressure_test.rb` failed because
+    Current access still used generic "accessed" wording and generic
+    `current_attributes` category metadata.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/analyzers/repeated_query_criteria_test.rb` failed because
+    scoped and polymorphic query examples still reported generic
+    `where_hash_criteria`.
+- Green focused tests after implementation:
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/analyzers/package_dependency_pressure_test.rb`: 18 runs,
+    128 assertions, 0 failures, 0 errors.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/analyzers/namespace_leak_pressure_test.rb`: 15 runs,
+    69 assertions, 0 failures, 0 errors.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/analyzers/implicit_context_pressure_test.rb`: 10 runs,
+    42 assertions, 0 failures, 0 errors.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/analyzers/repeated_query_criteria_test.rb`: 9 runs,
+    33 assertions, 0 failures, 0 errors.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/commands/scan_project_analyzer_runner_package_dependency_test.rb`:
+    2 runs, 18 assertions, 0 failures, 0 errors.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/commands/scan_project_analyzer_runner_namespace_leak_test.rb`:
+    1 run, 14 assertions, 0 failures, 0 errors.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/commands/scan_project_analyzer_triage_test.rb`: 2 runs,
+    8 assertions, 0 failures, 0 errors.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/calibration/project_analyzer_evidence_runner_test.rb`:
+    15 runs, 64 assertions, 0 failures, 0 errors.
+- Manifest-backed calibration smokes over
+  `tmp/project-analyzer-calibration/project_analyzer_targets.yml` with
+  `--no-write`:
+  - `MetzProject/PackageDependencyPressure`: 39 findings and 39 offenses;
+    `project_analyzer_category`: `package_boundary=1`,
+    `shared_dependency=38`.
+  - `MetzProject/NamespaceLeakPressure`: 34 findings and 34 offenses;
+    `project_analyzer_category`: `namespace_boundary=3`,
+    `shared_namespace=31`.
+  - `MetzProject/ImplicitContextPressure`: 10 findings and 10 offenses;
+    `project_analyzer_category`: `root_current_write=5`,
+    `namespaced_current_write=5`.
+  - `MetzProject/RepeatedQueryCriteria`: 6 findings and 6 offenses;
+    `project_analyzer_category`: `scoped_association_where_criteria=3`,
+    `compound_association_where_criteria=2`,
+    `polymorphic_where_criteria=1`.
+
+Implementation decisions:
+
+- Shared only the safe pressure-reference value and metadata layer:
+  `CrossPackageReferenceSet` and `CrossPackageReferenceMetadata`. Package and
+  namespace collectors still own their analyzer-specific filtering rules.
+- Added `reference_shape` metadata with referring file count, referring package
+  count, referring package roots, and referring package leafs.
+- Classified implicit context by Current receiver scope (`root` or
+  `namespaced`) and whether any access is a write. This changes category
+  metadata and message wording, not detection thresholds.
+- Classified repeated query criteria by literal key shape:
+  polymorphic type/id pairs, compound association key pairs, single association
+  scoped criteria, or generic hash criteria. This changes category metadata
+  and report language, not detector scope.
+- The first strategic design review returned a blocker in the existing
+  `SubclassOverridePressure` stack: `ProjectIndex::MethodDeclaration` dropped
+  receiver kind while normalizing Rubydex method names, so singleton and
+  instance override families could be mixed. The fix preserves
+  `receiver_kind` and `method_identity`, normalizes Rubydex singleton owners
+  such as `Parent::<Parent>` back to `Parent`, and has
+  `SubclassOverridePressure` group and match methods by `method_identity`.
+- The method-identity fix changed manifest-backed `SubclassOverridePressure`
+  calibration to 106 findings and 106 offenses: `low=76`, `medium=30`;
+  `project_analyzer_category`: `abstract_hook_override=18`,
+  `broad_root_override=76`, `cooperative_override=5`,
+  `replacement_override=7`.
+- The second strategic design review returned a blocker in
+  `SubclassOverridePressure::MethodBodyFacts`: singleton method body extraction
+  used the wrong `defs` child index, so body kind and `super` metadata could be
+  wrong for singleton override families. The fix uses `node.body` for both
+  `def` and `defs` nodes and adds singleton-method body-fact coverage.

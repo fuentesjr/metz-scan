@@ -37,7 +37,8 @@ module MetzScan
       SYNTHETIC_DECLARATION_MARKER = "::<"
       private_constant :IGNORED_DECLARATION_NAMES, :SYNTHETIC_DECLARATION_MARKER
 
-      OverrideFamily = Struct.new(:base, :base_method, :method_name, :descendants, :overrides, :root_kind,
+      OverrideFamily = Struct.new(:base, :base_method, :method_name, :method_identity, :receiver_kind,
+                                  :descendants, :overrides, :root_kind,
                                   :base_method_body_kind, :override_body_facts, keyword_init: true) do
         def overrides_calling_super_count
           override_body_facts.values.count(&:calls_super)
@@ -63,11 +64,20 @@ module MetzScan
       attr_reader :index, :base_names, :minimum_overriding_descendants
 
       def override_family(base, base_method, descendants, overrides)
-        OverrideFamily.new(base: base, base_method: base_method, method_name: base_method.method_name,
-                           descendants: descendants, overrides: overrides,
-                           root_kind: InheritanceDescendants::RootKind.for(base.name),
-                           base_method_body_kind: body_facts_for(base_method).body_kind,
-                           override_body_facts: override_body_facts_for(overrides))
+        OverrideFamily.new(override_family_attributes(base, base_method, descendants, overrides))
+      end
+
+      def override_family_attributes(base, base_method, descendants, overrides)
+        override_identity_attributes(base, base_method)
+          .merge(descendants: descendants, overrides: overrides,
+                 base_method_body_kind: body_facts_for(base_method).body_kind,
+                 override_body_facts: override_body_facts_for(overrides))
+      end
+
+      def override_identity_attributes(base, base_method)
+        { base: base, base_method: base_method, method_name: base_method.method_name,
+          method_identity: method_identity_for(base_method), receiver_kind: receiver_kind_for(base_method),
+          root_kind: InheritanceDescendants::RootKind.for(base.name) }
       end
 
       def finding_attributes(family)
@@ -78,7 +88,8 @@ module MetzScan
 
       def core_finding_attributes(family)
         { source: source_name, rule_id: RULE_ID, message: message_for(family),
-          base_name: family.base.name, method_name: family.method_name, descendant_count: family.descendants.size,
+          base_name: family.base.name, method_name: family.method_name, method_identity: family.method_identity,
+          receiver_kind: family.receiver_kind, descendant_count: family.descendants.size,
           overriding_descendants: family.overrides.map(&:owner_name), occurrences: family.overrides }
       end
 
@@ -104,6 +115,18 @@ module MetzScan
 
       def ignored_declaration_name?(name)
         IGNORED_DECLARATION_NAMES.include?(name) || name.include?(SYNTHETIC_DECLARATION_MARKER)
+      end
+
+      def method_identity_for(declaration)
+        return declaration.method_identity if declaration.respond_to?(:method_identity) && declaration.method_identity
+
+        "#{receiver_kind_for(declaration)}:#{declaration.method_name}"
+      end
+
+      def receiver_kind_for(declaration)
+        return declaration.receiver_kind if declaration.respond_to?(:receiver_kind) && declaration.receiver_kind
+
+        declaration.name.to_s.include?(".") ? "singleton" : "instance"
       end
     end
   end

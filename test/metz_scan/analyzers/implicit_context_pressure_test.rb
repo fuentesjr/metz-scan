@@ -178,7 +178,8 @@ module MetzScan
       def assert_current_account_finding(finding)
         assert_current_account_identity(finding)
         assert_current_account_references(finding)
-        assert_match(/Current\.account is accessed from 3 files across 3 packages/, finding.message)
+        assert_match(/Current\.account is read and written from 3 files across 3 packages/, finding.message)
+        assert_includes finding.triage_summary, "mutable application Current"
         refute_empty finding.suggested_next_moves
       end
 
@@ -199,9 +200,16 @@ module MetzScan
       def assert_current_account_metadata(finding)
         metadata = finding.project_analyzer_metadata
 
-        assert_equal "current_attributes", metadata.fetch("implicit_context_category")
+        assert_current_account_category_metadata(metadata)
         assert_equal %w[read write], metadata.fetch("access_modes")
         assert_equal "OrdersController#create", metadata.fetch("occurrences").first.fetch("context")
+      end
+
+      def assert_current_account_category_metadata(metadata)
+        assert_equal "root_current_write", metadata.fetch("implicit_context_category")
+        assert_equal "root_current_write", metadata.fetch("project_analyzer_category")
+        assert_equal "root", metadata.fetch("current_receiver_scope")
+        assert_equal "account", metadata.fetch("current_attribute")
       end
 
       def with_context_files(sources)
@@ -265,10 +273,14 @@ module MetzScan
 
       def assert_spree_current_store_finding(finding)
         assert_equal "Spree::Current.store", finding.ambient_context
-        assert_match(/Spree::Current\.store is accessed from 3 files across 3 packages/, finding.message)
+        assert_match(/Spree::Current\.store is read and written from 3 files across 3 packages/, finding.message)
+        assert_includes finding.triage_summary, "namespaced Current"
       end
 
       def assert_spree_current_store_metadata(finding)
+        assert_equal "namespaced_current_write", finding.project_analyzer_metadata.fetch("implicit_context_category")
+        assert_equal "namespaced", finding.project_analyzer_metadata.fetch("current_receiver_scope")
+        assert_equal "store", finding.project_analyzer_metadata.fetch("current_attribute")
         assert_equal %w[read write], finding.project_analyzer_metadata.fetch("access_modes")
         assert_equal "Spree::Current.store", finding.project_analyzer_metadata.fetch("ambient_context")
       end

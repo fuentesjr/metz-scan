@@ -6,6 +6,7 @@ require_relative "contextual_node_walker"
 require_relative "occurrence"
 require_relative "package_map"
 require_relative "project_analyzer_triage"
+require_relative "repeated_query_criteria/triage"
 require_relative "ruby_file_enumerator"
 
 module MetzScan
@@ -13,6 +14,7 @@ module MetzScan
     # Reports repeated hash-style ActiveRecord query predicates across packages.
     class RepeatedQueryCriteria
       include ProjectAnalyzerTriage
+      include Triage
 
       RULE_ID = "MetzProject/RepeatedQueryCriteria"
       PROJECT_ANALYZER_STATUS = "candidate"
@@ -75,33 +77,42 @@ module MetzScan
       end
 
       def finding_attributes(first, grouped)
-        core_finding_attributes(first, grouped)
-          .merge(project_analyzer_triage_attributes)
-          .merge(project_analyzer_context_attributes(first, grouped))
+        category = repeated_query_category_for(first)
+
+        core_finding_attributes(first, grouped, category)
+          .merge(project_analyzer_triage_attributes, category_triage_attributes(category))
+          .merge(project_analyzer_context_attributes(first, grouped, category))
       end
 
-      def core_finding_attributes(first, grouped)
-        { source: source_name, rule_id: RULE_ID, message: message_for(first, grouped),
+      def core_finding_attributes(first, grouped, category)
+        { source: source_name, rule_id: RULE_ID, message: message_for(first, grouped, category),
           query: first.query, receiver: first.receiver, criteria_keys: first.criteria_keys,
           referring_files: grouped.referring_files, referring_packages: grouped.referring_packages,
           occurrences: grouped.sites }
       end
 
-      def project_analyzer_context_attributes(first, grouped)
-        { project_analyzer_metadata: project_analyzer_metadata_for(first, grouped),
-          why_it_matters: WHY, suggested_next_moves: SUGGESTED_NEXT_MOVES }
+      def project_analyzer_context_attributes(first, grouped, category)
+        { project_analyzer_metadata: project_analyzer_metadata_for(first, grouped, category) }
       end
 
-      def message_for(site, grouped)
-        "#{site.query} appears in #{grouped.referring_files.size} files across " \
+      def message_for(site, grouped, category)
+        "#{site.query} #{query_message_phrase(category)} in #{grouped.referring_files.size} files across " \
           "#{grouped.referring_packages.size} packages; consider naming the query criteria."
       end
 
-      def project_analyzer_metadata_for(site, grouped)
-        { "project_analyzer_category" => "where_hash_criteria",
-          "repeated_query_category" => "where_hash_criteria", "query" => site.query,
+      def project_analyzer_metadata_for(site, grouped, category)
+        query_metadata(site, category).merge(query_reference_metadata(grouped))
+      end
+
+      def query_metadata(site, category)
+        { "project_analyzer_category" => category,
+          "repeated_query_category" => category, "query" => site.query,
           "receiver" => site.receiver, "criteria_keys" => site.criteria_keys,
-          "referring_files" => grouped.referring_files, "referring_packages" => grouped.referring_packages,
+          "criteria_key_shape" => criteria_key_shape_for(site) }
+      end
+
+      def query_reference_metadata(grouped)
+        { "referring_files" => grouped.referring_files, "referring_packages" => grouped.referring_packages,
           "occurrences" => occurrences_metadata(grouped) }
       end
 

@@ -176,10 +176,21 @@ module MetzScan
       end
 
       def assert_reference_metadata(metadata)
+        assert_reference_counts(metadata)
+        assert_reference_shape(metadata.fetch("reference_shape"))
+        assert_equal 3, metadata.fetch("references").size
+      end
+
+      def assert_reference_counts(metadata)
         assert_equal 3, metadata.fetch("referring_file_count")
         assert_equal 3, metadata.fetch("referring_package_count")
         assert_equal %w[app/controllers app/jobs app/mailers], metadata.fetch("referring_packages")
-        assert_equal 3, metadata.fetch("references").size
+      end
+
+      def assert_reference_shape(reference_shape)
+        assert_equal ["app"], reference_shape.fetch("referring_package_roots")
+        assert_equal %w[controllers jobs mailers],
+                     reference_shape.fetch("referring_package_leafs")
       end
     end
 

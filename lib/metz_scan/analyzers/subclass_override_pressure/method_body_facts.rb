@@ -71,7 +71,7 @@ module MetzScan
         def body_for(node)
           return unless node
 
-          node.type == :def ? node.body : node.children[2]
+          node.body
         end
 
         def abstract_raise?(body)

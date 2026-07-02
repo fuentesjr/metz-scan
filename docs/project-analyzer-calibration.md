@@ -1,6 +1,6 @@
 # Project analyzer calibration
 
-Last updated: 2026-07-01.
+Last updated: 2026-07-02.
 
 This note records real-world calibration passes for the opt-in analyzers behind
 `metz-scan scan --project-analyzers`. The goal was to decide whether
@@ -58,6 +58,11 @@ metadata still preserves analyzer-specific category keys such as
 `subclass_override_category` for compatibility and detailed inspection, but
 summary breakdowns use the common category field so renderer code does not
 need to know every analyzer-specific metadata key.
+Package- and namespace-pressure analyzers also include a shared
+`reference_shape` metadata object with referring file count, referring package
+count, referring package roots, and referring package leafs so future
+calibration can compare cross-package spread without duplicating metadata
+logic.
 Discovered targets without top-level `app/` or `lib/` are recorded with
 no-scan metadata instead of falling back to a whole-root scan. Pass explicit
 paths for intentional one-off scans, `--analyzer` one or more times for a
@@ -614,6 +619,14 @@ Current decision:
   real-application passes show mostly concrete boundary-pressure examples after
   broad public/infra categories are handled.
 
+Reference-shape follow-up on 2026-07-02 kept the manifest-backed count at 39
+findings and 39 offenses: 38 low-confidence `shared_dependency` findings and
+one medium `package_boundary` finding for
+`OpenFoodNetwork::ScopeVariantToHub`. The analyzer now shares reference-set
+and reference-metadata helpers with `NamespaceLeakPressure`, and its metadata
+includes `reference_shape` for source-derived package-spread evidence. Rollout
+status and default-output eligibility did not change.
+
 ## `MetzProject/NamespaceLeakPressure`
 
 Result: **Candidate**, behind `--project-analyzers`.
@@ -670,6 +683,13 @@ Decision: keep NamespaceLeakPressure **Candidate** and opt-in. The new Spree
 StoreCredit finding is plausible, but two of the three medium findings are in
 the Spree/OpenFoodNetwork commerce family, so the evidence is still too narrow
 for validated status.
+
+Reference-shape follow-up on 2026-07-02 kept the manifest-backed count at 34
+findings and 34 offenses: 31 low-confidence `shared_namespace` findings and
+three medium `namespace_boundary` findings. The analyzer now shares
+reference-set and reference-metadata helpers with `PackageDependencyPressure`,
+and its metadata includes `reference_shape` for source-derived package-spread
+evidence. Rollout status and default-output eligibility did not change.
 
 ## `MetzProject/ImplicitContextPressure`
 
@@ -729,6 +749,13 @@ namespaced pass broadens the evidence beyond Chatwoot, but the new findings
 are all from Spree's framework-level `Current` surface and still need manual
 review before any validated-status or default-output discussion.
 
+Category-aware follow-up on 2026-07-02 kept the manifest-backed count at 10
+findings and 10 offenses, but split `project_analyzer_category` into
+`root_current_write=5` for Chatwoot and `namespaced_current_write=5` for Spree.
+Messages now say whether the context is read, written, or both, and metadata
+records `current_receiver_scope` plus `current_attribute`. Rollout status and
+default-output eligibility did not change.
+
 ## `MetzProject/RepeatedQueryCriteria`
 
 Result: **Candidate**, behind `--project-analyzers`.
@@ -761,6 +788,14 @@ The run produced 6 findings and 6 offenses:
 | `forem` | `Comment.where(commentable_id, commentable_type)` | 4 | 4 |
 | `mastodon` | `AccountDomainBlock.where(account_id, domain)` | 4 | 4 |
 
+Category-aware follow-up on 2026-07-02 kept the manifest-backed count at 6
+findings and 6 offenses, but split `project_analyzer_category` into
+`scoped_association_where_criteria=3`,
+`compound_association_where_criteria=2`, and
+`polymorphic_where_criteria=1`. Messages and triage summaries now name the
+criteria shape while preserving the first slice's detector scope. Rollout
+status and default-output eligibility did not change.
+
 Decision: keep RepeatedQueryCriteria **Candidate** and opt-in. The first pass
 is sparse and readable, but repeated query criteria can be intentional local
 lookup duplication. It needs more calibration before validated status or
@@ -791,14 +826,14 @@ bundle exec ruby bin/check_project_analyzer_calibration --text --no-write \
   --analyzer MetzProject/SubclassOverridePressure
 ```
 
-The latest body-fact pass still produced 104 findings and 104 offenses:
+The latest method-identity follow-up produced 106 findings and 106 offenses:
 
 | Target | Findings | Medium | Low | Category mix |
 | --- | ---: | ---: | ---: | --- |
 | `chatwoot` | 10 | 0 | 10 | `broad_root_override=10` |
 | `decidim` | 0 | 0 | 0 | none |
-| `discourse` | 16 | 12 | 4 | `abstract_hook_override=7`, `cooperative_override=4`, `replacement_override=1`, `broad_root_override=4` |
-| `forem` | 14 | 3 | 11 | `replacement_override=3`, `broad_root_override=11` |
+| `discourse` | 17 | 13 | 4 | `abstract_hook_override=8`, `cooperative_override=4`, `replacement_override=1`, `broad_root_override=4` |
+| `forem` | 15 | 3 | 12 | `replacement_override=3`, `broad_root_override=12` |
 | `mastodon` | 16 | 1 | 15 | `abstract_hook_override=1`, `broad_root_override=15` |
 | `openfoodnetwork` | 18 | 7 | 11 | `abstract_hook_override=5`, `cooperative_override=1`, `replacement_override=1`, `broad_root_override=11` |
 | `solidus` | 0 | 0 | 0 | none |
@@ -808,8 +843,8 @@ Overall category mix:
 
 | Category | Findings | Meaning |
 | --- | ---: | --- |
-| `broad_root_override` | 75 | The base is already a broad framework/application/root-kind family and remains low-confidence broad-base output. |
-| `abstract_hook_override` | 17 | The base method is empty, raises an abstract-method error, or returns a default literal value. |
+| `broad_root_override` | 76 | The base is already a broad framework/application/root-kind family and remains low-confidence broad-base output. |
+| `abstract_hook_override` | 18 | The base method is empty, raises an abstract-method error, or returns a default literal value. |
 | `cooperative_override` | 5 | At least one descendant override calls `super`, suggesting an extension protocol rather than pure replacement. |
 | `replacement_override` | 7 | The base method is concrete and the sampled descendant overrides do not call `super`. |
 
@@ -822,9 +857,18 @@ replacement overrides say descendants replace concrete base behavior.
 
 Decision: keep SubclassOverridePressure **Candidate** and opt-in. The signal is
 useful for identifying hook protocols, but the first pass is still too broad
-for validated status or default output: 75 of 104 findings are intentionally
-low-confidence broad-root prompts, and the 29 medium findings are now
+for validated status or default output: 76 of 106 findings are intentionally
+low-confidence broad-root prompts, and the 30 medium findings are now
 classified for manual review rather than promoted or suppressed.
+
+Method-identity follow-up on 2026-07-02 preserves `receiver_kind` and
+`method_identity` in `ProjectIndex::MethodDeclaration`, so instance and
+singleton override families are no longer grouped together. This fixed a
+design-review blocker and changed the manifest-backed calibration count from
+104 to 106 findings without changing rollout status or default-output
+eligibility. A follow-up body-facts fix uses the AST node body API for both
+instance and singleton methods, keeping the final count at 106 while classifying
+18 abstract hooks, 5 cooperative overrides, and 7 replacement overrides.
 
 ## `MetzProject/RepeatedBranching`
 
