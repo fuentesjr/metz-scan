@@ -2006,3 +2006,133 @@ Implementation decisions:
   used the wrong `defs` child index, so body kind and `super` metadata could be
   wrong for singleton override families. The fix uses `node.body` for both
   `def` and `defs` nodes and adds singleton-method body-fact coverage.
+
+## 2026-07-02: Thread-local context and scope-chain query criteria
+
+Task: start on the next 2 big tasks and keep using agenticons, commit the
+changes, then provide a detailed comprehensive summary as described in
+AGENTS.md.
+
+Additional user request: add `.claude/settings.local.json` to `~/.gitignore`.
+The file was already present in `/Users/sal/.gitignore`, and
+`git check-ignore -v .claude/settings.local.json` confirmed the repo-local file
+is ignored.
+
+Scope boundaries:
+
+- Use `tmp/project-analyzer-calibration/apps` as the active calibration fixture
+  home. Treat `/private/tmp` calibration paths as historical only.
+- Keep `ImplicitContextPressure` and `RepeatedQueryCriteria` candidate opt-in
+  and not default-output eligible.
+- Do not promote, validate, or downrank analyzers in this pass.
+- Extend only narrow AST slices: literal `Thread.current[...]` keys for
+  implicit context, and constant-root no-argument scope chains for repeated
+  query criteria.
+- Keep dynamic thread-local keys, class variables, singleton globals, dynamic
+  SQL, dynamic scope chains, and non-constant query receivers out of scope.
+
+Change type: feature.
+
+Verbatim task statement: "Ok go ahead and start on the next 2 big tasks and
+keep using agenticons and at the end commit the changes. Then give me a detail
+and comprehensive summary as described in AGENTS.md"
+
+Plan:
+
+1. Use `planner: next two task selection` and
+   `helper_worker: analyzer backlog reconnaissance` to select the next task
+   pair after commit `59ed606`.
+2. Implement literal `Thread.current[...]` read/write detection in
+   `MetzProject/ImplicitContextPressure`, with category-specific triage and
+   metadata.
+3. Implement conservative constant-root scope-chain receiver support in
+   `MetzProject/RepeatedQueryCriteria`, with receiver-shape metadata.
+4. Update README, candidate notes, calibration docs, and implementation notes;
+   run focused tests, manifest-backed calibration smokes, full gates,
+   strategic validation, reviews, and commit.
+
+Verification status:
+
+- `planner: next two task selection` recommended two documented future-scope
+  expansions: literal `Thread.current[...]` ambient context access and
+  conservative constant-root scope-chain query criteria. It warned to keep
+  analyzers candidate opt-in and to record calibration counts before any
+  promotion discussion.
+- `helper_worker: analyzer backlog reconnaissance` warned that current evidence
+  still does not justify promotion or threshold changes, especially for
+  pressure analyzers. It recommended calibration-first caution and explicitly
+  warned against accidental reclassification of broad shared surfaces as real
+  boundary pressure.
+- A brief calibration-reporting spike was started locally, then removed after
+  the agenticon results pointed to the documented analyzer backlog instead.
+- Red runs before implementation:
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/analyzers/implicit_context_pressure_test.rb` failed because
+    repeated `Thread.current[:account]` returned no finding.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/analyzers/repeated_query_criteria_test.rb` failed because
+    repeated `Order.active.where(...)` returned no finding.
+- Green focused tests after implementation:
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/analyzers/implicit_context_pressure_test.rb`: 13 runs,
+    56 assertions, 0 failures, 0 errors.
+  - `bundle exec ruby -Ilib -Itest
+    test/metz_scan/analyzers/repeated_query_criteria_test.rb`: 14 runs,
+    43 assertions, 0 failures, 0 errors.
+- Manifest-backed calibration smokes over
+  `tmp/project-analyzer-calibration/project_analyzer_targets.yml` with
+  `--no-write`:
+  - `MetzProject/ImplicitContextPressure`: 11 findings and 11 offenses;
+    `project_analyzer_category`: `root_current_write=5`,
+    `namespaced_current_write=5`, `thread_current_write=1`. The new finding is
+    Mastodon `Thread.current[:redis]`, read and written from 4 files across
+    2 packages.
+  - `MetzProject/RepeatedQueryCriteria`: 6 findings and 6 offenses;
+    `project_analyzer_category`: `scoped_association_where_criteria=3`,
+    `compound_association_where_criteria=2`,
+    `polymorphic_where_criteria=1`. The active manifest did not add new
+    repeated scope-chain findings at the current threshold.
+- Full local gates passed:
+  - `bundle exec rake`: 435 runs, 1868 assertions, 0 failures, 0 errors,
+    2 skips.
+  - `bundle exec rubocop`: 190 files inspected, no offenses.
+  - `bin/check_dependency_direction`: passed.
+  - `bin/check_sample_app_frozen`: passed.
+  - `bin/check_dogfood`: passed with accepted project-analyzer baseline of
+    0 findings.
+  - `git -c core.fsmonitor=false diff --check`: passed.
+- `doc_reviewer: analyzer documentation drift` found README table drift after
+  the first doc update because the analyzer inventory rows did not mention
+  literal `Thread.current[...]` or constant-root scope-chain query criteria.
+  The README table was updated.
+- Final `doc_reviewer: documentation drift re-review` was clean and confirmed
+  the README table drift was fixed, with no remaining doc fixes needed.
+- Strategic validation passed for change type `feature`: slice tests,
+  red/green proof, lint, and task-comment gates passed; warnings 0; review
+  required by diff size and public-interface surface in the branch stack.
+- Final `reviewer: strategic design validation` verdict was clean with no
+  findings:
+  "The change holds together as candidate project-analyzer work plus
+  calibration support. The new analyzer surfaces stay opt-in/default-gated,
+  shared metadata is centralized where it matters, and the load-red tests
+  assert concrete grouping, filtering, metadata, and rendering behavior rather
+  than merely referencing new constants."
+
+Implementation decisions:
+
+- Replaced the Current-only collector path with an ambient context collector
+  that shares one AST walk per file for both `Current` and `Thread.current`
+  references.
+- Accepted only literal symbol or string bracket access on `Thread.current`.
+  Dynamic keys and named thread APIs remain ignored.
+- Added `thread_current_read` and `thread_current_write` categories with
+  Thread.current-specific triage language, and metadata fields
+  `ambient_context_kind` and `thread_current_key`.
+- Kept existing `current_receiver_scope` and `current_attribute` metadata for
+  Rails CurrentAttributes-style findings.
+- Added constant-root, no-argument scope-chain fingerprints for repeated query
+  receivers, such as `Order.active`, while keeping dynamic scopes and local
+  relation receivers ignored.
+- Added `receiver_shape` metadata so calibration artifacts can distinguish
+  constant receivers from scope-chain receivers without changing category
+  semantics.

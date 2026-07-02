@@ -108,6 +108,7 @@ module MetzScan
         { "project_analyzer_category" => category,
           "repeated_query_category" => category, "query" => site.query,
           "receiver" => site.receiver, "criteria_keys" => site.criteria_keys,
+          "receiver_shape" => site.receiver_shape,
           "criteria_key_shape" => criteria_key_shape_for(site) }
       end
 
@@ -148,6 +149,10 @@ module MetzScan
             "#{receiver}.where(#{criteria_keys.join(', ')})"
           end
 
+          def receiver_shape
+            receiver.include?(".") ? "scope_chain" : "constant"
+          end
+
           def fingerprint
             [receiver, criteria_keys].join(":")
           end
@@ -184,19 +189,29 @@ module MetzScan
         def repeated_query_site?(node)
           node.type == :send &&
             node.method_name == :where &&
-            constant_receiver?(node.receiver) &&
+            receiver_fingerprint_for(node.receiver) &&
             criteria_keys_for(node).size >= MINIMUM_CRITERIA_KEYS
         end
 
-        def constant_receiver?(node)
-          node&.type == :const
+        def receiver_fingerprint_for(node)
+          return unless node
+          return node.source if node.type == :const
+          return unless simple_scope_call?(node)
+
+          parent = receiver_fingerprint_for(node.receiver)
+          "#{parent}.#{node.method_name}" if parent
+        end
+
+        def simple_scope_call?(node)
+          node.type == :send && node.receiver && node.arguments.empty? &&
+            node.method_name.to_s.match?(/\A[a-z_]\w*[!?]?\z/)
         end
 
         def query_site_for(contextual_node)
           node = contextual_node.node
           return unless repeated_query_site?(node)
 
-          QuerySite.new(receiver: node.receiver.source, criteria_keys: criteria_keys_for(node),
+          QuerySite.new(receiver: receiver_fingerprint_for(node.receiver), criteria_keys: criteria_keys_for(node),
                         enclosing_name: contextual_node.enclosing_name, method_name: contextual_node.method_name,
                         path: path, line: node.loc.expression.line, expression: first_line(node))
         end

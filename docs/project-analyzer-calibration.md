@@ -695,13 +695,14 @@ evidence. Rollout status and default-output eligibility did not change.
 
 Result: **Candidate**, behind `--project-analyzers`.
 
-This analyzer reports repeated reliance on Rails `CurrentAttributes`-style
-ambient context. The first slice deliberately stays narrow: it detects
-`Current.<attribute>` and namespaced `Current` reads and writes, ignores
-lifecycle methods such as `Current.reset`, `Spree::Current.reset`, and
-`Current.set(...)`, requires at least three files across at least two coarse
-packages, and emits one primary offense per ambient context. The full reference
-list remains in project-analyzer metadata.
+This analyzer reports repeated reliance on ambient context. The first slice
+deliberately stays narrow: it detects `Current.<attribute>` and namespaced
+`Current` reads and writes, plus literal `Thread.current[...]` key reads and
+writes; it ignores lifecycle methods such as `Current.reset`,
+`Spree::Current.reset`, and `Current.set(...)`, dynamic thread-local keys, and
+named thread APIs such as `Thread.current.name`; it requires at least three
+files across at least two coarse packages and emits one primary offense per
+ambient context. The full reference list remains in project-analyzer metadata.
 
 First active-fixture manifest pass on 2026-07-01 used the generic target
 manifest:
@@ -756,17 +757,32 @@ Messages now say whether the context is read, written, or both, and metadata
 records `current_receiver_scope` plus `current_attribute`. Rollout status and
 default-output eligibility did not change.
 
+Literal `Thread.current[...]` follow-up on 2026-07-02 increased the
+manifest-backed count to 11 findings and 11 offenses by adding one Mastodon
+thread-local finding:
+
+| Target | Ambient context | Files | Packages | Category |
+| --- | --- | ---: | ---: | --- |
+| `mastodon` | `Thread.current[:redis]` | 4 | 2 | `thread_current_write` |
+
+Overall `project_analyzer_category` is now `root_current_write=5`,
+`namespaced_current_write=5`, and `thread_current_write=1`. The Thread.current
+slice only accepts literal symbol or string bracket keys and keeps dynamic
+thread-local access out of scope. Rollout status and default-output eligibility
+did not change.
+
 ## `MetzProject/RepeatedQueryCriteria`
 
 Result: **Candidate**, behind `--project-analyzers`.
 
-This analyzer reports repeated constant-receiver `where` calls with literal
-hash criteria. The first slice deliberately stays narrow: it ignores dynamic
-SQL strings, single-key lookups, non-constant receivers, and scope-chain
-fingerprints; it requires the same receiver and sorted criteria-key set to
-appear in at least three files across at least two coarse packages; and it
-emits one primary offense per repeated query fingerprint. The full occurrence
-list remains in project-analyzer metadata.
+This analyzer reports repeated `where` calls with literal hash criteria. The
+first slice deliberately stays narrow: it accepts constant receivers and
+constant-root no-argument scope chains, ignores dynamic SQL strings,
+single-key lookups, dynamic scope chains, and non-constant receivers; it
+requires the same receiver and sorted criteria-key set to appear in at least
+three files across at least two coarse packages; and it emits one primary
+offense per repeated query fingerprint. The full occurrence list remains in
+project-analyzer metadata.
 
 First active-fixture manifest pass on 2026-07-01 used the generic target
 manifest:
@@ -795,6 +811,14 @@ findings and 6 offenses, but split `project_analyzer_category` into
 `polymorphic_where_criteria=1`. Messages and triage summaries now name the
 criteria shape while preserving the first slice's detector scope. Rollout
 status and default-output eligibility did not change.
+
+Constant-root scope-chain follow-up on 2026-07-02 kept the manifest-backed
+count at 6 findings and 6 offenses. The active fixture set did not add new
+repeated scope-chain findings at the three-file/two-package threshold, but
+the analyzer now accepts conservative no-argument scope chains such as
+`Order.active.where(...)` and records `receiver_shape` as `constant` or
+`scope_chain` in metadata. Dynamic receiver chains remain out of scope.
+Rollout status and default-output eligibility did not change.
 
 Decision: keep RepeatedQueryCriteria **Candidate** and opt-in. The first pass
 is sparse and readable, but repeated query criteria can be intentional local

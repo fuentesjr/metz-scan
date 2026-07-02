@@ -1,8 +1,7 @@
 # frozen_string_literal: true
 
-require "rubocop"
-
-require_relative "contextual_node_walker"
+require_relative "implicit_context_pressure/ambient_context_collector"
+require_relative "implicit_context_pressure/reference_set"
 require_relative "implicit_context_pressure/triage"
 require_relative "occurrence"
 require_relative "package_map"
@@ -56,14 +55,12 @@ module MetzScan
       attr_reader :paths, :index, :minimum_files, :minimum_packages
 
       def ambient_references
-        ruby_files.flat_map { |path| CurrentAttributeCollector.new(path).call }
+        ruby_files.flat_map { |path| AmbientContextCollector.new(path).call }
                   .reject { |reference| PackageMap.ignored_path?(reference.path) }
                   .select { |reference| PackageMap.package_for(reference.path) }
       end
 
-      def ruby_files
-        RubyFileEnumerator.new(paths: paths, index: index).call
-      end
+      def ruby_files = RubyFileEnumerator.new(paths: paths, index: index).call
 
       def finding_for(ambient_context, references)
         grouped = ReferenceSet.new(references)
@@ -103,14 +100,25 @@ module MetzScan
       end
 
       def project_analyzer_metadata_for(ambient_context, grouped, category)
-        implicit_context_metadata(ambient_context, category).merge(grouped_metadata(grouped))
+        implicit_context_metadata(ambient_context, grouped, category).merge(grouped_metadata(grouped))
       end
 
-      def implicit_context_metadata(ambient_context, category)
+      def implicit_context_metadata(ambient_context, grouped, category)
         { "project_analyzer_category" => category,
           "implicit_context_category" => category, "ambient_context" => ambient_context,
-          "current_receiver_scope" => current_receiver_scope_for(ambient_context),
+          "ambient_context_kind" => grouped.context_kind }
+          .merge(context_specific_metadata(ambient_context, grouped))
+      end
+
+      def context_specific_metadata(ambient_context, grouped)
+        return thread_current_metadata(grouped) if grouped.context_kind == "thread_current"
+
+        { "current_receiver_scope" => current_receiver_scope_for(ambient_context),
           "current_attribute" => current_attribute_for(ambient_context) }
+      end
+
+      def thread_current_metadata(grouped)
+        { "thread_current_key" => grouped.context_key }
       end
 
       def grouped_metadata(grouped)
@@ -125,128 +133,6 @@ module MetzScan
       def reference_metadata(reference)
         { "path" => reference.path, "line" => reference.line, "context" => reference.context,
           "expression" => reference.expression, "access_mode" => reference.access_mode }.compact
-      end
-
-      class ReferenceSet
-        def initialize(references)
-          @references = references.sort_by { |reference| [reference.path, reference.line.to_i] }
-        end
-
-        attr_reader :references
-
-        def referring_files
-          references.map(&:path).uniq
-        end
-
-        def referring_packages
-          references.map { |reference| PackageMap.package_for(reference.path) }.compact.uniq.sort
-        end
-
-        def access_modes
-          references.map(&:access_mode).uniq.sort
-        end
-      end
-
-      class CurrentAttributeCollector
-        Reference = Struct.new(:ambient_context, :attribute, :access_mode, :enclosing_name, :method_name,
-                               :path, :line, :expression, keyword_init: true) do
-          def context
-            return "#{enclosing_name}#{method_name}" if enclosing_name && method_name
-
-            method_name || enclosing_name
-          end
-        end
-
-        ATTRIBUTE_METHOD = /\A[a-z_]\w*=?\z/
-        IGNORED_CURRENT_METHODS = %w[after_reset attributes before_reset reset resets set].freeze
-        private_constant :ATTRIBUTE_METHOD, :IGNORED_CURRENT_METHODS
-
-        def initialize(path)
-          @path = path
-        end
-
-        def call
-          contextual_nodes.filter_map { |contextual_node| reference_for(contextual_node) }
-        rescue Parser::SyntaxError
-          []
-        end
-
-        private
-
-        attr_reader :path
-
-        def processed_source
-          RuboCop::ProcessedSource.new(File.read(path), RUBY_VERSION.to_f)
-        end
-
-        def contextual_nodes
-          ContextualNodeWalker.new(processed_source.ast).nodes
-        end
-
-        def current_attribute_reference?(node)
-          node.type == :send && current_receiver?(node.receiver) && attribute_method?(node)
-        end
-
-        def current_receiver?(node)
-          node&.type == :const && current_constant?(node)
-        end
-
-        def attribute_method?(node)
-          method_name = node.method_name.to_s
-          method_name.match?(ATTRIBUTE_METHOD) &&
-            !IGNORED_CURRENT_METHODS.include?(attribute_name(method_name)) &&
-            valid_attribute_argument_count?(method_name, node.arguments)
-        end
-
-        def valid_attribute_argument_count?(method_name, arguments)
-          return arguments.size == 1 if method_name.end_with?("=")
-
-          arguments.empty?
-        end
-
-        def reference_for(contextual_node)
-          node = contextual_node.node
-          return unless current_attribute_reference?(node)
-
-          Reference.new(reference_attributes(contextual_node))
-        end
-
-        def reference_attributes(contextual_node)
-          node = contextual_node.node
-          attribute = attribute_name(node.method_name)
-          current_attribute_attributes(node, attribute)
-            .merge(context_attributes(contextual_node))
-            .merge(location_attributes(node))
-        end
-
-        def current_attribute_attributes(node, attribute)
-          { ambient_context: "#{node.receiver.source}.#{attribute}", attribute: attribute,
-            access_mode: access_mode(node.method_name) }
-        end
-
-        def context_attributes(contextual_node)
-          { enclosing_name: contextual_node.enclosing_name, method_name: contextual_node.method_name }
-        end
-
-        def location_attributes(node)
-          { path: path, line: node.loc.expression.line, expression: first_line(node) }
-        end
-
-        def current_constant?(node)
-          node.source.split("::").last == "Current"
-        end
-
-        def attribute_name(method_name)
-          method_name.to_s.delete_suffix("=")
-        end
-
-        def access_mode(method_name)
-          method_name.to_s.end_with?("=") ? "write" : "read"
-        end
-
-        def first_line(node)
-          node.loc.expression.source.lines.first.strip
-        end
       end
     end
   end

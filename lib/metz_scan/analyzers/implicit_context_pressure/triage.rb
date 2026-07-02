@@ -42,6 +42,26 @@ module MetzScan
               "Keep namespaced Current writes near the boundary that establishes the namespace context.",
               "Pass explicit context to downstream collaborators instead of writing ambient state mid-workflow."
             ]
+          },
+          "thread_current_read" => {
+            triage_summary: "Candidate Thread.current signal; review whether thread-local dependencies should be " \
+                            "explicit.",
+            why: "Repeated thread-local reads hide dependencies from method signatures and make context setup " \
+                 "harder to audit.",
+            suggested_next_moves: [
+              "Pass the thread-local value explicitly into collaborators that use it repeatedly.",
+              "Keep thread-local reads at framework, request, or instrumentation boundaries when possible."
+            ]
+          },
+          "thread_current_write" => {
+            triage_summary: "Candidate mutable Thread.current signal; review whether thread-local writes should " \
+                            "stay at setup boundaries.",
+            why: "Repeated thread-local writes hide mutation order in ambient state and make cleanup requirements " \
+                 "harder to audit.",
+            suggested_next_moves: [
+              "Keep Thread.current writes near setup/teardown boundaries that own the thread-local lifecycle.",
+              "Pass explicit context to downstream collaborators instead of mutating thread-local state mid-flow."
+            ]
           }
         }.freeze
         private_constant :CATEGORY_TRIAGE
@@ -49,6 +69,8 @@ module MetzScan
         private
 
         def implicit_context_category_for(ambient_context, grouped)
+          return "thread_current_#{access_category_for(grouped)}" if grouped.context_kind == "thread_current"
+
           "#{current_receiver_scope_for(ambient_context)}_current_#{access_category_for(grouped)}"
         end
 

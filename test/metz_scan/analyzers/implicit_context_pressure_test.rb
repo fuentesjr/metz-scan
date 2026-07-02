@@ -122,6 +122,51 @@ module MetzScan
       end
     end
 
+    module ImplicitContextPressureThreadCurrentFixtures
+      def thread_current_account_sources
+        { "app/controllers/orders_controller.rb" => thread_current_writer_source,
+          "app/jobs/sync_order_job.rb" => thread_current_reader_source("SyncOrderJob", "perform"),
+          "app/services/order_audit.rb" => thread_current_reader_source("OrderAudit", "call") }
+      end
+
+      def thread_current_writer_source
+        <<~RUBY
+          class OrdersController
+            def create
+              Thread.current[:account] = account
+            end
+          end
+        RUBY
+      end
+
+      def thread_current_reader_source(class_name, method_name)
+        <<~RUBY
+          class #{class_name}
+            def #{method_name}
+              Thread.current[:account]
+            end
+          end
+        RUBY
+      end
+
+      def dynamic_thread_current_sources
+        { "app/controllers/orders_controller.rb" => dynamic_thread_current_source,
+          "app/jobs/sync_order_job.rb" => dynamic_thread_current_source,
+          "app/services/order_audit.rb" => dynamic_thread_current_source }
+      end
+
+      def dynamic_thread_current_source
+        <<~RUBY
+          class OrdersController
+            def create
+              Thread.current[current_context_key]
+              Thread.current.name
+            end
+          end
+        RUBY
+      end
+    end
+
     class ImplicitContextPressureTest < Minitest::Test
       include ImplicitContextPressureFixtures
 
@@ -283,6 +328,69 @@ module MetzScan
         assert_equal "store", finding.project_analyzer_metadata.fetch("current_attribute")
         assert_equal %w[read write], finding.project_analyzer_metadata.fetch("access_modes")
         assert_equal "Spree::Current.store", finding.project_analyzer_metadata.fetch("ambient_context")
+      end
+
+      def with_context_files(sources)
+        Dir.mktmpdir { |dir| yield write_context_files(dir, sources) }
+      end
+
+      def write_context_files(dir, sources)
+        sources.map { |relative_path, source| write_context_file(dir, relative_path, source) }
+      end
+
+      def write_context_file(dir, relative_path, source)
+        File.join(dir, relative_path).tap do |path|
+          FileUtils.mkdir_p(File.dirname(path))
+          File.write(path, source)
+        end
+      end
+    end
+
+    class ImplicitContextPressureThreadCurrentTest < Minitest::Test
+      include ImplicitContextPressureFixtures
+      include ImplicitContextPressureThreadCurrentFixtures
+
+      def test_reports_literal_thread_current_access_used_across_files_and_packages
+        with_context_files(thread_current_account_sources) do |files|
+          finding = analyze(files).first
+
+          assert_thread_current_account_finding(finding)
+          assert_thread_current_account_metadata(finding)
+        end
+      end
+
+      def test_ignores_dynamic_thread_current_keys_and_named_thread_api
+        with_context_files(dynamic_thread_current_sources) do |files|
+          assert_empty analyze(files)
+        end
+      end
+
+      private
+
+      def analyze(files)
+        ImplicitContextPressure.new(index: FakeImplicitContextIndex.new(available: true, indexed_files: files)).call
+      end
+
+      def assert_thread_current_account_finding(finding)
+        assert_equal "Thread.current[:account]", finding.ambient_context
+        assert_match(/Thread\.current\[:account\] is read and written from 3 files across 3 packages/,
+                     finding.message)
+        assert_includes finding.triage_summary, "Thread.current"
+        assert_includes finding.why_it_matters, "thread-local"
+      end
+
+      def assert_thread_current_account_metadata(finding)
+        metadata = finding.project_analyzer_metadata
+
+        assert_equal "thread_current_write", metadata.fetch("implicit_context_category")
+        assert_equal "thread_current_write", metadata.fetch("project_analyzer_category")
+        assert_thread_current_account_detail_metadata(metadata)
+      end
+
+      def assert_thread_current_account_detail_metadata(metadata)
+        assert_equal "thread_current", metadata.fetch("ambient_context_kind")
+        assert_equal "account", metadata.fetch("thread_current_key")
+        assert_equal %w[read write], metadata.fetch("access_modes")
       end
 
       def with_context_files(sources)

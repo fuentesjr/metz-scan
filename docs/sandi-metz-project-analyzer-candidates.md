@@ -23,22 +23,24 @@ real-project calibration proves the signal is sparse and reviewable.
 
 Implemented as `MetzProject/ImplicitContextPressure` candidate output. The
 first slice is AST-only and detects repeated Rails `CurrentAttributes`-style
-access, such as `Current.account` or `Spree::Current.store`, across multiple
-files and coarse packages. It classifies root vs namespaced `Current` access
-and whether the repeated access includes writes. It remains behind
-`--project-analyzers`;
-`Thread.current`, class variables, singleton-style global access, and broader
-calibration are future scope.
+access, such as `Current.account` or `Spree::Current.store`, and repeated
+literal `Thread.current[...]` key access across multiple files and coarse
+packages. It classifies root vs namespaced `Current` access, thread-local key
+access, and whether the repeated access includes writes. It remains behind
+`--project-analyzers`; dynamic thread-local keys, class variables,
+singleton-style global access, and broader calibration are future scope.
 
 ### `RepeatedQueryCriteria`
 
 Implemented as `MetzProject/RepeatedQueryCriteria` candidate output. The first
-slice is AST-only and detects repeated constant-receiver `where` hash criteria,
-such as `Order.where(account_id: ..., status: ...)`, across multiple files and
+slice is AST-only and detects repeated constant-receiver and constant-root
+scope-chain `where` hash criteria, such as
+`Order.where(account_id: ..., status: ...)` or
+`Order.active.where(account_id: ..., status: ...)`, across multiple files and
 coarse packages. It classifies polymorphic, compound-association,
 association-scoped, and generic hash-criteria repeats. It remains behind
-`--project-analyzers`; dynamic SQL strings, scope-chain fingerprints, and
-broader query/filter forms are future scope.
+`--project-analyzers`; dynamic SQL strings, dynamic scope chains, and broader
+query/filter forms are future scope.
 
 ### `SubclassOverridePressure`
 

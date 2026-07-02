@@ -110,6 +110,47 @@ module MetzScan
       end
     end
 
+    module RepeatedQueryCriteriaScopeFixtures
+      def scoped_order_query_sources
+        { "app/controllers/orders_controller.rb" => scoped_order_query_source("OrdersController", "index"),
+          "app/jobs/sync_orders_job.rb" => scoped_order_query_source("SyncOrdersJob", "perform"),
+          "app/services/order_report.rb" => scoped_order_query_source("OrderReport", "call") }
+      end
+
+      def scoped_order_query_source(class_name, method_name)
+        <<~RUBY
+          class #{class_name}
+            def #{method_name}
+              Order.active.where(account_id: account.id, status: "open")
+            end
+          end
+        RUBY
+      end
+
+      def mixed_scoped_and_bare_order_sources
+        { "app/controllers/orders_controller.rb" => scoped_order_query_source("OrdersController", "index"),
+          "app/jobs/sync_orders_job.rb" => repeated_order_query_source("SyncOrdersJob", "perform"),
+          "app/services/order_report.rb" => repeated_order_query_source("OrderReport", "call") }
+      end
+
+      def dynamic_scope_query_sources
+        { "app/controllers/orders_controller.rb" => dynamic_scope_query_source,
+          "app/jobs/sync_orders_job.rb" => dynamic_scope_query_source,
+          "app/services/order_report.rb" => dynamic_scope_query_source }
+      end
+
+      def dynamic_scope_query_source
+        <<~RUBY
+          class OrdersController
+            def index
+              Order.public_send(scope_name).where(account_id: account.id, status: "open")
+              relation.where(account_id: account.id, status: "open")
+            end
+          end
+        RUBY
+      end
+    end
+
     class RepeatedQueryCriteriaTest < Minitest::Test
       include RepeatedQueryCriteriaFixtures
 
@@ -250,6 +291,63 @@ module MetzScan
         assert_includes finding.message, "polymorphic query criteria"
         assert_includes finding.triage_summary, "polymorphic query"
         assert_includes finding.why_it_matters, "polymorphic"
+      end
+
+      def with_query_files(sources)
+        Dir.mktmpdir { |dir| yield write_query_files(dir, sources) }
+      end
+
+      def write_query_files(dir, sources)
+        sources.map { |relative_path, source| write_query_file(dir, relative_path, source) }
+      end
+
+      def write_query_file(dir, relative_path, source)
+        File.join(dir, relative_path).tap do |path|
+          FileUtils.mkdir_p(File.dirname(path))
+          File.write(path, source)
+        end
+      end
+    end
+
+    class RepeatedQueryCriteriaScopeChainTest < Minitest::Test
+      include RepeatedQueryCriteriaFixtures
+      include RepeatedQueryCriteriaScopeFixtures
+
+      def test_reports_constant_root_scope_chain_query_criteria
+        with_query_files(scoped_order_query_sources) do |files|
+          assert_scope_chain_query_finding(analyze(files).first)
+        end
+      end
+
+      def test_does_not_group_scope_chains_with_bare_receivers
+        with_query_files(mixed_scoped_and_bare_order_sources) do |files|
+          assert_empty analyze(files)
+        end
+      end
+
+      def test_ignores_dynamic_scope_chains_and_non_constant_receivers
+        with_query_files(dynamic_scope_query_sources) do |files|
+          assert_empty analyze(files)
+        end
+      end
+
+      private
+
+      def analyze(files)
+        RepeatedQueryCriteria.new(index: FakeRepeatedQueryIndex.new(available: true, indexed_files: files)).call
+      end
+
+      def assert_scope_chain_query_finding(finding)
+        assert_equal "Order.active.where(account_id, status)", finding.query
+        assert_equal "Order.active", finding.receiver
+        assert_scope_chain_query_metadata(finding)
+        assert_match(/Order\.active\.where\(account_id, status\) repeats association-scoped query criteria/,
+                     finding.message)
+      end
+
+      def assert_scope_chain_query_metadata(finding)
+        assert_equal "scope_chain", finding.project_analyzer_metadata.fetch("receiver_shape")
+        assert_equal %w[account_id status], finding.criteria_keys
       end
 
       def with_query_files(sources)

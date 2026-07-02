@@ -123,8 +123,8 @@ Current project analyzer status:
 | `MetzProject/DeepInheritanceTree` | Validated | No | Indexed base classes or modules with at least three known descendants, when the optional Rubydex-backed project index is available. |
 | `MetzProject/PackageDependencyPressure` | Candidate | No | Indexed namespaced classes or modules referenced from several files across multiple coarse packages outside their declaration package. |
 | `MetzProject/NamespaceLeakPressure` | Candidate | No | Indexed deeply nested classes or modules referenced from multiple files across packages outside their home namespace. |
-| `MetzProject/ImplicitContextPressure` | Candidate | No | Repeated `Current.*` or namespaced `Current` ambient context access across files and coarse packages. |
-| `MetzProject/RepeatedQueryCriteria` | Candidate | No | Repeated constant-receiver `where` hash criteria across files and coarse packages. |
+| `MetzProject/ImplicitContextPressure` | Candidate | No | Repeated `Current.*`, namespaced `Current`, or literal `Thread.current[...]` ambient context access across files and coarse packages. |
+| `MetzProject/RepeatedQueryCriteria` | Candidate | No | Repeated constant-receiver or constant-root scope-chain `where` hash criteria across files and coarse packages. |
 | `MetzProject/SubclassOverridePressure` | Candidate | No | Indexed base classes whose descendants repeatedly override the same method. |
 
 Project analyzers parse Ruby files only. They do not inspect ERB/HAML/SLIM
@@ -171,18 +171,24 @@ with lower-confidence shared-namespace triage. Metadata includes the same
 shared `reference_shape` summary used by `PackageDependencyPressure`.
 `ImplicitContextPressure` is AST-only and remains candidate opt-in. Its first
 slice reports repeated Rails `CurrentAttributes`-style access, such as
-`Current.account` or `Spree::Current.store`, only when the same ambient context
+`Current.account` or `Spree::Current.store`, plus literal `Thread.current[...]`
+key access such as `Thread.current[:redis]`, only when the same ambient context
 appears in at least three files across at least two coarse packages. Lifecycle
 calls such as `Current.reset`, `Spree::Current.reset`, and `Current.set(...)`
-are ignored. Category metadata distinguishes root vs namespaced `Current`
-receivers and whether the repeated access includes writes.
+are ignored, and dynamic `Thread.current` keys stay out of scope. Category
+metadata distinguishes root vs namespaced `Current` receivers, thread-local
+keys, and whether the repeated access includes writes.
 `RepeatedQueryCriteria` is AST-only and remains candidate opt-in. Its first
-slice reports simple constant-receiver `where` calls with at least two literal
-hash keys, such as `Order.where(account_id: ..., status: ...)`, when the same
-receiver and key set appear in at least three files across at least two coarse
-packages. Dynamic SQL strings, single-key lookups, and non-constant receivers
-are outside this first slice. Category metadata distinguishes polymorphic,
-compound-association, association-scoped, and generic hash-criteria repeats.
+slice reports simple constant-receiver or constant-root scope-chain `where`
+calls with at least two literal hash keys, such as
+`Order.where(account_id: ..., status: ...)` or
+`Order.active.where(account_id: ..., status: ...)`, when the same receiver and
+key set appear in at least three files across at least two coarse packages.
+Dynamic SQL strings, single-key lookups, dynamic scope chains, and non-constant
+receivers are outside this first slice. Category metadata distinguishes
+polymorphic, compound-association, association-scoped, and generic
+hash-criteria repeats, and records whether the receiver is a constant or a
+scope chain.
 `SubclassOverridePressure` requires the optional project index and remains
 candidate opt-in. Its first slice reports base classes whose known descendants
 override the same base-declared method in at least six subclasses. Framework,
