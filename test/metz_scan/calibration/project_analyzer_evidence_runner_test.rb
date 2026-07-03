@@ -277,8 +277,8 @@ module MetzScan
 
         assert_candidate_readiness(entry)
         assert_includes entry.fetch("evidence"), "47 findings"
-        assert_includes entry.fetch("evidence"), "3 useful prompts"
         assert_includes entry.fetch("next"), "Keep parked"
+        assert_includes entry.fetch("not_next"), "Do not implement classifier behavior"
       end
 
       def assert_namespace_leak_readiness(readiness)
@@ -287,7 +287,7 @@ module MetzScan
         assert_candidate_readiness(entry)
         assert_includes entry.fetch("evidence"), "12 medium namespace-boundary prompts"
         assert_includes entry.fetch("next"), "namespace-boundary prompts"
-        assert_includes entry.fetch("not_next"), "Do not promote"
+        assert_includes entry.fetch("not_next"), "Do not implement classifier behavior"
       end
 
       def assert_repeated_query_readiness(readiness)
@@ -313,8 +313,8 @@ module MetzScan
 
         assert_candidate_readiness(entry)
         assert_includes entry.fetch("evidence"), "148 findings"
-        assert_includes entry.fetch("evidence"), "abstract hook"
         assert_includes entry.fetch("next"), "design-pressure hook contracts"
+        assert_includes entry.fetch("not_next"), "Do not implement classifier behavior"
       end
 
       def assert_candidate_readiness(entry)

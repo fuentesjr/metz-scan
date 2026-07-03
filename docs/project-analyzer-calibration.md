@@ -1373,6 +1373,42 @@ validated status or default output. Future work should only reopen behavior if
 it can separate design-pressure hook contracts from deliberate extension
 protocols and setup conventions without app-specific rules.
 
+## Generic classifier checkpoint
+
+Result: **pause detector behavior**.
+
+The expanded package, namespace, and subclass evidence is broad enough to name
+the classifier problem, but not strong enough to ship a generic classifier for
+public extension surfaces without app-shaped assumptions. A future classifier
+must clear this bar before behavior changes:
+
+- The distinction must be observable from generic code or project-index facts,
+  not app names, product names, or a list of known framework/domain terms.
+- It must explain both useful prompts and needs-context public surfaces across
+  multiple applications.
+- It must not suppress useful prompts such as cross-cutting logging,
+  access-policy value objects, activity fetchers, or real hook-contract
+  pressure.
+- It must be testable without fixture-specific allowlists or suppressions.
+- It must preserve candidate-only rollout until fresh calibration proves the
+  classifier makes output more reviewable.
+
+Current evidence does not meet that bar:
+
+| Candidate criterion | Why it is not ready |
+| --- | --- |
+| Framework roots | `ActiveRecord::Base` is identifiable, but one framework-root package-boundary example is too narrow for a generic rule. |
+| Public registries and facades | `Foreman::Plugin`, reporting facades, and renderer scopes are likely public APIs, but detecting them from names such as `Plugin`, `Formatter`, or `Scope` would be brittle. |
+| Payment, SCM, reporting, and renderer namespaces | These examples may be intentional extension surfaces, but the distinction currently depends on domain context rather than generic code facts. |
+| Hook protocols | Subclass evidence has strong abstract-hook signals, but the same category still mixes design pressure with deliberate extension APIs and setup conventions. |
+
+Decision: do not implement classifier behavior, retune thresholds, promote
+candidate analyzers, change default-output eligibility, or add suppressions from
+this evidence. If detector work resumes, the next slice should be a design-only
+classifier proposal that proves the generic facts it would use before writing
+an analyzer change. Otherwise, pause detector expansion and choose
+non-detector maintenance or release work.
+
 ## `MetzProject/RepeatedBranching`
 
 Result: **Validated**. Medium-confidence design-pressure findings are

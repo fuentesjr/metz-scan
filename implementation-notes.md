@@ -2878,7 +2878,7 @@ agenticons and track elapsed time.
 Change type: feature.
 
 Verbatim task statement: "Start on the next 4 big tasks. Keep using agenticons
-and track the total time spent/taken to complete the 3 tasks"
+and track the total time spent/taken to complete the 4 tasks"
 
 Time tracking:
 
@@ -2940,3 +2940,69 @@ Evidence and decisions:
 - None of the consolidated evidence justifies promotion, default-output
   eligibility, threshold changes, app-specific suppressions, detector expansion,
   or another target by default.
+
+## 2026-07-02: Generic classifier supportability checkpoint
+
+Task: start on the next six substantial tasks while continuing to use
+agenticons and track elapsed time.
+
+Change type: feature.
+
+Verbatim task statement: "Start on the next 6 big tasks. Keep using agenticons
+and track the total time spent/taken to complete the tasks"
+
+Time tracking:
+
+- Started at `2026-07-02 21:31:05 -0700`.
+- Evidence review, decision, and edits completed at `2026-07-02 21:34:20 -0700`.
+- Final validation/review elapsed time is recorded in the final summary for
+  this slice.
+
+Scope boundaries:
+
+- Decide whether generic classifier behavior is supportable from the expanded
+  evidence, not whether another target should be added.
+- Do not change detector behavior, thresholds, statuses, default-output policy,
+  target manifest, or suppressions.
+- Keep generated calibration artifacts and ignored local logs out of the commit.
+
+Agenticons:
+
+- `planner: generic classifier checkpoint` recommended pausing detector work.
+  It found the current evidence useful for a supportability bar but too mixed
+  for a generic, non-app-specific classifier implementation.
+- `helper_worker: classifier feasibility check` independently recommended a
+  design-only note rather than implementation. It found plausible future
+  criteria but concluded the current criteria would rely on brittle lexical or
+  domain assumptions.
+
+Tasks completed:
+
+- Built an evidence matrix from the current package, namespace, and subclass
+  consolidation artifact.
+- Defined the supportability bar for future classifier behavior: generic code or
+  index facts, no app/product-name knowledge, positive and negative examples
+  across apps, no suppression of useful prompts, and testability without
+  fixture-specific allowlists.
+- Applied that bar to framework roots, plugin registries, payment/SCM/reporting
+  and renderer surfaces, and hook protocols.
+- Recorded the decision to pause detector behavior work.
+- Updated generated readiness catalog wording and readiness assertions so
+  generated output says not to implement classifier behavior yet.
+- Updated calibration docs and the local strategy report with the pause
+  decision and next-project direction.
+
+Evidence and decisions:
+
+- `ActiveRecord::Base` is generically identifiable, but one framework-root
+  package-boundary prompt is too narrow for a generic downranking rule.
+- `Foreman::Plugin`, SCM adapters, payment providers, reporting facades, and
+  renderer scopes may be public extension surfaces, but classifying them from
+  terms such as `Plugin`, `Adapter`, `Gateway`, `Formatter`, `Renderer`, or
+  `Scope` would be brittle.
+- Subclass hook evidence has strong design-pressure signals, but the same
+  medium categories still mix hook contracts with deliberate extension APIs and
+  setup conventions.
+- Do not implement classifier behavior, promote analyzers, retune thresholds,
+  change default-output eligibility, add app-specific suppressions, or add
+  another target from this evidence.

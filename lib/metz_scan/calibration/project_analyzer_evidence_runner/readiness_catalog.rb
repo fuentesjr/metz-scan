@@ -28,8 +28,8 @@ module MetzScan
                           "3 useful prompts and 2 needs-context framework or extension surfaces.",
             "next" => "Keep parked unless future generic work can separate cross-cutting logging pressure " \
                       "from framework roots and public extension registries.",
-            "not_next" => "Do not promote, retune thresholds, downrank framework-root prompts, or add " \
-                          "app-specific suppressions from this sample."
+            "not_next" => "Do not implement classifier behavior, promote, retune thresholds, downrank " \
+                          "framework-root prompts, or add app-specific suppressions from this sample."
           },
           "MetzProject/NamespaceLeakPressure" => {
             "evidence" => "Expanded active fixtures show 49 findings: 12 medium namespace-boundary prompts " \
@@ -37,8 +37,8 @@ module MetzScan
                           "and security prompts with public extension or facade surfaces.",
             "next" => "Keep parked unless future generic work separates namespace-boundary prompts from " \
                       "public extension, facade, payment, reporting, and renderer APIs.",
-            "not_next" => "Do not promote, add app-specific suppressions, downrank payment namespaces, or " \
-                          "retune thresholds from this narrow sample."
+            "not_next" => "Do not implement classifier behavior, promote, add app-specific suppressions, " \
+                          "downrank payment namespaces, or retune thresholds from this narrow sample."
           },
           "MetzProject/ImplicitContextPressure" => {
             "evidence" => "Expanded active fixtures show 12 findings dominated by mechanical framework state: " \
@@ -60,8 +60,8 @@ module MetzScan
                           "replacement override families.",
             "next" => "Keep parked unless future generic work separates design-pressure hook contracts " \
                       "from deliberate extension protocols and setup conventions.",
-            "not_next" => "Do not promote, make default-output eligible, suppress medium categories, or " \
-                          "retune thresholds."
+            "not_next" => "Do not implement classifier behavior, promote, make default-output eligible, " \
+                          "suppress medium categories, or retune thresholds."
           }
         }.freeze
 
