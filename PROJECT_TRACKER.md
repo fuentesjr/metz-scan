@@ -15,6 +15,15 @@ agents before deciding whether GitHub work should be opened or updated.
 Update this file at the end of each committed slice when the current direction,
 next queue, parked work, or recent-completion table changes.
 
+Standing rules:
+
+- Do not start a new slice while `origin/main` CI is red; triage and fix the
+  failure first so red runs cannot accumulate behind local work.
+- Run `bin/check_ci_parity` before pushing. It reruns the single-command CI
+  steps against the committed HEAD in a clean clone, so local-only environment
+  assumptions (bundler config such as the optional rubydex group, untracked
+  files) fail locally instead of in CI.
+
 ## Current Direction
 
 `metz-scan` is currently optimizing for conservative release readiness and
@@ -27,11 +36,13 @@ artifact-pipeline reliability, and package/release metadata hardening.
 ## Current Snapshot
 
 - Date: 2026-07-03.
-- Latest pushed baseline: `c0a01f5 Explain project tracker role`.
-- Local branch state: `main` has the unpushed CI fix
-  `a8428e9 Fix calibration evidence runner CI assumptions` plus this
-  tracker/docs update.
-- Latest checkpoint window: 09:35:35-12:24:31 -0700, 2h 48m 56s elapsed.
+- Latest pushed baseline: `27c79a3 Add CI-parity guard script`.
+- CI state: run `28680784978` for `27c79a3` succeeded — first green run since
+  2026-06-30 (`c6cd0ce`). Runs for `c0a01f5` (`28672899400`) and `64bceea`
+  (`28680427556`) failed on calibration evidence runner environment
+  assumptions, both since fixed.
+- Local branch state: `main` is synced with `origin/main` apart from this
+  tracker update.
 - Working tree expectation: keep tracked work clean before starting another
   slice; keep ignored `logs/` notes out of commits unless explicitly requested.
 
@@ -39,7 +50,7 @@ artifact-pipeline reliability, and package/release metadata hardening.
 
 | Workstream | Status | Current State | Next Move |
 | --- | --- | --- | --- |
-| Release readiness | Active | The pushed `c0a01f5` CI run failed in the calibration evidence runner; local fix `a8428e9` passes the full local release-readiness checkpoint. | Push the local commits and verify CI for the fixed head. |
+| Release readiness | Active | CI is green on `27c79a3` (run `28680784978`); gemspec contact email is real; `bin/check_ci_parity` guards the local/CI environment gap. | Make the release-prep decision (open/update a release tracking issue or defer with a named blocker). |
 | Calibration artifact pipeline | Healthy | Markdown output, artifact write path, and sample-app calibration smoke are covered. | Maintain; change only when artifact behavior changes. |
 | Analyzer behavior | Parked | Generic classifier checkpoint concluded current evidence is too mixed for behavior changes. | Reopen only with new generic evidence, not app-specific suppressions. |
 | Calibration evidence | Watching | Redmine, Rubygems.org, ManageIQ, and Foreman evidence has been consolidated. | Do not add another target by default. |
@@ -47,69 +58,52 @@ artifact-pipeline reliability, and package/release metadata hardening.
 
 ## Next Queue
 
-1. Push and verify the local release-readiness head.
-   - Why now: `origin/main` is still at `c0a01f5`, whose CI run failed; the
-     local head will include the CI fix plus this tracker/docs checkpoint.
-   - Definition of done: branch is synced with `origin/main`, CI status is
-     inspected, and any failure is triaged.
-   - Files likely touched: none unless CI fails.
-   - Not in scope: detector behavior, thresholds, promotions, or target intake.
-
-2. Record the fixed-CI outcome.
-   - Why now: release-prep decisions should wait until GitHub Actions has run
-     on the fixed head.
-   - Definition of done: update this tracker with the fixed-head run id,
-     conclusion, and any remaining blocker.
-   - Files likely touched: `PROJECT_TRACKER.md`.
-   - Not in scope: release prep or publishing.
-
-3. Make the release-prep decision only after fixed CI is green.
-   - Why now: local non-publishing verification is green, including full tests,
-     RuboCop, guards, calibration smoke, release issue dry-run, version checks,
-     release metadata smokes, CLI/format smokes, gem build/spec inspection in
-     temp storage, and dry-run auto-fix smoke.
-   - Definition of done: if CI is green, decide whether to open/update a
-     release tracking issue or defer release prep for a named blocker.
+1. Make the release-prep decision.
+   - Why now: CI is green on `27c79a3` and the full local non-publishing
+     verification passed, including full tests, RuboCop, guards, calibration
+     smoke, CI-parity check, release metadata smokes, and release issue
+     dry-run.
+   - Definition of done: decide whether to open/update a release tracking
+     issue or defer release prep for a named blocker.
    - Files likely touched: `PROJECT_TRACKER.md`, possibly GitHub issue text.
    - Not in scope: publishing gems unless explicitly requested.
 
-4. Re-run only failed or time-sensitive release checks after push.
-   - Why now: the full local checkpoint already passed, so repeated local work
-     should be driven by CI results or a materially changed branch.
-   - Definition of done: document any new failure with exact command, run id, or
-     log excerpt before changing code.
-   - Files likely touched: only files implicated by evidence.
-   - Not in scope: broad release checklist churn.
+2. Repo housekeeping recommended by the 2026-07-03 external review, deferred
+   by owner decision that day.
+   - Scope when picked up: archive the bulk of `implementation-notes.md` and
+     keep only recent slices; move the tracked
+     `tmp/project-analyzer-calibration/project_analyzer_targets.yml` out of
+     the gitignored `tmp/` tree; remove the stale local `metz-scan-0.2.0.gem`.
+   - Definition of done: each item lands as its own small commit with tests
+     and guards still green.
+   - Not in scope: any analyzer or release behavior change.
 
-## Latest Six-Task Checkpoint
+## Latest Slice Checkpoint
 
-Window: 2026-07-03 09:35:35-12:24:31 -0700, 2h 48m 56s elapsed.
+Slice: 2026-07-03 external advisor review and CI-recovery follow-through.
 
-1. Confirmed the post-push baseline.
-   - `main` was clean and synced with `origin/main` at `c0a01f5` when the slice
-     started; no pre-existing tracked work needed a commit.
-2. Verified upstream CI state.
-   - GitHub Actions run `28672899400` for `c0a01f5` failed in `bundle exec rake`
-     with two calibration evidence runner test failures.
-3. Fixed the CI blocker.
-   - `a8428e9` validates analyzer filters before default target presence checks
-     and stops assuming optional `rubydex` is installed when asserting the
-     active project index backend.
-4. Ran the non-publishing release-readiness checkpoint.
-   - Passed: `bundle exec rake`, `bundle exec rubocop`,
-     `bin/check_dependency_direction`, `bin/check_sample_app_frozen`,
-     calibration smoke, release metadata tests, release issue dry-run, version
-     checks, CLI help/rules/project-analyzers/explain smoke, format scan smoke,
-     gem build/spec inspection in temp storage, and dry-run auto-fix smoke with
-     a sandbox-local RuboCop cache.
-5. Used agenticons for planning, evidence gathering, and review.
-   - `planner: next six-task release-readiness plan` and
-     `helper_worker: release-readiness evidence` both kept the slice on
-     release readiness; `reviewer: strategic design review` returned a clean
-     verdict for the Ruby fix.
-6. Updated local coordination docs.
-   - README points future contributors and agents to this tracker; this tracker
-     records the elapsed time, evidence, local branch state, and next queue.
+1. External review confirmed the direction (conservative release readiness,
+   no detector expansion) and flagged three problems: CI red since 2026-06-30
+   with the fix sitting unpushed, both gemspecs shipping a placeholder
+   contact email despite the metadata-hardening workstream, and no local
+   check that reproduces the CI environment.
+2. Pushed the stalled head (`a8428e9` + `64bceea`); its CI run `28680427556`
+   still failed — `a8428e9` fixed only one of the two environment
+   assumptions. The sample-app smoke also asserted positive findings, which
+   requires the optional rubydex index backend CI never installs.
+3. `35e33e6` made that smoke index-backend-aware: positive findings with a
+   real backend, exactly zero with the null backend, real path exercised in
+   both.
+4. `5b285c4` set the real gemspec contact email in both gems and pinned it in
+   `release_metadata_test.rb` so placeholders cannot return.
+5. `27c79a3` added `bin/check_ci_parity` (clean clone of HEAD, no local
+   bundler config, runs the single-command CI steps), documented it in both
+   release checklists, and added drift tests tying the script to
+   `.github/workflows/ci.yml`. The script reproduced the CI failure locally
+   before the fix and passed after it.
+6. CI run `28680784978` for `27c79a3` succeeded — first green since
+   `c6cd0ce` (2026-06-30). Standing rules added above: no new slice on red
+   CI, and run the parity check before pushing.
 
 ## Parked / Not Next
 
@@ -126,6 +120,10 @@ Window: 2026-07-03 09:35:35-12:24:31 -0700, 2h 48m 56s elapsed.
 
 | Date | Commit | Summary |
 | --- | --- | --- |
+| 2026-07-03 | `27c79a3` | Added the `bin/check_ci_parity` guard, checklist steps, and CI drift tests; first green CI run since 2026-06-30. |
+| 2026-07-03 | `35e33e6` | Made the sample-app calibration smoke assert exact behavior per index backend, fixing the last CI environment assumption. |
+| 2026-07-03 | `5b285c4` | Replaced the placeholder gemspec contact email in both gems and pinned it in the release metadata tests. |
+| 2026-07-03 | `64bceea` | Recorded the prior release-readiness checkpoint in this tracker and README. |
 | 2026-07-03 | `a8428e9` | Fixed CI-only calibration evidence runner assumptions for missing default fixtures and optional project index backends. |
 | 2026-07-03 | `c0a01f5` | Explained why this tracker is the local coordination surface instead of only GitHub Projects/issues. |
 | 2026-07-03 | `f444313` | Added the project tracker and current release-readiness queue. |
