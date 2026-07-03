@@ -1,10 +1,12 @@
 # frozen_string_literal: true
 
 require "minitest/autorun"
+require "yaml"
 
 module MetzScan
   class ReleaseChecklistTest < Minitest::Test
     REPO_ROOT = File.expand_path("../..", __dir__)
+    CI_PARITY_CHECK = "bin/check_ci_parity"
     CALIBRATION_SMOKE = "bundle exec ruby bin/check_project_analyzer_calibration --text --no-write " \
                         "test/fixtures/sample_app"
     GITHUB_ANNOTATIONS_ASSERTION = "grep -q '^::warning file=.*MetzProject/ServiceSoup'"
@@ -37,7 +39,24 @@ module MetzScan
       assert_includes File.read(repo_path(".github/workflows/ci.yml")), GITHUB_ANNOTATIONS_ASSERTION
     end
 
+    def test_release_checklists_document_ci_parity_check
+      release_checklists.each { |path| assert_includes File.read(path), CI_PARITY_CHECK, path }
+    end
+
+    def test_ci_parity_script_covers_ci_single_command_steps
+      script = File.read(repo_path(CI_PARITY_CHECK))
+
+      refute_empty ci_single_command_steps
+      ci_single_command_steps.each { |command| assert_includes script, command }
+    end
+
     private
+
+    def ci_single_command_steps
+      workflow = YAML.safe_load_file(repo_path(".github/workflows/ci.yml"))
+      steps = workflow.fetch("jobs").fetch("test").fetch("steps")
+      steps.filter_map { |step| step["run"]&.strip }.reject { |run| run.include?("\n") }
+    end
 
     def release_checklists
       [repo_path("RELEASE_CHECKLIST.md"), repo_path(".github/ISSUE_TEMPLATE/release_checklist.md")]

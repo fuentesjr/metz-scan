@@ -1,0 +1,56 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Reproduces the CI environment before pushing: clones the committed HEAD into
+# a temp dir and runs the single-command CI steps from .github/workflows/ci.yml
+# there. The clone drops untracked files and local bundler config (including
+# the optional rubydex group CI never installs), so environment assumptions
+# that pass in this checkout but would fail in CI fail here first. The
+# multi-line GitHub annotations smoke is not replicated; it stays covered by
+# CI and RELEASE_CHECKLIST.md. Uncommitted changes are not checked — commit
+# the slice, run this, then push.
+
+require "tmpdir"
+
+ROOT = File.expand_path("..", __dir__)
+
+# Scrub the invoking checkout's bundler state so the clone resolves its own.
+CLEAN_BUNDLER_ENV = {
+  "BUNDLE_IGNORE_CONFIG" => "1",
+  "BUNDLE_GEMFILE" => nil,
+  "BUNDLE_BIN_PATH" => nil,
+  "BUNDLER_VERSION" => nil,
+  "RUBYOPT" => nil,
+  "RUBYLIB" => nil
+}.freeze
+
+STEPS = [
+  "bundle install",
+  "bundle exec rake",
+  "bundle exec rubocop",
+  "bundle exec ruby bin/check_project_analyzer_calibration --text --no-write test/fixtures/sample_app",
+  "bin/check_dependency_direction",
+  "bin/check_sample_app_frozen"
+].freeze
+
+def run_step(command, dir)
+  puts "check_ci_parity: #{command}"
+  return if system(CLEAN_BUNDLER_ENV, command, chdir: dir)
+
+  warn "check_ci_parity: failed: #{command}"
+  exit 1
+end
+
+puts "check_ci_parity: ruby #{RUBY_VERSION} (CI pins its version in .github/workflows/ci.yml)"
+
+Dir.mktmpdir("metz-scan-ci-parity-") do |tmp|
+  clone = File.join(tmp, "metz-scan")
+  unless system("git", "clone", "--quiet", "--local", ROOT, clone)
+    warn "check_ci_parity: failed to clone #{ROOT}"
+    exit 1
+  end
+
+  STEPS.each { |step| run_step(step, clone) }
+end
+
+puts "check_ci_parity: ok"
