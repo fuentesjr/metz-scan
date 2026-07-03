@@ -1,7 +1,8 @@
 # Project Tracker
 
-This is the short, curated project-state file. Keep detailed chronological notes
-in `implementation-notes.md`; keep local scratch strategy under `logs/`.
+This is the short, curated project-state file. Keep recent implementation notes
+in `implementation-notes.md`, archived chronological notes under
+`docs/archive/`, and local scratch strategy under `logs/`.
 
 This file is the primary local coordination surface instead of GitHub Projects
 or individual issues because recent work has been a fast-moving sequence of
@@ -36,13 +37,13 @@ artifact-pipeline reliability, and package/release metadata hardening.
 ## Current Snapshot
 
 - Date: 2026-07-03.
-- Latest pushed baseline: `27c79a3 Add CI-parity guard script`.
-- CI state: run `28680784978` for `27c79a3` succeeded — first green run since
-  2026-06-30 (`c6cd0ce`). Runs for `c0a01f5` (`28672899400`) and `64bceea`
-  (`28680427556`) failed on calibration evidence runner environment
-  assumptions, both since fixed.
-- Local branch state: `main` is synced with `origin/main` apart from this
-  tracker update.
+- Latest pushed baseline: `2759102 Record CI recovery and parity guard checkpoint`.
+- CI state: run `28680896907` for `2759102` succeeded. Earlier runs for
+  `c0a01f5` (`28672899400`) and `64bceea` (`28680427556`) failed on
+  calibration evidence runner environment assumptions, both since fixed.
+- Local branch state: `main` has this release-readiness housekeeping checkpoint
+  pending commit.
+- Latest checkpoint window: 13:06:05-13:10:44 -0700, 4m 39s elapsed.
 - Working tree expectation: keep tracked work clean before starting another
   slice; keep ignored `logs/` notes out of commits unless explicitly requested.
 
@@ -50,60 +51,65 @@ artifact-pipeline reliability, and package/release metadata hardening.
 
 | Workstream | Status | Current State | Next Move |
 | --- | --- | --- | --- |
-| Release readiness | Active | CI is green on `27c79a3` (run `28680784978`); gemspec contact email is real; `bin/check_ci_parity` guards the local/CI environment gap. | Make the release-prep decision (open/update a release tracking issue or defer with a named blocker). |
-| Calibration artifact pipeline | Healthy | Markdown output, artifact write path, and sample-app calibration smoke are covered. | Maintain; change only when artifact behavior changes. |
+| Release readiness | Active | CI is green on `2759102` (run `28680896907`); `v0.3.0` already exists while both gem versions still report `0.3.0`, so a new release issue is deferred until the next version target is chosen. | Choose the next version/scope before opening a release checklist issue. |
+| Calibration artifact pipeline | Healthy | Markdown output, artifact write path, sample-app calibration smoke, and the tracked target manifest under `docs/calibration/` are covered. | Maintain; change only when artifact or target-manifest behavior changes. |
 | Analyzer behavior | Parked | Generic classifier checkpoint concluded current evidence is too mixed for behavior changes. | Reopen only with new generic evidence, not app-specific suppressions. |
 | Calibration evidence | Watching | Redmine, Rubygems.org, ManageIQ, and Foreman evidence has been consolidated. | Do not add another target by default. |
-| Docs/adoption | Stable | README now points contributors and agents to this tracker; release workflow is guarded by tests and checklist smoke. | Keep docs changes minimal and evidence-led. |
+| Docs/adoption | Stable | README points contributors and agents to this tracker; old implementation notes are archived, and current notes are short. | Keep docs changes minimal and evidence-led. |
 
 ## Next Queue
 
-1. Make the release-prep decision.
-   - Why now: CI is green on `27c79a3` and the full local non-publishing
-     verification passed, including full tests, RuboCop, guards, calibration
-     smoke, CI-parity check, release metadata smokes, and release issue
-     dry-run.
-   - Definition of done: decide whether to open/update a release tracking
-     issue or defer release prep for a named blocker.
-   - Files likely touched: `PROJECT_TRACKER.md`, possibly GitHub issue text.
+1. Choose the next release target.
+   - Why now: `v0.3.0` is already published, both gems still report `0.3.0`,
+     and `bin/create_release_issue --dry-run` would currently generate a
+     duplicate `Release v0.3.0` checklist.
+   - Definition of done: decide whether the next release is a patch release,
+     a `0.4.0` analyzer/reporting release, or explicitly deferred.
+   - Files likely touched: `PROJECT_TRACKER.md`; possibly version constants
+     and release issue text if a release is chosen.
    - Not in scope: publishing gems unless explicitly requested.
 
-2. Repo housekeeping recommended by the 2026-07-03 external review, deferred
-   by owner decision that day.
-   - Scope when picked up: archive the bulk of `implementation-notes.md` and
-     keep only recent slices; move the tracked
-     `tmp/project-analyzer-calibration/project_analyzer_targets.yml` out of
-     the gitignored `tmp/` tree; remove the stale local `metz-scan-0.2.0.gem`.
-   - Definition of done: each item lands as its own small commit with tests
-     and guards still green.
-   - Not in scope: any analyzer or release behavior change.
+2. Run `bin/check_ci_parity` before the next push.
+   - Why now: this slice changed tracked docs and calibration manifest
+     location; the standing rule requires the clean-clone CI check before
+     pushing.
+   - Definition of done: parity check passes against committed HEAD.
+   - Files likely touched: none unless parity exposes a bug.
+   - Not in scope: broad release checklist churn.
+
+3. Keep housekeeping closed unless new evidence appears.
+   - Why now: the archived implementation notes, moved target manifest, and
+     stale ignored gem cleanup are complete.
+   - Definition of done: future slices do not reopen these items without a
+     concrete broken reference or generated artifact.
+   - Files likely touched: none.
+   - Not in scope: analyzer behavior or target intake.
 
 ## Latest Slice Checkpoint
 
-Slice: 2026-07-03 external advisor review and CI-recovery follow-through.
+Slice: 2026-07-03 release-readiness housekeeping.
 
-1. External review confirmed the direction (conservative release readiness,
-   no detector expansion) and flagged three problems: CI red since 2026-06-30
-   with the fix sitting unpushed, both gemspecs shipping a placeholder
-   contact email despite the metadata-hardening workstream, and no local
-   check that reproduces the CI environment.
-2. Pushed the stalled head (`a8428e9` + `64bceea`); its CI run `28680427556`
-   still failed — `a8428e9` fixed only one of the two environment
-   assumptions. The sample-app smoke also asserted positive findings, which
-   requires the optional rubydex index backend CI never installs.
-3. `35e33e6` made that smoke index-backend-aware: positive findings with a
-   real backend, exactly zero with the null backend, real path exercised in
-   both.
-4. `5b285c4` set the real gemspec contact email in both gems and pinned it in
-   `release_metadata_test.rb` so placeholders cannot return.
-5. `27c79a3` added `bin/check_ci_parity` (clean clone of HEAD, no local
-   bundler config, runs the single-command CI steps), documented it in both
-   release checklists, and added drift tests tying the script to
-   `.github/workflows/ci.yml`. The script reproduced the CI failure locally
-   before the fix and passed after it.
-6. CI run `28680784978` for `27c79a3` succeeded — first green since
-   `c6cd0ce` (2026-06-30). Standing rules added above: no new slice on red
-   CI, and run the parity check before pushing.
+Window: 13:06:05-13:10:44 -0700, 4m 39s elapsed.
+
+1. Release-prep decision recorded.
+   - Latest `origin/main` is `2759102` with green CI run `28680896907`.
+   - No release issue was opened because `v0.3.0` already exists and both gems
+     still report `0.3.0`; the next release needs an explicit version/scope
+     decision first.
+2. `implementation-notes.md` bulk archived.
+   - Historical notes moved to
+     `docs/archive/implementation-notes-2026-06-29-through-2026-07-03.md`.
+   - Current `implementation-notes.md` is now a short recent-context stub.
+3. Tracked calibration target manifest moved out of ignored `tmp/`.
+   - Manifest moved to `docs/calibration/project_analyzer_targets.yml`.
+   - Live docs now point to the new path; historical archive paths are left as
+     historical notes.
+4. Stale ignored gem artifacts removed.
+   - Removed local `metz-scan-0.2.0.gem` and
+     `rubocop-metz/rubocop-metz-0.2.0.gem`.
+
+Agenticons used: `planner: next four task plan` and
+`helper_worker: release/housekeeping evidence`.
 
 ## Parked / Not Next
 
@@ -120,6 +126,7 @@ Slice: 2026-07-03 external advisor review and CI-recovery follow-through.
 
 | Date | Commit | Summary |
 | --- | --- | --- |
+| 2026-07-03 | `2759102` | Recorded CI recovery and parity guard checkpoint. |
 | 2026-07-03 | `27c79a3` | Added the `bin/check_ci_parity` guard, checklist steps, and CI drift tests; first green CI run since 2026-06-30. |
 | 2026-07-03 | `35e33e6` | Made the sample-app calibration smoke assert exact behavior per index backend, fixing the last CI environment assumption. |
 | 2026-07-03 | `5b285c4` | Replaced the placeholder gemspec contact email in both gems and pinned it in the release metadata tests. |
@@ -134,8 +141,11 @@ Slice: 2026-07-03 external advisor review and CI-recovery follow-through.
 ## Source Pointers
 
 - Current project tracker: `PROJECT_TRACKER.md`.
-- Chronological implementation details: `implementation-notes.md`.
+- Recent implementation notes: `implementation-notes.md`.
+- Archived chronological implementation details:
+  `docs/archive/implementation-notes-2026-06-29-through-2026-07-03.md`.
 - Project analyzer calibration record: `docs/project-analyzer-calibration.md`.
+- Tracked calibration target manifest: `docs/calibration/project_analyzer_targets.yml`.
 - Candidate analyzer summary: `docs/sandi-metz-project-analyzer-candidates.md`.
 - Release process: `RELEASE_CHECKLIST.md`.
 - Local ignored strategy scratchpad: `logs/repeated-query-criteria-strategy-review.md`.

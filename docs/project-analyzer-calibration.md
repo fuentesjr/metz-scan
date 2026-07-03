@@ -1,6 +1,6 @@
 # Project analyzer calibration
 
-Last updated: 2026-07-02.
+Last updated: 2026-07-03.
 
 This note records real-world calibration passes for the opt-in analyzers behind
 `metz-scan scan --project-analyzers`. The goal was to decide whether
@@ -39,12 +39,14 @@ under `/private/tmp/metz-calibration`. Those paths are historical context only.
 Current and future calibration runs should use repo-local ignored scratch space
 under `tmp/project-analyzer-calibration/`, including
 `tmp/project-analyzer-calibration/apps/` for approved sparse target checkouts.
+Tracked target manifests live under `docs/calibration/` so they are not hidden
+inside the ignored `tmp/` tree.
 Use the repeatable evidence runner for new calibration slices:
 
 ```bash
 bin/check_project_analyzer_calibration --text
 bin/check_project_analyzer_calibration --text --analyzer MetzProject/RepeatedBranching
-bin/check_project_analyzer_calibration --text --targets-file tmp/project-analyzer-calibration/project_analyzer_targets.yml
+bin/check_project_analyzer_calibration --text --targets-file docs/calibration/project_analyzer_targets.yml
 ```
 
 With no paths, the runner discovers target checkouts under
@@ -961,7 +963,7 @@ manifest:
 
 ```bash
 bundle exec ruby bin/check_project_analyzer_calibration --text --no-write \
-  --targets-file tmp/project-analyzer-calibration/project_analyzer_targets.yml \
+  --targets-file docs/calibration/project_analyzer_targets.yml \
   --analyzer MetzProject/ImplicitContextPressure
 ```
 
@@ -1094,7 +1096,7 @@ manifest:
 
 ```bash
 bundle exec ruby bin/check_project_analyzer_calibration --text --no-write \
-  --targets-file tmp/project-analyzer-calibration/project_analyzer_targets.yml \
+  --targets-file docs/calibration/project_analyzer_targets.yml \
   --analyzer MetzProject/RepeatedQueryCriteria
 ```
 
@@ -1233,7 +1235,7 @@ manifest:
 
 ```bash
 bundle exec ruby bin/check_project_analyzer_calibration --text --no-write \
-  --targets-file tmp/project-analyzer-calibration/project_analyzer_targets.yml \
+  --targets-file docs/calibration/project_analyzer_targets.yml \
   --analyzer MetzProject/SubclassOverridePressure
 ```
 
@@ -1828,7 +1830,7 @@ repo-local targets plus nested Spree engine paths under
 
 ```bash
 bundle exec ruby bin/check_project_analyzer_calibration --text \
-  --targets-file tmp/project-analyzer-calibration/project_analyzer_targets.yml \
+  --targets-file docs/calibration/project_analyzer_targets.yml \
   --analyzer MetzProject/DeepInheritanceTree
 ```
 
