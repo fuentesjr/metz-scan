@@ -27,8 +27,11 @@ artifact-pipeline reliability, and package/release metadata hardening.
 ## Current Snapshot
 
 - Date: 2026-07-03.
-- Branch state: `main` is ahead of `origin/main` by four local commits.
-- Latest local commit: `f444313 Add project tracker`.
+- Latest pushed baseline: `c0a01f5 Explain project tracker role`.
+- Local branch state: `main` has the unpushed CI fix
+  `a8428e9 Fix calibration evidence runner CI assumptions` plus this
+  tracker/docs update.
+- Latest checkpoint window: 09:35:35-12:24:31 -0700, 2h 48m 56s elapsed.
 - Working tree expectation: keep tracked work clean before starting another
   slice; keep ignored `logs/` notes out of commits unless explicitly requested.
 
@@ -36,39 +39,77 @@ artifact-pipeline reliability, and package/release metadata hardening.
 
 | Workstream | Status | Current State | Next Move |
 | --- | --- | --- | --- |
-| Release readiness | Active | Local release smoke, checklist, issue-preview, and package metadata coverage have been hardened. | Push local commits and watch CI before more release work. |
+| Release readiness | Active | The pushed `c0a01f5` CI run failed in the calibration evidence runner; local fix `a8428e9` passes the full local release-readiness checkpoint. | Push the local commits and verify CI for the fixed head. |
 | Calibration artifact pipeline | Healthy | Markdown output, artifact write path, and sample-app calibration smoke are covered. | Maintain; change only when artifact behavior changes. |
 | Analyzer behavior | Parked | Generic classifier checkpoint concluded current evidence is too mixed for behavior changes. | Reopen only with new generic evidence, not app-specific suppressions. |
 | Calibration evidence | Watching | Redmine, Rubygems.org, ManageIQ, and Foreman evidence has been consolidated. | Do not add another target by default. |
-| Docs/adoption | Needs light curation | README and calibration docs are broad; release workflow is now guarded by tests. | Improve discoverability only when it reduces future-agent rediscovery. |
+| Docs/adoption | Stable | README now points contributors and agents to this tracker; release workflow is guarded by tests and checklist smoke. | Keep docs changes minimal and evidence-led. |
 
 ## Next Queue
 
-1. Push and verify the three local release-maintenance commits.
-   - Why now: local validation is green, but CI and remote state have not seen
-     the release-hardening commits.
+1. Push and verify the local release-readiness head.
+   - Why now: `origin/main` is still at `c0a01f5`, whose CI run failed; the
+     local head will include the CI fix plus this tracker/docs checkpoint.
    - Definition of done: branch is synced with `origin/main`, CI status is
      inspected, and any failure is triaged.
    - Files likely touched: none unless CI fails.
    - Not in scope: detector behavior, thresholds, promotions, or target intake.
 
-2. Do a release-readiness checkpoint.
-   - Why now: release checklist, package metadata smoke, and issue preview are
-     now covered; the next decision is whether the repo is ready for release
-     prep or needs one more hardening pass.
-   - Definition of done: run/inspect the release checklist path far enough to
-     identify concrete blockers, then record the decision.
-   - Files likely touched: `implementation-notes.md`, possibly
-     `RELEASE_CHECKLIST.md` if the checklist itself is wrong.
+2. Record the fixed-CI outcome.
+   - Why now: release-prep decisions should wait until GitHub Actions has run
+     on the fixed head.
+   - Definition of done: update this tracker with the fixed-head run id,
+     conclusion, and any remaining blocker.
+   - Files likely touched: `PROJECT_TRACKER.md`.
+   - Not in scope: release prep or publishing.
+
+3. Make the release-prep decision only after fixed CI is green.
+   - Why now: local non-publishing verification is green, including full tests,
+     RuboCop, guards, calibration smoke, release issue dry-run, version checks,
+     release metadata smokes, CLI/format smokes, gem build/spec inspection in
+     temp storage, and dry-run auto-fix smoke.
+   - Definition of done: if CI is green, decide whether to open/update a
+     release tracking issue or defer release prep for a named blocker.
+   - Files likely touched: `PROJECT_TRACKER.md`, possibly GitHub issue text.
    - Not in scope: publishing gems unless explicitly requested.
 
-3. Improve tracker/docs discoverability if future agents still rediscover
-   state from scratch.
-   - Why now: `PROJECT_TRACKER.md` is new; it may need a README pointer after
-     one or two slices prove the shape.
-   - Definition of done: add only the smallest useful cross-reference.
-   - Files likely touched: `README.md`, `PROJECT_TRACKER.md`.
-   - Not in scope: duplicating calibration evidence or implementation notes.
+4. Re-run only failed or time-sensitive release checks after push.
+   - Why now: the full local checkpoint already passed, so repeated local work
+     should be driven by CI results or a materially changed branch.
+   - Definition of done: document any new failure with exact command, run id, or
+     log excerpt before changing code.
+   - Files likely touched: only files implicated by evidence.
+   - Not in scope: broad release checklist churn.
+
+## Latest Six-Task Checkpoint
+
+Window: 2026-07-03 09:35:35-12:24:31 -0700, 2h 48m 56s elapsed.
+
+1. Confirmed the post-push baseline.
+   - `main` was clean and synced with `origin/main` at `c0a01f5` when the slice
+     started; no pre-existing tracked work needed a commit.
+2. Verified upstream CI state.
+   - GitHub Actions run `28672899400` for `c0a01f5` failed in `bundle exec rake`
+     with two calibration evidence runner test failures.
+3. Fixed the CI blocker.
+   - `a8428e9` validates analyzer filters before default target presence checks
+     and stops assuming optional `rubydex` is installed when asserting the
+     active project index backend.
+4. Ran the non-publishing release-readiness checkpoint.
+   - Passed: `bundle exec rake`, `bundle exec rubocop`,
+     `bin/check_dependency_direction`, `bin/check_sample_app_frozen`,
+     calibration smoke, release metadata tests, release issue dry-run, version
+     checks, CLI help/rules/project-analyzers/explain smoke, format scan smoke,
+     gem build/spec inspection in temp storage, and dry-run auto-fix smoke with
+     a sandbox-local RuboCop cache.
+5. Used agenticons for planning, evidence gathering, and review.
+   - `planner: next six-task release-readiness plan` and
+     `helper_worker: release-readiness evidence` both kept the slice on
+     release readiness; `reviewer: strategic design review` returned a clean
+     verdict for the Ruby fix.
+6. Updated local coordination docs.
+   - README points future contributors and agents to this tracker; this tracker
+     records the elapsed time, evidence, local branch state, and next queue.
 
 ## Parked / Not Next
 
@@ -85,11 +126,12 @@ artifact-pipeline reliability, and package/release metadata hardening.
 
 | Date | Commit | Summary |
 | --- | --- | --- |
+| 2026-07-03 | `a8428e9` | Fixed CI-only calibration evidence runner assumptions for missing default fixtures and optional project index backends. |
+| 2026-07-03 | `c0a01f5` | Explained why this tracker is the local coordination surface instead of only GitHub Projects/issues. |
+| 2026-07-03 | `f444313` | Added the project tracker and current release-readiness queue. |
 | 2026-07-03 | `fc97947` | Hardened release issue dry-run, release metadata, and gem file-list smoke coverage. |
 | 2026-07-03 | `92770d0` | Added calibration artifact release smoke, checklist drift coverage, and CI calibration smoke. |
 | 2026-07-03 | `8753614` | Decomposed project analyzer Markdown rendering and added exact-output fixture coverage. |
-| 2026-07-02 | `1ff9424` | Recorded the generic classifier checkpoint pause decision. |
-| 2026-07-02 | `1d7811f` | Consolidated expanded package, namespace, and subclass evidence quality. |
 
 ## Source Pointers
 
