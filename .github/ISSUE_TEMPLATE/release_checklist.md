@@ -8,6 +8,12 @@ assignees: ""
 
 Tracking issue generated from `RELEASE_CHECKLIST.md`.
 
+Preview the generated issue locally without GitHub access:
+
+```bash
+bin/create_release_issue --dry-run
+```
+
 Versions:
 
 - `metz-scan`: `X.Y.Z`
@@ -57,7 +63,7 @@ test "$status" -eq 1
 grep -q '^::warning file=.*MetzProject/ServiceSoup' /tmp/metz-gh-annotations.out
 ```
 
-- [ ] Confirm CI is green on GitHub.
+- [ ] Inspect recent CI runs on GitHub.
 
 ```bash
 gh run list --repo fuentesjr/metz-scan --branch main --limit 5
@@ -70,6 +76,13 @@ gh run list --repo fuentesjr/metz-scan --branch main --limit 5
 ```bash
 ruby -Ilib -e 'require "metz_scan/version"; puts MetzScan::VERSION'
 ruby -Irubocop-metz/lib -e 'require "rubocop/metz/version"; puts RuboCop::Metz::VERSION'
+```
+
+- [ ] Run release metadata and release issue smoke tests.
+
+```bash
+bundle exec ruby -Ilib -Itest test/metz_scan/release_metadata_test.rb
+bundle exec ruby -Ilib -Itest test/metz_scan/create_release_issue_test.rb
 ```
 
 - [ ] Confirm gemspec metadata builds without warnings.

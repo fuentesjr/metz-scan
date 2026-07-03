@@ -30,11 +30,6 @@ while [ "$#" -gt 0 ]; do
   shift
 done
 
-if ! command -v gh >/dev/null 2>&1; then
-  printf 'create_release_issue: gh CLI is required.\n' >&2
-  exit 2
-fi
-
 if [ ! -f "$checklist" ]; then
   printf 'create_release_issue: missing %s\n' "$checklist" >&2
   exit 2
@@ -71,6 +66,11 @@ if [ "$dry_run" -eq 1 ]; then
   printf '# %s\n\n' "$title"
   cat "$body_file"
   exit 0
+fi
+
+if ! command -v gh >/dev/null 2>&1; then
+  printf 'create_release_issue: gh CLI is required.\n' >&2
+  exit 2
 fi
 
 gh issue create \

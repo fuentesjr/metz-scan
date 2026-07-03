@@ -3130,3 +3130,69 @@ Evidence and decisions:
 - The calibration smoke uses only the checked-in sample fixture and
   `--no-write`, so CI does not depend on ignored real-app calibration checkouts
   or generated artifact directories.
+
+## 2026-07-03: Release issue and package metadata hardening
+
+Task: commit any existing work, then start on the next six substantial tasks
+while continuing to use agenticons and track elapsed time.
+
+Change type: chore.
+
+Verbatim task statement: "Commit everything into logical commits. Then start on
+the next 6 big tasks. After you are done, commit again. Keep using agenticons
+and track the total time spent/taken to complete the tasks"
+
+Time tracking:
+
+- Combined request started at `2026-07-03 09:07:17 -0700`.
+- The initial working tree was clean and already ahead by the prior two
+  release-maintenance commits, so there was no pre-existing work to commit.
+- Planning, focused implementation, and focused checks completed at
+  `2026-07-03 09:13:27 -0700`.
+- Final validation/review elapsed time is recorded in the final summary for
+  this request.
+
+Scope boundaries:
+
+- Harden release issue preview and package metadata/file-list smoke coverage.
+- Do not change analyzer behavior, readiness wording, thresholds, statuses,
+  default-output policy, target manifest, suppressions, or calibration targets.
+- Keep `logs/repeated-query-criteria-strategy-review.md` local/ignored and out
+  of commits unless explicitly requested.
+
+Agenticons:
+
+- `planner: release-hardening slice` recommended dry-run coverage for
+  `bin/create_release_issue`, making dry-run independent of `gh`, release
+  metadata/version checks, gem file-list smoke checks, checklist/template
+  updates, and notes.
+- `helper_worker: release-readiness evidence` found the published-gem smoke
+  path already well covered and recommended a docs-only discoverability pass.
+  I chose the planner's release-hardening path because it exposed an untested
+  script behavior and package metadata surface.
+
+Tasks completed:
+
+- Added subprocess coverage for `bin/create_release_issue --dry-run`.
+- Changed `bin/create_release_issue` so dry-run no longer requires `gh`; real
+  issue creation still does.
+- Added release metadata checks for version alignment, `metz-scan`'s
+  `rubocop-metz` dependency family, Ruby/package metadata, and runtime-only gem
+  file lists.
+- Added release checklist assertions for the new metadata and release issue
+  smoke commands.
+- Updated `RELEASE_CHECKLIST.md` and the GitHub issue template with the new
+  smoke commands.
+- Ran focused release issue, release metadata, release checklist, and script
+  syntax checks after implementation.
+
+Evidence and decisions:
+
+- The red run proved `bin/create_release_issue --dry-run` previously failed
+  without `gh`, even though previewing a release issue should not need GitHub
+  CLI availability.
+- The real issue-create path still checks for `gh` immediately before calling
+  `gh issue create`.
+- Gem file-list assertions are intentionally essential-inclusion/exclusion
+  checks rather than an exact complete file list, to avoid brittle packaging
+  tests.
