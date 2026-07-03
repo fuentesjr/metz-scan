@@ -23,18 +23,19 @@ module MetzScan
             "not_next" => "Do not make default-output eligible while findings depend on optional indexing."
           },
           "MetzProject/PackageDependencyPressure" => {
-            "evidence" => "Expanded active fixtures show 43 findings: 3 medium package boundaries and " \
-                          "40 low shared dependencies; ManageIQ adds infrastructure framework-root and " \
-                          "logging prompts.",
-            "next" => "Compare ManageIQ's framework-root and logging prompts against one more " \
-                      "infrastructure target before promotion or threshold discussion.",
-            "not_next" => "Do not promote, retune thresholds, or downrank framework-root prompts from this sample."
+            "evidence" => "Expanded active fixtures show 47 findings: 5 medium package boundaries and " \
+                          "42 low shared dependencies; Foreman corroborates infrastructure logging " \
+                          "and plugin registry prompts.",
+            "next" => "Compare infrastructure logging and plugin registry prompts before promotion " \
+                      "or threshold discussion.",
+            "not_next" => "Do not promote, retune thresholds, downrank framework-root prompts, or add " \
+                          "app-specific suppressions from this sample."
           },
           "MetzProject/NamespaceLeakPressure" => {
-            "evidence" => "Expanded active fixtures show 44 findings: 11 medium namespace-boundary prompts " \
-                          "and 33 low shared namespaces; ManageIQ adds reporting facade examples.",
-            "next" => "Compare Redmine SCM, Rubygems.org OIDC, and ManageIQ reporting prompts before " \
-                      "status or default-output discussion.",
+            "evidence" => "Expanded active fixtures show 49 findings: 12 medium namespace-boundary prompts " \
+                          "and 37 low shared namespaces; Foreman adds a renderer scope example.",
+            "next" => "Compare Redmine SCM, Rubygems.org OIDC, ManageIQ reporting, and Foreman renderer " \
+                      "prompts before status or default-output discussion.",
             "not_next" => "Do not promote, add app-specific suppressions, downrank payment namespaces, or " \
                           "retune thresholds from this narrow sample."
           },
@@ -53,11 +54,10 @@ module MetzScan
                           "joins, merges, Arel, single-key finders, bang finders, exists?, or take."
           },
           "MetzProject/SubclassOverridePressure" => {
-            "evidence" => "Expanded active fixtures show 133 findings: 86 low broad-root and " \
-                          "47 medium manual-review findings.",
-            "next" => "Refine request/workflow hook, credential hook, policy, and Avo action evidence only when " \
-                      "it supports a " \
-                      "generic, non-app-specific rule.",
+            "evidence" => "Expanded active fixtures show 148 findings: 93 low broad-root and " \
+                          "55 medium manual-review findings.",
+            "next" => "Refine operating-system, proxy, request/workflow, credential, policy, and Avo " \
+                      "action evidence only when it supports a generic, non-app-specific rule.",
             "not_next" => "Do not promote, make default-output eligible, suppress medium categories, or " \
                           "retune thresholds."
           }

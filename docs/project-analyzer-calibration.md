@@ -148,6 +148,18 @@ candidate-analyzer run over the expanded manifest produced 248 findings and
 `SubclassOverridePressure=133`. The added target changed evidence, not analyzer
 behavior, rollout status, thresholds, or default-output eligibility.
 
+Foreman target-intake follow-up on 2026-07-02 added `theforeman/foreman` at
+`2eccf03ea835` to the active target manifest with `app` and `lib` scan paths.
+This target was chosen as a second infrastructure/provisioning/operations Rails
+app to test whether the ManageIQ package and subclass prompts generalized
+beyond one operations codebase. The focused candidate-analyzer run over the
+expanded manifest produced 272 findings and 272 offenses across the five parked
+candidate analyzers: `PackageDependencyPressure=47`,
+`NamespaceLeakPressure=49`, `ImplicitContextPressure=12`,
+`RepeatedQueryCriteria=16`, and `SubclassOverridePressure=148`. The added
+target changed evidence, not analyzer behavior, rollout status, thresholds, or
+default-output eligibility.
+
 Triage-output follow-up on 2026-06-23: adding project-analyzer status,
 confidence, triage severity, triage summary, and `summary.project_analyzers`
 output metadata did not change the expanded calibration counts above.
@@ -731,6 +743,22 @@ the new prompts is a framework root and the other is cross-cutting logging.
 Compare these prompts against one more infrastructure or operations target
 before promotion, threshold, or framework-root downranking discussions.
 
+Foreman target-intake follow-up on 2026-07-02 increased the manifest-backed
+count to 47 findings and 47 offenses: 42 low-confidence `shared_dependency`
+findings and 5 medium `package_boundary` findings. Foreman added two medium
+package-boundary prompts:
+
+| Target | Declaration | Quality bucket | Rationale |
+| --- | --- | --- | --- |
+| `foreman` | `Foreman::Logging` | Useful design-pressure prompt | Controllers, validators, models, jobs, services, renderer scopes, proxy APIs, and support libraries call the logging singleton directly, corroborating ManageIQ's cross-cutting logging dependency pressure. |
+| `foreman` | `Foreman::Plugin` | Needs context | Plugin registries, host/provisioning flows, UI services, GraphQL types, and helpers use the plugin registry as a public extension surface; it still makes broad registry coupling visible across packages. |
+
+Decision: keep PackageDependencyPressure **Candidate** and opt-in. Foreman
+corroborates the infrastructure logging signal, but the medium set still mixes
+useful cross-cutting pressure, framework roots, and intentional plugin
+extension surfaces. Do not promote, retune thresholds, downrank framework roots,
+or add app-specific suppressions from this target alone.
+
 ## `MetzProject/NamespaceLeakPressure`
 
 Result: **Candidate**, behind `--project-analyzers`.
@@ -865,6 +893,21 @@ infrastructure reporting examples, but the medium set still mixes useful domain
 prompts with likely public facades, extension points, and legacy compatibility
 surfaces. Do not promote, downrank, suppress, or retune from this target alone.
 
+Foreman target-intake follow-up on 2026-07-02 increased the manifest-backed
+count to 49 findings and 49 offenses: 37 low-confidence `shared_namespace`
+findings and 12 medium `namespace_boundary` findings. Foreman added one medium
+renderer finding:
+
+| Target | Declaration | Quality bucket | Rationale |
+| --- | --- | --- | --- |
+| `foreman` | `Foreman::Renderer::Scope` | Needs context | Templates, renderer services, plugin hooks, partition rendering, and scope subclasses reference or extend the renderer scope namespace directly, but renderer scopes may be an intentional public rendering API. |
+
+Decision: keep NamespaceLeakPressure **Candidate** and opt-in. Foreman adds an
+infrastructure/provisioning renderer example, but the medium set still mixes
+useful domain prompts with likely public facades, extension points, and
+compatibility or rendering APIs. Do not promote, downrank, suppress, or retune
+from this target alone.
+
 ## `MetzProject/ImplicitContextPressure`
 
 Result: **Candidate**, behind `--project-analyzers`.
@@ -983,6 +1026,13 @@ Rollout status, thresholds, detector scope, and default-output eligibility did
 not change.
 
 ManageIQ target-intake follow-up on 2026-07-02 kept the manifest-backed count
+at 12 findings and 12 offenses. It added no implicit-context findings at the
+current threshold. The quality split remains 9 mechanical framework-state
+signals, 1 useful execution-identity prompt, and 2 needs-context identity
+prompts. Rollout status, thresholds, detector scope, and default-output
+eligibility did not change.
+
+Foreman target-intake follow-up on 2026-07-02 kept the manifest-backed count
 at 12 findings and 12 offenses. It added no implicit-context findings at the
 current threshold. The quality split remains 9 mechanical framework-state
 signals, 1 useful execution-identity prompt, and 2 needs-context identity
@@ -1111,6 +1161,12 @@ manual-review prompts and 3 mechanical lookups. Detector scope, thresholds,
 rollout status, and default-output eligibility did not change.
 
 ManageIQ target-intake follow-up on 2026-07-02 kept the manifest-backed count
+at 16 findings and 16 offenses. It added no repeated-query findings at the
+current threshold, so the expanded quality split remains 13 useful
+manual-review prompts and 3 mechanical lookups. Detector scope, thresholds,
+rollout status, and default-output eligibility did not change.
+
+Foreman target-intake follow-up on 2026-07-02 kept the manifest-backed count
 at 16 findings and 16 offenses. It added no repeated-query findings at the
 current threshold, so the expanded quality split remains 13 useful
 manual-review prompts and 3 mechanical lookups. Detector scope, thresholds,
@@ -1251,6 +1307,20 @@ also likely intentional variation points. Keep the analyzer candidate-only and
 continue separating generic hook-protocol evidence from deliberate workflow or
 provider extension APIs before any promotion, suppression, or threshold
 discussion.
+
+Foreman target-intake follow-up on 2026-07-02 increased the manifest-backed
+count to 148 findings and 148 offenses: 93 low-confidence
+`broad_root_override` findings and 55 medium manual-review findings. Foreman
+added 15 findings overall: 7 low broad-root findings and 8 medium findings.
+The medium additions include cooperative `Net::Record#initialize` descendants,
+operating-system hook protocols (`available_loaders`, `display_family`,
+`pxedir`, `release_name_help`, `mediumpath`, and `use_release_name?`), and
+cooperative `ProxyAPI::Resource#initialize` descendants. These are useful
+calibration evidence for infrastructure/provisioning variation points, but they
+are also likely intentional extension protocols for operating-system families,
+DHCP records, and proxy API resources. Keep the analyzer candidate-only and
+continue separating generic hook-protocol evidence from deliberate extension
+APIs before any promotion, suppression, or threshold discussion.
 
 ## `MetzProject/RepeatedBranching`
 

@@ -2797,3 +2797,75 @@ Evidence and decisions:
   calibration but likely includes intentional extension points.
 - None of the new evidence justifies promotion, default-output eligibility,
   threshold changes, app-specific suppressions, or detector expansion.
+
+## 2026-07-02: Foreman calibration target intake and expanded evidence
+
+Task: start on the next four substantial tasks while continuing to use
+agenticons and track elapsed time.
+
+Change type: feature.
+
+Verbatim task statement: "Start on the next 4 big tasks. Keep using agenticons
+and track the total time spent/taken to complete the 4 tasks"
+
+Time tracking:
+
+- Started at `2026-07-02 18:24:19 -0700`.
+- Evidence tasks, validation, and agenticon reviews completed at
+  `2026-07-02 20:51:28 -0700`.
+- Elapsed time for the four-task Foreman slice: `02:27:09` (8,829 seconds).
+
+Scope boundaries:
+
+- Add evidence, not analyzer behavior. Do not change detector logic, thresholds,
+  statuses, default-output policy, or classifier rules.
+- Add exactly one active calibration target so evidence deltas stay attributable.
+- Keep ignored fixture checkouts and result artifacts out of the commit.
+- Treat Foreman as an infrastructure/provisioning/operations sample, not a
+  reason to app-special-case findings.
+
+Agenticons:
+
+- `planner: post-ManageIQ evidence target review` recommended one more
+  infrastructure/operations Rails target, then running the five parked candidate
+  analyzers, classifying only new deltas, and refreshing readiness/docs/tests.
+  It recommended `theforeman/foreman` over larger or less infrastructure-focused
+  alternatives.
+- `helper_worker: target feasibility` also recommended `theforeman/foreman` as
+  the best next target, with `app` and `lib` scan paths, because it should test
+  whether ManageIQ's framework-root/logging and subclass-hook prompts
+  generalize.
+
+Tasks completed:
+
+- Added `theforeman/foreman` at revision `2eccf03ea835` to the tracked active
+  target manifest with `app` and `lib` scan paths.
+- Hydrated the sparse checkout for `app` and `lib`; the checkout is ignored
+  local calibration scratch space.
+- Ran the five parked candidate analyzers over the expanded Foreman manifest.
+  The run produced 272 findings and 272 offenses across
+  PackageDependencyPressure, NamespaceLeakPressure, ImplicitContextPressure,
+  RepeatedQueryCriteria, and SubclassOverridePressure.
+- Source-reviewed the Foreman deltas and updated the generated readiness
+  catalog, readiness tests, calibration docs, and local strategy notes.
+
+Evidence and decisions:
+
+- `MetzProject/PackageDependencyPressure`: increased to 47 findings, with 42 low
+  shared dependencies and 5 medium package-boundary findings. Foreman added
+  `Foreman::Logging`, classified as useful cross-cutting logging pressure, and
+  `Foreman::Plugin`, classified as needs-context plugin registry or public
+  extension-surface evidence.
+- `MetzProject/NamespaceLeakPressure`: increased to 49 findings, with 37 low
+  shared namespaces and 12 medium namespace-boundary findings. Foreman added
+  `Foreman::Renderer::Scope`, classified as needs-context renderer API evidence.
+- `MetzProject/ImplicitContextPressure`: unchanged at 12 findings. Foreman added
+  no implicit-context findings at the current threshold.
+- `MetzProject/RepeatedQueryCriteria`: unchanged at 16 findings. Foreman added
+  no repeated-query findings at the current threshold.
+- `MetzProject/SubclassOverridePressure`: increased to 148 findings, with 93 low
+  broad-root and 55 medium manual-review findings. Foreman added operating
+  system, DHCP record, and proxy API hook evidence that is useful for
+  calibration but likely includes intentional extension protocols.
+- None of the new evidence justifies promotion, default-output eligibility,
+  threshold changes, app-specific suppressions, or detector expansion.
