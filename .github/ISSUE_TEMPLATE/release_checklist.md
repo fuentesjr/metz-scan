@@ -34,6 +34,29 @@ bin/check_dependency_direction
 bin/check_sample_app_frozen
 ```
 
+- [ ] Run calibration artifact smoke against the sample app.
+
+```bash
+bundle exec ruby bin/check_project_analyzer_calibration --text --no-write test/fixtures/sample_app
+```
+
+- [ ] Run the GitHub annotations smoke that CI uses.
+
+```bash
+fixture_dir="$(mktemp -d)"
+cp -R test/fixtures/service_soup_app "$fixture_dir/service_soup_app"
+set +e
+bundle exec metz-scan scan "$fixture_dir/service_soup_app" \
+  --project-analyzers \
+  --format gh-annotations > /tmp/metz-gh-annotations.out
+status=$?
+set -e
+rm -rf "$fixture_dir"
+cat /tmp/metz-gh-annotations.out
+test "$status" -eq 1
+grep -q '^::warning file=.*MetzProject/ServiceSoup' /tmp/metz-gh-annotations.out
+```
+
 - [ ] Confirm CI is green on GitHub.
 
 ```bash

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "fileutils"
+require "json"
 require "minitest/autorun"
 require "open3"
 require "rbconfig"
@@ -644,6 +645,10 @@ module MetzScan
         with_tmpdir { |dir| assert_artifacts_written(write_empty_artifacts(dir)) }
       end
 
+      def test_write_artifacts_round_trips_artifact_paths
+        with_tmpdir { |dir| assert_artifact_paths_round_trip(write_empty_artifacts(dir)) }
+      end
+
       private
 
       def write_empty_artifacts(dir)
@@ -656,6 +661,14 @@ module MetzScan
         assert_includes File.read(artifacts.fetch("json")), %("artifacts")
         assert_includes File.read(artifacts.fetch("markdown")), "Project analyzer evidence"
       end
+
+      def assert_artifact_paths_round_trip(artifacts)
+        persisted = JSON.parse(File.read(artifacts.fetch("json")))
+
+        assert_equal artifacts, persisted.fetch("artifacts")
+        assert_equal ProjectAnalyzerEvidenceRunner::MarkdownRenderer.new(persisted).call,
+                     File.read(artifacts.fetch("markdown"))
+      end
     end
 
     class ProjectAnalyzerCalibrationCommandTest < Minitest::Test
@@ -663,6 +676,10 @@ module MetzScan
 
       def test_text_output_renders_readiness_evidence
         with_tmpdir { |dir| assert_text_output_readiness(run_calibration_text(dir)) }
+      end
+
+      def test_text_output_reports_written_artifacts
+        with_tmpdir { |dir| assert_text_output_written_artifacts(run_calibration_write(dir), dir) }
       end
 
       private
@@ -675,11 +692,40 @@ module MetzScan
         assert_includes stdout, "evidence=Expanded active fixtures show 16 findings"
       end
 
+      def assert_text_output_written_artifacts(result, dir)
+        stdout, stderr, status = result
+
+        assert_predicate status, :success?, stderr
+        assert_written_artifact_paths(stdout, artifact_dir(dir))
+      end
+
+      def assert_written_artifact_paths(stdout, artifact_dir)
+        assert_includes stdout, "artifacts: #{artifact_dir}"
+        assert_path_exists File.join(artifact_dir, "summary.json")
+        assert_path_exists File.join(artifact_dir, "summary.md")
+      end
+
+      def artifact_dir(dir)
+        File.join(dir, "calibration-results", "write-smoke")
+      end
+
       def run_calibration_text(dir)
         Open3.capture3(
           RbConfig.ruby, "bin/check_project_analyzer_calibration", "--text", "--no-write",
           "--analyzer", "MetzProject/RepeatedQueryCriteria", dir
         )
+      end
+
+      def run_calibration_write(dir)
+        Open3.capture3(
+          RbConfig.ruby, "bin/check_project_analyzer_calibration", "--text",
+          "--output-dir", File.join(dir, "calibration-results"), "--run-id", "write-smoke",
+          "--analyzer", "MetzProject/RepeatedQueryCriteria", sample_app_path
+        )
+      end
+
+      def sample_app_path
+        File.expand_path("../../fixtures/sample_app", __dir__)
       end
     end
 

@@ -26,6 +26,9 @@ jobs:
       - name: Run RuboCop
         run: bundle exec rubocop
 
+      - name: Smoke calibration artifact output
+        run: bundle exec ruby bin/check_project_analyzer_calibration --text --no-write test/fixtures/sample_app
+
       - name: Smoke GitHub annotations output
         run: |
           fixture_dir="$(mktemp -d)"

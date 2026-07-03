@@ -3065,3 +3065,68 @@ Evidence and decisions:
   slice is maintenance and should not churn generated artifacts.
 - The renderer remains a private calibration artifact implementation detail;
   no new public API was introduced.
+
+## 2026-07-03: Calibration artifact release smoke
+
+Task: commit the completed renderer slice, then start on the next six
+substantial tasks while continuing to use agenticons and track elapsed time.
+
+Change type: chore.
+
+Verbatim task statement: "Commit everything into logical commits. Then start on
+the next 6 big tasks. After you are done, commit again. Keep using agenticons
+and track the total time spent/taken to complete the tasks"
+
+Time tracking:
+
+- Combined request started at `2026-07-03 08:48:12 -0700`.
+- First commit completed as `8753614 Decompose project analyzer markdown renderer`.
+- Planning, focused implementation, and focused checks for this second slice
+  completed at `2026-07-03 08:56:19 -0700`.
+- Final validation/review elapsed time is recorded in the final summary for
+  this request.
+
+Scope boundaries:
+
+- Improve calibration artifact/release confidence only.
+- Do not change analyzer behavior, readiness wording, thresholds, statuses,
+  default-output policy, target manifest, suppressions, or calibration targets.
+- Keep `logs/repeated-query-criteria-strategy-review.md` local/ignored and out
+  of commits unless explicitly requested.
+
+Agenticons:
+
+- `planner: next six-task slice selection` recommended artifact writer
+  round-trip coverage, calibration CLI write-path smoke, checklist drift
+  protection, release checklist calibration smoke, CI calibration smoke, and
+  notes.
+- `helper_worker: next maintenance evidence` recommended a high-volume
+  report-language pass, but that conflicted with the latest strategy report's
+  "do not add another target by default" boundary. I chose the planner's
+  artifact/release-maintenance path.
+
+Tasks completed:
+
+- Added artifact writer round-trip coverage proving persisted JSON records the
+  returned artifact paths and persisted Markdown equals the renderer output for
+  that persisted summary.
+- Added command-level write-path smoke for
+  `bin/check_project_analyzer_calibration --text` with deterministic
+  `--output-dir` and `--run-id`.
+- Added release checklist drift coverage comparing the issue template body from
+  `## Verification` onward with `RELEASE_CHECKLIST.md`.
+- Added a release checklist calibration artifact smoke command for
+  `test/fixtures/sample_app`.
+- Added the same calibration smoke command to CI.
+- Ran focused release checklist, calibration evidence runner, and calibration
+  smoke checks after implementation.
+
+Evidence and decisions:
+
+- `bundle exec ruby bin/check_project_analyzer_calibration --text --no-write
+  test/fixtures/sample_app` passes locally and reports one low-confidence
+  validated opt-in `MetzProject/DeepInheritanceTree` finding, plus generated
+  readiness and breakdown sections.
+- The calibration smoke uses only the checked-in sample fixture and
+  `--no-write`, so CI does not depend on ignored real-app calibration checkouts
+  or generated artifact directories.
