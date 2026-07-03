@@ -165,7 +165,7 @@ module MetzScan
         summary = ProjectAnalyzerEvidenceRunner.summarize(paths: [sample_app_path])
 
         assert_equal ["sample_app"], target_names(summary)
-        assert_equal ["rubydex"], target_index_backends(summary)
+        assert_equal [active_project_index_backend], target_index_backends(summary)
         assert summary.fetch("finding_count").positive?
       end
 
@@ -248,6 +248,10 @@ module MetzScan
 
       def sample_app_path
         File.expand_path("../../fixtures/sample_app", __dir__)
+      end
+
+      def active_project_index_backend
+        ProjectIndex.build([sample_app_path]).backend_name.to_s
       end
     end
 
@@ -434,6 +438,10 @@ module MetzScan
         assert_match(%r{unknown project analyzer: MetzProject/MissingAnalyzer}, error.message)
       end
 
+      def test_summary_rejects_unknown_project_analyzer_before_default_target_discovery
+        with_tmpdir { |dir| assert_unknown_analyzer_rejected_before_default_target_discovery(dir) }
+      end
+
       def test_selected_default_output_keeps_analyzer_level_eligibility_gate
         findings = selected_default_output_findings([ValidatedOptInAnalyzer])
 
@@ -478,6 +486,22 @@ module MetzScan
 
         assert_equal ["MetzProject/RepeatedBranching"], summary_rule_ids(summary)
         assert_equal ["MetzProject/RepeatedBranching"], cop_breakdown_values(summary)
+      end
+
+      def assert_unknown_analyzer_rejected_before_default_target_discovery(dir)
+        error = summarize_unknown_analyzer_with_missing_default_target(dir)
+
+        assert_match(%r{unknown project analyzer: MetzProject/MissingAnalyzer}, error.message)
+      end
+
+      def summarize_unknown_analyzer_with_missing_default_target(dir)
+        with_default_apps_path(File.join(dir, "missing-default-apps")) do
+          assert_raises(ProjectAnalyzerEvidenceRunner::Error) { summarize_missing_analyzer }
+        end
+      end
+
+      def summarize_missing_analyzer
+        ProjectAnalyzerEvidenceRunner.summarize(analyzer_names: ["MetzProject/MissingAnalyzer"])
       end
 
       def summarize_repeated_branching_only(dir)

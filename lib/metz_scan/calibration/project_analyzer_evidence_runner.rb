@@ -21,8 +21,9 @@ module MetzScan
       def self.summarize(**options)
         options = summarize_options(options)
         targets = target_set(options[:paths], options[:targets_file])
+        resolved_summary_options = summary_options(targets, options)
         targets.ensure_present!
-        Summary.new(summary_options(targets, options)).to_h
+        Summary.new(resolved_summary_options).to_h
       end
 
       def self.write_artifacts(summary, output_dir: default_results_path, run_id: nil)
