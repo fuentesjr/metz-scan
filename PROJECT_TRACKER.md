@@ -3,6 +3,15 @@
 This is the short, curated project-state file. Keep detailed chronological notes
 in `implementation-notes.md`; keep local scratch strategy under `logs/`.
 
+This file is the primary local coordination surface instead of GitHub Projects
+or individual issues because recent work has been a fast-moving sequence of
+agent-driven calibration and release-hardening slices. A tracked repo file gives
+every future agent immediate offline context, updates atomically with the code
+commit that changed direction, and preserves the "why now / not next" boundary
+next to the source. Use GitHub issues and projects for external/public
+coordination, releases, and user-facing work; use this tracker to orient local
+agents before deciding whether GitHub work should be opened or updated.
+
 Update this file at the end of each committed slice when the current direction,
 next queue, parked work, or recent-completion table changes.
 
@@ -18,8 +27,8 @@ artifact-pipeline reliability, and package/release metadata hardening.
 ## Current Snapshot
 
 - Date: 2026-07-03.
-- Branch state: `main` is ahead of `origin/main` by three local commits.
-- Latest local commit: `fc97947 Harden release issue and metadata smoke`.
+- Branch state: `main` is ahead of `origin/main` by four local commits.
+- Latest local commit: `f444313 Add project tracker`.
 - Working tree expectation: keep tracked work clean before starting another
   slice; keep ignored `logs/` notes out of commits unless explicitly requested.
 
