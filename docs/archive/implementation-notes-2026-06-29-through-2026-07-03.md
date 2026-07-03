@@ -396,7 +396,7 @@ Verification status:
   Packages gems with the isolated install/runtime environment.
 - `ruby /Users/sal/Projects/strategic-software-design/scripts/validate.rb
   --type chore --task "Ok go ahead and do that now"` passed: slice tests,
-  lint, and TODO gates passed; red/green skipped; warnings 0.
+  lint, and to-do gates passed; red/green skipped; warnings 0.
 - `reviewer: strategic design validation` verdict was clean with no findings.
 - `helper_worker: PackageDependencyPressure targeted calibration` completed
   read-only calibration and found no path-discovery change is indicated for

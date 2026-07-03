@@ -31,3 +31,26 @@ Decisions:
 - Moved the tracked calibration target manifest out of the ignored `tmp/` tree
   so future tracked edits are visible without special Git handling.
 - Removed stale ignored local gem artifacts for release hygiene.
+
+## 2026-07-03: v0.4.0 release target prep
+
+Task: start the next four large tracker tasks, keep using agenticons, track
+elapsed time, update `PROJECT_TRACKER.md`, and commit.
+
+Scope boundaries:
+
+- Prepare the next release target only.
+- Do not publish gems, create tags, create GitHub releases, or push.
+- Do not change analyzer behavior, thresholds, statuses, default-output
+  policy, suppressions, or calibration targets.
+
+Decisions:
+
+- Chose `0.4.0` as the next release target because `v0.3.0..HEAD` includes
+  new opt-in candidate analyzers and calibration/reporting surfaces, not only
+  release-maintenance changes.
+- Bumped both gem version constants and the lockfile to `0.4.0`.
+- Updated the README install example and release issue dry-run expectations to
+  match `0.4.0`.
+- Drafted `docs/releases/v0.4.0.md` as the release-note source for the next
+  release checklist.

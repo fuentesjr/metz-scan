@@ -41,9 +41,9 @@ artifact-pipeline reliability, and package/release metadata hardening.
 - CI state: run `28680896907` for `2759102` succeeded. Earlier runs for
   `c0a01f5` (`28672899400`) and `64bceea` (`28680427556`) failed on
   calibration evidence runner environment assumptions, both since fixed.
-- Local branch state: `main` has this release-readiness housekeeping checkpoint
-  pending commit.
-- Latest checkpoint window: 13:06:05-13:10:44 -0700, 4m 39s elapsed.
+- Local branch state: `main` has local release-readiness housekeeping and
+  `v0.4.0` release-target prep commits ahead of `origin/main`.
+- Latest checkpoint window: 13:15:51-13:23:44 -0700, 7m 53s elapsed.
 - Working tree expectation: keep tracked work clean before starting another
   slice; keep ignored `logs/` notes out of commits unless explicitly requested.
 
@@ -51,7 +51,7 @@ artifact-pipeline reliability, and package/release metadata hardening.
 
 | Workstream | Status | Current State | Next Move |
 | --- | --- | --- | --- |
-| Release readiness | Active | CI is green on `2759102` (run `28680896907`); `v0.3.0` already exists while both gem versions still report `0.3.0`, so a new release issue is deferred until the next version target is chosen. | Choose the next version/scope before opening a release checklist issue. |
+| Release readiness | Active | Next target is `0.4.0`; both gems and the lockfile report `0.4.0`; release issue dry-run now renders `Release v0.4.0`; draft release notes live under `docs/releases/`. | Run final release checks, push, watch CI, then open/update the release checklist issue. |
 | Calibration artifact pipeline | Healthy | Markdown output, artifact write path, sample-app calibration smoke, and the tracked target manifest under `docs/calibration/` are covered. | Maintain; change only when artifact or target-manifest behavior changes. |
 | Analyzer behavior | Parked | Generic classifier checkpoint concluded current evidence is too mixed for behavior changes. | Reopen only with new generic evidence, not app-specific suppressions. |
 | Calibration evidence | Watching | Redmine, Rubygems.org, ManageIQ, and Foreman evidence has been consolidated. | Do not add another target by default. |
@@ -59,57 +59,63 @@ artifact-pipeline reliability, and package/release metadata hardening.
 
 ## Next Queue
 
-1. Choose the next release target.
-   - Why now: `v0.3.0` is already published, both gems still report `0.3.0`,
-     and `bin/create_release_issue --dry-run` would currently generate a
-     duplicate `Release v0.3.0` checklist.
-   - Definition of done: decide whether the next release is a patch release,
-     a `0.4.0` analyzer/reporting release, or explicitly deferred.
-   - Files likely touched: `PROJECT_TRACKER.md`; possibly version constants
-     and release issue text if a release is chosen.
+1. Run final release checks for the local `0.4.0` prep head.
+   - Why now: version constants, lockfile, README install guidance, release
+     issue dry-run expectations, and draft release notes now point at `0.4.0`.
+   - Definition of done: full suite, RuboCop, guard scripts, release metadata
+     tests, release issue dry-run, and CI-parity check pass on committed HEAD.
+   - Files likely touched: none unless a check exposes a concrete issue.
    - Not in scope: publishing gems unless explicitly requested.
 
-2. Run `bin/check_ci_parity` before the next push.
-   - Why now: this slice changed tracked docs and calibration manifest
-     location; the standing rule requires the clean-clone CI check before
-     pushing.
-   - Definition of done: parity check passes against committed HEAD.
+2. Push and verify CI for `0.4.0` release prep.
+   - Why now: release prep should not proceed to a checklist issue until the
+     remote branch has seen the version bump and release notes.
+   - Definition of done: branch is synced with `origin/main`, the latest CI run
+     is green, and any failure is triaged before more release work.
    - Files likely touched: none unless parity exposes a bug.
-   - Not in scope: broad release checklist churn.
+   - Not in scope: publishing gems or creating a GitHub release.
 
-3. Keep housekeeping closed unless new evidence appears.
-   - Why now: the archived implementation notes, moved target manifest, and
-     stale ignored gem cleanup are complete.
-   - Definition of done: future slices do not reopen these items without a
-     concrete broken reference or generated artifact.
-   - Files likely touched: none.
-   - Not in scope: analyzer behavior or target intake.
+3. Open or update the `Release v0.4.0` checklist issue after CI is green.
+   - Why now: `bin/create_release_issue --dry-run` now renders the correct
+     `0.4.0` versions and the release notes have a draft source.
+   - Definition of done: GitHub issue exists with the checklist for `v0.4.0`
+     or the tracker records the exact blocker.
+   - Files likely touched: GitHub issue text, possibly `PROJECT_TRACKER.md`.
+   - Not in scope: publishing gems unless explicitly requested.
+
+4. Keep analyzer behavior parked during release prep.
+   - Why now: `0.4.0` is packaging already-landed candidate analyzer and
+     reporting work; it is not a signal to expand or promote analyzers.
+   - Definition of done: release work changes packaging, docs, checks, or issue
+     tracking only.
+   - Files likely touched: release/checklist docs only.
+   - Not in scope: analyzer behavior, thresholds, statuses, suppressions,
+     default-output policy, or target intake.
 
 ## Latest Slice Checkpoint
 
-Slice: 2026-07-03 release-readiness housekeeping.
+Slice: 2026-07-03 v0.4.0 release target prep.
 
-Window: 13:06:05-13:10:44 -0700, 4m 39s elapsed.
+Window: 13:15:51-13:23:44 -0700, 7m 53s elapsed.
 
-1. Release-prep decision recorded.
-   - Latest `origin/main` is `2759102` with green CI run `28680896907`.
-   - No release issue was opened because `v0.3.0` already exists and both gems
-     still report `0.3.0`; the next release needs an explicit version/scope
-     decision first.
-2. `implementation-notes.md` bulk archived.
-   - Historical notes moved to
-     `docs/archive/implementation-notes-2026-06-29-through-2026-07-03.md`.
-   - Current `implementation-notes.md` is now a short recent-context stub.
-3. Tracked calibration target manifest moved out of ignored `tmp/`.
-   - Manifest moved to `docs/calibration/project_analyzer_targets.yml`.
-   - Live docs now point to the new path; historical archive paths are left as
-     historical notes.
-4. Stale ignored gem artifacts removed.
-   - Removed local `metz-scan-0.2.0.gem` and
-     `rubocop-metz/rubocop-metz-0.2.0.gem`.
+1. Chose `0.4.0` as the next release target.
+   - `v0.3.0..HEAD` includes new opt-in candidate analyzers plus calibration
+     and reporting infrastructure, so the next release is a minor release
+     rather than a patch-only maintenance release.
+2. Bumped release version surfaces.
+   - `MetzScan::VERSION`, `RuboCop::Metz::VERSION`, `Gemfile.lock`, README
+     install guidance, and release issue dry-run tests now target `0.4.0`.
+3. Drafted release notes.
+   - `docs/releases/v0.4.0.md` summarizes analyzer, calibration/reporting, and
+     release-hardening highlights for the upcoming checklist.
+4. Verified the focused release path.
+   - Release metadata tests and create-release-issue tests pass; both version
+     constants print `0.4.0`; `bin/create_release_issue --dry-run` renders
+     `Release v0.4.0`.
 
-Agenticons used: `planner: next four task plan` and
-`helper_worker: release/housekeeping evidence`.
+Agenticons used: `planner: release target plan`,
+`helper_worker: release target evidence`, and
+`reviewer: strategic design review`.
 
 ## Parked / Not Next
 
@@ -126,6 +132,7 @@ Agenticons used: `planner: next four task plan` and
 
 | Date | Commit | Summary |
 | --- | --- | --- |
+| 2026-07-03 | `c2e2c00` | Archived implementation notes, moved the tracked calibration manifest out of ignored `tmp/`, and removed stale local gem artifacts. |
 | 2026-07-03 | `2759102` | Recorded CI recovery and parity guard checkpoint. |
 | 2026-07-03 | `27c79a3` | Added the `bin/check_ci_parity` guard, checklist steps, and CI drift tests; first green CI run since 2026-06-30. |
 | 2026-07-03 | `35e33e6` | Made the sample-app calibration smoke assert exact behavior per index backend, fixing the last CI environment assumption. |
@@ -146,6 +153,7 @@ Agenticons used: `planner: next four task plan` and
   `docs/archive/implementation-notes-2026-06-29-through-2026-07-03.md`.
 - Project analyzer calibration record: `docs/project-analyzer-calibration.md`.
 - Tracked calibration target manifest: `docs/calibration/project_analyzer_targets.yml`.
+- Draft `v0.4.0` release notes: `docs/releases/v0.4.0.md`.
 - Candidate analyzer summary: `docs/sandi-metz-project-analyzer-candidates.md`.
 - Release process: `RELEASE_CHECKLIST.md`.
 - Local ignored strategy scratchpad: `logs/repeated-query-criteria-strategy-review.md`.
