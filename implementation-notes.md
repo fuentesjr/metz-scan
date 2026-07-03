@@ -2869,3 +2869,74 @@ Evidence and decisions:
   calibration but likely includes intentional extension protocols.
 - None of the new evidence justifies promotion, default-output eligibility,
   threshold changes, app-specific suppressions, or detector expansion.
+
+## 2026-07-02: Expanded evidence-quality consolidation
+
+Task: start on the next four substantial tasks while continuing to use
+agenticons and track elapsed time.
+
+Change type: feature.
+
+Verbatim task statement: "Start on the next 4 big tasks. Keep using agenticons
+and track the total time spent/taken to complete the 3 tasks"
+
+Time tracking:
+
+- Started at `2026-07-02 21:06:33 -0700`.
+- Evidence tasks, edits, and full local test run completed at
+  `2026-07-02 21:15:10 -0700`.
+- Elapsed time for the four-task consolidation slice through local tests:
+  `00:08:37` (517 seconds).
+
+Scope boundaries:
+
+- Consolidate evidence quality, not analyzer behavior.
+- Do not add another calibration target.
+- Do not change detector logic, thresholds, statuses, default-output policy, or
+  classifier rules.
+- Keep generated calibration artifacts and ignored local logs out of the commit.
+
+Agenticons:
+
+- `planner: post-Foreman consolidation plan` recommended four tasks:
+  consolidate PackageDependencyPressure evidence, consolidate
+  NamespaceLeakPressure evidence, consolidate SubclassOverridePressure evidence,
+  and sync readiness/docs/tests around the post-Foreman boundary.
+- `helper_worker: package/subclass evidence check` confirmed the current
+  package and subclass source-of-truth counts and flagged older ignored
+  calibration artifacts as stale relative to the expanded manifest.
+
+Tasks completed:
+
+- Regenerated a focused ignored calibration artifact for package, namespace, and
+  subclass evidence:
+  `tmp/project-analyzer-calibration/results/20260702-package-namespace-subclass-consolidation`.
+- Consolidated `MetzProject/PackageDependencyPressure` around 47 findings:
+  42 low shared dependencies and 5 medium package boundaries.
+- Consolidated `MetzProject/NamespaceLeakPressure` around 49 findings:
+  37 low shared namespaces and 12 medium namespace boundaries.
+- Consolidated `MetzProject/SubclassOverridePressure` around 148 findings:
+  93 low broad-root findings and 55 medium manual-review findings.
+- Updated the generated readiness catalog, readiness assertions, calibration
+  docs, and local strategy notes to point away from default target intake and
+  toward only generic, non-app-specific classifier design if future evidence
+  justifies it.
+
+Evidence and decisions:
+
+- `MetzProject/PackageDependencyPressure`: the medium sample splits into
+  3 useful prompts (`OpenFoodNetwork::ScopeVariantToHub`, `Vmdb::Logging`,
+  `Foreman::Logging`) and 2 needs-context surfaces (`ActiveRecord::Base`,
+  `Foreman::Plugin`). Keep candidate-only and opt-in.
+- `MetzProject/NamespaceLeakPressure`: the medium sample splits into
+  5 useful domain/security prompts and 7 needs-context public extension,
+  facade, payment, reporting, or renderer surfaces. Keep candidate-only and
+  opt-in.
+- `MetzProject/SubclassOverridePressure`: the medium sample is
+  33 `abstract_hook_override`, 9 `cooperative_override`, and
+  13 `replacement_override` findings. The categories are useful for future
+  classifier design but still mix design-pressure hook contracts with deliberate
+  extension protocols and setup conventions.
+- None of the consolidated evidence justifies promotion, default-output
+  eligibility, threshold changes, app-specific suppressions, detector expansion,
+  or another target by default.

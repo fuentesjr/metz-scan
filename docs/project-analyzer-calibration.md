@@ -228,13 +228,13 @@ Readiness by analyzer:
   three packages. Calibration showed the original two-file/two-package threshold
   was too noisy, so public constants, nested exception families, and framework
   or extension namespaces are now downranked with shared-namespace triage. It
-  should not move toward default output or validated status until follow-up
-  calibration confirms those lower-confidence findings are sparse and useful.
-  A tuned 2026-06-27 calibration pass at the three-file/three-package threshold
-  produced 29 findings across Chatwoot, Discourse, Mastodon, Forem, and
-  OpenFoodNetwork. Only five remained medium-confidence namespace-boundary
-  findings (Chatwoot 1, Discourse 3, OpenFoodNetwork 1); the other 24 were
-  low-confidence shared-namespace findings.
+  should not move toward default output or validated status. The current
+  expanded active fixture set has 49 findings: 37 low-confidence
+  shared-namespace findings and 12 medium namespace-boundary prompts. The
+  medium bucket now includes useful domain/security prompts plus likely public
+  extension, facade, payment, reporting, and renderer API surfaces, so future
+  behavior work needs a generic distinction between those families before any
+  status, threshold, suppression, or default-output discussion.
 - `MetzProject/ImplicitContextPressure` is candidate for opt-in
   project-analyzer output. The first slice is AST-only and reports repeated
   Rails `CurrentAttributes`-style ambient context access across at least three
@@ -759,6 +759,23 @@ useful cross-cutting pressure, framework roots, and intentional plugin
 extension surfaces. Do not promote, retune thresholds, downrank framework roots,
 or add app-specific suppressions from this target alone.
 
+Expanded-sample consolidation on 2026-07-02 kept the manifest-backed count at
+47 findings and 47 offenses: 42 low-confidence `shared_dependency` findings
+and 5 medium `package_boundary` findings. The medium sample is no longer a
+single OpenFoodNetwork-heavy prompt, but it is still mixed:
+
+| Quality bucket | Count | Findings | Readiness read |
+| --- | ---: | --- | --- |
+| Useful design-pressure prompts | 3 | `OpenFoodNetwork::ScopeVariantToHub`, `Vmdb::Logging`, `Foreman::Logging` | Cross-package adapter/scoping and cross-cutting logging dependencies are reviewable prompts. |
+| Needs context | 2 | `ActiveRecord::Base`, `Foreman::Plugin` | Framework-root coupling and public plugin registry access are likely intentional infrastructure or extension surfaces. |
+
+Decision: keep PackageDependencyPressure **Candidate** and opt-in. The expanded
+sample is broad enough to stop immediate target intake for this question, but
+not clean enough for promotion, threshold changes, framework-root downranking,
+or app-specific suppression. Future work should only reopen behavior if it can
+define a generic distinction between cross-cutting logging pressure, framework
+roots, and public extension registries.
+
 ## `MetzProject/NamespaceLeakPressure`
 
 Result: **Candidate**, behind `--project-analyzers`.
@@ -907,6 +924,24 @@ infrastructure/provisioning renderer example, but the medium set still mixes
 useful domain prompts with likely public facades, extension points, and
 compatibility or rendering APIs. Do not promote, downrank, suppress, or retune
 from this target alone.
+
+Expanded-sample consolidation on 2026-07-02 kept the manifest-backed count at
+49 findings and 49 offenses: 37 low-confidence `shared_namespace` findings
+and 12 medium `namespace_boundary` findings. The medium sample now spans
+commerce, forum, issue-tracking, package-registry security, reporting, and
+provisioning/renderer domains:
+
+| Quality bucket | Count | Representative findings | Readiness read |
+| --- | ---: | --- | --- |
+| Useful domain or security prompts | 5 | `Badge::Trigger::PostRevision`, `Redmine::Activity::Fetcher`, `OIDC::AccessPolicy::Statement`, `OIDC::AccessPolicy::Statement::Condition`, `OIDC::TrustedPublisher::GitHubAction` | These make nested domain or policy internals visible across package boundaries. |
+| Needs-context public surfaces | 7 | `Spree::Gateway::StripeSCA`, `Spree::PaymentMethod::StoreCredit`, `Redmine::Scm::Adapters`, `Redmine::Scm::Base`, `ManageIQ::Reporting::Charting`, `ManageIQ::Reporting::Formatter`, `Foreman::Renderer::Scope` | Payment providers, SCM adapters, reporting facades, and renderer scopes may be intended extension or public API surfaces. |
+
+Decision: keep NamespaceLeakPressure **Candidate** and opt-in. The expanded
+sample proves the analyzer can find non-commerce prompts, but the medium bucket
+still mixes design-pressure examples with likely public extension, facade,
+payment, reporting, and renderer APIs. Future work should only reopen behavior
+if it can express that distinction generically; do not promote, add
+app-specific suppressions, downrank payment namespaces, or retune thresholds.
 
 ## `MetzProject/ImplicitContextPressure`
 
@@ -1321,6 +1356,22 @@ are also likely intentional extension protocols for operating-system families,
 DHCP records, and proxy API resources. Keep the analyzer candidate-only and
 continue separating generic hook-protocol evidence from deliberate extension
 APIs before any promotion, suppression, or threshold discussion.
+
+Expanded-sample consolidation on 2026-07-02 kept the manifest-backed count at
+148 findings and 148 offenses: 93 low-confidence `broad_root_override` findings
+and 55 medium manual-review findings. The medium categories are now:
+
+| Medium category | Count | Representative families | Readiness read |
+| --- | ---: | --- | --- |
+| `abstract_hook_override` | 33 | Authenticator, problem-check, ActivityPub, reporting, calculator/export/shipping, custom-field, policy/action, credential/request/workflow, and operating-system hooks | Strongest design-pressure signal, but many examples are also intentional hook protocols. |
+| `cooperative_override` | 9 | Dev records, theme settings, model sets, Avo actions, ManageIQ request zone, Foreman DHCP records and proxy API resources | Mostly extension/setup contracts that should stay visible but not drive promotion alone. |
+| `replacement_override` | 13 | Authentication providers, report templates, SCM adapters, operating-system families, promotion rules, request indexing, and authenticator display names | Mixed replacement prompts; some may suggest composition, others are normal adapter variation. |
+
+Decision: keep SubclassOverridePressure **Candidate** and opt-in. The expanded
+sample is useful for future classifier design, but not clean enough for
+validated status or default output. Future work should only reopen behavior if
+it can separate design-pressure hook contracts from deliberate extension
+protocols and setup conventions without app-specific rules.
 
 ## `MetzProject/RepeatedBranching`
 

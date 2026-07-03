@@ -24,18 +24,19 @@ module MetzScan
           },
           "MetzProject/PackageDependencyPressure" => {
             "evidence" => "Expanded active fixtures show 47 findings: 5 medium package boundaries and " \
-                          "42 low shared dependencies; Foreman corroborates infrastructure logging " \
-                          "and plugin registry prompts.",
-            "next" => "Compare infrastructure logging and plugin registry prompts before promotion " \
-                      "or threshold discussion.",
+                          "42 low shared dependencies; consolidated medium review splits into " \
+                          "3 useful prompts and 2 needs-context framework or extension surfaces.",
+            "next" => "Keep parked unless future generic work can separate cross-cutting logging pressure " \
+                      "from framework roots and public extension registries.",
             "not_next" => "Do not promote, retune thresholds, downrank framework-root prompts, or add " \
                           "app-specific suppressions from this sample."
           },
           "MetzProject/NamespaceLeakPressure" => {
             "evidence" => "Expanded active fixtures show 49 findings: 12 medium namespace-boundary prompts " \
-                          "and 37 low shared namespaces; Foreman adds a renderer scope example.",
-            "next" => "Compare Redmine SCM, Rubygems.org OIDC, ManageIQ reporting, and Foreman renderer " \
-                      "prompts before status or default-output discussion.",
+                          "and 37 low shared namespaces; consolidated medium review mixes useful domain " \
+                          "and security prompts with public extension or facade surfaces.",
+            "next" => "Keep parked unless future generic work separates namespace-boundary prompts from " \
+                      "public extension, facade, payment, reporting, and renderer APIs.",
             "not_next" => "Do not promote, add app-specific suppressions, downrank payment namespaces, or " \
                           "retune thresholds from this narrow sample."
           },
@@ -55,9 +56,10 @@ module MetzScan
           },
           "MetzProject/SubclassOverridePressure" => {
             "evidence" => "Expanded active fixtures show 148 findings: 93 low broad-root and " \
-                          "55 medium manual-review findings.",
-            "next" => "Refine operating-system, proxy, request/workflow, credential, policy, and Avo " \
-                      "action evidence only when it supports a generic, non-app-specific rule.",
+                          "55 medium manual-review findings across abstract hook, cooperative, and " \
+                          "replacement override families.",
+            "next" => "Keep parked unless future generic work separates design-pressure hook contracts " \
+                      "from deliberate extension protocols and setup conventions.",
             "not_next" => "Do not promote, make default-output eligible, suppress medium categories, or " \
                           "retune thresholds."
           }

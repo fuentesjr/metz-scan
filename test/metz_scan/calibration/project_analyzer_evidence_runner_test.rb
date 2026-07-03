@@ -277,7 +277,8 @@ module MetzScan
 
         assert_candidate_readiness(entry)
         assert_includes entry.fetch("evidence"), "47 findings"
-        assert_includes entry.fetch("next"), "logging and plugin registry prompts"
+        assert_includes entry.fetch("evidence"), "3 useful prompts"
+        assert_includes entry.fetch("next"), "Keep parked"
       end
 
       def assert_namespace_leak_readiness(readiness)
@@ -285,7 +286,7 @@ module MetzScan
 
         assert_candidate_readiness(entry)
         assert_includes entry.fetch("evidence"), "12 medium namespace-boundary prompts"
-        assert_includes entry.fetch("next"), "Foreman renderer"
+        assert_includes entry.fetch("next"), "namespace-boundary prompts"
         assert_includes entry.fetch("not_next"), "Do not promote"
       end
 
@@ -312,7 +313,8 @@ module MetzScan
 
         assert_candidate_readiness(entry)
         assert_includes entry.fetch("evidence"), "148 findings"
-        assert_includes entry.fetch("next"), "operating-system"
+        assert_includes entry.fetch("evidence"), "abstract hook"
+        assert_includes entry.fetch("next"), "design-pressure hook contracts"
       end
 
       def assert_candidate_readiness(entry)
