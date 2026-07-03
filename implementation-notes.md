@@ -54,3 +54,38 @@ Decisions:
   match `0.4.0`.
 - Drafted `docs/releases/v0.4.0.md` as the release-note source for the next
   release checklist.
+
+## 2026-07-03: v0.4.0 local release verification
+
+Task: start the next four large tracker tasks, keep using agenticons, track
+elapsed time, update `PROJECT_TRACKER.md`, and commit.
+
+Scope boundaries:
+
+- Verify the committed `0.4.0` release-prep head locally.
+- Do not push, publish gems, create tags, create GitHub releases, or open the
+  release checklist issue in this slice.
+- Do not change analyzer behavior, thresholds, statuses, default-output
+  policy, suppressions, or calibration targets.
+
+Verification:
+
+- `bundle exec rake` passed: 465 runs, 2055 assertions, 0 failures, 0 errors,
+  2 skips.
+- `bundle exec rubocop` passed: 196 files inspected, no offenses.
+- `bin/check_dependency_direction` passed.
+- `bin/check_sample_app_frozen` passed.
+- `bundle exec ruby -Ilib -Itest test/metz_scan/release_metadata_test.rb`
+  passed: 4 runs, 16 assertions, 0 failures, 0 errors.
+- `bundle exec ruby -Ilib -Itest test/metz_scan/create_release_issue_test.rb`
+  passed: 2 runs, 18 assertions, 0 failures, 0 errors.
+- `bin/create_release_issue --dry-run` rendered `Release v0.4.0`.
+- `bin/check_ci_parity` passed against a clean clone, including full suite,
+  RuboCop, calibration smoke, dependency-direction guard, and sample-app
+  freeze guard.
+
+Decision:
+
+- Local release readiness is green. The next step is to push the local commits,
+  watch CI, then open or update the `Release v0.4.0` checklist issue only after
+  remote CI is green.

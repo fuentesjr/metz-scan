@@ -41,9 +41,10 @@ artifact-pipeline reliability, and package/release metadata hardening.
 - CI state: run `28680896907` for `2759102` succeeded. Earlier runs for
   `c0a01f5` (`28672899400`) and `64bceea` (`28680427556`) failed on
   calibration evidence runner environment assumptions, both since fixed.
-- Local branch state: `main` has local release-readiness housekeeping and
-  `v0.4.0` release-target prep commits ahead of `origin/main`.
-- Latest checkpoint window: 13:15:51-13:23:44 -0700, 7m 53s elapsed.
+- Local branch state: `main` has local release-readiness housekeeping,
+  `v0.4.0` release-target prep, and release-verification checkpoint work ahead
+  of `origin/main`.
+- Latest checkpoint window: 13:25:35-13:28:57 -0700, 3m 22s elapsed.
 - Working tree expectation: keep tracked work clean before starting another
   slice; keep ignored `logs/` notes out of commits unless explicitly requested.
 
@@ -51,7 +52,7 @@ artifact-pipeline reliability, and package/release metadata hardening.
 
 | Workstream | Status | Current State | Next Move |
 | --- | --- | --- | --- |
-| Release readiness | Active | Next target is `0.4.0`; both gems and the lockfile report `0.4.0`; release issue dry-run now renders `Release v0.4.0`; draft release notes live under `docs/releases/`. | Run final release checks, push, watch CI, then open/update the release checklist issue. |
+| Release readiness | Active | Next target is `0.4.0`; both gems and the lockfile report `0.4.0`; local full suite, RuboCop, guards, release dry-run, and CI-parity checks are green. | Push, watch CI, then open/update the release checklist issue. |
 | Calibration artifact pipeline | Healthy | Markdown output, artifact write path, sample-app calibration smoke, and the tracked target manifest under `docs/calibration/` are covered. | Maintain; change only when artifact or target-manifest behavior changes. |
 | Analyzer behavior | Parked | Generic classifier checkpoint concluded current evidence is too mixed for behavior changes. | Reopen only with new generic evidence, not app-specific suppressions. |
 | Calibration evidence | Watching | Redmine, Rubygems.org, ManageIQ, and Foreman evidence has been consolidated. | Do not add another target by default. |
@@ -59,23 +60,16 @@ artifact-pipeline reliability, and package/release metadata hardening.
 
 ## Next Queue
 
-1. Run final release checks for the local `0.4.0` prep head.
-   - Why now: version constants, lockfile, README install guidance, release
-     issue dry-run expectations, and draft release notes now point at `0.4.0`.
-   - Definition of done: full suite, RuboCop, guard scripts, release metadata
-     tests, release issue dry-run, and CI-parity check pass on committed HEAD.
-   - Files likely touched: none unless a check exposes a concrete issue.
-   - Not in scope: publishing gems unless explicitly requested.
-
-2. Push and verify CI for `0.4.0` release prep.
-   - Why now: release prep should not proceed to a checklist issue until the
-     remote branch has seen the version bump and release notes.
+1. Push and verify CI for `0.4.0` release prep.
+   - Why now: local release-readiness checks are green, including
+     `bin/check_ci_parity`, but `origin/main` has not seen `c2e2c00`,
+     `94fea40`, or this verification checkpoint.
    - Definition of done: branch is synced with `origin/main`, the latest CI run
      is green, and any failure is triaged before more release work.
-   - Files likely touched: none unless parity exposes a bug.
+   - Files likely touched: none unless a check exposes a concrete issue.
    - Not in scope: publishing gems or creating a GitHub release.
 
-3. Open or update the `Release v0.4.0` checklist issue after CI is green.
+2. Open or update the `Release v0.4.0` checklist issue after CI is green.
    - Why now: `bin/create_release_issue --dry-run` now renders the correct
      `0.4.0` versions and the release notes have a draft source.
    - Definition of done: GitHub issue exists with the checklist for `v0.4.0`
@@ -83,7 +77,7 @@ artifact-pipeline reliability, and package/release metadata hardening.
    - Files likely touched: GitHub issue text, possibly `PROJECT_TRACKER.md`.
    - Not in scope: publishing gems unless explicitly requested.
 
-4. Keep analyzer behavior parked during release prep.
+3. Keep analyzer behavior parked during release prep.
    - Why now: `0.4.0` is packaging already-landed candidate analyzer and
      reporting work; it is not a signal to expand or promote analyzers.
    - Definition of done: release work changes packaging, docs, checks, or issue
@@ -94,28 +88,29 @@ artifact-pipeline reliability, and package/release metadata hardening.
 
 ## Latest Slice Checkpoint
 
-Slice: 2026-07-03 v0.4.0 release target prep.
+Slice: 2026-07-03 v0.4.0 local release verification.
 
-Window: 13:15:51-13:23:44 -0700, 7m 53s elapsed.
+Window: 13:25:35-13:28:57 -0700, 3m 22s elapsed.
 
-1. Chose `0.4.0` as the next release target.
-   - `v0.3.0..HEAD` includes new opt-in candidate analyzers plus calibration
-     and reporting infrastructure, so the next release is a minor release
-     rather than a patch-only maintenance release.
-2. Bumped release version surfaces.
-   - `MetzScan::VERSION`, `RuboCop::Metz::VERSION`, `Gemfile.lock`, README
-     install guidance, and release issue dry-run tests now target `0.4.0`.
-3. Drafted release notes.
-   - `docs/releases/v0.4.0.md` summarizes analyzer, calibration/reporting, and
-     release-hardening highlights for the upcoming checklist.
-4. Verified the focused release path.
-   - Release metadata tests and create-release-issue tests pass; both version
-     constants print `0.4.0`; `bin/create_release_issue --dry-run` renders
-     `Release v0.4.0`.
+1. Ran final local release checks for the committed `0.4.0` prep head.
+   - `bundle exec rake` passed: 465 runs, 2055 assertions, 0 failures,
+     0 errors, 2 skips.
+   - `bundle exec rubocop` passed: 196 files inspected, no offenses.
+2. Ran release-specific guards.
+   - `bin/check_dependency_direction`, `bin/check_sample_app_frozen`,
+     `test/metz_scan/release_metadata_test.rb`, and
+     `test/metz_scan/create_release_issue_test.rb` passed.
+   - `bin/create_release_issue --dry-run` renders `Release v0.4.0` with both
+     gem versions at `0.4.0`.
+3. Ran the clean-clone CI-parity guard.
+   - `bin/check_ci_parity` passed: clean clone bundle install, full suite
+     (465 runs, 2026 assertions, 0 failures, 0 errors, 6 skips), RuboCop,
+     calibration smoke, dependency-direction guard, and sample-app freeze guard.
+4. Kept analyzer behavior parked.
+   - No analyzer behavior, thresholds, statuses, suppressions,
+     default-output policy, or calibration targets changed in this slice.
 
-Agenticons used: `planner: release target plan`,
-`helper_worker: release target evidence`, and
-`reviewer: strategic design review`.
+Agenticons used: `planner: release verification plan`.
 
 ## Parked / Not Next
 
@@ -132,6 +127,7 @@ Agenticons used: `planner: release target plan`,
 
 | Date | Commit | Summary |
 | --- | --- | --- |
+| 2026-07-03 | `94fea40` | Prepared the `0.4.0` release target, version surfaces, release issue dry-run expectations, and draft release notes. |
 | 2026-07-03 | `c2e2c00` | Archived implementation notes, moved the tracked calibration manifest out of ignored `tmp/`, and removed stale local gem artifacts. |
 | 2026-07-03 | `2759102` | Recorded CI recovery and parity guard checkpoint. |
 | 2026-07-03 | `27c79a3` | Added the `bin/check_ci_parity` guard, checklist steps, and CI drift tests; first green CI run since 2026-06-30. |
