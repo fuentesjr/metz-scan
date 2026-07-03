@@ -6,7 +6,7 @@ Gem::Specification.new do |spec|
   spec.name        = "rubocop-metz"
   spec.version     = RuboCop::Metz::VERSION
   spec.authors     = ["Salvador Fuentes Jr"]
-  spec.email       = ["metz_scan@example.com"]
+  spec.email       = ["fuentesjr@duck.com"]
 
   spec.summary     = "Sandi-Metz-inspired RuboCop cops."
   spec.description = "A RuboCop plugin that ships custom cops capturing " \

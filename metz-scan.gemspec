@@ -6,7 +6,7 @@ Gem::Specification.new do |spec|
   spec.name        = "metz-scan"
   spec.version     = MetzScan::VERSION
   spec.authors     = ["Salvador Fuentes Jr"]
-  spec.email       = ["metz_scan@example.com"]
+  spec.email       = ["fuentesjr@duck.com"]
 
   spec.summary     = "Sandi-Metz-inspired CLI wrapper around RuboCop."
   spec.description = "metz-scan is the user-facing CLI for the Sandi-Metz-inspired " \

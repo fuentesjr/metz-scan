@@ -31,6 +31,7 @@ module MetzScan
 
     def assert_release_metadata(spec, package:)
       assert_equal ">= 3.3", spec.required_ruby_version.to_s
+      assert_equal ["fuentesjr@duck.com"], spec.email
       assert_equal "https://github.com/fuentesjr/metz-scan", spec.homepage
       assert_equal "https://github.com/users/fuentesjr/packages/rubygems/package/#{package}",
                    spec.metadata.fetch("github_package_uri")
