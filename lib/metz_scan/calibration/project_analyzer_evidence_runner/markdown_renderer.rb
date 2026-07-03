@@ -17,22 +17,44 @@ module MetzScan
         attr_reader :summary
 
         def sections
-          [header_section, target_section, rule_section, readiness_section, notable_findings_section,
-           breakdown_section].flatten
+          section_renderers.flat_map { |renderer| renderer.new(summary).call }
         end
 
-        def header_section
-          ["# Project analyzer evidence", "", *header_metadata_lines, "", *header_count_lines, ""]
+        def section_renderers
+          [HeaderMarkdown, TargetsMarkdown, RulesMarkdown, ReadinessMarkdown,
+           NotableFindingsMarkdown, BreakdownsMarkdown]
+        end
+      end
+
+      module MarkdownTableCells
+        private
+
+        def cell(value)
+          value.to_s.gsub("|", "\\|")
+        end
+      end
+
+      class HeaderMarkdown
+        def initialize(summary)
+          @summary = summary
         end
 
-        def header_metadata_lines
+        def call
+          ["# Project analyzer evidence", "", *metadata_lines, "", *count_lines, ""]
+        end
+
+        private
+
+        attr_reader :summary
+
+        def metadata_lines
           ["Generated: #{summary.fetch('generated_at')}",
            "Default output filter: #{summary.fetch('default_output')}",
            "Analyzer filter: #{analyzer_filter_label}", *targets_file_lines,
            "Fixture root: `#{summary.fetch('fixture_root')}`"]
         end
 
-        def header_count_lines
+        def count_lines
           ["Findings: #{summary.fetch('finding_count')}", "Offenses: #{summary.fetch('offense_count')}"]
         end
 
@@ -45,21 +67,31 @@ module MetzScan
           targets_file = summary["targets_file"]
           targets_file ? ["Targets file: `#{targets_file}`"] : []
         end
+      end
 
-        def target_section
-          ["## Targets", "", target_header, *target_rows, ""]
+      class TargetsMarkdown
+        def initialize(summary)
+          @summary = summary
         end
 
-        def target_header
+        def call
+          ["## Targets", "", header, *rows, ""]
+        end
+
+        private
+
+        attr_reader :summary
+
+        def header
           "| Target | Revision | Scan paths | Backend | Findings | Offenses |\n" \
             "| --- | --- | --- | --- | ---: | ---: |"
         end
 
-        def target_rows
-          summary.fetch("targets").map { |target| target_row(target) }
+        def rows
+          summary.fetch("targets").map { |target| row(target) }
         end
 
-        def target_row(target)
+        def row(target)
           "| #{target.fetch('name')} | #{revision_label(target)} | #{scan_paths_label(target)} | " \
             "#{target.fetch('index').fetch('backend')} | #{target.fetch('finding_count')} | " \
             "#{target.fetch('offense_count')} |"
@@ -72,97 +104,90 @@ module MetzScan
         def scan_paths_label(target)
           target.fetch("scan_paths").map { |path| "`#{path}`" }.join("<br>")
         end
+      end
 
-        def rule_section
-          rules = summary.fetch("project_analyzers").fetch("rules", [])
-          return ["## Rules", "", "No project-analyzer findings."] if rules.empty?
-
-          ["## Rules", "", rule_header, *rule_rows(rules)]
+      class RulesMarkdown
+        def initialize(summary)
+          @summary = summary
         end
 
-        def rule_header
+        def call
+          return ["## Rules", "", "No project-analyzer findings."] if rules.empty?
+
+          ["## Rules", "", header, *rows]
+        end
+
+        private
+
+        attr_reader :summary
+
+        def rules
+          summary.fetch("project_analyzers").fetch("rules", [])
+        end
+
+        def header
           "| Rule | Findings | Offenses | Status | Confidence | Severity |\n" \
             "| --- | ---: | ---: | --- | --- | --- |"
         end
 
-        def rule_rows(rules)
-          rules.map { |rule| rule_row(rule) }
+        def rows
+          rules.map { |rule| row(rule) }
         end
 
-        def rule_row(rule)
+        def row(rule)
           "| #{rule.fetch('cop_name')} | #{rule.fetch('finding_count')} | #{rule.fetch('offense_count')} | " \
             "#{rule.fetch('status', '?')} | #{rule.fetch('confidence', '?')} | " \
             "#{rule.fetch('triage_severity', '?')} |"
         end
+      end
 
-        def readiness_section
-          readiness = summary.fetch("project_analyzers").fetch("readiness", [])
-          return [] if readiness.empty?
+      class ReadinessMarkdown
+        include MarkdownTableCells
 
-          ["", "## Readiness", "", readiness_header, *readiness_rows(readiness), ""]
+        def initialize(summary)
+          @summary = summary
         end
 
-        def readiness_header
+        def call
+          return [] if readiness.empty?
+
+          ["", "## Readiness", "", header, *rows, ""]
+        end
+
+        private
+
+        attr_reader :summary
+
+        def readiness
+          summary.fetch("project_analyzers").fetch("readiness", [])
+        end
+
+        def header
           "| Rule | Disposition | Evidence | Next | Not next |\n" \
             "| --- | --- | --- | --- | --- |"
         end
 
-        def readiness_rows(readiness)
-          readiness.map { |entry| readiness_row(entry) }
+        def rows
+          readiness.map { |entry| row(entry) }
         end
 
-        def readiness_row(entry)
+        def row(entry)
           "| #{cell(entry.fetch('rule_id'))} | #{cell(entry.fetch('disposition'))} | " \
             "#{cell(entry.fetch('evidence'))} | #{cell(entry.fetch('next'))} | " \
             "#{cell(entry.fetch('not_next'))} |"
         end
-
-        def notable_findings_section
-          notable_findings = summary.fetch("notable_findings", [])
-          return [] if notable_findings.empty?
-
-          NotableFindingsMarkdown.new(notable_findings).call
-        end
-
-        def breakdown_section
-          breakdowns = summary.fetch("breakdowns", {})
-          return [] if breakdowns.empty?
-
-          ["", "## Breakdowns", "", *breakdown_subsections(breakdowns)]
-        end
-
-        def breakdown_subsections(breakdowns)
-          [breakdown_table("Confidence", breakdowns["confidence"]),
-           breakdown_table("Severity", breakdowns["triage_severity"]),
-           *metadata_breakdown_tables(breakdowns.fetch("metadata", {}))].compact
-        end
-
-        def metadata_breakdown_tables(metadata)
-          metadata.map { |key, values| breakdown_table("Metadata: `#{key}`", values) }
-        end
-
-        def breakdown_table(title, values)
-          return if values.to_a.empty?
-
-          ["### #{title}", "", "| Value | Findings |", "| --- | ---: |",
-           *values.map { |value| breakdown_row(value) }, ""]
-        end
-
-        def breakdown_row(value)
-          "| #{value.fetch('value')} | #{value.fetch('finding_count')} |"
-        end
-
-        def cell(value)
-          value.to_s.gsub("|", "\\|")
-        end
       end
 
       class NotableFindingsMarkdown
-        def initialize(notable_findings)
-          @notable_findings = notable_findings
+        include MarkdownTableCells
+
+        def initialize(summary)
+          @notable_findings = summary.fetch("notable_findings", [])
         end
 
         def call
+          return [] if notable_findings.empty?
+
           ["", "## Notable Findings", "", header, *rows, ""]
         end
 
@@ -190,11 +215,47 @@ module MetzScan
           occurrence = finding.fetch("occurrence", {})
           [occurrence["path"], occurrence["line"]].compact.join(":")
         end
+      end
 
-        def cell(value)
-          value.to_s.gsub("|", "\\|")
+      class BreakdownsMarkdown
+        def initialize(summary)
+          @breakdowns = summary.fetch("breakdowns", {})
+        end
+
+        def call
+          return [] if breakdowns.empty?
+
+          ["", "## Breakdowns", "", *subsections.flatten]
+        end
+
+        private
+
+        attr_reader :breakdowns
+
+        def subsections
+          [table("Confidence", breakdowns["confidence"]),
+           table("Severity", breakdowns["triage_severity"]),
+           *metadata_tables].compact
+        end
+
+        def metadata_tables
+          breakdowns.fetch("metadata", {}).map { |key, values| table("Metadata: `#{key}`", values) }
+        end
+
+        def table(title, values)
+          return if values.to_a.empty?
+
+          ["### #{title}", "", "| Value | Findings |", "| --- | ---: |",
+           *values.map { |value| row(value) }, ""]
+        end
+
+        def row(value)
+          "| #{value.fetch('value')} | #{value.fetch('finding_count')} |"
         end
       end
+
+      private_constant :MarkdownTableCells, :HeaderMarkdown, :TargetsMarkdown, :RulesMarkdown
+      private_constant :ReadinessMarkdown, :NotableFindingsMarkdown, :BreakdownsMarkdown
     end
   end
 end

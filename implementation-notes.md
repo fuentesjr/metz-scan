@@ -3006,3 +3006,62 @@ Evidence and decisions:
 - Do not implement classifier behavior, promote analyzers, retune thresholds,
   change default-output eligibility, add app-specific suppressions, or add
   another target from this evidence.
+
+## 2026-07-03: Markdown renderer maintenance recovery
+
+Task: start on the next six substantial tasks while continuing to use
+agenticons and track elapsed time.
+
+Change type: refactor.
+
+Verbatim task statement: "Start on the next 6 big tasks. Keep using agenticons
+and track the total time spent/taken to complete the tasks"
+
+Time tracking:
+
+- Started at `2026-07-03 08:27:49 -0700`.
+- Planning, focused implementation, and focused test/RuboCop checks completed
+  at `2026-07-03 08:33:17 -0700`.
+- Final validation/review elapsed time is recorded in the final summary for
+  this slice.
+
+Scope boundaries:
+
+- Restore repo-health by decomposing
+  `ProjectAnalyzerEvidenceRunner::MarkdownRenderer`.
+- Preserve `MarkdownRenderer.new(summary).call` as the public rendering
+  interface used by artifact writing.
+- Preserve generated Markdown output exactly for the representative section
+  mix; no analyzer behavior, readiness semantics, target manifest, threshold,
+  promotion, or suppression changes.
+
+Agenticons:
+
+- `planner: six-task slice selection` recommended MarkdownRenderer
+  decomposition and full RuboCop recovery as the next coherent non-detector
+  maintenance slice.
+- `helper_worker: maintenance surface check` independently confirmed the known
+  guardrail gap was RuboCop class length on `MarkdownRenderer`; focused tests
+  and full tests were otherwise healthy before this slice.
+
+Tasks completed:
+
+- Confirmed the current failing guardrail was `MarkdownRenderer` class length
+  (`116/100`) under both `Metrics/ClassLength` and `Metz/ClassesTooLong`.
+- Added an exact representative Markdown fixture covering header metadata,
+  target rows, rule rows, readiness, notable findings, pipe escaping, and
+  breakdowns.
+- Split Markdown rendering by section boundary into small internal renderers:
+  header, targets, rules, readiness, notable findings, and breakdowns.
+- Centralized table-cell escaping narrowly for the sections that need it.
+- Kept artifact writer and runner APIs unchanged.
+- Ran focused renderer and evidence-runner tests plus targeted RuboCop after
+  the split.
+
+Evidence and decisions:
+
+- The exact-output fixture intentionally preserves the existing double blank
+  line between readiness/notable and notable/breakdown sections, because this
+  slice is maintenance and should not churn generated artifacts.
+- The renderer remains a private calibration artifact implementation detail;
+  no new public API was introduced.

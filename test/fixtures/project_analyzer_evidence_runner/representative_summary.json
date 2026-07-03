@@ -1,0 +1,85 @@
+{
+  "generated_at": "2026-07-03T15:00:00Z",
+  "default_output": false,
+  "analyzer_filter": [
+    "MetzProject/RepeatedQueryCriteria"
+  ],
+  "targets_file": "/tmp/targets.yml",
+  "fixture_root": "/tmp/apps",
+  "finding_count": 2,
+  "offense_count": 2,
+  "targets": [
+    {
+      "name": "sample",
+      "git": {
+        "revision": "abcdef1234567890"
+      },
+      "scan_paths": [
+        "/tmp/apps/sample/app",
+        "/tmp/apps/sample/lib"
+      ],
+      "index": {
+        "backend": "rubydex"
+      },
+      "finding_count": 2,
+      "offense_count": 2
+    }
+  ],
+  "project_analyzers": {
+    "rules": [
+      {
+        "cop_name": "MetzProject/RepeatedQueryCriteria",
+        "finding_count": 2,
+        "offense_count": 2,
+        "status": "candidate",
+        "confidence": "medium",
+        "triage_severity": "manual review"
+      }
+    ],
+    "readiness": [
+      {
+        "rule_id": "MetzProject/RepeatedQueryCriteria",
+        "disposition": "Candidate-only | opt-in",
+        "evidence": "2 findings",
+        "next": "Keep | parked",
+        "not_next": "Do not add more query forms"
+      }
+    ]
+  },
+  "notable_findings": [
+    {
+      "target": "sample",
+      "rule_id": "MetzProject/RepeatedQueryCriteria",
+      "confidence": "medium",
+      "triage_severity": "manual review",
+      "category": "query|criteria",
+      "occurrence": {
+        "path": "app/models/order.rb",
+        "line": 12
+      },
+      "message": "Repeated criteria | need named query"
+    }
+  ],
+  "breakdowns": {
+    "confidence": [
+      {
+        "value": "medium",
+        "finding_count": 2
+      }
+    ],
+    "triage_severity": [
+      {
+        "value": "manual review",
+        "finding_count": 2
+      }
+    ],
+    "metadata": {
+      "project_analyzer_category": [
+        {
+          "value": "query",
+          "finding_count": 2
+        }
+      ]
+    }
+  }
+}
