@@ -46,9 +46,8 @@ artifact-pipeline reliability, and package/release metadata hardening.
   sections are checked; tag, GitHub release, publish, post-publish smoke, and
   final cleanup sections remain unchecked.
 - Local branch state: pushed release-prep commits are on `origin/main`; local
-  tracker/checklist checkpoint commits are ahead until pushed.
-- Latest checkpoint window: 13:42:28-14:53:50 -0700, 1h 11m 22s wall-clock
-  elapsed, including the interrupted approval pause.
+  tracker/checklist checkpoint commits remain ahead until pushed.
+- Latest checkpoint window: 15:09:32-15:12:34 -0700, 3m 02s elapsed.
 - Working tree expectation: keep tracked work clean before starting another
   slice; keep ignored `logs/` notes out of commits unless explicitly requested.
 
@@ -56,7 +55,7 @@ artifact-pipeline reliability, and package/release metadata hardening.
 
 | Workstream | Status | Current State | Next Move |
 | --- | --- | --- | --- |
-| Release readiness | Active | Next target is `0.4.0`; both gems and the lockfile report `0.4.0`; local and remote CI checks are green for `74be52f`; issue #30's verification, package metadata, and smoke-test sections are checked. | Pause at the explicit release authorization gate before tagging, creating a GitHub release, or publishing packages. |
+| Release readiness | Active | Next target is `0.4.0`; both gems and the lockfile report `0.4.0`; local and remote CI checks are green; issue #30's verification, package metadata, and smoke-test sections are checked; `v0.4.0` tag/release/package versions are absent. | Pause at the explicit release authorization gate before tagging, creating a GitHub release, or publishing packages. |
 | Calibration artifact pipeline | Healthy | Markdown output, artifact write path, sample-app calibration smoke, and the tracked target manifest under `docs/calibration/` are covered. | Maintain; change only when artifact or target-manifest behavior changes. |
 | Analyzer behavior | Parked | Generic classifier checkpoint concluded current evidence is too mixed for behavior changes. | Reopen only with new generic evidence, not app-specific suppressions. |
 | Calibration evidence | Watching | Redmine, Rubygems.org, ManageIQ, and Foreman evidence has been consolidated. | Do not add another target by default. |
@@ -64,21 +63,26 @@ artifact-pipeline reliability, and package/release metadata hardening.
 
 ## Next Queue
 
-1. Decide whether to authorize the `v0.4.0` source tag and GitHub Release.
+1. Obtain explicit release authorization or decline.
    - Why now: pre-publish release checks are green and recorded in issue #30,
      so the next release step leaves ordinary verification and enters a public
      release action.
-   - Definition of done: user explicitly approves or declines tag/release work,
-     and the tracker records the decision or blocker.
+   - Definition of done: user explicitly approves or declines pushing local
+     tracker commits, creating and pushing `v0.4.0`, creating the GitHub
+     Release, publishing both packages, and running post-publish smoke; the
+     tracker records the decision or blocker.
    - Files likely touched: `PROJECT_TRACKER.md`, issue #30.
-   - Not in scope: creating a tag or GitHub Release before approval.
+   - Not in scope: treating a generic "next tasks" request as authorization for
+     tag, GitHub Release, credential refresh, or package publish.
 
-2. If authorized, perform the source tag and GitHub Release steps.
+2. If authorized, sync local tracker commits and perform the source tag and
+   GitHub Release steps.
    - Why now: issue #30's next unchecked section is Source Tag and GitHub
      Release.
-   - Definition of done: fetch tags, confirm `v0.4.0` does not already exist,
-     create and push the annotated tag, create the GitHub Release from
-     `docs/releases/v0.4.0.md`, and record links in issue #30 and the tracker.
+   - Definition of done: push local tracker commits if authorized, watch CI,
+     confirm `v0.4.0` does not already exist, create and push the annotated
+     tag, create the GitHub Release from `docs/releases/v0.4.0.md`, and record
+     links in issue #30 and the tracker.
    - Files likely touched: `PROJECT_TRACKER.md`, issue #30; no source files
      unless release notes expose a concrete blocker.
    - Not in scope: publishing gems unless separately authorized.
@@ -107,41 +111,32 @@ artifact-pipeline reliability, and package/release metadata hardening.
 
 ## Latest Slice Checkpoint
 
-Slice: 2026-07-03 v0.4.0 pre-publish package and smoke checks.
+Slice: 2026-07-03 v0.4.0 release authorization preflight.
 
-Window: 13:42:28-14:53:50 -0700, 1h 11m 22s wall-clock elapsed, including
-the interrupted approval pause.
+Window: 15:09:32-15:12:34 -0700, 3m 02s elapsed.
 
-1. Completed package metadata and gem build checks from issue #30.
-   - Both version commands printed `0.4.0`.
-   - Release metadata tests passed: 4 runs, 16 assertions, 0 failures,
-     0 errors.
-   - Create-release-issue tests passed: 2 runs, 18 assertions, 0 failures,
-     0 errors.
-   - `gem build metz-scan.gemspec` and `gem build rubocop-metz.gemspec`
-     produced `0.4.0` gems without warnings; both gem file lists were
-     inspected.
-2. Completed CLI and output-format smoke checks from issue #30.
-   - `bundle exec metz-scan --help`, `rules`, `project-analyzers`, and
-     `explain Metz/DemeterTrainWreck` passed.
-   - Fixture scan smoke produced expected findings and exit `1` for text,
-     project-analyzer text, JSON, SARIF, and GitHub annotations; JSON parsed as
-     `metadata`/`files`/`summary`, SARIF parsed as version `2.1.0`, and
-     GitHub annotations emitted 4 warning lines.
-   - Dry-run auto-fix exited `1` for remaining findings with RuboCop cache
-     redirected to temp storage, and `diff -qr` proved the copied fixture was
-     unchanged.
-3. Prepared the release authorization checkpoint.
-   - Issue #30 has the Verification, Package Metadata, and Smoke Tests sections
-     checked.
-   - Source tag, GitHub Release, publish, post-publish smoke, and final cleanup
-     remain unchecked and require explicit approval before proceeding.
-   - Generated gem files were removed after inspection.
+1. Re-ran the local CI-parity preflight before any push.
+   - `bin/check_ci_parity` passed on a clean clone: 465 runs, 2026 assertions,
+     0 failures, 0 errors, 6 skips; RuboCop inspected 196 files with no
+     offenses; calibration smoke, dependency-direction guard, and sample-app
+     freeze guard passed.
+2. Checked release artifact absence and readiness.
+   - Local `v0.4.0` tag is absent.
+   - Remote `origin` has no `v0.4.0` tag.
+   - `gh release view v0.4.0` reports no existing GitHub Release.
+   - GitHub Packages version queries found no existing `0.4.0` package version
+     for `rubocop-metz` or `metz-scan`.
+3. Preserved the release authorization boundary.
+   - Read-only checks confirmed issue #30 is open and
+     `docs/releases/v0.4.0.md` is available.
+   - A generic "start next tasks" request is not treated as approval to push
+     tracker commits, tag, create a GitHub Release, refresh package
+     credentials, publish gems, or mark public release checklist sections done.
 4. Kept analyzer behavior parked.
    - No analyzer behavior, thresholds, statuses, suppressions,
      default-output policy, or calibration targets changed in this slice.
 
-Agenticons used: `helper_worker: release checklist sanity pass`.
+Agenticons used: `planner: release authorization gate`.
 
 ## Parked / Not Next
 
@@ -158,6 +153,7 @@ Agenticons used: `helper_worker: release checklist sanity pass`.
 
 | Date | Commit | Summary |
 | --- | --- | --- |
+| 2026-07-03 | `8de602f` | Recorded `v0.4.0` pre-publish package, CLI, output-format, and dry-run auto-fix smoke checks. |
 | 2026-07-03 | `a42229f` | Recorded the `v0.4.0` release issue checkpoint after pushing release-prep commits and opening issue #30. |
 | 2026-07-03 | `74be52f` | Pushed and verified the local `v0.4.0` release-prep checkpoint; remote CI passed and issue #30 was opened. |
 | 2026-07-03 | `94fea40` | Prepared the `0.4.0` release target, version surfaces, release issue dry-run expectations, and draft release notes. |
