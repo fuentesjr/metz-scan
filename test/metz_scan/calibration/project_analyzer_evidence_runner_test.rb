@@ -166,7 +166,7 @@ module MetzScan
 
         assert_equal ["sample_app"], target_names(summary)
         assert_equal [active_project_index_backend], target_index_backends(summary)
-        assert summary.fetch("finding_count").positive?
+        assert_sample_app_finding_count(summary)
       end
 
       private
@@ -244,6 +244,17 @@ module MetzScan
 
       def summarize_default_output(dir)
         ProjectAnalyzerEvidenceRunner.summarize(paths: [dir], default_output: true)
+      end
+
+      # sample_app findings require a real project index backend; without one
+      # (the CI default, where optional rubydex is not installed) the real
+      # analyzer path must still run end-to-end and report zero findings.
+      def assert_sample_app_finding_count(summary)
+        if active_project_index_backend == "null"
+          assert_equal 0, summary.fetch("finding_count")
+        else
+          assert_predicate summary.fetch("finding_count"), :positive?
+        end
       end
 
       def sample_app_path
