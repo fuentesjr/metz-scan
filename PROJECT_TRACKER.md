@@ -37,14 +37,15 @@ artifact-pipeline reliability, and package/release metadata hardening.
 ## Current Snapshot
 
 - Date: 2026-07-03.
-- Latest pushed baseline: `2759102 Record CI recovery and parity guard checkpoint`.
-- CI state: run `28680896907` for `2759102` succeeded. Earlier runs for
+- Latest pushed baseline: `74be52f Record v0.4.0 release verification`.
+- CI state: run `28682228548` for `74be52f` succeeded. Earlier runs for
   `c0a01f5` (`28672899400`) and `64bceea` (`28680427556`) failed on
   calibration evidence runner environment assumptions, both since fixed.
-- Local branch state: `main` has local release-readiness housekeeping,
-  `v0.4.0` release-target prep, and release-verification checkpoint work ahead
-  of `origin/main`.
-- Latest checkpoint window: 13:25:35-13:28:57 -0700, 3m 22s elapsed.
+- Release checklist issue: [#30](https://github.com/fuentesjr/metz-scan/issues/30),
+  `Release v0.4.0`, is open.
+- Local branch state: pushed release-prep commits are on `origin/main`; this
+  tracker checkpoint is local until pushed.
+- Latest checkpoint window: 13:33:16-13:36:23 -0700, 3m 07s elapsed.
 - Working tree expectation: keep tracked work clean before starting another
   slice; keep ignored `logs/` notes out of commits unless explicitly requested.
 
@@ -52,7 +53,7 @@ artifact-pipeline reliability, and package/release metadata hardening.
 
 | Workstream | Status | Current State | Next Move |
 | --- | --- | --- | --- |
-| Release readiness | Active | Next target is `0.4.0`; both gems and the lockfile report `0.4.0`; local full suite, RuboCop, guards, release dry-run, and CI-parity checks are green. | Push, watch CI, then open/update the release checklist issue. |
+| Release readiness | Active | Next target is `0.4.0`; both gems and the lockfile report `0.4.0`; local and remote CI checks are green for `74be52f`; release checklist issue #30 is open. | Work issue #30's pre-publish verification checklist, starting with package metadata and smoke tests. |
 | Calibration artifact pipeline | Healthy | Markdown output, artifact write path, sample-app calibration smoke, and the tracked target manifest under `docs/calibration/` are covered. | Maintain; change only when artifact or target-manifest behavior changes. |
 | Analyzer behavior | Parked | Generic classifier checkpoint concluded current evidence is too mixed for behavior changes. | Reopen only with new generic evidence, not app-specific suppressions. |
 | Calibration evidence | Watching | Redmine, Rubygems.org, ManageIQ, and Foreman evidence has been consolidated. | Do not add another target by default. |
@@ -60,24 +61,37 @@ artifact-pipeline reliability, and package/release metadata hardening.
 
 ## Next Queue
 
-1. Push and verify CI for `0.4.0` release prep.
-   - Why now: local release-readiness checks are green, including
-     `bin/check_ci_parity`, but `origin/main` has not seen `c2e2c00`,
-     `94fea40`, or this verification checkpoint.
-   - Definition of done: branch is synced with `origin/main`, the latest CI run
-     is green, and any failure is triaged before more release work.
-   - Files likely touched: none unless a check exposes a concrete issue.
-   - Not in scope: publishing gems or creating a GitHub release.
+1. Complete package metadata and gem build checks from issue #30.
+   - Why now: the release checklist issue is open and remote CI is green, so
+     the next release risk is package content rather than source correctness.
+   - Definition of done: version commands, release metadata tests,
+     create-release-issue tests, both gem builds, and gem file inspections pass;
+     generated gem files are removed unless explicitly retained.
+   - Files likely touched: none unless packaging checks expose a concrete issue.
+   - Not in scope: publishing gems, creating tags, or creating a GitHub release.
 
-2. Open or update the `Release v0.4.0` checklist issue after CI is green.
-   - Why now: `bin/create_release_issue --dry-run` now renders the correct
-     `0.4.0` versions and the release notes have a draft source.
-   - Definition of done: GitHub issue exists with the checklist for `v0.4.0`
-     or the tracker records the exact blocker.
-   - Files likely touched: GitHub issue text, possibly `PROJECT_TRACKER.md`.
-   - Not in scope: publishing gems unless explicitly requested.
+2. Complete CLI and output-format smoke checks from issue #30.
+   - Why now: CI covers core behavior, but the release checklist still needs
+     user-facing command, fixture scan, and dry-run auto-fix evidence.
+   - Definition of done: CLI help/rules/explain commands pass; sample fixture
+     scans produce well-formed text, project-analyzer text, JSON, SARIF, and
+     GitHub annotation output; dry-run auto-fix leaves fixtures unchanged.
+   - Files likely touched: none unless smoke checks expose a concrete issue.
+   - Not in scope: changing analyzer findings just because smoke fixtures emit
+     expected warnings.
 
-3. Keep analyzer behavior parked during release prep.
+3. Prepare a release authorization checkpoint after pre-publish checks.
+   - Why now: tag, GitHub release, and package publish steps are irreversible
+     enough to require an explicit human decision after checklist evidence is
+     collected.
+   - Definition of done: issue #30 records completed pre-publish checks and the
+     tracker clearly states whether the project is ready for tag/publish
+     authorization or what blocker remains.
+   - Files likely touched: `PROJECT_TRACKER.md`, possibly issue #30 comments.
+   - Not in scope: tagging, publishing, or creating a GitHub release without
+     explicit approval.
+
+4. Keep analyzer behavior parked during release prep.
    - Why now: `0.4.0` is packaging already-landed candidate analyzer and
      reporting work; it is not a signal to expand or promote analyzers.
    - Definition of done: release work changes packaging, docs, checks, or issue
@@ -88,29 +102,29 @@ artifact-pipeline reliability, and package/release metadata hardening.
 
 ## Latest Slice Checkpoint
 
-Slice: 2026-07-03 v0.4.0 local release verification.
+Slice: 2026-07-03 v0.4.0 push, CI, and checklist issue.
 
-Window: 13:25:35-13:28:57 -0700, 3m 22s elapsed.
+Window: 13:33:16-13:36:23 -0700, 3m 07s elapsed.
 
-1. Ran final local release checks for the committed `0.4.0` prep head.
-   - `bundle exec rake` passed: 465 runs, 2055 assertions, 0 failures,
-     0 errors, 2 skips.
-   - `bundle exec rubocop` passed: 196 files inspected, no offenses.
-2. Ran release-specific guards.
-   - `bin/check_dependency_direction`, `bin/check_sample_app_frozen`,
-     `test/metz_scan/release_metadata_test.rb`, and
-     `test/metz_scan/create_release_issue_test.rb` passed.
-   - `bin/create_release_issue --dry-run` renders `Release v0.4.0` with both
+1. Pushed the local release-prep commits upstream.
+   - `main` and `origin/main` now point at
+     `74be52f Record v0.4.0 release verification`.
+   - GitHub reported direct-push branch-protection bypass notices for PR-only
+     changes and the expected required `test` status check.
+2. Verified remote CI for the pushed head.
+   - CI run `28682228548` passed for `74be52f`: tests, RuboCop, calibration
+     artifact smoke, GitHub annotations smoke, dependency-direction guard, and
+     sample-app freeze guard.
+3. Opened the release checklist issue.
+   - `bin/create_release_issue --dry-run` rendered `Release v0.4.0` with both
      gem versions at `0.4.0`.
-3. Ran the clean-clone CI-parity guard.
-   - `bin/check_ci_parity` passed: clean clone bundle install, full suite
-     (465 runs, 2026 assertions, 0 failures, 0 errors, 6 skips), RuboCop,
-     calibration smoke, dependency-direction guard, and sample-app freeze guard.
+   - `bin/create_release_issue` created
+     [#30](https://github.com/fuentesjr/metz-scan/issues/30), `Release v0.4.0`.
 4. Kept analyzer behavior parked.
    - No analyzer behavior, thresholds, statuses, suppressions,
      default-output policy, or calibration targets changed in this slice.
 
-Agenticons used: `planner: release verification plan`.
+Agenticons used: `planner: release issue sequence`.
 
 ## Parked / Not Next
 
@@ -127,6 +141,7 @@ Agenticons used: `planner: release verification plan`.
 
 | Date | Commit | Summary |
 | --- | --- | --- |
+| 2026-07-03 | `74be52f` | Pushed and verified the local `v0.4.0` release-prep checkpoint; remote CI passed and issue #30 was opened. |
 | 2026-07-03 | `94fea40` | Prepared the `0.4.0` release target, version surfaces, release issue dry-run expectations, and draft release notes. |
 | 2026-07-03 | `c2e2c00` | Archived implementation notes, moved the tracked calibration manifest out of ignored `tmp/`, and removed stale local gem artifacts. |
 | 2026-07-03 | `2759102` | Recorded CI recovery and parity guard checkpoint. |
