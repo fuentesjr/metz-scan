@@ -39,8 +39,8 @@ tooling spikes that do not commit the project to new maintenance surfaces.
 ## Current Snapshot
 
 - Date: 2026-07-03.
-- Latest pushed baseline: `60a7386 Record post-release feedback sweep`.
-- CI state: run `28688031787` for `60a7386` succeeded. Earlier runs for
+- Latest pushed baseline: `797ade8 Record Sorbet adoption spike`.
+- CI state: run `28689093989` for `797ade8` succeeded. Earlier runs for
   `c0a01f5` (`28672899400`) and `64bceea` (`28680427556`) failed on
   calibration evidence runner environment assumptions, both since fixed.
 - Release checklist issue: [#30](https://github.com/fuentesjr/metz-scan/issues/30),
@@ -49,9 +49,10 @@ tooling spikes that do not commit the project to new maintenance surfaces.
   published, both GitHub Packages gems are published, and
   `bin/check_published_gem 0.4.0` passed.
 - Local branch state: release tag, release target, release completion,
-  package-monitor checkpoint, and feedback-sweep checkpoint are pushed to
-  `origin/main`; this Sorbet spike report checkpoint is local until pushed.
-- Latest checkpoint window: 16:37:04-17:10:42 -0700, 33m 38s elapsed.
+  package-monitor checkpoint, feedback-sweep checkpoint, and Sorbet spike
+  report are pushed to `origin/main`; this issue-sync tracker checkpoint is
+  local until pushed.
+- Latest checkpoint window: 17:19:23-17:27:30 -0700, 8m 07s elapsed.
 - Working tree expectation: keep tracked work clean before starting another
   slice; keep ignored `logs/` notes out of commits unless explicitly requested.
 
@@ -59,11 +60,11 @@ tooling spikes that do not commit the project to new maintenance surfaces.
 
 | Workstream | Status | Current State | Next Move |
 | --- | --- | --- | --- |
-| Release readiness | Complete | `v0.4.0` is tagged, released on GitHub, published to GitHub Packages for both gems, verified with repeated post-publish smoke, issue #30 is closed, and post-release CI for `60a7386` is green. | Monitor package installation feedback; no `0.4.x` follow-up milestone is open without a concrete defect. |
+| Release readiness | Complete | `v0.4.0` is tagged, released on GitHub, published to GitHub Packages for both gems, verified with repeated post-publish smoke, issue #30 is closed, and post-release CI for `797ade8` is green. | Monitor package installation feedback; no `0.4.x` follow-up milestone is open without a concrete defect. |
 | Calibration artifact pipeline | Healthy | Markdown output, artifact write path, sample-app calibration smoke, and the tracked target manifest under `docs/calibration/` are covered. | Maintain; change only when artifact or target-manifest behavior changes. |
-| Analyzer behavior | Parked | Generic classifier checkpoint concluded current evidence is too mixed for behavior changes. | Reopen only with new generic evidence, not app-specific suppressions. |
+| Analyzer behavior | Parked | Generic classifier checkpoint concluded current evidence is too mixed for behavior changes; #27 and #28 now have explicit evidence bars for any future implementation slice. | Reopen only with new generic evidence, not app-specific suppressions. |
 | Calibration evidence | Watching | Redmine, Rubygems.org, ManageIQ, and Foreman evidence has been consolidated. | Do not add another target by default. |
-| Sorbet adoption spike | Complete | Issue #26 was evaluated in a disposable workspace. The report recommends not adopting now: a narrow static setup is possible, but generated RBI churn, command policy, fixture scope, and runtime signature implications outweigh observed value. | Do not add Sorbet unless a concrete type-related defect, contributor ergonomics need, or stable public API typing requirement appears. |
+| Sorbet adoption spike | Complete | Issue #26 was evaluated in a disposable workspace, documented, synced back to GitHub, and closed. The report recommends not adopting now: a narrow static setup is possible, but generated RBI churn, command policy, fixture scope, and runtime signature implications outweigh observed value. | Do not add Sorbet unless a concrete type-related defect, contributor ergonomics need, or stable public API typing requirement appears. |
 | Docs/adoption | Stable | README points contributors and agents to this tracker; old implementation notes are archived, current notes are short, and the Sorbet spike report records the tooling decision. | Keep docs changes minimal and evidence-led. |
 
 ## Next Queue
@@ -78,16 +79,7 @@ tooling spikes that do not commit the project to new maintenance surfaces.
      appears.
    - Not in scope: speculative package changes without a failing install path.
 
-2. Optionally sync the Sorbet spike decision back to issue #26.
-   - Why now: the local report completes the investigation acceptance criteria,
-     but the GitHub issue is still the public coordination surface.
-   - Definition of done: comment on #26 with the report link and recommendation,
-     then close or explicitly leave it open for future revisit.
-   - Files likely touched: none unless the report needs wording cleanup.
-   - Not in scope: adding Sorbet dependencies, RBIs, runtime signatures, or CI
-     typecheck gates.
-
-3. Keep #25 dogfood CI enforcement deferred until its trigger appears.
+2. Keep #25 dogfood CI enforcement deferred until its trigger appears.
    - Why now: #25 explicitly waits for collaboration expansion; current evidence
      still shows no need to add optional Rubydex setup and dogfood runtime to CI.
    - Definition of done: leave #25 open but inactive unless collaboration
@@ -95,63 +87,59 @@ tooling spikes that do not commit the project to new maintenance surfaces.
    - Files likely touched: none.
    - Not in scope: adding a dogfood CI gate just because the release shipped.
 
-4. Keep analyzer issues #27/#28 and analyzer behavior parked unless new
+3. Keep analyzer issues #27/#28 and analyzer behavior parked unless new
    evidence appears.
    - Why now: `0.4.0` shipped existing candidate analyzers and release
-     hardening; it did not change the DeepInheritanceTree or RepeatedBranching
-     evidence boundary.
-   - Definition of done: future work resumes from concrete evidence rather than
-     the fact that the release shipped.
+     hardening; issue comments now define the DeepInheritanceTree and
+     RepeatedBranching evidence bars without changing behavior.
+   - Definition of done: future work resumes from concrete cross-project
+     evidence rather than the fact that the release shipped.
    - Files likely touched: none.
    - Not in scope: analyzer behavior, thresholds, statuses, suppressions,
      default-output policy, or target intake.
 
+4. Decide the next non-release work only after new evidence appears.
+   - Why now: #26 is closed, #25 is trigger-gated, #27/#28 are evidence-gated,
+     and package feedback is clean.
+   - Definition of done: keep the queue empty of implementation work until a
+     package defect, collaboration trigger, or cross-project analyzer evidence
+     appears.
+   - Files likely touched: none.
+   - Not in scope: starting speculative detector, CI, or tooling changes to keep
+     the queue busy.
+
 ## Latest Slice Checkpoint
 
-Slice: 2026-07-03 push verification and Sorbet adoption spike.
+Slice: 2026-07-03 pushed Sorbet spike and synced GitHub issue queue.
 
-Window: 16:37:04-17:10:42 -0700, 33m 38s elapsed.
+Window: 17:19:23-17:27:30 -0700, 8m 07s elapsed.
 
-1. Pushed and verified the feedback-sweep checkpoint.
+1. Pushed and verified the Sorbet spike checkpoint.
    - `bin/check_ci_parity` passed before push: 465 runs, 2026 assertions,
      0 failures, 0 errors, 6 skips; RuboCop inspected 196 files with no
      offenses; calibration smoke and guard scripts passed.
-   - `60a7386 Record post-release feedback sweep` was pushed to
+   - `797ade8 Record Sorbet adoption spike` was pushed to
      `origin/main`.
-   - CI run `28688031787` passed for `60a7386`.
-2. Rechecked package and baseline state before the spike.
-   - GitHub Packages still reports `rubocop-metz 0.4.0` and `metz-scan 0.4.0`.
-   - `bin/check_published_gem 0.4.0` passed again from a clean temporary
-     consumer project.
-   - `bin/check_dogfood` passed with the accepted project-analyzer baseline:
-     0 findings.
-   - Baseline inventory recorded Ruby 4.0.1, Bundler 4.0.8, 108 production Ruby
-     files under `lib/` and `rubocop-metz/lib/`, and no existing Sorbet/Tapioca
-     dependencies.
-3. Completed the bounded Sorbet spike from issue #26.
-   - Disposable workspace: `/private/tmp/metz-scan-sorbet-spike-20260703-1643`.
-   - `sorbet 0.6.13323` and `tapioca 0.19.2` installed only in the disposable
-     bundle.
-   - `tapioca init` generated 34 RBI files and 165,751 RBI lines, including 31
-     gem RBIs, 2 annotation RBIs, and a 25-line `todo.rbi` mostly for fixture
-     constants.
-   - Product-code-only `srb tc` passed only after using a writable temp HOME,
-     `SRB_SKIP_GEM_RBIS=1`, and ignoring test fixtures/tests.
-   - Five product-layer candidates were evaluated at `# typed: true`; three
-     passed cleanly (`Occurrence`, `RubyFileEnumerator`, `SarifSeverity`) and
-     two exposed adoption friction (`ProjectAnalyzerTriage`,
-     `OffenseExtractor`).
-4. Recorded the decision and kept analyzer behavior parked.
-   - Added `docs/spikes/sorbet-issue-26.md` with the detailed evidence and
-     recommendation: do not adopt Sorbet now.
-   - No Sorbet dependencies, RBIs, runtime signatures, CI gates, or production
-     code changes were added to the repo.
-   - No analyzer behavior, thresholds, statuses, suppressions,
-     default-output policy, or calibration targets changed in this slice.
-   - #27 and #28 remain useful but inactive until new generic evidence justifies
-     DeepInheritanceTree or RepeatedBranching work.
+   - CI run `28689093989` passed for `797ade8` in 1m 22s.
+2. Closed the Sorbet spike loop on GitHub.
+   - Commented on #26 with the report path, commit, CI run, recommendation, and
+     key evidence.
+   - Closed #26 as completed.
+   - Confirmed no Sorbet, Tapioca, `sorbet-runtime`, RBI, runtime signature, CI
+     gate, or production code changes exist in the working tree.
+3. Reaffirmed deferred dogfood CI enforcement.
+   - Commented on #25 that it remains open and trigger-gated on collaboration
+     expansion or a concrete CI enforcement need.
+   - Did not change CI workflow, optional Rubydex setup, or dogfood runtime.
+4. Tightened analyzer follow-up evidence bars without changing behavior.
+   - Commented on #27 with a cross-project evidence bar for future
+     DeepInheritanceTree framework-root work.
+   - Commented on #28 with a cross-project evidence bar for future
+     RepeatedBranching generic branch-subject work.
+   - Open issue queue is now #25, #27, and #28; all are parked until their
+     trigger conditions appear.
 
-Agenticons used: `planner: Sorbet spike plan`.
+Agenticons used: `planner: next queue selection`.
 
 ## Parked / Not Next
 
@@ -168,7 +156,8 @@ Agenticons used: `planner: Sorbet spike plan`.
 
 | Date | Commit | Summary |
 | --- | --- | --- |
-| 2026-07-03 | `this commit` | Recorded the issue #26 Sorbet adoption spike, recommended not adopting now, and updated the next queue accordingly. |
+| 2026-07-03 | `this commit` | Recorded the pushed Sorbet spike verification, closed #26, and updated the issue queue evidence bars. |
+| 2026-07-03 | `797ade8` | Recorded the issue #26 Sorbet adoption spike, recommended not adopting now, and updated the next queue accordingly. |
 | 2026-07-03 | `60a7386` | Recorded the post-release feedback sweep and kept #26 as the next bounded non-release work item before this spike. |
 | 2026-07-03 | `64fa605` | Recorded the post-release package monitor checkpoint and deferred a `0.4.x` milestone without a concrete defect. |
 | 2026-07-03 | `c9bcb5e` | Recorded `v0.4.0` release completion, release links, package links, and closed issue #30. |
