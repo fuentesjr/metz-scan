@@ -39,22 +39,23 @@ tooling spikes that do not commit the project to new maintenance surfaces.
 ## Current Snapshot
 
 - Date: 2026-07-03.
-- Latest pushed baseline: `543dfe2 Record issue queue sync`.
-- CI state: run `28689484542` for `543dfe2` succeeded. Earlier runs for
-  `c0a01f5` (`28672899400`) and `64bceea` (`28680427556`) failed on
+- Latest pushed baseline: `d1d6ebb Record post-handoff continuation sweep`.
+- CI state: run `28691801501` for `d1d6ebb` succeeded in 1m 20s. Earlier runs
+  for `c0a01f5` (`28672899400`) and `64bceea` (`28680427556`) failed on
   calibration evidence runner environment assumptions, both since fixed.
 - Release checklist issue: [#30](https://github.com/fuentesjr/metz-scan/issues/30),
   `Release v0.4.0`, is closed with the checklist complete.
 - Release state: `v0.4.0` is tagged at `937afd8`, the GitHub Release is
   published, both GitHub Packages gems are published, and
-  `bin/check_published_gem 0.4.0` passed again in the post-handoff
-  continuation sweep.
+  `bin/check_published_gem 0.4.0` passed again after the upstream push.
 - Local branch state: release tag, release target, release completion,
   package-monitor checkpoint, feedback-sweep checkpoint, Sorbet spike report,
-  and issue-sync tracker checkpoint are pushed to `origin/main`; the handoff
-  checkpoint and this continuation tracker checkpoint are local until pushed.
-- Latest checkpoint window: 17:45:39-19:06:46 -0700, 1h 21m 07s elapsed from
-  the local handoff checkpoint to the completed continuation and parity sweep.
+  issue-sync tracker checkpoint, handoff checkpoint, and continuation sweep are
+  pushed to `origin/main`; this next-four-tasks tracker checkpoint is local
+  until pushed.
+- Latest checkpoint window: 19:11:34-19:32:02 -0700, 20m 28s elapsed through
+  upstream push verification, the four evidence-gated task checks, and tracker
+  review.
 - Working tree expectation: keep tracked work clean before starting another
   slice; keep ignored `logs/` notes out of commits unless explicitly requested.
 
@@ -62,10 +63,10 @@ tooling spikes that do not commit the project to new maintenance surfaces.
 
 | Workstream | Status | Current State | Next Move |
 | --- | --- | --- | --- |
-| Release readiness | Complete | `v0.4.0` is tagged, released on GitHub, published to GitHub Packages for both gems, verified with repeated post-publish smoke, issue #30 is closed, and post-release CI for `543dfe2` is green. | Monitor package installation feedback; no `0.4.x` follow-up milestone is open without a concrete defect. |
+| Release readiness | Complete | `v0.4.0` is tagged, released on GitHub, published to GitHub Packages for both gems, verified with repeated post-publish smoke, issue #30 is closed, and post-release CI for `d1d6ebb` is green. | Monitor package installation feedback; no `0.4.x` follow-up milestone is open without a concrete defect. |
 | Calibration artifact pipeline | Healthy | Markdown output, artifact write path, sample-app calibration smoke, and the tracked target manifest under `docs/calibration/` are covered. | Maintain; change only when artifact or target-manifest behavior changes. |
-| Analyzer behavior | Parked | Generic classifier checkpoint concluded current evidence is too mixed for behavior changes; #27 and #28 now have explicit evidence bars for any future implementation slice. | Reopen only with new generic evidence, not app-specific suppressions. |
-| Calibration evidence | Watching | Redmine, Rubygems.org, ManageIQ, and Foreman evidence has been consolidated. | Do not add another target by default. |
+| Analyzer behavior | Parked | Fresh #27/#28 Mastodon and Discourse reruns did not show enough misleading or underexplained findings to justify behavior, threshold, or output-policy changes. | Reopen only with new generic evidence, not app-specific suppressions. |
+| Calibration evidence | Watching | Redmine, Rubygems.org, ManageIQ, and Foreman evidence has been consolidated; latest focused rerun covered Mastodon and Discourse for DeepInheritanceTree and RepeatedBranching. | Do not add another target by default. |
 | Sorbet adoption spike | Complete | Issue #26 was evaluated in a disposable workspace, documented, synced back to GitHub, and closed. The report recommends not adopting now: a narrow static setup is possible, but generated RBI churn, command policy, fixture scope, and runtime signature implications outweigh observed value. | Do not add Sorbet unless a concrete type-related defect, contributor ergonomics need, or stable public API typing requirement appears. |
 | Docs/adoption | Stable | README points contributors and agents to this tracker; old implementation notes are archived, current notes are short, and the Sorbet spike report records the tooling decision. | Keep docs changes minimal and evidence-led. |
 | Handoff continuity | Active | Local ignored handoff `.handoffs/20260703173813_next_four_tasks_after_issue_sync.md` captures the pushed issue-sync summary, conversation-only requirements, and the next four evidence-gated tasks. | Use it as the first continuation surface if context resets in this workspace; do not commit handoff files. |
@@ -75,7 +76,8 @@ tooling spikes that do not commit the project to new maintenance surfaces.
 1. Continue package feedback watch without opening `0.4.x` work.
    - Why now: `bin/check_published_gem 0.4.0` passed immediately after publish,
      the first post-push recheck passed, the post-handoff recheck passed, and
-     GitHub issues/release/package metadata show no release/package defect.
+     the post-upstream-push recheck passed; GitHub issues/release/package
+     metadata show no release/package defect.
    - Definition of done: any reported package install issue is triaged against
      the release tag and package metadata.
    - Files likely touched: issue/bugfix docs or code only if a concrete defect
@@ -84,28 +86,31 @@ tooling spikes that do not commit the project to new maintenance surfaces.
 
 2. Keep #25 dogfood CI enforcement deferred until its trigger appears.
    - Why now: #25 explicitly waits for collaboration expansion; current evidence
-     and the post-handoff issue check still show no need to add optional Rubydex
-     setup and dogfood runtime to CI.
+     still shows only owner plus bot activity, with one open Dependabot PR and
+     no need to add optional Rubydex setup and dogfood runtime to CI.
    - Definition of done: leave #25 open but inactive unless collaboration
      broadens or CI dogfood enforcement becomes necessary.
    - Files likely touched: none.
    - Not in scope: adding a dogfood CI gate just because the release shipped.
 
-3. Keep analyzer issues #27/#28 and analyzer behavior parked unless new
+3. Keep #27 DeepInheritanceTree parked unless new misleading root-label
    evidence appears.
-   - Why now: `0.4.0` shipped existing candidate analyzers and release
-     hardening; issue comments now define the DeepInheritanceTree and
-     RepeatedBranching evidence bars without changing behavior, and the
-     post-handoff check found no new cross-project evidence.
+   - Why now: fresh Mastodon and Discourse reruns showed current root-kind
+     labels and broad-base downranking are doing the intended work. Discourse
+     produced 47 findings (34 low broad-base, 13 medium manual-review);
+     Mastodon produced 40 findings (34 low broad-base, 6 medium manual-review).
    - Definition of done: future work resumes from concrete cross-project
-     evidence rather than the fact that the release shipped.
+     evidence showing labels are insufficient, not from output volume alone.
    - Files likely touched: none.
    - Not in scope: analyzer behavior, thresholds, statuses, suppressions,
      default-output policy, or target intake.
 
-4. Decide the next non-release work only after new evidence appears.
-   - Why now: #26 is closed, #25 is trigger-gated, #27/#28 are evidence-gated,
-     and package feedback is clean.
+4. Keep #28 RepeatedBranching parked unless new generic-subject evidence
+   requires reporting changes.
+   - Why now: fresh Mastodon and Discourse reruns showed current metadata already
+     separates generic, state, and expression subjects. Discourse produced
+     5 findings (generic 1, state 3, expression 1); Mastodon produced
+     14 findings (generic 9, state 1, expression 4).
    - Definition of done: keep the queue empty of implementation work until a
      package defect, collaboration trigger, or cross-project analyzer evidence
      appears.
@@ -115,41 +120,63 @@ tooling spikes that do not commit the project to new maintenance surfaces.
 
 ## Latest Slice Checkpoint
 
-Slice: 2026-07-03 post-handoff continuation sweep.
+Slice: 2026-07-03 upstream push and next-four task sweep.
 
-Window: 17:45:39-19:06:46 -0700, 1h 21m 07s elapsed from the local handoff
-checkpoint to the completed continuation and parity sweep.
+Window: 19:11:34-19:32:02 -0700, 20m 28s elapsed through upstream push
+verification, the four evidence-gated task checks, and tracker review.
 
-1. Verified the local and pushed baselines before starting new work.
-   - Local `main` was one commit ahead of `origin/main` at
-     `114fce1 Record handoff checkpoint`; `origin/main` remained
-     `543dfe2 Record issue queue sync`.
-   - CI run `28689484542` passed for pushed commit `543dfe2`; the latest three
-     `main` runs were green.
-   - The local ahead commit touches only `PROJECT_TRACKER.md`, so it does not
-     change the pushed code baseline.
-2. Rechecked release and package state.
+1. Pushed the local handoff and continuation checkpoints upstream first.
+   - `bin/check_ci_parity` passed before push on `d1d6ebb`: 465 runs,
+     2026 assertions, 0 failures, 0 errors, 6 skips; RuboCop inspected
+     196 files with no offenses; calibration smoke, dependency-direction, and
+     frozen-sample checks passed.
+   - `git push` advanced `main` from `543dfe2` to `d1d6ebb`; GitHub reported
+     direct-push branch-protection bypasses for PR-required and expected-status
+     rules.
+   - CI run `28691801501` passed for `d1d6ebb` in 1m 20s.
+2. Completed task 1: verified pushed baseline and package state.
    - GitHub release `v0.4.0` is published and is not a draft or prerelease.
    - `bin/check_published_gem 0.4.0` passed against GitHub Packages, resolving
      both `metz-scan` and `rubocop-metz` at `0.4.0`.
-   - No GitHub issue, release, or package metadata check showed a concrete
-     package/install defect, so no `0.4.x` milestone was opened.
-3. Checked open issue triggers.
-   - Open issues remain exactly #25, #27, and #28.
-   - #25 remains collaboration-triggered and deferred.
-   - #27 and #28 remain evidence-collection only; no new cross-project
-     analyzer evidence justified behavior, threshold, or output-policy changes.
-4. Kept the continuation read-only except for this tracker update.
+   - Issue search for `v0.4.0`, package, install, published gem, and GitHub
+     Packages surfaced no concrete defect, so no `0.4.x` milestone was opened.
+3. Completed task 2: checked #25 collaboration trigger.
+   - #25 remains open and trigger-gated.
+   - Contributors are still `fuentesjr` plus Dependabot; the only open PR is
+     Dependabot #29. That is not human collaboration pressure.
+   - Dogfood CI enforcement remains deferred; do not add optional Rubydex setup
+     or `bin/check_dogfood` to CI yet.
+4. Completed task 3: reran #27 DeepInheritanceTree evidence on active fixtures.
+   - Focused Mastodon and Discourse run produced 87 findings and 87 offenses.
+   - Discourse `2115f1cac5f9` produced 47 findings: confidence low 34/medium 13;
+     severity broad-base 34/manual-review 13; categories included serializer
+     base 11, abstract base 6, exception base 6, application job base 4, and
+     one framework root.
+   - Mastodon `34bbb4748223` produced 40 findings: confidence low 34/medium 6;
+     severity broad-base 34/manual-review 6; categories included controller
+     base 14, abstract base 7, rails application base 3, and serializer base 2.
+   - No current root-kind labels looked misleading enough to justify filtering,
+     downranking, grouping, threshold, or default-output changes.
+5. Completed task 4: reran #28 RepeatedBranching evidence on active fixtures.
+   - Focused Mastodon and Discourse run produced 19 findings and 41 offenses.
+   - Discourse `2115f1cac5f9` produced 5 findings and 10 offenses:
+     1 generic/context-required, 3 state/design-pressure, and
+     1 expression/design-pressure.
+   - Mastodon `34bbb4748223` produced 14 findings and 31 offenses:
+     9 generic/context-required, 1 state/design-pressure, and
+     4 expression/design-pressure.
+   - The current metadata already separates generic, state, and expression
+     subjects; no reporting or behavior change is justified from this evidence.
+6. Kept the sweep read-only except for this tracker update.
    - No production Ruby, analyzer behavior, CI workflow, Sorbet, package, or
      GitHub issue state changes were made in this slice.
-   - The ignored handoff file remains in place because this continuation
+   - Open issues remain exactly #25, #27, and #28.
+   - The ignored handoff file remains in place because this next-four tracker
      checkpoint is not pushed yet.
-5. Re-ran the local parity guard before committing this tracker checkpoint.
-   - `bin/check_ci_parity` passed: 465 runs, 2026 assertions, 0 failures,
-     0 errors, 6 skips; RuboCop inspected 196 files with no offenses;
-     calibration smoke, dependency-direction, and frozen-sample checks passed.
 
-Agenticons used: `helper_worker: release/package and issue trigger sweep`.
+Agenticons used: `helper_worker: baseline/package/#25 trigger sweep`,
+`helper_worker: #27 DeepInheritanceTree evidence`, and
+`helper_worker: #28 RepeatedBranching evidence`.
 
 ## Parked / Not Next
 
@@ -166,7 +193,8 @@ Agenticons used: `helper_worker: release/package and issue trigger sweep`.
 
 | Date | Commit | Summary |
 | --- | --- | --- |
-| 2026-07-03 | `this commit` | Recorded the post-handoff continuation sweep and kept all implementation work evidence-gated. |
+| 2026-07-03 | `this commit` | Recorded the upstream push verification and next-four evidence-gated task sweep. |
+| 2026-07-03 | `d1d6ebb` | Recorded the post-handoff continuation sweep and kept all implementation work evidence-gated. |
 | 2026-07-03 | `114fce1` | Added the next-four-tasks handoff and recorded the pushed issue-sync verification. |
 | 2026-07-03 | `543dfe2` | Recorded the pushed Sorbet spike verification, closed #26, and updated the issue queue evidence bars. |
 | 2026-07-03 | `797ade8` | Recorded the issue #26 Sorbet adoption spike, recommended not adopting now, and updated the next queue accordingly. |
