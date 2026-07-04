@@ -34,20 +34,20 @@ checks continue to run without Rubydex.
 
 ## Current Results
 
-On this repo with Rubydex `0.2.5`:
+On this repo with Rubydex `0.2.7`:
 
 ```text
 backend: rubydex
 workspace: true
-indexed_files: 5433
-declarations: 49187
-ruby_documents: 2192
+indexed_files: 11152
+declarations: 51341
+ruby_documents: 2277
 minitest_test_descendants:
   - CopHelperTest
   - CopMetzControllersTooManyDirectCollaboratorsTest
   - ...
-  - MetzScan::Commands::ScanProjectAnalyzerRunnerDeepInheritanceTest
-  - MetzScan::ProjectIndexWorkspaceTest
+  - MetzScan::Commands::ScanTextRendererTest
+  - MetzScan::ProjectIndexMethodDeclarationsTest
   - RuboCopCopMetzMethodsTooManyParametersTest
 metz_cop_declarations:
   - RuboCop::Cop::Metz::ClassesTooLong
@@ -59,8 +59,8 @@ metz_cop_declarations:
   - RuboCop::Cop::Metz::MethodsTooManyParameters
   - RuboCop::Cop::Metz::OnSendCsendBridge
   - RuboCop::Cop::Metz::ViewsDeepNavigation
-references_to RuboCop::Cop::Metz::OnSendCsendBridge: 2
-diagnostics: 187
+references_to RuboCop::Cop::Metz::OnSendCsendBridge: 6
+diagnostics: 207
 index_errors: 0
 ```
 
@@ -77,6 +77,11 @@ workspace: false
 indexed_files: 15
 declarations: 53
 ruby_documents: 16
+minitest_test_descendants:
+  (none)
+metz_cop_declarations:
+  (none)
+references_to RuboCop::Cop::Metz::OnSendCsendBridge: 0
 diagnostics: 0
 index_errors: 0
 ```
@@ -124,7 +129,7 @@ Run the spike against the current workspace:
 bundle exec ruby script/inheritance_descendants_spike.rb RuboCop::Cop::Metz::DemeterTrainWreck
 ```
 
-Current output with Rubydex `0.2.5`:
+Current output with Rubydex `0.2.7`:
 
 ```text
 backend: rubydex
@@ -192,10 +197,7 @@ Current output without Rubydex enabled:
 backend: null
 workspace: false
 rule_id: MetzProject/RepeatedBranching
-findings: 1
-- format repeated across 2 files: json, sarif
-  lib/metz_scan/commands/report.rb:72
-  lib/metz_scan/commands/scan.rb:95
+findings: 0
 ```
 
 TDD evidence:
@@ -265,7 +267,7 @@ backend: null
 workspace: false
 rule_id: MetzProject/ServiceSoup
 findings: 1
-- OrdersController#create coordinates 4 services: CapturePayment, ReserveInventory, SendReceipt, ValidateOrder
+- OrdersController#create coordinates 4 services: CapturePayment, ReserveInventory, SendReceipt, ValidateOrder (confidence: medium; severity: design pressure)
   test/fixtures/service_soup_app/app/controllers/orders_controller.rb:5 ValidateOrder.call(order)
   test/fixtures/service_soup_app/app/controllers/orders_controller.rb:6 ReserveInventory.call(order)
   test/fixtures/service_soup_app/app/controllers/orders_controller.rb:7 CapturePayment.new(order).call
@@ -278,7 +280,12 @@ Current output with Rubydex enabled:
 backend: rubydex
 workspace: false
 rule_id: MetzProject/ServiceSoup
-findings: 0
+findings: 1
+- OrdersController#create coordinates 4 services: CapturePayment, ReserveInventory, SendReceipt, ValidateOrder (confidence: medium; severity: design pressure)
+  test/fixtures/service_soup_app/app/controllers/orders_controller.rb:5 ValidateOrder.call(order)
+  test/fixtures/service_soup_app/app/controllers/orders_controller.rb:6 ReserveInventory.call(order)
+  test/fixtures/service_soup_app/app/controllers/orders_controller.rb:7 CapturePayment.new(order).call
+  test/fixtures/service_soup_app/app/controllers/orders_controller.rb:8 SendReceipt.call(order)
 ```
 
 TDD evidence:
