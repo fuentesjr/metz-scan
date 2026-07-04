@@ -48,7 +48,7 @@ tooling spikes that do not commit the project to new maintenance surfaces.
 - Release state: `v0.4.0` is tagged at `937afd8`, the GitHub Release is
   published, both GitHub Packages gems are published, and
   `bin/check_published_gem 0.4.0` passed again during the 2026-07-04
-  queued-task follow-up sweep.
+  parked-queue follow-up sweep.
 - Local branch state: release tag, release target, release completion,
   package-monitor checkpoint, feedback-sweep checkpoint, Sorbet spike report,
   issue-sync tracker checkpoint, handoff checkpoint, continuation sweep,
@@ -56,9 +56,9 @@ tooling spikes that do not commit the project to new maintenance surfaces.
   tracker checkpoint, README analyzer-details cleanup, and Rubydex spike
   results, the Rubydex 0.2.7 calibration drift checkpoint, and the Rubydex
   release-response playbook are pushed to `origin/main`; the release-playbook
-  follow-up tracker checkpoint (`1ae96ea`) and this tracker checkpoint are local
-  until pushed.
-- Latest checkpoint window: 15:54:43-16:00:48 -0700, 6m 05s elapsed through
+  follow-up tracker checkpoint (`1ae96ea`), queued-task follow-up tracker
+  checkpoint (`b2513a8`), and this tracker checkpoint are local until pushed.
+- Latest checkpoint window: 16:04:26-16:08:05 -0700, 3m 39s elapsed through
   package/#25/#27/#28 checks, agenticon evidence collection, incidental lockfile
   restoration, and tracker review.
 - Working tree expectation: keep tracked work clean before starting another
@@ -81,7 +81,7 @@ tooling spikes that do not commit the project to new maintenance surfaces.
 1. Continue package feedback watch without opening `0.4.x` work.
    - Why now: `bin/check_published_gem 0.4.0` passed immediately after publish,
      the first post-push recheck passed, the post-handoff recheck passed, and
-     the 2026-07-04 queued-task follow-up recheck passed; GitHub
+     the 2026-07-04 parked-queue follow-up recheck passed; GitHub
      issues/release/package metadata show no release/package defect, no open
      PRs, and no open `0.4.x` milestone. The `v0.4.0` release remains published
      and not draft/prerelease. PR #29 only bumped optional development
@@ -134,17 +134,16 @@ tooling spikes that do not commit the project to new maintenance surfaces.
 
 ## Latest Slice Checkpoint
 
-Slice: 2026-07-04 queued-task follow-up and parked queue recheck.
+Slice: 2026-07-04 parked-queue follow-up and package watch recheck.
 
-Window: 15:54:43-16:00:48 -0700, 6m 05s elapsed through package/#25/#27/#28
+Window: 16:04:26-16:08:05 -0700, 3m 39s elapsed through package/#25/#27/#28
 checks, agenticon evidence collection, incidental lockfile restoration, and
 tracker review.
 
 1. Checked for higher-priority work before repeating the parked queue.
-   - `git fetch origin` found only the deletion of the stale
-     `origin/dependabot/bundler/rubydex-0.2.6` branch.
-   - Local `main` was clean and one commit ahead of `origin/main` at
-     `1ae96ea Record release playbook follow-up`; `origin/main` remained at
+   - `git fetch origin` found no new remote work.
+   - Local `main` was clean and two commits ahead of `origin/main` at
+     `b2513a8 Record queued task follow-up`; `origin/main` remained at
      `f9f5a10 Document Rubydex release response playbook`.
    - There were no open PRs.
    - The latest five `main` CI runs were green, including run `28721866073`
@@ -154,8 +153,9 @@ tracker review.
    - `bin/check_published_gem 0.4.0` passed again against GitHub Packages,
      resolving both `metz-scan` and `rubocop-metz` at `0.4.0`.
    - The `v0.4.0` GitHub Release remains published, not draft or prerelease.
-   - Issue search for package/install/release feedback found no concrete
-     package defect, and there are no open milestones.
+   - Both package versions are visible in GitHub Packages, issue search found
+     no concrete package/install/release defect, and there are no open
+     milestones.
 3. Completed task 2: #25 dogfood CI trigger check.
    - #25 remains open and explicitly trigger-gated.
    - Contributor evidence remains `fuentesjr` plus Dependabot, currently 197
@@ -167,6 +167,9 @@ tracker review.
    - A targeted no-write active-fixture recheck produced 363 DeepInheritanceTree
      findings and 363 offenses: low 213, medium 150, broad-base 213, and
      manual-review 150.
+   - The issue's concrete noisy examples are already covered by current labels:
+     `rails application base`, `controller base`, `application job base`,
+     `framework root`, and `serializer base`.
    - Focused Mastodon/Discourse reruns stayed at 87 findings:
      Discourse 47, Mastodon 40; 68 broad-base and 19 manual-review overall.
    - Current broad-root labels and triage are already in place, and the
@@ -185,7 +188,7 @@ tracker review.
    - No wording, metadata, grouping, confidence/severity, threshold, or
      output-policy change is justified.
 6. Restored an incidental Bundler lockfile rewrite.
-   - A targeted calibration command rewrote `Gemfile.lock` from
+   - A targeted calibration command again rewrote `Gemfile.lock` from
      `rubocop-metz (= 0.4.0)` to `rubocop-metz (~> 0.4.0)`.
    - The line was restored because this slice should not change dependency
      resolution.
@@ -196,13 +199,13 @@ tracker review.
      is not pushed yet.
 
 Agenticons used: `helper_worker: package/release feedback and priority sweep`
-(`019f2f57-8729-75f2-98c9-cdf71abf76ec`),
+(`019f2f60-7245-7dc3-bd2d-f21e6bbc687d`),
 `helper_worker: #25 dogfood CI trigger check`
-(`019f2f57-9f43-7380-b9f2-5d5993e28f87`),
+(`019f2f60-8c62-7672-88ea-924966d3b227`),
 `helper_worker: #27 DeepInheritanceTree evidence`
-(`019f2f57-ba5d-7e30-b321-5a8288b61229`), and
+(`019f2f60-a799-7580-a053-6fa50138fa64`), and
 `helper_worker: #28 RepeatedBranching evidence`
-(`019f2f57-e006-7bb3-96b9-3ae8f383ea7d`).
+(`019f2f60-c4b2-7d63-8e92-5cc85e1ba290`).
 
 ## Parked / Not Next
 
@@ -219,7 +222,8 @@ Agenticons used: `helper_worker: package/release feedback and priority sweep`
 
 | Date | Commit | Summary |
 | --- | --- | --- |
-| 2026-07-04 | `this commit` | Recorded the queued-task follow-up and kept package/#25/#27/#28 parked. |
+| 2026-07-04 | `this commit` | Recorded the parked-queue follow-up and kept package/#25/#27/#28 parked. |
+| 2026-07-04 | `b2513a8` | Recorded the queued-task follow-up and kept package/#25/#27/#28 parked. |
 | 2026-07-04 | `1ae96ea` | Recorded the release-response playbook follow-up and kept package/#25/#27/#28 parked. |
 | 2026-07-04 | `f9f5a10` | Documented the Rubydex release-response playbook. |
 | 2026-07-04 | `d7fd52d` | Recorded the Rubydex 0.2.7 calibration drift recheck and kept package/#25/#27/#28 parked. |
