@@ -27,18 +27,20 @@ Standing rules:
 
 ## Current Direction
 
-`metz-scan` is currently optimizing for conservative release readiness and
-calibration confidence, not detector expansion.
+`metz-scan` is currently optimizing for conservative release readiness,
+calibration confidence, and evidence-led tooling decisions, not detector
+expansion.
 
 The project analyzer detector set has enough current evidence to stay
 candidate-heavy and opt-in. Recent work has therefore moved to release smoke,
-artifact-pipeline reliability, and package/release metadata hardening.
+artifact-pipeline reliability, package/release metadata hardening, and bounded
+tooling spikes that do not commit the project to new maintenance surfaces.
 
 ## Current Snapshot
 
 - Date: 2026-07-03.
-- Latest pushed baseline: `c9bcb5e Record v0.4.0 release completion`.
-- CI state: run `28687579256` for `64fa605` succeeded. Earlier runs for
+- Latest pushed baseline: `60a7386 Record post-release feedback sweep`.
+- CI state: run `28688031787` for `60a7386` succeeded. Earlier runs for
   `c0a01f5` (`28672899400`) and `64bceea` (`28680427556`) failed on
   calibration evidence runner environment assumptions, both since fixed.
 - Release checklist issue: [#30](https://github.com/fuentesjr/metz-scan/issues/30),
@@ -46,10 +48,10 @@ artifact-pipeline reliability, and package/release metadata hardening.
 - Release state: `v0.4.0` is tagged at `937afd8`, the GitHub Release is
   published, both GitHub Packages gems are published, and
   `bin/check_published_gem 0.4.0` passed.
-- Local branch state: release tag, release target, release completion, and
-  package-monitor checkpoint are pushed to `origin/main`; this feedback-sweep
-  checkpoint is local until pushed.
-- Latest checkpoint window: 16:20:03-16:24:12 -0700, 4m 09s elapsed.
+- Local branch state: release tag, release target, release completion,
+  package-monitor checkpoint, and feedback-sweep checkpoint are pushed to
+  `origin/main`; this Sorbet spike report checkpoint is local until pushed.
+- Latest checkpoint window: 16:37:04-17:10:42 -0700, 33m 38s elapsed.
 - Working tree expectation: keep tracked work clean before starting another
   slice; keep ignored `logs/` notes out of commits unless explicitly requested.
 
@@ -57,11 +59,12 @@ artifact-pipeline reliability, and package/release metadata hardening.
 
 | Workstream | Status | Current State | Next Move |
 | --- | --- | --- | --- |
-| Release readiness | Complete | `v0.4.0` is tagged, released on GitHub, published to GitHub Packages for both gems, verified with repeated post-publish smoke, issue #30 is closed, and post-release CI for `64fa605` is green. | Monitor package installation feedback; no `0.4.x` follow-up milestone is open without a concrete defect. |
+| Release readiness | Complete | `v0.4.0` is tagged, released on GitHub, published to GitHub Packages for both gems, verified with repeated post-publish smoke, issue #30 is closed, and post-release CI for `60a7386` is green. | Monitor package installation feedback; no `0.4.x` follow-up milestone is open without a concrete defect. |
 | Calibration artifact pipeline | Healthy | Markdown output, artifact write path, sample-app calibration smoke, and the tracked target manifest under `docs/calibration/` are covered. | Maintain; change only when artifact or target-manifest behavior changes. |
 | Analyzer behavior | Parked | Generic classifier checkpoint concluded current evidence is too mixed for behavior changes. | Reopen only with new generic evidence, not app-specific suppressions. |
 | Calibration evidence | Watching | Redmine, Rubygems.org, ManageIQ, and Foreman evidence has been consolidated. | Do not add another target by default. |
-| Docs/adoption | Stable | README points contributors and agents to this tracker; old implementation notes are archived, and current notes are short. | Keep docs changes minimal and evidence-led. |
+| Sorbet adoption spike | Complete | Issue #26 was evaluated in a disposable workspace. The report recommends not adopting now: a narrow static setup is possible, but generated RBI churn, command policy, fixture scope, and runtime signature implications outweigh observed value. | Do not add Sorbet unless a concrete type-related defect, contributor ergonomics need, or stable public API typing requirement appears. |
+| Docs/adoption | Stable | README points contributors and agents to this tracker; old implementation notes are archived, current notes are short, and the Sorbet spike report records the tooling decision. | Keep docs changes minimal and evidence-led. |
 
 ## Next Queue
 
@@ -75,17 +78,14 @@ artifact-pipeline reliability, and package/release metadata hardening.
      appears.
    - Not in scope: speculative package changes without a failing install path.
 
-2. If continuing non-release work, start the bounded Sorbet spike in #26.
-   - Why now: package feedback is clean, #26 is an evidence-producing spike, and
-     it can be done without analyzer behavior changes or adoption commitment.
-   - Definition of done: baseline checks are recorded, a disposable Sorbet /
-     Tapioca setup is attempted, candidate product-layer files are evaluated,
-     runtime dependency implications are documented, and a recommendation is
-     written.
-   - Files likely touched: `docs/` spike report and possibly disposable local
-     diff only if the user starts that slice.
-   - Not in scope: broad Sorbet adoption, runtime dependency changes, CI gate
-     changes, or typing RuboCop cops first.
+2. Optionally sync the Sorbet spike decision back to issue #26.
+   - Why now: the local report completes the investigation acceptance criteria,
+     but the GitHub issue is still the public coordination surface.
+   - Definition of done: comment on #26 with the report link and recommendation,
+     then close or explicitly leave it open for future revisit.
+   - Files likely touched: none unless the report needs wording cleanup.
+   - Not in scope: adding Sorbet dependencies, RBIs, runtime signatures, or CI
+     typecheck gates.
 
 3. Keep #25 dogfood CI enforcement deferred until its trigger appears.
    - Why now: #25 explicitly waits for collaboration expansion; current evidence
@@ -108,35 +108,50 @@ artifact-pipeline reliability, and package/release metadata hardening.
 
 ## Latest Slice Checkpoint
 
-Slice: 2026-07-03 post-release feedback sweep and workstream triage.
+Slice: 2026-07-03 push verification and Sorbet adoption spike.
 
-Window: 16:20:03-16:24:12 -0700, 4m 09s elapsed.
+Window: 16:37:04-17:10:42 -0700, 33m 38s elapsed.
 
-1. Pushed and verified the package-monitor checkpoint.
+1. Pushed and verified the feedback-sweep checkpoint.
    - `bin/check_ci_parity` passed before push: 465 runs, 2026 assertions,
      0 failures, 0 errors, 6 skips; RuboCop inspected 196 files with no
      offenses; calibration smoke and guard scripts passed.
-   - `64fa605 Record post-release package monitor checkpoint` was pushed to
+   - `60a7386 Record post-release feedback sweep` was pushed to
      `origin/main`.
-   - CI run `28687579256` passed for `64fa605`.
-2. Rechecked published package installation state.
+   - CI run `28688031787` passed for `60a7386`.
+2. Rechecked package and baseline state before the spike.
    - GitHub Packages still reports `rubocop-metz 0.4.0` and `metz-scan 0.4.0`.
    - `bin/check_published_gem 0.4.0` passed again from a clean temporary
      consumer project.
-3. Swept feedback and follow-up planning surfaces.
-   - No open milestone exists.
-   - Open issues are #25, #26, #27, and #28; none is a release/package defect.
-   - #25 remains trigger-gated on collaboration expansion.
-   - If the project continues with non-release work, #26 is the best optional
-     next queue because it is an evidence-producing spike with no analyzer
-     behavior change or adoption commitment.
-4. Kept analyzer behavior and analyzer follow-up issues parked.
+   - `bin/check_dogfood` passed with the accepted project-analyzer baseline:
+     0 findings.
+   - Baseline inventory recorded Ruby 4.0.1, Bundler 4.0.8, 108 production Ruby
+     files under `lib/` and `rubocop-metz/lib/`, and no existing Sorbet/Tapioca
+     dependencies.
+3. Completed the bounded Sorbet spike from issue #26.
+   - Disposable workspace: `/private/tmp/metz-scan-sorbet-spike-20260703-1643`.
+   - `sorbet 0.6.13323` and `tapioca 0.19.2` installed only in the disposable
+     bundle.
+   - `tapioca init` generated 34 RBI files and 165,751 RBI lines, including 31
+     gem RBIs, 2 annotation RBIs, and a 25-line `todo.rbi` mostly for fixture
+     constants.
+   - Product-code-only `srb tc` passed only after using a writable temp HOME,
+     `SRB_SKIP_GEM_RBIS=1`, and ignoring test fixtures/tests.
+   - Five product-layer candidates were evaluated at `# typed: true`; three
+     passed cleanly (`Occurrence`, `RubyFileEnumerator`, `SarifSeverity`) and
+     two exposed adoption friction (`ProjectAnalyzerTriage`,
+     `OffenseExtractor`).
+4. Recorded the decision and kept analyzer behavior parked.
+   - Added `docs/spikes/sorbet-issue-26.md` with the detailed evidence and
+     recommendation: do not adopt Sorbet now.
+   - No Sorbet dependencies, RBIs, runtime signatures, CI gates, or production
+     code changes were added to the repo.
    - No analyzer behavior, thresholds, statuses, suppressions,
      default-output policy, or calibration targets changed in this slice.
    - #27 and #28 remain useful but inactive until new generic evidence justifies
      DeepInheritanceTree or RepeatedBranching work.
 
-Agenticons used: `planner: post-release workstream triage`.
+Agenticons used: `planner: Sorbet spike plan`.
 
 ## Parked / Not Next
 
@@ -153,6 +168,8 @@ Agenticons used: `planner: post-release workstream triage`.
 
 | Date | Commit | Summary |
 | --- | --- | --- |
+| 2026-07-03 | `this commit` | Recorded the issue #26 Sorbet adoption spike, recommended not adopting now, and updated the next queue accordingly. |
+| 2026-07-03 | `60a7386` | Recorded the post-release feedback sweep and kept #26 as the next bounded non-release work item before this spike. |
 | 2026-07-03 | `64fa605` | Recorded the post-release package monitor checkpoint and deferred a `0.4.x` milestone without a concrete defect. |
 | 2026-07-03 | `c9bcb5e` | Recorded `v0.4.0` release completion, release links, package links, and closed issue #30. |
 | 2026-07-03 | `937afd8` | Finalized `v0.4.0` release-note wording before tagging and publishing. |
@@ -183,6 +200,7 @@ Agenticons used: `planner: post-release workstream triage`.
 - Project analyzer calibration record: `docs/project-analyzer-calibration.md`.
 - Tracked calibration target manifest: `docs/calibration/project_analyzer_targets.yml`.
 - Published `v0.4.0` release notes: `docs/releases/v0.4.0.md`.
+- Sorbet adoption spike: `docs/spikes/sorbet-issue-26.md`.
 - Candidate analyzer summary: `docs/sandi-metz-project-analyzer-candidates.md`.
 - Release process: `RELEASE_CHECKLIST.md`.
 - Local ignored strategy scratchpad: `logs/repeated-query-criteria-strategy-review.md`.
