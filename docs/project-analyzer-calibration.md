@@ -1,6 +1,6 @@
 # Project analyzer calibration
 
-Last updated: 2026-07-03.
+Last updated: 2026-07-04.
 
 This note records real-world calibration passes for the opt-in analyzers behind
 `metz-scan scan --project-analyzers`. The goal was to decide whether
@@ -48,6 +48,66 @@ bin/check_project_analyzer_calibration --text
 bin/check_project_analyzer_calibration --text --analyzer MetzProject/RepeatedBranching
 bin/check_project_analyzer_calibration --text --targets-file docs/calibration/project_analyzer_targets.yml
 ```
+
+## 2026-07-04 Rubydex 0.2.7 Drift Check
+
+After bumping the optional `rubydex` dependency from `0.2.5` to `0.2.7`, the
+active manifest was rechecked with the repo-local calibration fixtures:
+
+```bash
+bin/check_project_analyzer_calibration --text --no-write \
+  --targets-file docs/calibration/project_analyzer_targets.yml
+```
+
+The full active-manifest run covered `chatwoot`, `decidim`, `discourse`,
+`forem`, `foreman`, `manageiq`, `mastodon`, `openfoodnetwork`, `redmine`,
+`rubygems.org`, `solidus`, and `spree`. It produced 697 findings and 806
+offenses:
+
+| Analyzer | Findings | Offenses |
+| --- | ---: | ---: |
+| `MetzProject/DeepInheritanceTree` | 363 | 363 |
+| `MetzProject/ImplicitContextPressure` | 12 | 12 |
+| `MetzProject/NamespaceLeakPressure` | 49 | 49 |
+| `MetzProject/PackageDependencyPressure` | 47 | 47 |
+| `MetzProject/RepeatedBranching` | 51 | 122 |
+| `MetzProject/RepeatedQueryCriteria` | 16 | 16 |
+| `MetzProject/ServiceSoup` | 11 | 49 |
+| `MetzProject/SubclassOverridePressure` | 148 | 148 |
+
+Rubydex version drift directly affects the project-index-backed analyzers, so
+the future minimal recheck scope is the four analyzers that consume the
+optional index:
+
+```bash
+bin/check_project_analyzer_calibration --text --no-write \
+  --targets-file docs/calibration/project_analyzer_targets.yml \
+  --analyzer MetzProject/DeepInheritanceTree \
+  --analyzer MetzProject/PackageDependencyPressure \
+  --analyzer MetzProject/NamespaceLeakPressure \
+  --analyzer MetzProject/SubclassOverridePressure
+```
+
+The focused index-backed run produced 607 findings and 607 offenses:
+
+| Analyzer | Findings | Offenses |
+| --- | ---: | ---: |
+| `MetzProject/DeepInheritanceTree` | 363 | 363 |
+| `MetzProject/NamespaceLeakPressure` | 49 | 49 |
+| `MetzProject/PackageDependencyPressure` | 47 | 47 |
+| `MetzProject/SubclassOverridePressure` | 148 | 148 |
+
+Focused breakdowns were `low=385`, `medium=222`; `broad base=306`,
+`manual review=222`, `shared dependency=42`, and `shared namespace=37`.
+
+Decision: keep the current analyzer statuses and output policy. The Rubydex
+`0.2.7` drift changes current counts compared with older historical notes, but
+the active manifest still supports the existing readiness boundaries:
+DeepInheritanceTree remains validated opt-in and not default-output eligible;
+PackageDependencyPressure, NamespaceLeakPressure, and SubclassOverridePressure
+remain candidate opt-in analyzers. Do not re-run historical `/private/tmp`
+artifacts; use `tmp/project-analyzer-calibration/apps` and the tracked target
+manifest for current decisions.
 
 With no paths, the runner discovers target checkouts under
 `tmp/project-analyzer-calibration/apps/`, scans each target's `app/` and `lib/`
