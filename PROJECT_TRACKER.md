@@ -27,24 +27,35 @@ Standing rules:
 
 ## Current Direction
 
-`metz-scan` is currently optimizing for conservative release readiness and
-calibration confidence, not detector expansion.
+`metz-scan` is currently optimizing for conservative release readiness,
+calibration confidence, and evidence-led tooling decisions, not detector
+expansion.
 
 The project analyzer detector set has enough current evidence to stay
 candidate-heavy and opt-in. Recent work has therefore moved to release smoke,
-artifact-pipeline reliability, and package/release metadata hardening.
+artifact-pipeline reliability, package/release metadata hardening, and bounded
+tooling spikes that do not commit the project to new maintenance surfaces.
 
 ## Current Snapshot
 
 - Date: 2026-07-03.
-- Latest pushed baseline: `2759102 Record CI recovery and parity guard checkpoint`.
-- CI state: run `28680896907` for `2759102` succeeded. Earlier runs for
-  `c0a01f5` (`28672899400`) and `64bceea` (`28680427556`) failed on
+- Latest pushed baseline: `d1d6ebb Record post-handoff continuation sweep`.
+- CI state: run `28691801501` for `d1d6ebb` succeeded in 1m 20s. Earlier runs
+  for `c0a01f5` (`28672899400`) and `64bceea` (`28680427556`) failed on
   calibration evidence runner environment assumptions, both since fixed.
-- Local branch state: `main` has local release-readiness housekeeping,
-  `v0.4.0` release-target prep, and release-verification checkpoint work ahead
-  of `origin/main`.
-- Latest checkpoint window: 13:25:35-13:28:57 -0700, 3m 22s elapsed.
+- Release checklist issue: [#30](https://github.com/fuentesjr/metz-scan/issues/30),
+  `Release v0.4.0`, is closed with the checklist complete.
+- Release state: `v0.4.0` is tagged at `937afd8`, the GitHub Release is
+  published, both GitHub Packages gems are published, and
+  `bin/check_published_gem 0.4.0` passed again after the upstream push.
+- Local branch state: release tag, release target, release completion,
+  package-monitor checkpoint, feedback-sweep checkpoint, Sorbet spike report,
+  issue-sync tracker checkpoint, handoff checkpoint, and continuation sweep are
+  pushed to `origin/main`; this next-four-tasks tracker checkpoint is local
+  until pushed.
+- Latest checkpoint window: 19:11:34-19:32:02 -0700, 20m 28s elapsed through
+  upstream push verification, the four evidence-gated task checks, and tracker
+  review.
 - Working tree expectation: keep tracked work clean before starting another
   slice; keep ignored `logs/` notes out of commits unless explicitly requested.
 
@@ -52,65 +63,120 @@ artifact-pipeline reliability, and package/release metadata hardening.
 
 | Workstream | Status | Current State | Next Move |
 | --- | --- | --- | --- |
-| Release readiness | Active | Next target is `0.4.0`; both gems and the lockfile report `0.4.0`; local full suite, RuboCop, guards, release dry-run, and CI-parity checks are green. | Push, watch CI, then open/update the release checklist issue. |
+| Release readiness | Complete | `v0.4.0` is tagged, released on GitHub, published to GitHub Packages for both gems, verified with repeated post-publish smoke, issue #30 is closed, and post-release CI for `d1d6ebb` is green. | Monitor package installation feedback; no `0.4.x` follow-up milestone is open without a concrete defect. |
 | Calibration artifact pipeline | Healthy | Markdown output, artifact write path, sample-app calibration smoke, and the tracked target manifest under `docs/calibration/` are covered. | Maintain; change only when artifact or target-manifest behavior changes. |
-| Analyzer behavior | Parked | Generic classifier checkpoint concluded current evidence is too mixed for behavior changes. | Reopen only with new generic evidence, not app-specific suppressions. |
-| Calibration evidence | Watching | Redmine, Rubygems.org, ManageIQ, and Foreman evidence has been consolidated. | Do not add another target by default. |
-| Docs/adoption | Stable | README points contributors and agents to this tracker; old implementation notes are archived, and current notes are short. | Keep docs changes minimal and evidence-led. |
+| Analyzer behavior | Parked | Fresh #27/#28 Mastodon and Discourse reruns did not show enough misleading or underexplained findings to justify behavior, threshold, or output-policy changes. | Reopen only with new generic evidence, not app-specific suppressions. |
+| Calibration evidence | Watching | Redmine, Rubygems.org, ManageIQ, and Foreman evidence has been consolidated; latest focused rerun covered Mastodon and Discourse for DeepInheritanceTree and RepeatedBranching. | Do not add another target by default. |
+| Sorbet adoption spike | Complete | Issue #26 was evaluated in a disposable workspace, documented, synced back to GitHub, and closed. The report recommends not adopting now: a narrow static setup is possible, but generated RBI churn, command policy, fixture scope, and runtime signature implications outweigh observed value. | Do not add Sorbet unless a concrete type-related defect, contributor ergonomics need, or stable public API typing requirement appears. |
+| Docs/adoption | Stable | README points contributors and agents to this tracker; old implementation notes are archived, current notes are short, and the Sorbet spike report records the tooling decision. | Keep docs changes minimal and evidence-led. |
+| Handoff continuity | Active | Local ignored handoff `.handoffs/20260703173813_next_four_tasks_after_issue_sync.md` captures the pushed issue-sync summary, conversation-only requirements, and the next four evidence-gated tasks. | Use it as the first continuation surface if context resets in this workspace; do not commit handoff files. |
 
 ## Next Queue
 
-1. Push and verify CI for `0.4.0` release prep.
-   - Why now: local release-readiness checks are green, including
-     `bin/check_ci_parity`, but `origin/main` has not seen `c2e2c00`,
-     `94fea40`, or this verification checkpoint.
-   - Definition of done: branch is synced with `origin/main`, the latest CI run
-     is green, and any failure is triaged before more release work.
-   - Files likely touched: none unless a check exposes a concrete issue.
-   - Not in scope: publishing gems or creating a GitHub release.
+1. Continue package feedback watch without opening `0.4.x` work.
+   - Why now: `bin/check_published_gem 0.4.0` passed immediately after publish,
+     the first post-push recheck passed, the post-handoff recheck passed, and
+     the post-upstream-push recheck passed; GitHub issues/release/package
+     metadata show no release/package defect.
+   - Definition of done: any reported package install issue is triaged against
+     the release tag and package metadata.
+   - Files likely touched: issue/bugfix docs or code only if a concrete defect
+     appears.
+   - Not in scope: speculative package changes without a failing install path.
 
-2. Open or update the `Release v0.4.0` checklist issue after CI is green.
-   - Why now: `bin/create_release_issue --dry-run` now renders the correct
-     `0.4.0` versions and the release notes have a draft source.
-   - Definition of done: GitHub issue exists with the checklist for `v0.4.0`
-     or the tracker records the exact blocker.
-   - Files likely touched: GitHub issue text, possibly `PROJECT_TRACKER.md`.
-   - Not in scope: publishing gems unless explicitly requested.
+2. Keep #25 dogfood CI enforcement deferred until its trigger appears.
+   - Why now: #25 explicitly waits for collaboration expansion; current evidence
+     still shows only owner plus bot activity, with one open Dependabot PR and
+     no need to add optional Rubydex setup and dogfood runtime to CI.
+   - Definition of done: leave #25 open but inactive unless collaboration
+     broadens or CI dogfood enforcement becomes necessary.
+   - Files likely touched: none.
+   - Not in scope: adding a dogfood CI gate just because the release shipped.
 
-3. Keep analyzer behavior parked during release prep.
-   - Why now: `0.4.0` is packaging already-landed candidate analyzer and
-     reporting work; it is not a signal to expand or promote analyzers.
-   - Definition of done: release work changes packaging, docs, checks, or issue
-     tracking only.
-   - Files likely touched: release/checklist docs only.
+3. Keep #27 DeepInheritanceTree parked unless new misleading root-label
+   evidence appears.
+   - Why now: fresh Mastodon and Discourse reruns showed current root-kind
+     labels and broad-base downranking are doing the intended work. Discourse
+     produced 47 findings (34 low broad-base, 13 medium manual-review);
+     Mastodon produced 40 findings (34 low broad-base, 6 medium manual-review).
+   - Definition of done: future work resumes from concrete cross-project
+     evidence showing labels are insufficient, not from output volume alone.
+   - Files likely touched: none.
    - Not in scope: analyzer behavior, thresholds, statuses, suppressions,
      default-output policy, or target intake.
 
+4. Keep #28 RepeatedBranching parked unless new generic-subject evidence
+   requires reporting changes.
+   - Why now: fresh Mastodon and Discourse reruns showed current metadata already
+     separates generic, state, and expression subjects. Discourse produced
+     5 findings (generic 1, state 3, expression 1); Mastodon produced
+     14 findings (generic 9, state 1, expression 4).
+   - Definition of done: keep the queue empty of implementation work until a
+     package defect, collaboration trigger, or cross-project analyzer evidence
+     appears.
+   - Files likely touched: none.
+   - Not in scope: starting speculative detector, CI, or tooling changes to keep
+     the queue busy.
+
 ## Latest Slice Checkpoint
 
-Slice: 2026-07-03 v0.4.0 local release verification.
+Slice: 2026-07-03 upstream push and next-four task sweep.
 
-Window: 13:25:35-13:28:57 -0700, 3m 22s elapsed.
+Window: 19:11:34-19:32:02 -0700, 20m 28s elapsed through upstream push
+verification, the four evidence-gated task checks, and tracker review.
 
-1. Ran final local release checks for the committed `0.4.0` prep head.
-   - `bundle exec rake` passed: 465 runs, 2055 assertions, 0 failures,
-     0 errors, 2 skips.
-   - `bundle exec rubocop` passed: 196 files inspected, no offenses.
-2. Ran release-specific guards.
-   - `bin/check_dependency_direction`, `bin/check_sample_app_frozen`,
-     `test/metz_scan/release_metadata_test.rb`, and
-     `test/metz_scan/create_release_issue_test.rb` passed.
-   - `bin/create_release_issue --dry-run` renders `Release v0.4.0` with both
-     gem versions at `0.4.0`.
-3. Ran the clean-clone CI-parity guard.
-   - `bin/check_ci_parity` passed: clean clone bundle install, full suite
-     (465 runs, 2026 assertions, 0 failures, 0 errors, 6 skips), RuboCop,
-     calibration smoke, dependency-direction guard, and sample-app freeze guard.
-4. Kept analyzer behavior parked.
-   - No analyzer behavior, thresholds, statuses, suppressions,
-     default-output policy, or calibration targets changed in this slice.
+1. Pushed the local handoff and continuation checkpoints upstream first.
+   - `bin/check_ci_parity` passed before push on `d1d6ebb`: 465 runs,
+     2026 assertions, 0 failures, 0 errors, 6 skips; RuboCop inspected
+     196 files with no offenses; calibration smoke, dependency-direction, and
+     frozen-sample checks passed.
+   - `git push` advanced `main` from `543dfe2` to `d1d6ebb`; GitHub reported
+     direct-push branch-protection bypasses for PR-required and expected-status
+     rules.
+   - CI run `28691801501` passed for `d1d6ebb` in 1m 20s.
+2. Completed task 1: verified pushed baseline and package state.
+   - GitHub release `v0.4.0` is published and is not a draft or prerelease.
+   - `bin/check_published_gem 0.4.0` passed against GitHub Packages, resolving
+     both `metz-scan` and `rubocop-metz` at `0.4.0`.
+   - Issue search for `v0.4.0`, package, install, published gem, and GitHub
+     Packages surfaced no concrete defect, so no `0.4.x` milestone was opened.
+3. Completed task 2: checked #25 collaboration trigger.
+   - #25 remains open and trigger-gated.
+   - Contributors are still `fuentesjr` plus Dependabot; the only open PR is
+     Dependabot #29. That is not human collaboration pressure.
+   - Dogfood CI enforcement remains deferred; do not add optional Rubydex setup
+     or `bin/check_dogfood` to CI yet.
+4. Completed task 3: reran #27 DeepInheritanceTree evidence on active fixtures.
+   - Focused Mastodon and Discourse run produced 87 findings and 87 offenses.
+   - Discourse `2115f1cac5f9` produced 47 findings: confidence low 34/medium 13;
+     severity broad-base 34/manual-review 13; categories included serializer
+     base 11, abstract base 6, exception base 6, application job base 4, and
+     one framework root.
+   - Mastodon `34bbb4748223` produced 40 findings: confidence low 34/medium 6;
+     severity broad-base 34/manual-review 6; categories included controller
+     base 14, abstract base 7, rails application base 3, and serializer base 2.
+   - No current root-kind labels looked misleading enough to justify filtering,
+     downranking, grouping, threshold, or default-output changes.
+5. Completed task 4: reran #28 RepeatedBranching evidence on active fixtures.
+   - Focused Mastodon and Discourse run produced 19 findings and 41 offenses.
+   - Discourse `2115f1cac5f9` produced 5 findings and 10 offenses:
+     1 generic/context-required, 3 state/design-pressure, and
+     1 expression/design-pressure.
+   - Mastodon `34bbb4748223` produced 14 findings and 31 offenses:
+     9 generic/context-required, 1 state/design-pressure, and
+     4 expression/design-pressure.
+   - The current metadata already separates generic, state, and expression
+     subjects; no reporting or behavior change is justified from this evidence.
+6. Kept the sweep read-only except for this tracker update.
+   - No production Ruby, analyzer behavior, CI workflow, Sorbet, package, or
+     GitHub issue state changes were made in this slice.
+   - Open issues remain exactly #25, #27, and #28.
+   - The ignored handoff file remains in place because this next-four tracker
+     checkpoint is not pushed yet.
 
-Agenticons used: `planner: release verification plan`.
+Agenticons used: `helper_worker: baseline/package/#25 trigger sweep`,
+`helper_worker: #27 DeepInheritanceTree evidence`, and
+`helper_worker: #28 RepeatedBranching evidence`.
 
 ## Parked / Not Next
 
@@ -127,6 +193,19 @@ Agenticons used: `planner: release verification plan`.
 
 | Date | Commit | Summary |
 | --- | --- | --- |
+| 2026-07-03 | `this commit` | Recorded the upstream push verification and next-four evidence-gated task sweep. |
+| 2026-07-03 | `d1d6ebb` | Recorded the post-handoff continuation sweep and kept all implementation work evidence-gated. |
+| 2026-07-03 | `114fce1` | Added the next-four-tasks handoff and recorded the pushed issue-sync verification. |
+| 2026-07-03 | `543dfe2` | Recorded the pushed Sorbet spike verification, closed #26, and updated the issue queue evidence bars. |
+| 2026-07-03 | `797ade8` | Recorded the issue #26 Sorbet adoption spike, recommended not adopting now, and updated the next queue accordingly. |
+| 2026-07-03 | `60a7386` | Recorded the post-release feedback sweep and kept #26 as the next bounded non-release work item before this spike. |
+| 2026-07-03 | `64fa605` | Recorded the post-release package monitor checkpoint and deferred a `0.4.x` milestone without a concrete defect. |
+| 2026-07-03 | `c9bcb5e` | Recorded `v0.4.0` release completion, release links, package links, and closed issue #30. |
+| 2026-07-03 | `937afd8` | Finalized `v0.4.0` release-note wording before tagging and publishing. |
+| 2026-07-03 | `b026f7a` | Recorded the `v0.4.0` release authorization preflight and public-release boundary. |
+| 2026-07-03 | `8de602f` | Recorded `v0.4.0` pre-publish package, CLI, output-format, and dry-run auto-fix smoke checks. |
+| 2026-07-03 | `a42229f` | Recorded the `v0.4.0` release issue checkpoint after pushing release-prep commits and opening issue #30. |
+| 2026-07-03 | `74be52f` | Pushed and verified the local `v0.4.0` release-prep checkpoint; remote CI passed and issue #30 was opened. |
 | 2026-07-03 | `94fea40` | Prepared the `0.4.0` release target, version surfaces, release issue dry-run expectations, and draft release notes. |
 | 2026-07-03 | `c2e2c00` | Archived implementation notes, moved the tracked calibration manifest out of ignored `tmp/`, and removed stale local gem artifacts. |
 | 2026-07-03 | `2759102` | Recorded CI recovery and parity guard checkpoint. |
@@ -149,7 +228,10 @@ Agenticons used: `planner: release verification plan`.
   `docs/archive/implementation-notes-2026-06-29-through-2026-07-03.md`.
 - Project analyzer calibration record: `docs/project-analyzer-calibration.md`.
 - Tracked calibration target manifest: `docs/calibration/project_analyzer_targets.yml`.
-- Draft `v0.4.0` release notes: `docs/releases/v0.4.0.md`.
+- Published `v0.4.0` release notes: `docs/releases/v0.4.0.md`.
+- Sorbet adoption spike: `docs/spikes/sorbet-issue-26.md`.
+- Local ignored handoff, not committed:
+  `.handoffs/20260703173813_next_four_tasks_after_issue_sync.md`.
 - Candidate analyzer summary: `docs/sandi-metz-project-analyzer-candidates.md`.
 - Release process: `RELEASE_CHECKLIST.md`.
 - Local ignored strategy scratchpad: `logs/repeated-query-criteria-strategy-review.md`.
