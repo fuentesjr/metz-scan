@@ -48,18 +48,19 @@ tooling spikes that do not commit the project to new maintenance surfaces.
 - Release state: `v0.4.0` is tagged at `937afd8`, the GitHub Release is
   published, both GitHub Packages gems are published, and
   `bin/check_published_gem 0.4.0` passed again during the 2026-07-04
-  release-playbook follow-up sweep.
+  queued-task follow-up sweep.
 - Local branch state: release tag, release target, release completion,
   package-monitor checkpoint, feedback-sweep checkpoint, Sorbet spike report,
   issue-sync tracker checkpoint, handoff checkpoint, continuation sweep,
   next-four evidence sweep, Dependabot PR #29, README cleanup, the parked-queue
   tracker checkpoint, README analyzer-details cleanup, and Rubydex spike
   results, the Rubydex 0.2.7 calibration drift checkpoint, and the Rubydex
-  release-response playbook are pushed to `origin/main`; this tracker
-  checkpoint is local until pushed.
-- Latest checkpoint window: 15:39:16-15:43:44 -0700, 4m 28s elapsed through
-  package/#25/#27/#28 checks, agenticon evidence collection, and tracker
-  review.
+  release-response playbook are pushed to `origin/main`; the release-playbook
+  follow-up tracker checkpoint (`1ae96ea`) and this tracker checkpoint are local
+  until pushed.
+- Latest checkpoint window: 15:54:43-16:00:48 -0700, 6m 05s elapsed through
+  package/#25/#27/#28 checks, agenticon evidence collection, incidental lockfile
+  restoration, and tracker review.
 - Working tree expectation: keep tracked work clean before starting another
   slice; keep ignored `logs/` notes out of commits unless explicitly requested.
 
@@ -80,11 +81,12 @@ tooling spikes that do not commit the project to new maintenance surfaces.
 1. Continue package feedback watch without opening `0.4.x` work.
    - Why now: `bin/check_published_gem 0.4.0` passed immediately after publish,
      the first post-push recheck passed, the post-handoff recheck passed, and
-     the 2026-07-04 release-playbook follow-up recheck passed; GitHub
+     the 2026-07-04 queued-task follow-up recheck passed; GitHub
      issues/release/package metadata show no release/package defect, no open
-     PRs, and no open `0.4.x` milestone. PR #29 only bumped optional
-     development dependency `rubydex` to `0.2.7`; post-merge CI and subsequent
-     docs/tracker CI passed.
+     PRs, and no open `0.4.x` milestone. The `v0.4.0` release remains published
+     and not draft/prerelease. PR #29 only bumped optional development
+     dependency `rubydex` to `0.2.7`; post-merge CI and subsequent docs/tracker
+     CI passed.
    - Definition of done: any reported package install issue is triaged against
      the release tag and package metadata.
    - Files likely touched: issue/bugfix docs or code only if a concrete defect
@@ -132,13 +134,17 @@ tooling spikes that do not commit the project to new maintenance surfaces.
 
 ## Latest Slice Checkpoint
 
-Slice: 2026-07-04 release-response playbook follow-up and parked queue recheck.
+Slice: 2026-07-04 queued-task follow-up and parked queue recheck.
 
-Window: 15:39:16-15:43:44 -0700, 4m 28s elapsed through package/#25/#27/#28
-checks, agenticon evidence collection, and tracker review.
+Window: 15:54:43-16:00:48 -0700, 6m 05s elapsed through package/#25/#27/#28
+checks, agenticon evidence collection, incidental lockfile restoration, and
+tracker review.
 
 1. Checked for higher-priority work before repeating the parked queue.
-   - Local `main` was clean and aligned with `origin/main` at
+   - `git fetch origin` found only the deletion of the stale
+     `origin/dependabot/bundler/rubydex-0.2.6` branch.
+   - Local `main` was clean and one commit ahead of `origin/main` at
+     `1ae96ea Record release playbook follow-up`; `origin/main` remained at
      `f9f5a10 Document Rubydex release response playbook`.
    - There were no open PRs.
    - The latest five `main` CI runs were green, including run `28721866073`
@@ -152,38 +158,51 @@ checks, agenticon evidence collection, and tracker review.
      package defect, and there are no open milestones.
 3. Completed task 2: #25 dogfood CI trigger check.
    - #25 remains open and explicitly trigger-gated.
-   - Contributor evidence remains `fuentesjr` plus Dependabot, with no open PRs
-     and no regular multi-human PR flow.
+   - Contributor evidence remains `fuentesjr` plus Dependabot, currently 197
+     owner contributions and 7 Dependabot contributions, with no open PRs and
+     no regular multi-human PR flow.
+   - CI still intentionally has no `bin/check_dogfood` step.
    - Dogfood CI enforcement remains deferred.
 4. Completed task 3: #27 DeepInheritanceTree evidence check.
-   - The latest Rubydex `0.2.7` active-manifest recheck produced 363
-     DeepInheritanceTree findings: 213 broad-base and 150 manual-review.
+   - A targeted no-write active-fixture recheck produced 363 DeepInheritanceTree
+     findings and 363 offenses: low 213, medium 150, broad-base 213, and
+     manual-review 150.
    - Focused Mastodon/Discourse reruns stayed at 87 findings:
      Discourse 47, Mastodon 40; 68 broad-base and 19 manual-review overall.
+   - Current broad-root labels and triage are already in place, and the
+     remaining medium bucket is too heterogeneous for another filter.
    - No behavior, grouping, threshold, status, or output-policy change is
      justified. Keep #27 parked for future generic root-kind evidence only.
 5. Completed task 4: #28 RepeatedBranching evidence check.
    - RepeatedBranching is AST-only, so Rubydex drift does not directly affect
-     it. The latest active-manifest output was 51 findings and 122 offenses:
-     generic 13, state 25, expression 13.
+     it. A targeted no-write active-fixture recheck produced 51 findings and
+     122 offenses: generic 13, state 25, expression 13, low 13, medium 38,
+     context-required 13, and design-pressure 38.
    - Focused Mastodon/Discourse reruns stayed at 19 findings and 41 offenses:
      generic 10, state 4, expression 5.
+   - Current implementation already downranks generic subjects to
+     low/context-required and includes decision-subject metadata.
    - No wording, metadata, grouping, confidence/severity, threshold, or
      output-policy change is justified.
-6. Kept implementation work out of scope.
+6. Restored an incidental Bundler lockfile rewrite.
+   - A targeted calibration command rewrote `Gemfile.lock` from
+     `rubocop-metz (= 0.4.0)` to `rubocop-metz (~> 0.4.0)`.
+   - The line was restored because this slice should not change dependency
+     resolution.
+7. Kept implementation work out of scope.
    - No production Ruby, analyzer behavior, CI workflow, package release, or
      GitHub issue state changes were made in this slice.
    - The ignored handoff file remains in place because this tracker checkpoint
      is not pushed yet.
 
 Agenticons used: `helper_worker: package/release feedback and priority sweep`
-(`019f2f49-aade-7060-a89c-df4ffea73737`),
+(`019f2f57-8729-75f2-98c9-cdf71abf76ec`),
 `helper_worker: #25 dogfood CI trigger check`
-(`019f2f49-ab31-7ae1-8bf2-fa7583367429`),
+(`019f2f57-9f43-7380-b9f2-5d5993e28f87`),
 `helper_worker: #27 DeepInheritanceTree evidence`
-(`019f2f49-ab75-77a3-868b-fec373ec7415`), and
+(`019f2f57-ba5d-7e30-b321-5a8288b61229`), and
 `helper_worker: #28 RepeatedBranching evidence`
-(`019f2f49-abbb-71e0-9820-bc9492e8d583`).
+(`019f2f57-e006-7bb3-96b9-3ae8f383ea7d`).
 
 ## Parked / Not Next
 
@@ -200,7 +219,8 @@ Agenticons used: `helper_worker: package/release feedback and priority sweep`
 
 | Date | Commit | Summary |
 | --- | --- | --- |
-| 2026-07-04 | `this commit` | Recorded the release-response playbook follow-up and kept package/#25/#27/#28 parked. |
+| 2026-07-04 | `this commit` | Recorded the queued-task follow-up and kept package/#25/#27/#28 parked. |
+| 2026-07-04 | `1ae96ea` | Recorded the release-response playbook follow-up and kept package/#25/#27/#28 parked. |
 | 2026-07-04 | `f9f5a10` | Documented the Rubydex release-response playbook. |
 | 2026-07-04 | `d7fd52d` | Recorded the Rubydex 0.2.7 calibration drift recheck and kept package/#25/#27/#28 parked. |
 | 2026-07-03 | `4d88a82` | Updated Rubydex spike results for Rubydex 0.2.7. |
