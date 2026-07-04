@@ -142,74 +142,105 @@ current calibration notes.
 - Use `--project-analyzers` to review those context-dependent findings.
 - Default scan output keeps medium-confidence design-pressure findings.
 
-`DeepInheritanceTree` uses the optional Rubydex-backed project index. Without
-that optional bundle group enabled, `--project-analyzers` still runs and this
-analyzer simply contributes no findings. Broad framework, Rails application,
-controller, job, service, serializer, policy, worker, exception, CLI, and
-abstract bases remain visible, but they are reported with lower confidence and
-`broad base` triage.
-`PackageDependencyPressure` also requires the optional project index and
-contributes no findings when the index is unavailable. It currently only counts
-declarations under `app/` and `lib/` packages, and it ignores references from
-`spec/`, `test/`, `lib/tasks/`, `lib/seeders/`, `lib/seed_data/`,
-`lib/test_data/`, `lib/generators/`, nested seed paths, and nested
-`testing_support` paths when measuring cross-package pressure.
-Its default threshold is at least 12 referring files across at least 5 packages.
-Broad shared dependencies such as configuration, settings, event registries,
-exception families, infrastructure hubs, conventional domain model surfaces,
-value objects, and protocol-manager surfaces are still reported, but with lower
-confidence and shared-dependency triage. Metadata includes a shared
-`reference_shape` summary so package- and namespace-pressure calibration can
-compare referring file counts, package counts, package roots, and package
-leafs consistently.
-`NamespaceLeakPressure` also requires the optional project index and contributes
-no findings when the index is unavailable. It reports deeply nested declarations
-such as `Billing::Ledger::PrivateFormatter` when references spread outside the
-home namespace into at least three files across three coarse packages.
-References from the same namespace path, test roots, and setup/support paths
-such as nested seed and `testing_support` paths are ignored. Public constants,
-nested exception families, and framework or extension namespaces are reported
-with lower-confidence shared-namespace triage. Metadata includes the same
-shared `reference_shape` summary used by `PackageDependencyPressure`.
-`ImplicitContextPressure` is AST-only and remains candidate opt-in. Its first
-slice reports repeated Rails `CurrentAttributes`-style access, such as
-`Current.account` or `Spree::Current.store`, plus literal `Thread.current[...]`
-key access such as `Thread.current[:redis]`, only when the same ambient context
-appears in at least three files across at least two coarse packages. Lifecycle
-calls such as `Current.reset`, `Spree::Current.reset`, and `Current.set(...)`
-are ignored, and dynamic `Thread.current` keys stay out of scope. Category
-metadata distinguishes root vs namespaced `Current` receivers, thread-local
-keys, and whether the repeated access includes writes.
-`RepeatedQueryCriteria` is AST-only and remains candidate opt-in. Its current
-slice reports simple constant-receiver or constant-root scope-chain hash query
-criteria with at least two literal keys: positive `where` filters, negative
-`where.not` filters, and finder lookups such as `find_by`,
-`find_or_initialize_by`, or `find_or_create_by`. Examples include
-`Order.where(account_id: ..., status: ...)`,
-`Order.active.where.not(account_id: ..., status: ...)`, and
-`Post.find_by(topic_id: ..., post_number: ...)`, when the same receiver, query
-method, and key set appear in at least three files across at least two coarse
-packages. Dynamic SQL strings, single-key lookups, dynamic scope chains,
-non-constant receivers, dynamic hashes, bang finders, and broader relation APIs
-remain outside this slice. Category metadata distinguishes polymorphic,
-compound-association, association-scoped, and generic hash-criteria repeats,
-and records query method, query operation, and whether the receiver is a
-constant or a scope chain. The active fixture calibration currently contains 15
-findings: 6 positive `where` filters and 9 `find_by` lookups. No repeated
-`where.not` finding appears in the active fixtures at the current threshold.
-The current quality read is 12 useful manual-review prompts and 3 mechanical or
-expected lookups, so the analyzer stays candidate-only while membership-table
-lookups and business-named lookup concepts are kept separate in calibration.
-`SubclassOverridePressure` requires the optional project index and remains
-candidate opt-in. Its first slice reports base classes whose known descendants
-override the same base-declared method in at least six subclasses. Framework,
-Rails application, controller, job, service, serializer, policy, worker,
-exception, CLI, and abstract bases use the same broad-root vocabulary as `DeepInheritanceTree`
-and are reported with lower confidence and `broad base` triage. It also records
-whether the base method is abstract, empty, default-valued, or concrete, and
-whether descendant overrides call `super`, so repeated override families can be
-triaged as broad-root, abstract-hook, cooperative, replacement, or unclassified
-override pressure with category-specific report language and next steps.
+### Analyzer Behavior Details
+
+#### `MetzProject/DeepInheritanceTree`
+
+- **Index:** Uses the optional Rubydex-backed project index. If that optional
+  bundle group is unavailable, `--project-analyzers` still runs and this
+  analyzer simply contributes no findings.
+- **Triage:** Broad framework, Rails application, controller, job, service,
+  serializer, policy, worker, exception, CLI, and abstract bases remain visible
+  with lower confidence and `broad base` triage.
+
+#### `MetzProject/PackageDependencyPressure`
+
+- **Index:** Requires the optional project index and contributes no findings
+  when the index is unavailable.
+- **Scope:** Counts declarations under `app/` and `lib/` packages.
+- **Ignored references:** Skips `spec/`, `test/`, `lib/tasks/`,
+  `lib/seeders/`, `lib/seed_data/`, `lib/test_data/`, `lib/generators/`,
+  nested seed paths, and nested `testing_support` paths.
+- **Threshold:** Reports at least 12 referring files across at least
+  5 packages.
+- **Triage:** Broad shared dependencies such as configuration, settings, event
+  registries, exception families, infrastructure hubs, conventional domain model
+  surfaces, value objects, and protocol-manager surfaces are lower-confidence
+  shared-dependency findings.
+- **Metadata:** Includes a shared `reference_shape` summary so package- and
+  namespace-pressure calibration can compare referring file counts, package
+  counts, package roots, and package leafs consistently.
+
+#### `MetzProject/NamespaceLeakPressure`
+
+- **Index:** Requires the optional project index and contributes no findings
+  when the index is unavailable.
+- **Scope:** Reports deeply nested declarations such as
+  `Billing::Ledger::PrivateFormatter` when references spread outside the home
+  namespace into at least three files across three coarse packages.
+- **Ignored references:** Skips references from the same namespace path, test
+  roots, and setup/support paths such as nested seed and `testing_support`
+  paths.
+- **Triage:** Public constants, nested exception families, and framework or
+  extension namespaces are lower-confidence shared-namespace findings.
+- **Metadata:** Includes the same shared `reference_shape` summary used by
+  `PackageDependencyPressure`.
+
+#### `MetzProject/ImplicitContextPressure`
+
+- **Runtime needs:** AST-only and candidate opt-in.
+- **Scope:** Reports repeated Rails `CurrentAttributes`-style access such as
+  `Current.account` or `Spree::Current.store`, plus literal
+  `Thread.current[...]` key access such as `Thread.current[:redis]`.
+- **Threshold:** Requires the same ambient context in at least three files
+  across at least two coarse packages.
+- **Ignored calls:** Skips lifecycle calls such as `Current.reset`,
+  `Spree::Current.reset`, and `Current.set(...)`; dynamic `Thread.current` keys
+  stay out of scope.
+- **Metadata:** Distinguishes root vs namespaced `Current` receivers,
+  thread-local keys, and whether the repeated access includes writes.
+
+#### `MetzProject/RepeatedQueryCriteria`
+
+- **Runtime needs:** AST-only and candidate opt-in.
+- **Scope:** Reports simple constant-receiver or constant-root scope-chain hash
+  criteria with at least two literal keys.
+- **Included query shapes:** Positive `where` filters, negative `where.not`
+  filters, and finder lookups such as `find_by`, `find_or_initialize_by`, or
+  `find_or_create_by`.
+- **Examples:** `Order.where(account_id: ..., status: ...)`,
+  `Order.active.where.not(account_id: ..., status: ...)`, and
+  `Post.find_by(topic_id: ..., post_number: ...)`.
+- **Threshold:** Requires the same receiver, query method, and key set in at
+  least three files across at least two coarse packages.
+- **Out of scope:** Dynamic SQL strings, single-key lookups, dynamic scope
+  chains, non-constant receivers, dynamic hashes, bang finders, and broader
+  relation APIs.
+- **Metadata:** Distinguishes polymorphic, compound-association,
+  association-scoped, and generic hash-criteria repeats; records query method,
+  query operation, and whether the receiver is a constant or scope chain.
+- **Current calibration:** Active fixtures contain 15 findings: 6 positive
+  `where` filters and 9 `find_by` lookups. No repeated `where.not` finding
+  appears in active fixtures at the current threshold.
+- **Quality read:** 12 useful manual-review prompts and 3 mechanical or
+  expected lookups, so the analyzer stays candidate-only while
+  membership-table lookups and business-named lookup concepts remain separate
+  in calibration.
+
+#### `MetzProject/SubclassOverridePressure`
+
+- **Index:** Requires the optional project index and remains candidate opt-in.
+- **Scope:** Reports base classes whose known descendants override the same
+  base-declared method in at least six subclasses.
+- **Triage:** Framework, Rails application, controller, job, service,
+  serializer, policy, worker, exception, CLI, and abstract bases use the same
+  broad-root vocabulary as `DeepInheritanceTree` and are lower-confidence
+  `broad base` findings.
+- **Metadata:** Records whether the base method is abstract, empty,
+  default-valued, or concrete, and whether descendant overrides call `super`.
+  Repeated override families are triaged as broad-root, abstract-hook,
+  cooperative, replacement, or unclassified override pressure with
+  category-specific report language and next steps.
 
 Project analyzer output includes status, confidence, triage severity, and triage
 summary metadata. Default output includes only explicitly eligible, validated,
