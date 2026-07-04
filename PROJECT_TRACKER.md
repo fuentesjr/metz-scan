@@ -24,25 +24,35 @@ Standing rules:
   steps against the committed HEAD in a clean clone, so local-only environment
   assumptions (bundler config such as the optional rubydex group, untracked
   files) fail locally instead of in CI.
+- Do not commit tracker-only updates unless they accompany real project work.
+  If the tracker is stale, rewrite it before proceeding, but commit that
+  rewrite with the implementation, test, documentation, or tooling change that
+  made the update necessary.
+- Do not keep rechecking parked/watch-only items just because they are listed
+  near the top of the tracker. Move them to trigger-gated parked work and pick
+  the next actionable improvement.
 
 ## Current Direction
 
-`metz-scan` is currently optimizing for conservative release readiness,
+`metz-scan` is currently optimizing for developer workflow reliability,
 calibration confidence, and evidence-led tooling decisions, not detector
-expansion.
+expansion or repeated tracker-only sweeps.
 
 The project analyzer detector set has enough current evidence to stay
-candidate-heavy and opt-in. Recent work has therefore moved to release smoke,
-artifact-pipeline reliability, package/release metadata hardening, and bounded
-tooling spikes that do not commit the project to new maintenance surfaces.
+candidate-heavy and opt-in. The next useful work is to remove recurring
+workflow friction, make calibration commands safer and easier to interpret, and
+add focused tests around behavior that has already been learned through
+calibration.
 
 ## Current Snapshot
 
 - Date: 2026-07-04.
-- Latest pushed baseline: `f9f5a10 Document Rubydex release response playbook`.
-- CI state: run `28721866073` for `f9f5a10` succeeded in 1m 28s. Earlier runs
-  for `c0a01f5` (`28672899400`) and `64bceea` (`28680427556`) failed on
-  calibration evidence runner environment assumptions, both since fixed.
+- Latest pushed baseline: `e954cee Record parked queue follow-up`.
+- CI state: run `28722722473` for `e954cee` succeeded in 1m 27s after the
+  upstream push. The previous pushed baseline `f9f5a10` succeeded in run
+  `28721866073` in 1m 28s. Earlier runs for `c0a01f5` (`28672899400`) and
+  `64bceea` (`28680427556`) failed on calibration evidence runner environment
+  assumptions, both since fixed.
 - Release checklist issue: [#30](https://github.com/fuentesjr/metz-scan/issues/30),
   `Release v0.4.0`, is closed with the checklist complete.
 - Release state: `v0.4.0` is tagged at `937afd8`, the GitHub Release is
@@ -55,9 +65,10 @@ tooling spikes that do not commit the project to new maintenance surfaces.
   next-four evidence sweep, Dependabot PR #29, README cleanup, the parked-queue
   tracker checkpoint, README analyzer-details cleanup, and Rubydex spike
   results, the Rubydex 0.2.7 calibration drift checkpoint, and the Rubydex
-  release-response playbook are pushed to `origin/main`; the release-playbook
-  follow-up tracker checkpoint (`1ae96ea`), queued-task follow-up tracker
-  checkpoint (`b2513a8`), and this tracker checkpoint are local until pushed.
+  release-response playbook, release-playbook follow-up tracker checkpoint
+  (`1ae96ea`), queued-task follow-up tracker checkpoint (`b2513a8`), and
+  parked-queue follow-up tracker checkpoint (`e954cee`) are pushed to
+  `origin/main`.
 - Latest checkpoint window: 16:04:26-16:08:05 -0700, 3m 39s elapsed through
   package/#25/#27/#28 checks, agenticon evidence collection, incidental lockfile
   restoration, and tracker review.
@@ -72,65 +83,135 @@ tooling spikes that do not commit the project to new maintenance surfaces.
 | Calibration artifact pipeline | Healthy | Markdown output, artifact write path, sample-app calibration smoke, and the tracked target manifest under `docs/calibration/` are covered. | Maintain; change only when artifact or target-manifest behavior changes. |
 | Analyzer behavior | Parked | Fresh #27/#28 Mastodon and Discourse reruns did not show enough misleading or underexplained findings to justify behavior, threshold, or output-policy changes. | Reopen only with new generic evidence, not app-specific suppressions. |
 | Calibration evidence | Watching | Redmine, Rubygems.org, ManageIQ, and Foreman evidence has been consolidated; Rubydex `0.2.7` was rechecked against the active manifest. Full active-manifest output is 697 findings/806 offenses; the four Rubydex-index-backed analyzers account for 607 findings/607 offenses. | Recheck only Rubydex-index-backed analyzers after future Rubydex upgrades unless an AST-only analyzer changes. |
+| Workflow friction | Active | Targeted calibration commands repeatedly rewrite the local path dependency in `Gemfile.lock` from `rubocop-metz (= 0.4.0)` to `rubocop-metz (~> 0.4.0)`, even when invoked with `--no-write`. | Fix the mutation path and add a regression guard before doing more calibration-heavy work. |
 | Sorbet adoption spike | Complete | Issue #26 was evaluated in a disposable workspace, documented, synced back to GitHub, and closed. The report recommends not adopting now: a narrow static setup is possible, but generated RBI churn, command policy, fixture scope, and runtime signature implications outweigh observed value. | Do not add Sorbet unless a concrete type-related defect, contributor ergonomics need, or stable public API typing requirement appears. |
 | Docs/adoption | Stable | README points contributors and agents to this tracker; old implementation notes are archived, current notes are short, and the Sorbet spike report records the tooling decision. The README now splits RepeatedBranching generic-subject guidance into a short list, the analyzer behavior details into per-analyzer subsections, and the Rubydex spike/calibration docs reflect Rubydex `0.2.7` evidence plus the release-response playbook. | Keep docs changes minimal and evidence-led. |
 | Handoff continuity | Active | Local ignored handoff `.handoffs/20260703173813_next_four_tasks_after_issue_sync.md` captures the pushed issue-sync summary, conversation-only requirements, and the next four evidence-gated tasks. | Use it as the first continuation surface if context resets in this workspace; do not commit handoff files. |
 
 ## Next Queue
 
-1. Continue package feedback watch without opening `0.4.x` work.
-   - Why now: `bin/check_published_gem 0.4.0` passed immediately after publish,
-     the first post-push recheck passed, the post-handoff recheck passed, and
-     the 2026-07-04 parked-queue follow-up recheck passed; GitHub
-     issues/release/package metadata show no release/package defect, no open
-     PRs, and no open `0.4.x` milestone. The `v0.4.0` release remains published
-     and not draft/prerelease. PR #29 only bumped optional development
-     dependency `rubydex` to `0.2.7`; post-merge CI and subsequent docs/tracker
-     CI passed.
-   - Definition of done: any reported package install issue is triaged against
-     the release tag and package metadata.
-   - Files likely touched: issue/bugfix docs or code only if a concrete defect
-     appears.
-   - Not in scope: speculative package changes without a failing install path.
+1. Fix calibration commands mutating `Gemfile.lock`.
+   - Why now: repeated targeted `bin/check_project_analyzer_calibration`
+     invocations rewrite `rubocop-metz (= 0.4.0)` to `rubocop-metz (~> 0.4.0)`,
+     creating manual cleanup after read-only calibration.
+   - Definition of done: the targeted DeepInheritanceTree and RepeatedBranching
+     no-write calibration commands leave `git diff -- Gemfile.lock` empty, with
+     a regression test covering the no-mutation behavior.
+   - Files likely touched: `bin/check_project_analyzer_calibration`,
+     `Gemfile.lock`, calibration runner tests, and test support helpers.
+   - Not in scope: changing dependency constraints or release metadata.
 
-2. Keep #25 dogfood CI enforcement deferred until its trigger appears.
-   - Why now: #25 explicitly waits for collaboration expansion; current evidence
-     still shows only owner plus Dependabot activity, currently 197 owner
-     contributions and 7 Dependabot contributions. There are no open PRs, so
-     there is still no need to add optional Rubydex setup and dogfood runtime to
-     CI.
-   - Definition of done: leave #25 open but inactive unless collaboration
-     broadens or CI dogfood enforcement becomes necessary.
-   - Files likely touched: none.
-   - Not in scope: adding a dogfood CI gate just because the release shipped.
+2. Add a no-worktree-mutation guard for read-only maintenance commands.
+   - Why now: `--no-write` should mean no tracked-file mutations, and the
+     lockfile drift shows this contract is currently implicit.
+   - Definition of done: a focused test or helper runs representative read-only
+     commands in a temporary copy and fails if tracked files change.
+   - Files likely touched: `test/`, `bin/check_project_analyzer_calibration`,
+     and possibly a small reusable test helper.
+   - Not in scope: enforcing the guard on commands that intentionally write
+     artifacts.
 
-3. Keep #27 DeepInheritanceTree parked unless new misleading root-label
-   evidence appears.
-   - Why now: the latest Rubydex `0.2.7` active-manifest recheck produced 363
-     DeepInheritanceTree findings, split as 213 broad-base and 150
-     manual-review findings. Focused Mastodon/Discourse reruns stayed at 87
-     findings: Discourse 47 and Mastodon 40, with 68 broad-base and 19
-     manual-review findings overall. Current root-kind labels and broad-base
-     downranking are still doing the intended work.
-   - Definition of done: future work resumes from concrete cross-project
-     evidence showing labels are insufficient, not from output volume alone.
-   - Files likely touched: none.
-   - Not in scope: analyzer behavior, thresholds, statuses, suppressions,
-     default-output policy, or target intake.
+3. Add a tracker hygiene guard that separates actionable queue items from
+   parked/watch-only items.
+   - Why now: repeated package/#25/#27/#28 sweeps proved the tracker can send
+     agents into bookkeeping loops.
+   - Definition of done: a lightweight script or test fails when every top
+     `Next Queue` item is phrased as watch/keep/defer without an actionable
+     code, test, docs, or tooling outcome.
+   - Files likely touched: `PROJECT_TRACKER.md`, `test/`, and optionally a
+     small `bin/check_tracker_queue` helper.
+   - Not in scope: building a general project-management system.
 
-4. Keep #28 RepeatedBranching parked unless new generic-subject evidence
-   requires reporting changes.
-   - Why now: RepeatedBranching is AST-only and not materially Rubydex-sensitive
-     under the current calibration flow. The latest active-manifest recheck
-     produced 51 findings and 122 offenses: generic 13, state 25, expression 13.
-     Focused Mastodon/Discourse reruns stayed at 19 findings and 41 offenses:
-     generic 10, state 4, expression 5.
-   - Definition of done: keep the queue empty of implementation work until a
-     package defect, collaboration trigger, or cross-project analyzer evidence
-     appears.
-   - Files likely touched: none.
-   - Not in scope: starting speculative detector, CI, or tooling changes to keep
-     the queue busy.
+4. Add a Rubydex drift check command for future dependency upgrades.
+   - Why now: the Rubydex `0.2.7` upgrade showed only four index-backed
+     analyzers need rechecking after Rubydex version drift.
+   - Definition of done: a command runs the four index-backed analyzers
+     against the active manifest and prints a compact count/confidence/severity
+     summary suitable for release-response notes.
+   - Files likely touched: `bin/`, `docs/rubydex-spike.md`,
+     `docs/project-analyzer-calibration.md`, and tests for command output.
+   - Not in scope: rechecking AST-only analyzers after Rubydex-only upgrades.
+
+5. Add calibration delta reporting against the last documented baseline.
+   - Why now: manual comparisons of 697/806, 607/607, 363/363, and 51/122 are
+     error-prone and encourage repeated full reruns.
+   - Definition of done: calibration output can show count deltas by analyzer,
+     confidence, severity, and category compared with a checked-in baseline
+     file.
+   - Files likely touched: calibration evidence runner code, fixtures under
+     `test/fixtures/`, and `docs/project-analyzer-calibration.md`.
+   - Not in scope: changing analyzer thresholds from the delta output alone.
+
+6. Add stable DeepInheritanceTree category fixture coverage.
+   - Why now: #27 is parked because broad-root labels are currently doing the
+     intended work; that learned behavior should be guarded directly.
+   - Definition of done: tests assert representative broad-root categories such
+     as `rails application base`, `controller base`, `serializer base`,
+     `application job base`, and `framework root`.
+   - Files likely touched: `test/metz_scan/analyzers/inheritance_descendants*`,
+     project-index fixtures, and focused calibration fixtures.
+   - Not in scope: adding new root-kind categories without evidence.
+
+7. Add stable RepeatedBranching triage fixture coverage.
+   - Why now: #28 is parked because generic subjects are already low/context
+     required while state/expression subjects remain medium/design pressure.
+   - Definition of done: tests assert representative metadata and message output
+     for generic, state, and expression branch subjects, including
+     `decision_subject_kind`.
+   - Files likely touched: `test/metz_scan/analyzers/repeated_branching_*` and
+     `lib/metz_scan/analyzers/repeated_branching*` only if gaps appear.
+   - Not in scope: expanding branch parsing or changing thresholds.
+
+8. Improve project analyzer summary output for high-volume opt-in runs.
+   - Why now: large opt-in outputs are hard to scan, and repeated manual
+     summaries have focused on the same confidence/severity/category breakdowns.
+   - Definition of done: text output includes a compact top-level summary with
+     analyzer counts, confidence counts, severity counts, and category counts
+     before detailed findings.
+   - Files likely touched: scan output rendering, calibration output fixtures,
+     and README examples if the user-facing output changes.
+   - Not in scope: changing JSON/SARIF schemas unless necessary.
+
+9. Add a contributor-facing package install troubleshooting smoke.
+   - Why now: package watch is no longer active work, but the release response
+     path would be faster with a scripted consumer install diagnostic.
+   - Definition of done: a command or documented smoke verifies GitHub Packages
+     credentials, installs `metz-scan`, and reports actionable failures without
+     publishing or mutating the repo.
+   - Files likely touched: `bin/check_published_gem`, README install docs,
+     `docs/releases/`, and tests around error messages.
+   - Not in scope: changing package ownership or publishing a new gem.
+
+10. Make `bin/check_ci_parity` faster to diagnose when it fails.
+    - Why now: the parity guard is required before pushes and can take enough
+      time that failures should point directly to the failing phase and clone
+      path.
+    - Definition of done: failure output names the exact phase, preserves the
+      clean clone path for inspection, and has tests for at least one failing
+      phase.
+    - Files likely touched: `bin/check_ci_parity` and command tests.
+    - Not in scope: removing any existing parity phase.
+
+11. Add a command for generating a concise issue-comment evidence summary.
+    - Why now: parked issues #25/#27/#28 repeatedly need the same concise
+      evidence, but agents should not manually rewrite it each time.
+    - Definition of done: a script can render a read-only summary for a chosen
+      issue or analyzer from current tracker/calibration state without posting
+      to GitHub.
+    - Files likely touched: `bin/`, `docs/project-analyzer-calibration.md`, and
+      tests for rendered output.
+    - Not in scope: automatically commenting on GitHub issues.
+
+12. Add a docs freshness check for README analyzer-status claims.
+    - Why now: README status tables, readiness catalog text, and calibration
+      docs can drift as analyzer status and default-output eligibility change.
+    - Definition of done: a focused test checks README analyzer statuses against
+      the analyzer constants/readiness catalog for status and default-output
+      eligibility.
+    - Files likely touched: `README.md`,
+      `lib/metz_scan/calibration/project_analyzer_evidence_runner/readiness_catalog.rb`,
+      and docs/tests.
+    - Not in scope: rewriting analyzer behavior.
 
 ## Latest Slice Checkpoint
 
@@ -209,6 +290,17 @@ Agenticons used: `helper_worker: package/release feedback and priority sweep`
 
 ## Parked / Not Next
 
+- Package/release feedback watch is trigger-gated. Reopen only for a concrete
+  install, package metadata, release artifact, or registry access defect.
+- #25 dogfood CI enforcement is trigger-gated. Reopen only when collaboration
+  expands beyond owner plus Dependabot, when PRs regularly come from multiple
+  people, or when CI-enforced dogfood drift becomes a deliberate policy goal.
+- #27 DeepInheritanceTree remains parked. Reopen only with new misleading
+  root-label evidence that is not already covered by current broad-root labels
+  and downranking.
+- #28 RepeatedBranching remains parked. Reopen only with new evidence that
+  generic low/context-required branch-subject findings are still confusing or
+  underexplained after the README and metadata improvements.
 - Do not promote candidate analyzers to default output.
 - Do not change analyzer thresholds from the current evidence.
 - Do not add app-specific suppressions.
@@ -222,7 +314,7 @@ Agenticons used: `helper_worker: package/release feedback and priority sweep`
 
 | Date | Commit | Summary |
 | --- | --- | --- |
-| 2026-07-04 | `this commit` | Recorded the parked-queue follow-up and kept package/#25/#27/#28 parked. |
+| 2026-07-04 | `e954cee` | Recorded the parked-queue follow-up and kept package/#25/#27/#28 parked. |
 | 2026-07-04 | `b2513a8` | Recorded the queued-task follow-up and kept package/#25/#27/#28 parked. |
 | 2026-07-04 | `1ae96ea` | Recorded the release-response playbook follow-up and kept package/#25/#27/#28 parked. |
 | 2026-07-04 | `f9f5a10` | Documented the Rubydex release-response playbook. |
