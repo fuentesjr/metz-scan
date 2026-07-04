@@ -77,15 +77,13 @@ offenses:
 
 Rubydex version drift directly affects the project-index-backed analyzers, so
 the future minimal recheck scope is the four analyzers that consume the
-optional index:
+optional index: `MetzProject/DeepInheritanceTree`,
+`MetzProject/PackageDependencyPressure`, `MetzProject/NamespaceLeakPressure`,
+and `MetzProject/SubclassOverridePressure`. Use the compact drift command for
+that check:
 
 ```bash
-bin/check_project_analyzer_calibration --text --no-write \
-  --targets-file docs/calibration/project_analyzer_targets.yml \
-  --analyzer MetzProject/DeepInheritanceTree \
-  --analyzer MetzProject/PackageDependencyPressure \
-  --analyzer MetzProject/NamespaceLeakPressure \
-  --analyzer MetzProject/SubclassOverridePressure
+bin/check_rubydex_drift
 ```
 
 The focused index-backed run produced 607 findings and 607 offenses:

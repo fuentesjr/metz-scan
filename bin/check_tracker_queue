@@ -1,0 +1,39 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+ACTION_WORDS = /\b(add|check|docs?|fix|generate|guard|implement|improve|make|script|test|tooling|update)\b/i
+PARKED_WORDS = /\b(defer|keep|monitor|park(?:ed)?|watch)\b/i
+TOP_QUEUE_LIMIT = 3
+
+def tracker_path
+  ARGV.fetch(0, File.expand_path("../PROJECT_TRACKER.md", __dir__))
+end
+
+def next_queue_items(markdown)
+  section = markdown[/^## Next Queue\n(?<body>.*?)(?=^## |\z)/m, :body]
+  return [] unless section
+
+  section.lines.filter_map { |line| line[/^\d+\.\s+(.+?)\.?\s*$/, 1]&.strip }
+end
+
+def parked_only?(title)
+  title.match?(PARKED_WORDS) && !title.match?(ACTION_WORDS)
+end
+
+def abort_with(message)
+  warn "check_tracker_queue: #{message}"
+  exit 1
+end
+
+path = tracker_path
+abort_with "missing tracker: #{path}" unless File.file?(path)
+
+items = next_queue_items(File.read(path))
+abort_with "PROJECT_TRACKER.md has no `## Next Queue` items" if items.empty?
+
+top_items = items.first(TOP_QUEUE_LIMIT)
+if top_items.all? { |title| parked_only?(title) }
+  abort_with "top #{top_items.size} Next Queue items are all parked/watch-only: #{top_items.join(' | ')}"
+end
+
+puts "check_tracker_queue: ok"

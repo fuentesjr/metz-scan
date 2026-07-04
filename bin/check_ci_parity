@@ -29,6 +29,7 @@ STEPS = [
   "bundle exec rake",
   "bundle exec rubocop",
   "bundle exec ruby bin/check_project_analyzer_calibration --text --no-write test/fixtures/sample_app",
+  "bin/check_read_only_commands",
   "bin/check_dependency_direction",
   "bin/check_sample_app_frozen"
 ].freeze

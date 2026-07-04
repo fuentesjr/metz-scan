@@ -1,0 +1,158 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+$LOAD_PATH.unshift(File.expand_path("../lib", __dir__))
+
+require "json"
+require "optparse"
+
+require "metz_scan/calibration/project_analyzer_evidence_runner"
+require "metz_scan/commands/scan/project_analyzer_runner"
+
+PROJECT_ANALYZER_RUNNER = MetzScan::Commands::Scan::ProjectAnalyzerRunner
+ANALYZERS = PROJECT_ANALYZER_RUNNER::INDEX_BACKED_ANALYZERS.map { |analyzer| analyzer::RULE_ID }.freeze
+DEFAULT_TARGETS_FILE = File.expand_path("../docs/calibration/project_analyzer_targets.yml", __dir__)
+RUNNER = MetzScan::Calibration::ProjectAnalyzerEvidenceRunner
+
+def parse_options
+  options = { json: false, targets_file: nil, allow_missing_rubydex: false }
+  OptionParser.new { |parser| configure_options(parser, options) }.parse!
+  options
+end
+
+def configure_options(parser, options)
+  parser.banner = "Usage: check_rubydex_drift [--json] [--text] [--targets-file FILE] " \
+                  "[--allow-missing-rubydex] [PATH ...]"
+  add_output_options(parser, options)
+  add_target_options(parser, options)
+  add_help_option(parser)
+end
+
+def add_output_options(parser, options)
+  parser.on("--json", "Output compact JSON") { options[:json] = true }
+  parser.on("--text", "Output compact text (default)") { options[:json] = false }
+end
+
+def add_target_options(parser, options)
+  parser.on("--targets-file FILE", "Read calibration targets and scan paths from FILE") do |file|
+    options[:targets_file] = file
+  end
+  add_missing_rubydex_option(parser, options)
+  parser.on("--no-write", "Accepted for compatibility; this command never writes artifacts") { nil }
+end
+
+def add_missing_rubydex_option(parser, options)
+  parser.on("--allow-missing-rubydex", "Exit successfully with a skip message when Rubydex is unavailable") do
+    options[:allow_missing_rubydex] = true
+  end
+end
+
+def add_help_option(parser)
+  parser.on("-h", "--help", "Show usage") do
+    puts parser
+    exit 0
+  end
+end
+
+def ensure_rubydex_available!(allow_missing)
+  require "rubydex"
+rescue LoadError
+  handle_missing_rubydex(allow_missing)
+end
+
+def handle_missing_rubydex(allow_missing)
+  message = "check_rubydex_drift: rubydex is unavailable; enable the optional rubydex bundle group first"
+  allow_missing ? skip_missing_rubydex(message) : fail_missing_rubydex(message)
+end
+
+def skip_missing_rubydex(message)
+  puts "#{message}; skipped"
+  exit 0
+end
+
+def fail_missing_rubydex(message)
+  warn message
+  exit 1
+end
+
+def summary_for(options)
+  targets_file = options[:targets_file] || (ARGV.empty? ? DEFAULT_TARGETS_FILE : nil)
+  RUNNER.summarize(paths: ARGV, default_output: false, analyzer_names: ANALYZERS, targets_file: targets_file)
+end
+
+def compact_json(summary)
+  JSON.pretty_generate(compact_payload(summary))
+end
+
+def compact_payload(summary)
+  compact_identity(summary).merge(compact_results(summary))
+end
+
+def compact_identity(summary)
+  { "targets_file" => summary["targets_file"],
+    "targets" => summary.fetch("targets").map { |target| target.fetch("name") },
+    "analyzers" => ANALYZERS }.compact
+end
+
+def compact_results(summary)
+  { "finding_count" => summary.fetch("finding_count"),
+    "offense_count" => summary.fetch("offense_count"),
+    "rules" => summary.fetch("project_analyzers", {}).fetch("rules", []),
+    "breakdowns" => summary.fetch("breakdowns", {}) }
+end
+
+def compact_text(summary)
+  [header_lines(summary), rule_lines(summary), breakdown_lines(summary)].flatten.compact.join("\n")
+end
+
+def header_lines(summary)
+  ["rubydex drift check",
+   targets_file_line(summary),
+   "targets: #{summary.fetch('targets').map { |target| target.fetch('name') }.join(', ')}",
+   "analyzers: #{ANALYZERS.join(', ')}",
+   "findings: #{summary.fetch('finding_count')} (offenses: #{summary.fetch('offense_count')})"]
+end
+
+def targets_file_line(summary)
+  "targets file: #{summary['targets_file']}" if summary["targets_file"]
+end
+
+def rule_lines(summary)
+  rules = summary.fetch("project_analyzers", {}).fetch("rules", [])
+  return ["rules: none"] if rules.empty?
+
+  ["rules:", *rules.map { |rule| rule_line(rule) }]
+end
+
+def rule_line(rule)
+  "  - #{rule.fetch('cop_name')}: #{rule.fetch('finding_count')} finding(s), " \
+    "#{rule.fetch('offense_count')} offense(s), status=#{rule.fetch('status', '?')}, " \
+    "confidence=#{rule.fetch('confidence', '?')}, severity=#{rule.fetch('triage_severity', '?')}"
+end
+
+def breakdown_lines(summary)
+  breakdowns = summary.fetch("breakdowns", {})
+  lines = [breakdown_line("confidence", breakdowns["confidence"]),
+           breakdown_line("severity", breakdowns["triage_severity"])].compact
+  lines.empty? ? [] : ["breakdowns:", *lines]
+end
+
+def breakdown_line(label, values)
+  return if values.to_a.empty?
+
+  "  - #{label}: #{values.map { |value| "#{value.fetch('value')}=#{value.fetch('finding_count')}" }.join(', ')}"
+end
+
+begin
+  options = parse_options
+  ensure_rubydex_available!(options.fetch(:allow_missing_rubydex))
+  summary = summary_for(options)
+  puts(options.fetch(:json) ? compact_json(summary) : compact_text(summary))
+  exit 0
+rescue OptionParser::ParseError, MetzScan::Calibration::ProjectAnalyzerEvidenceRunner::Error => e
+  warn "check_rubydex_drift: #{e.message}"
+  exit 1
+rescue StandardError => e
+  warn "check_rubydex_drift: #{e.message}"
+  exit 2
+end

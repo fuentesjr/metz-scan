@@ -45,12 +45,7 @@ within the current constraint, such as `0.2.x`, should at least re-run the
 Rubydex-index-backed analyzer subset against the active manifest:
 
 ```bash
-bin/check_project_analyzer_calibration --text --no-write \
-  --targets-file docs/calibration/project_analyzer_targets.yml \
-  --analyzer MetzProject/DeepInheritanceTree \
-  --analyzer MetzProject/PackageDependencyPressure \
-  --analyzer MetzProject/NamespaceLeakPressure \
-  --analyzer MetzProject/SubclassOverridePressure
+bin/check_rubydex_drift
 ```
 
 Those four analyzers consume the optional project index directly. AST/file-based
@@ -60,9 +55,9 @@ Rubydex-driven recheck unless their own implementation or the active fixture
 manifest changes.
 
 For a new minor line that requires a Gemfile constraint change, such as
-`0.3.0`, treat the update as higher risk: run the targeted calibration above,
-run the Rubydex spike commands in this document, and compare index counts,
-diagnostics, declaration kinds, descendant counts, constant references, and
+`0.3.0`, treat the update as higher risk: run `bin/check_rubydex_drift`, run the
+Rubydex spike commands in this document, and compare index counts, diagnostics,
+declaration kinds, descendant counts, constant references, and
 method-declaration behavior before merging. Record material count or readiness
 changes in `docs/project-analyzer-calibration.md` and `PROJECT_TRACKER.md`.
 
