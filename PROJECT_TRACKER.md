@@ -39,8 +39,8 @@ tooling spikes that do not commit the project to new maintenance surfaces.
 ## Current Snapshot
 
 - Date: 2026-07-03.
-- Latest pushed baseline: `797ade8 Record Sorbet adoption spike`.
-- CI state: run `28689093989` for `797ade8` succeeded. Earlier runs for
+- Latest pushed baseline: `543dfe2 Record issue queue sync`.
+- CI state: run `28689484542` for `543dfe2` succeeded. Earlier runs for
   `c0a01f5` (`28672899400`) and `64bceea` (`28680427556`) failed on
   calibration evidence runner environment assumptions, both since fixed.
 - Release checklist issue: [#30](https://github.com/fuentesjr/metz-scan/issues/30),
@@ -49,10 +49,10 @@ tooling spikes that do not commit the project to new maintenance surfaces.
   published, both GitHub Packages gems are published, and
   `bin/check_published_gem 0.4.0` passed.
 - Local branch state: release tag, release target, release completion,
-  package-monitor checkpoint, feedback-sweep checkpoint, and Sorbet spike
-  report are pushed to `origin/main`; this issue-sync tracker checkpoint is
-  local until pushed.
-- Latest checkpoint window: 17:19:23-17:27:30 -0700, 8m 07s elapsed.
+  package-monitor checkpoint, feedback-sweep checkpoint, Sorbet spike report,
+  and issue-sync tracker checkpoint are pushed to `origin/main`; this handoff
+  checkpoint is local until pushed.
+- Latest checkpoint window: 17:35:05-17:42:44 -0700, 7m 39s elapsed.
 - Working tree expectation: keep tracked work clean before starting another
   slice; keep ignored `logs/` notes out of commits unless explicitly requested.
 
@@ -60,12 +60,13 @@ tooling spikes that do not commit the project to new maintenance surfaces.
 
 | Workstream | Status | Current State | Next Move |
 | --- | --- | --- | --- |
-| Release readiness | Complete | `v0.4.0` is tagged, released on GitHub, published to GitHub Packages for both gems, verified with repeated post-publish smoke, issue #30 is closed, and post-release CI for `797ade8` is green. | Monitor package installation feedback; no `0.4.x` follow-up milestone is open without a concrete defect. |
+| Release readiness | Complete | `v0.4.0` is tagged, released on GitHub, published to GitHub Packages for both gems, verified with repeated post-publish smoke, issue #30 is closed, and post-release CI for `543dfe2` is green. | Monitor package installation feedback; no `0.4.x` follow-up milestone is open without a concrete defect. |
 | Calibration artifact pipeline | Healthy | Markdown output, artifact write path, sample-app calibration smoke, and the tracked target manifest under `docs/calibration/` are covered. | Maintain; change only when artifact or target-manifest behavior changes. |
 | Analyzer behavior | Parked | Generic classifier checkpoint concluded current evidence is too mixed for behavior changes; #27 and #28 now have explicit evidence bars for any future implementation slice. | Reopen only with new generic evidence, not app-specific suppressions. |
 | Calibration evidence | Watching | Redmine, Rubygems.org, ManageIQ, and Foreman evidence has been consolidated. | Do not add another target by default. |
 | Sorbet adoption spike | Complete | Issue #26 was evaluated in a disposable workspace, documented, synced back to GitHub, and closed. The report recommends not adopting now: a narrow static setup is possible, but generated RBI churn, command policy, fixture scope, and runtime signature implications outweigh observed value. | Do not add Sorbet unless a concrete type-related defect, contributor ergonomics need, or stable public API typing requirement appears. |
 | Docs/adoption | Stable | README points contributors and agents to this tracker; old implementation notes are archived, current notes are short, and the Sorbet spike report records the tooling decision. | Keep docs changes minimal and evidence-led. |
+| Handoff continuity | Active | Local ignored handoff `.handoffs/20260703173813_next_four_tasks_after_issue_sync.md` captures the pushed issue-sync summary, conversation-only requirements, and the next four evidence-gated tasks. | Use it as the first continuation surface if context resets in this workspace; do not commit handoff files. |
 
 ## Next Queue
 
@@ -110,36 +111,31 @@ tooling spikes that do not commit the project to new maintenance surfaces.
 
 ## Latest Slice Checkpoint
 
-Slice: 2026-07-03 pushed Sorbet spike and synced GitHub issue queue.
+Slice: 2026-07-03 pushed issue sync and wrote handoff.
 
-Window: 17:19:23-17:27:30 -0700, 8m 07s elapsed.
+Window: 17:35:05-17:42:44 -0700, 7m 39s elapsed.
 
-1. Pushed and verified the Sorbet spike checkpoint.
+1. Pushed and verified the issue-sync checkpoint.
    - `bin/check_ci_parity` passed before push: 465 runs, 2026 assertions,
      0 failures, 0 errors, 6 skips; RuboCop inspected 196 files with no
      offenses; calibration smoke and guard scripts passed.
-   - `797ade8 Record Sorbet adoption spike` was pushed to
-     `origin/main`.
-   - CI run `28689093989` passed for `797ade8` in 1m 22s.
-2. Closed the Sorbet spike loop on GitHub.
-   - Commented on #26 with the report path, commit, CI run, recommendation, and
-     key evidence.
-   - Closed #26 as completed.
-   - Confirmed no Sorbet, Tapioca, `sorbet-runtime`, RBI, runtime signature, CI
-     gate, or production code changes exist in the working tree.
-3. Reaffirmed deferred dogfood CI enforcement.
-   - Commented on #25 that it remains open and trigger-gated on collaboration
-     expansion or a concrete CI enforcement need.
-   - Did not change CI workflow, optional Rubydex setup, or dogfood runtime.
-4. Tightened analyzer follow-up evidence bars without changing behavior.
-   - Commented on #27 with a cross-project evidence bar for future
-     DeepInheritanceTree framework-root work.
-   - Commented on #28 with a cross-project evidence bar for future
-     RepeatedBranching generic branch-subject work.
-   - Open issue queue is now #25, #27, and #28; all are parked until their
-     trigger conditions appear.
+   - `543dfe2 Record issue queue sync` was pushed to `origin/main`.
+   - CI run `28689484542` passed for `543dfe2` in 1m 22s.
+2. Created a handoff document with the completed summary and next tasks.
+   - Wrote local ignored handoff `.handoffs/20260703173813_next_four_tasks_after_issue_sync.md`.
+   - The handoff includes conversation-only requirements: update this tracker,
+     commit, keep using agenticons, and track elapsed time.
+3. Carried forward the next four tasks for a fresh agent.
+   - Verify pushed baseline and release/package state.
+   - Keep #25 dogfood CI enforcement deferred unless its trigger fires.
+   - Treat #27 DeepInheritanceTree work as evidence collection only.
+   - Treat #28 RepeatedBranching work as evidence collection only.
+4. Kept behavior and issue state unchanged.
+   - No production Ruby, analyzer behavior, CI workflow, Sorbet, package, or
+     GitHub issue state changes were made in this slice.
+   - Open issue queue remains #25, #27, and #28; #26 remains closed.
 
-Agenticons used: `planner: next queue selection`.
+Agenticons used: `planner: handoff next-four tasks`.
 
 ## Parked / Not Next
 
@@ -156,7 +152,8 @@ Agenticons used: `planner: next queue selection`.
 
 | Date | Commit | Summary |
 | --- | --- | --- |
-| 2026-07-03 | `this commit` | Recorded the pushed Sorbet spike verification, closed #26, and updated the issue queue evidence bars. |
+| 2026-07-03 | `this commit` | Added the next-four-tasks handoff and recorded the pushed issue-sync verification. |
+| 2026-07-03 | `543dfe2` | Recorded the pushed Sorbet spike verification, closed #26, and updated the issue queue evidence bars. |
 | 2026-07-03 | `797ade8` | Recorded the issue #26 Sorbet adoption spike, recommended not adopting now, and updated the next queue accordingly. |
 | 2026-07-03 | `60a7386` | Recorded the post-release feedback sweep and kept #26 as the next bounded non-release work item before this spike. |
 | 2026-07-03 | `64fa605` | Recorded the post-release package monitor checkpoint and deferred a `0.4.x` milestone without a concrete defect. |
@@ -190,6 +187,8 @@ Agenticons used: `planner: next queue selection`.
 - Tracked calibration target manifest: `docs/calibration/project_analyzer_targets.yml`.
 - Published `v0.4.0` release notes: `docs/releases/v0.4.0.md`.
 - Sorbet adoption spike: `docs/spikes/sorbet-issue-26.md`.
+- Local ignored handoff, not committed:
+  `.handoffs/20260703173813_next_four_tasks_after_issue_sync.md`.
 - Candidate analyzer summary: `docs/sandi-metz-project-analyzer-candidates.md`.
 - Release process: `RELEASE_CHECKLIST.md`.
 - Local ignored strategy scratchpad: `logs/repeated-query-criteria-strategy-review.md`.
