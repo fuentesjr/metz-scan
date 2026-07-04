@@ -32,6 +32,44 @@ bundle exec ruby script/rubydex_spike.rb test/fixtures/sample_app
 Without the optional group, the spike exits with a clear message and normal
 checks continue to run without Rubydex.
 
+## Staying Current on Rubydex Releases
+
+Use Dependabot as the primary signal. `.github/dependabot.yml` checks Bundler
+weekly, so new `rubydex` releases should arrive as dependency PRs. For human
+awareness, subscribe to GitHub release notifications for
+<https://github.com/Shopify/rubydex> or its releases feed:
+<https://github.com/Shopify/rubydex/releases.atom>.
+
+Treat every `rubydex` bump as a project-index drift check. Patch/minor updates
+within the current constraint, such as `0.2.x`, should at least re-run the
+Rubydex-index-backed analyzer subset against the active manifest:
+
+```bash
+bin/check_project_analyzer_calibration --text --no-write \
+  --targets-file docs/calibration/project_analyzer_targets.yml \
+  --analyzer MetzProject/DeepInheritanceTree \
+  --analyzer MetzProject/PackageDependencyPressure \
+  --analyzer MetzProject/NamespaceLeakPressure \
+  --analyzer MetzProject/SubclassOverridePressure
+```
+
+Those four analyzers consume the optional project index directly. AST/file-based
+analyzers such as `RepeatedBranching`, `ServiceSoup`,
+`RepeatedQueryCriteria`, and `ImplicitContextPressure` do not need a
+Rubydex-driven recheck unless their own implementation or the active fixture
+manifest changes.
+
+For a new minor line that requires a Gemfile constraint change, such as
+`0.3.0`, treat the update as higher risk: run the targeted calibration above,
+run the Rubydex spike commands in this document, and compare index counts,
+diagnostics, declaration kinds, descendant counts, constant references, and
+method-declaration behavior before merging. Record material count or readiness
+changes in `docs/project-analyzer-calibration.md` and `PROJECT_TRACKER.md`.
+
+Do not re-run historical `/private/tmp` calibration artifacts for release
+tracking. Current decisions should use `tmp/project-analyzer-calibration/apps`
+and the tracked manifest at `docs/calibration/project_analyzer_targets.yml`.
+
 ## Current Results
 
 On this repo with Rubydex `0.2.7`:
