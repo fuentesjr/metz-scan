@@ -602,10 +602,6 @@ module MetzScan
         with_tmpdir { |dir| assert_baseline_deltas(dir) }
       end
 
-      def test_summary_rejects_baseline_scope_mismatch
-        with_tmpdir { |dir| assert_baseline_scope_mismatch(dir) }
-      end
-
       private
 
       def assert_baseline_deltas(dir)
@@ -655,25 +651,11 @@ module MetzScan
         assert_equal expected_delta, entry.fetch("finding_count").fetch("delta")
       end
 
-      def assert_baseline_scope_mismatch(dir)
-        assert_match(/baseline scope mismatch for default_output/, baseline_scope_mismatch_error(dir).message)
-      end
-
-      def baseline_scope_mismatch_error(dir)
-        assert_raises(ProjectAnalyzerEvidenceRunner::Error) do
-          summarize_with_baseline(dir, mismatched_baseline_file(dir), [REPEATED_BRANCHING_FINDING])
-        end
-      end
-
-      def summarize_with_baseline(dir, baseline, findings)
+      def summarize_with_baseline(dir, baseline, findings, analyzer_names: [])
         with_calibration_stubs(dir, captures, findings) do
-          ProjectAnalyzerEvidenceRunner.summarize(paths: [dir], baseline_file: baseline)
+          ProjectAnalyzerEvidenceRunner.summarize(paths: [dir], baseline_file: baseline,
+                                                  analyzer_names: analyzer_names)
         end
-      end
-
-      def mismatched_baseline_file(dir)
-        prepare_dir(dir)
-        write_baseline_file(dir, baseline_summary, scope: baseline_scope.merge("default_output" => true))
       end
 
       def prepare_baseline_dir(dir)
@@ -708,6 +690,79 @@ module MetzScan
         { "confidence" => [{ "value" => "medium", "finding_count" => 1 }],
           "triage_severity" => [{ "value" => "design pressure", "finding_count" => 1 }],
           "metadata" => { "project_analyzer_category" => [{ "value" => "state", "finding_count" => 1 }] } }
+      end
+    end
+
+    class ProjectAnalyzerEvidenceRunnerBaselineScopeMismatchTest < Minitest::Test
+      include ProjectAnalyzerEvidenceRunnerHelpers
+
+      def test_summary_rejects_baseline_default_output_scope_mismatch
+        with_tmpdir { |dir| assert_scope_mismatch(dir, { "default_output" => true }, "default_output") }
+      end
+
+      def test_summary_rejects_baseline_targets_file_scope_mismatch
+        with_tmpdir { |dir| assert_targets_file_scope_mismatch(dir) }
+      end
+
+      def test_summary_rejects_baseline_analyzer_filter_scope_mismatch
+        with_tmpdir { |dir| assert_analyzer_filter_scope_mismatch(dir) }
+      end
+
+      private
+
+      def assert_targets_file_scope_mismatch(dir)
+        error = assert_scope_mismatch(dir, { "targets_file" => "targets.yml" }, "targets_file")
+
+        assert_match(/got nil/, error.message)
+      end
+
+      def assert_analyzer_filter_scope_mismatch(dir)
+        error = assert_scope_mismatch(dir, service_soup_filter, "analyzer_filter",
+                                      analyzer_names: ["MetzProject/RepeatedBranching"])
+
+        assert_match(%r{MetzProject/ServiceSoup}, error.message)
+        assert_match(%r{MetzProject/RepeatedBranching}, error.message)
+      end
+
+      def assert_scope_mismatch(dir, scope_override, key, analyzer_names: [])
+        error = scope_mismatch_error(dir, scope_override, analyzer_names: analyzer_names)
+        assert_match(/baseline scope mismatch for #{key}/, error.message)
+        error
+      end
+
+      def scope_mismatch_error(dir, scope_override, analyzer_names: [])
+        assert_raises(ProjectAnalyzerEvidenceRunner::Error) do
+          summarize_with_baseline(dir, baseline_file(dir, scope_override), analyzer_names: analyzer_names)
+        end
+      end
+
+      def summarize_with_baseline(dir, baseline, analyzer_names: [])
+        with_calibration_stubs(dir, captures, [REPEATED_BRANCHING_FINDING]) do
+          ProjectAnalyzerEvidenceRunner.summarize(paths: [dir], baseline_file: baseline,
+                                                  analyzer_names: analyzer_names)
+        end
+      end
+
+      def baseline_file(dir, scope_override)
+        FileUtils.mkdir_p(dir)
+        File.join(dir, "baseline.yml").tap { |path| File.write(path, YAML.dump(baseline(scope_override))) }
+      end
+
+      def baseline(scope_override)
+        { "label" => "test-baseline", "scope" => baseline_scope.merge(scope_override),
+          "summary" => baseline_summary }
+      end
+
+      def baseline_scope
+        { "default_output" => false, "analyzer_filter" => [], "targets_file" => nil }
+      end
+
+      def baseline_summary
+        { "finding_count" => 1, "offense_count" => 1, "rules" => [], "breakdowns" => {} }
+      end
+
+      def service_soup_filter
+        { "analyzer_filter" => ["MetzProject/ServiceSoup"] }
       end
     end
 

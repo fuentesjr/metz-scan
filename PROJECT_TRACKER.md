@@ -70,12 +70,14 @@ calibration.
   slice (`fd8a515`), LEAK-1 read-only command list fix (`bf7a113`), and
   calibration baseline preview fixture slice (`86733e0`),
   issue-summary/package/parity-docs slice (`a5df146`), and in-repo skill slice
-  (`8f65252`) are pushed to `origin/main`. This Rubydex drift and baseline
-  fixture slice is local until the next requested upstream push.
-- Latest checkpoint window: 2026-07-05 13:08:33-13:26:50 -0700, 18m 17s
+  (`8f65252`) are pushed to `origin/main`. The Rubydex drift and baseline
+  fixture slice (`b5f053f`) is local until the next requested upstream push.
+  This read-only/help/scope/project-analyzers fixture slice is local until the
+  next requested upstream push.
+- Latest checkpoint window: 2026-07-05 14:11:46-14:21:34 -0700, 9m 48s
   wall-clock elapsed through CI/tracker orientation, four agenticons helper
-  investigations, implementation, focused red/green checks, full validation,
-  strategic review, and tracker update.
+  investigations, implementation, focused checks, fast/slow suites, strategic
+  validation, design review, and tracker update.
 - Working tree expectation: keep tracked work clean before starting another
   slice; keep ignored `logs/` notes out of commits unless explicitly requested.
 
@@ -84,61 +86,17 @@ calibration.
 | Workstream | Status | Current State | Next Move |
 | --- | --- | --- | --- |
 | Release readiness | Complete | `v0.4.0` is tagged, released on GitHub, published to GitHub Packages for both gems, verified with repeated post-publish smoke, issue #30 is closed, and post-release CI for `f9f5a10` is green. | Monitor package installation feedback; no `0.4.x` follow-up milestone is open without a concrete defect. |
-| Calibration artifact pipeline | Healthy | Markdown output, artifact write path, sample-app calibration smoke, the tracked target manifest under `docs/calibration/`, baseline-delta Markdown fixtures, compact baseline preview structure, and exact `--print-baseline` YAML output are covered. | Maintain; change only when artifact, target-manifest, or baseline-document behavior changes. |
+| Calibration artifact pipeline | Healthy | Markdown output, artifact write path, sample-app calibration smoke, the tracked target manifest under `docs/calibration/`, baseline-delta Markdown fixtures, compact baseline preview structure, exact `--print-baseline` YAML output, baseline scope mismatch checks, and help examples for scope-matched baseline workflows are covered. | Maintain; change only when artifact, target-manifest, or baseline-document behavior changes. |
 | Analyzer behavior | Parked | Fresh #27/#28 Mastodon and Discourse reruns did not show enough misleading or underexplained findings to justify behavior, threshold, or output-policy changes. | Reopen only with new generic evidence, not app-specific suppressions. |
 | Calibration evidence | Guarded | Redmine, Rubygems.org, ManageIQ, and Foreman evidence has been consolidated; Rubydex `0.2.7` was rechecked against the active manifest. Full active-manifest output is 697 findings/806 offenses; the four Rubydex-index-backed analyzers account for 607 findings/607 offenses. A compact Rubydex drift check covers those four analyzers, now with ProjectIndex missing-Rubydex subprocess coverage, missing-Rubydex skip-path coverage, exact sample-app text/JSON fixtures, and deterministic non-Rubydex formatter fixtures; `docs/calibration/project_analyzer_baseline.yml` captures the full active-manifest baseline for delta reporting. | Recheck only Rubydex-index-backed analyzers after future Rubydex upgrades unless an AST-only analyzer changes; use `--baseline-file docs/calibration/project_analyzer_baseline.yml` for full-manifest drift. |
-| Workflow friction | Guarded | The lockfile rewrite came from a stale path dependency entry in `Gemfile.lock`; the lockfile now matches the gemspec's `rubocop-metz (~> 0.4.0)` constraint, read-only maintenance commands have a tracked-worktree mutation guard plus a public command-listing mode, the read-only command contract is documented in contributor/calibration/release docs, and `bin/check_ci_parity` runs tracker hygiene before Bundler work while preserving failed clean clones and printing `next action:` commands for inspection. | Maintain the guard list and docs as new read-only commands are added; do not bypass `BUNDLE_FROZEN=1` for read-only calibration checks. |
+| Workflow friction | Guarded | The lockfile rewrite came from a stale path dependency entry in `Gemfile.lock`; the lockfile now matches the gemspec's `rubocop-metz (~> 0.4.0)` constraint, read-only maintenance commands have a tracked-worktree mutation guard plus a public command-listing mode, `--print-baseline` is in the default read-only guard list, the read-only command contract is documented in contributor/calibration/release docs, and `bin/check_ci_parity` runs tracker hygiene before Bundler work while preserving failed clean clones and printing `next action:` commands for inspection. | Maintain the guard list and docs as new read-only commands are added; do not bypass `BUNDLE_FROZEN=1` for read-only calibration checks. |
 | Sorbet adoption spike | Complete | Issue #26 was evaluated in a disposable workspace, documented, synced back to GitHub, and closed. The report recommends not adopting now: a narrow static setup is possible, but generated RBI churn, command policy, fixture scope, and runtime signature implications outweigh observed value. | Do not add Sorbet unless a concrete type-related defect, contributor ergonomics need, or stable public API typing requirement appears. |
 | Docs/adoption | Stable | README points contributors and agents to this tracker; old implementation notes are archived, current notes are short, and the Sorbet spike report records the tooling decision. The README now splits RepeatedBranching generic-subject guidance into a short list, the analyzer behavior details into per-analyzer subsections, package install troubleshooting points at `bin/check_published_gem`, parity failure inspection points at preserved clone/`next action:` output, the analyzer status table has freshness coverage, `skills/metz-scan/SKILL.md` gives agents consumer-facing usage guidance, and calibration docs point future Rubydex upgrades, filtered baselines, compact baseline previews, and parked issue updates at repeatable local commands. | Keep docs changes minimal and evidence-led. |
 | Handoff continuity | Active | Local ignored handoff `.handoffs/20260703173813_next_four_tasks_after_issue_sync.md` captures the pushed issue-sync summary, conversation-only requirements, and the next four evidence-gated tasks. | Use it as the first continuation surface if context resets in this workspace; do not commit handoff files. |
 
 ## Next Queue
 
-1. Decide whether `--print-baseline` belongs in the read-only guard list.
-   - Why now: the command is designed as a no-artifact preview, but the current
-     read-only guard list still covers only the original maintenance commands.
-   - Definition of done: either add a guarded preview invocation with docs/tests
-     or record why it should stay outside the default guard set.
-   - Files likely touched: `bin/check_read_only_commands`,
-     `test/metz_scan/check_read_only_commands_test.rb`, README, and
-     `docs/project-analyzer-calibration.md`.
-   - Not in scope: broadening the guard to arbitrary project paths.
-
-2. Add command-help examples for baseline previews and scope matching.
-    - Why now: docs now explain filtered baseline scope, but
-      `bin/check_project_analyzer_calibration --help` still lists options
-      without concrete command examples.
-    - Definition of done: help or adjacent docs include a full-manifest
-      baseline example, a filtered baseline preview example, and the matching
-      scope rule.
-    - Files likely touched: `bin/check_project_analyzer_calibration`,
-      `test/metz_scan/check_project_analyzer_calibration_test.rb`, and
-      `docs/project-analyzer-calibration.md`.
-    - Not in scope: changing scope comparison behavior.
-
-3. Add baseline scope mismatch coverage for targets and analyzer filters.
-    - Why now: negative baseline coverage currently focuses on default-output
-      mismatch, while `targets_file` and `analyzer_filter` are equally important
-      scope keys.
-    - Definition of done: tests demonstrate clear failures for target manifest
-      mismatch and analyzer-filter mismatch, including actionable stderr text.
-    - Files likely touched:
-      `test/metz_scan/calibration/project_analyzer_evidence_runner_test.rb`
-      and calibration baseline fixtures.
-    - Not in scope: loosening the mismatch rules.
-
-4. Add exact-output fixture coverage for `metz-scan project-analyzers`.
-    - Why now: aggregate summary blocks are now fixture-backed at renderer
-      level, but the CLI subcommand still lacks a small end-to-end fixture that
-      confirms command wiring and text renderer integration together.
-    - Definition of done: a deterministic fixture pins the subcommand's compact
-      text output for a tiny sample app without relying on active-manifest
-      counts.
-    - Files likely touched: CLI command tests, `test/fixtures/`, and possibly
-      sample app fixture files.
-    - Not in scope: changing JSON/SARIF output or analyzer thresholds.
-
-5. Add exact help fixture coverage for `bin/render_issue_comment_summary`.
+1. Add exact help fixture coverage for `bin/render_issue_comment_summary`.
    - Why now: the command help now lists supported targets and examples, but
      tests assert selected substrings instead of the full help text.
    - Definition of done: a fixture-backed test pins the help output without
@@ -147,7 +105,7 @@ calibration.
      `test/metz_scan/render_issue_comment_summary_test.rb`.
    - Not in scope: adding live issue lookups or posting comments.
 
-6. Decouple issue #25 summary fixture coverage from the live tracker body.
+2. Decouple issue #25 summary fixture coverage from the live tracker body.
     - Why now: #25 exact output currently reads the active tracker, while the
       analyzer issue fixtures are backed by stable catalog/baseline data.
     - Definition of done: a dedicated tracker input fixture drives the #25
@@ -156,7 +114,7 @@ calibration.
       `test/metz_scan/render_issue_comment_summary_test.rb`.
     - Not in scope: changing production tracker parsing.
 
-7. Add default `$HOME/.gem/credentials` fallback coverage for package smoke.
+3. Add default `$HOME/.gem/credentials` fallback coverage for package smoke.
     - Why now: explicit `GEM_CREDENTIALS` fallback is now covered, but the
       default credentials-file path remains unpinned.
     - Definition of done: a subprocess test writes `$HOME/.gem/credentials`,
@@ -164,7 +122,7 @@ calibration.
     - Files likely touched: `test/metz_scan/check_published_gem_test.rb`.
     - Not in scope: changing credential precedence or credential file format.
 
-8. Add CI parity failure-output coverage for the `next action:` line.
+4. Add CI parity failure-output coverage for the `next action:` line.
     - Why now: docs now instruct contributors to use the `next action:` line,
       but the script test only pins the preserved-clone wording.
     - Definition of done: failure-path tests assert both `clean clone preserved
@@ -172,7 +130,7 @@ calibration.
     - Files likely touched: `test/metz_scan/check_ci_parity_test.rb`.
     - Not in scope: changing clone cleanup behavior.
 
-9. Add exact help fixture coverage for `bin/check_rubydex_drift`.
+5. Add exact help fixture coverage for `bin/check_rubydex_drift`.
    - Why now: the drift command now has a shared formatter and compatibility
      flags, but help coverage still checks selected substrings.
    - Definition of done: a fixture-backed help test pins output for `--json`,
@@ -181,7 +139,7 @@ calibration.
      `test/metz_scan/check_rubydex_drift_test.rb`.
    - Not in scope: changing drift behavior or active-manifest counts.
 
-10. Add empty-result Rubydex drift formatter fixture coverage.
+6. Add empty-result Rubydex drift formatter fixture coverage.
     - Why now: the new non-Rubydex formatter fixtures cover non-empty rules and
       breakdowns, but the `rules: none` and no-breakdown text paths are still
       unpinned.
@@ -191,7 +149,7 @@ calibration.
       `test/metz_scan/calibration/rubydex_drift_formatter_test.rb`.
     - Not in scope: changing text or JSON wording.
 
-11. Add exact JSON fixture coverage for calibration `--json --no-write`.
+7. Add exact JSON fixture coverage for calibration `--json --no-write`.
     - Why now: project analyzer calibration JSON is structurally exercised, but
       the command-level JSON shape is not pinned by a compact fixture.
     - Definition of done: a tiny sample app or deterministic collaborator path
@@ -202,7 +160,7 @@ calibration.
       and `test/fixtures/project_analyzer_evidence_runner/`.
     - Not in scope: active-manifest count snapshots.
 
-12. Add read-only mutation guard coverage for fixture-backed drift commands.
+8. Add read-only mutation guard coverage for fixture-backed drift commands.
     - Why now: read-only command tests cover command list behavior, but the
       newly fixture-backed Rubydex drift paths should stay protected from
       accidental writes when helpers or formatters change.
@@ -213,44 +171,86 @@ calibration.
       `test/fixtures/check_rubydex_drift/`.
     - Not in scope: adding long active-manifest drift reruns to read-only CI.
 
+9. Add exact JSON fixture coverage for `metz-scan project-analyzers --json`.
+   - Why now: the standalone analyzer catalog now has exact text coverage, but
+     JSON coverage still asserts selected fields only.
+   - Definition of done: a fixture-backed test pins analyzer order, status,
+     default-output flags, confidence, triage severity, summaries, and suggested
+     next moves.
+   - Files likely touched: `test/metz_scan/commands/project_analyzers_test.rb`
+     and `test/fixtures/project_analyzers/`.
+   - Not in scope: changing analyzer catalog contents.
+
+10. Add exact help fixture coverage for `metz-scan project-analyzers --help`.
+    - Why now: the command now has an exact text output fixture, but usage
+      output remains covered only through unknown-option substring assertions.
+    - Definition of done: a fixture-backed test pins the usage banner and JSON
+      flag description.
+    - Files likely touched: `test/metz_scan/commands/project_analyzers_test.rb`
+      and `test/fixtures/project_analyzers/`.
+    - Not in scope: adding new `project-analyzers` options.
+
+11. Add exact text fixture coverage for `metz-scan scan --project-analyzers`.
+    - Why now: the tracker wording exposed ambiguity between the standalone
+      catalog command and scan text output with project analyzer findings.
+    - Definition of done: a tiny deterministic scan fixture pins the text
+      project-analyzer summary and rule block ordering without relying on
+      active-manifest counts.
+    - Files likely touched: `test/metz_scan/commands/scan_project_analyzers_test.rb`
+      and `test/fixtures/scan_project_analyzers/`.
+    - Not in scope: JSON/SARIF scan output changes.
+
+12. Add exact help fixture coverage for `bin/check_project_analyzer_calibration`.
+    - Why now: help now includes baseline examples and a scope rule, but tests
+      still assert selected substrings rather than the full help contract.
+    - Definition of done: a fixture-backed test pins option descriptions,
+      examples, and the scope rule while avoiding runtime calibration work.
+    - Files likely touched: `test/metz_scan/check_project_analyzer_calibration_test.rb`
+      and `test/fixtures/project_analyzer_evidence_runner/`.
+    - Not in scope: adding new calibration flags.
+
 ## Latest Slice Checkpoint
 
-Slice: 2026-07-05 Rubydex drift and baseline fixture coverage.
+Slice: 2026-07-05 read-only/help/scope/project-analyzers fixture coverage.
 
-Window: 2026-07-05 13:08:33-13:26:50 -0700, 18m 17s wall-clock
+Window: 2026-07-05 14:11:46-14:21:34 -0700, 9m 48s wall-clock
 elapsed through CI/tracker orientation, four agenticons helper investigations,
-implementation, focused red/green checks, full validation, strategic review,
-and tracker update.
+implementation, focused checks, fast/slow suites, strategic validation, design
+review, and tracker update.
 
-1. Added deterministic ProjectIndex missing-Rubydex subprocess coverage.
-   - `test/support/missing_rubydex.rb` centralizes the scoped `RUBYOPT` shim.
-   - `test/metz_scan/project_index_test.rb` now proves `backend: :auto`
-     returns the null backend when `require "rubydex"` fails and explicit
-     `backend: :rubydex` raises `UnavailableBackendError`.
-2. Added deterministic Rubydex drift formatter fixtures.
-   - `MetzScan::Calibration::RubydexDriftFormatter` owns compact text and JSON
-     formatting that previously lived inside `bin/check_rubydex_drift`.
-   - Non-Rubydex fixture tests pin compact text and JSON shape without invoking
-     the optional Rubydex backend.
-3. Added command-level Rubydex drift JSON fixture coverage.
-   - `test/fixtures/check_rubydex_drift/sample_app_json.json` pins the
-     sample-app command payload when Rubydex is available.
-   - The existing sample-app text fixture remains the end-to-end text check.
-4. Added exact `--print-baseline` YAML fixture coverage.
-   - `print_baseline_repeated_branching.yml` now pins the compact baseline YAML
-     contributors paste into tracked baseline files.
-   - Parsed-YAML assertions remain in place so the exact fixture is paired with
-     semantic checks.
-5. Verification.
-   - `bundle exec ruby -Itest test/metz_scan/calibration/rubydex_drift_formatter_test.rb`
-     passed with 2 runs and 2 assertions.
-   - `bundle exec ruby -Itest test/metz_scan/check_rubydex_drift_test.rb`
-     passed with 5 runs and 31 assertions.
-   - `bundle exec ruby -Itest test/metz_scan/project_index_test.rb` passed
-     with 10 runs, 60 assertions, and 2 skips.
-   - `bundle exec ruby -Itest test/metz_scan/calibration/project_analyzer_evidence_runner_test.rb --name /print_baseline/`
-     passed with 2 runs and 13 assertions.
-   - `bundle exec rake test:fast` passed with 435 runs, 2050 assertions, no
+1. Added `--print-baseline` to the read-only guard list.
+   - The default guard now runs a focused sample-app baseline preview under
+     `BUNDLE_FROZEN=1`.
+   - README and calibration docs list the preview command with the other
+     read-only maintenance commands.
+2. Added baseline help examples.
+   - `bin/check_project_analyzer_calibration --help` now includes a
+     scope-matched active-manifest baseline comparison example, a filtered
+     `--print-baseline` preview example, and the baseline scope rule.
+3. Added baseline scope mismatch coverage.
+   - Tests now cover `default_output`, `targets_file`, and `analyzer_filter`
+     mismatches with clear error text.
+4. Added exact `metz-scan project-analyzers` text fixture coverage.
+   - The CLI subcommand now compares its full text table to
+     `test/fixtures/project_analyzers/text.txt`.
+   - Table rows now trim trailing padding so the fixture does not require
+     trailing whitespace.
+5. Verification so far.
+   - `bundle exec ruby -Itest test/metz_scan/check_read_only_commands_test.rb`
+     passed with 3 runs and 15 assertions.
+   - `bundle exec ruby -Itest test/metz_scan/check_project_analyzer_calibration_test.rb`
+     passed with 1 run and 16 assertions.
+   - `bundle exec ruby -Itest test/metz_scan/calibration/project_analyzer_evidence_runner_test.rb --name '/scope_mismatch/'`
+     passed with 3 runs and 15 assertions.
+   - `bundle exec ruby -Itest test/metz_scan/cli_test.rb` passed with 9 runs
+     and 62 assertions.
+   - `bundle exec ruby -Itest test/metz_scan/commands/project_analyzers_test.rb`
+     passed with 3 runs and 21 assertions.
+   - `bundle exec ruby -Itest test/metz_scan/project_analyzer_calibration_docs_test.rb`
+     passed with 4 runs and 30 assertions.
+   - `bundle exec ruby -Itest test/metz_scan/read_only_command_docs_test.rb`
+     passed with 2 runs and 34 assertions.
+   - `bundle exec rake test:fast` passed with 438 runs, 2080 assertions, no
      failures/errors, and 2 skips.
    - `bundle exec rake test:slow` passed with 87 runs, 442 assertions, and no
      failures/errors/skips.
@@ -260,10 +260,10 @@ and tracker update.
      gate, and warnings all clean.
    - Required final design review verdict was clean with no findings.
 
-Agenticons used: `helper_worker: ProjectIndex missing-Rubydex backend subprocess coverage`,
-`helper_worker: non-Rubydex compact Rubydex drift text renderer fixture`,
-`helper_worker: Rubydex drift JSON fixture coverage`, and
-`helper_worker: print-baseline YAML fixture coverage`.
+Agenticons used: `helper_worker: print-baseline read-only guard decision`,
+`helper_worker: baseline preview and scope-match help examples`,
+`helper_worker: baseline scope mismatch coverage`, and
+`helper_worker: project-analyzers exact fixture coverage`.
 
 ## Parked / Not Next
 
@@ -291,7 +291,8 @@ Agenticons used: `helper_worker: ProjectIndex missing-Rubydex backend subprocess
 
 | Date | Commit | Summary |
 | --- | --- | --- |
-| 2026-07-05 | `this commit` | Added ProjectIndex missing-Rubydex subprocess coverage, deterministic Rubydex drift formatter fixtures, sample-app JSON drift fixture coverage, exact `--print-baseline` YAML fixture coverage, and tracker updates. |
+| 2026-07-05 | `this commit` | Added `--print-baseline` read-only guard coverage, baseline help examples, target/analyzer baseline mismatch tests, exact `metz-scan project-analyzers` text fixture coverage, and tracker updates. |
+| 2026-07-05 | `b5f053f` | Added ProjectIndex missing-Rubydex subprocess coverage, deterministic Rubydex drift formatter fixtures, sample-app JSON drift fixture coverage, exact `--print-baseline` YAML fixture coverage, and tracker updates. |
 | 2026-07-05 | `8f65252` | Added the in-repo `metz-scan` consumer agent skill, README discoverability, skill metadata, freshness coverage, and tracker updates. |
 | 2026-07-05 | `a5df146` | Added exact issue-comment summary fixtures, `GEM_CREDENTIALS` smoke coverage, parity failure inspection docs, issue-summary help/docs, and tracker updates. |
 | 2026-07-05 | `86733e0` | Added baseline-delta Markdown fixtures, analyzer-filter baseline guidance, aggregate project-analyzer text fixtures, `--print-baseline`, and tracker updates. |

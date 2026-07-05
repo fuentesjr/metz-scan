@@ -74,12 +74,24 @@ module MetzScan
       assert_empty @stderr.string
     end
 
+    def test_project_analyzers_subcommand_text_output_matches_fixture
+      code = MetzScan::CLI.start(["project-analyzers"], stdout: @stdout, stderr: @stderr)
+
+      assert_equal 0, code
+      assert_equal fixture("project_analyzers/text.txt"), @stdout.string
+      assert_empty @stderr.string
+    end
+
     private
 
     def assert_subcommands_in(output)
       %w[rules explain scan report project-analyzers].each do |name|
         assert_includes output, name, "expected help to mention '#{name}'"
       end
+    end
+
+    def fixture(path)
+      File.read(File.expand_path("../fixtures/#{path}", __dir__))
     end
   end
 end

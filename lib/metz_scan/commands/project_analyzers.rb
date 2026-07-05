@@ -98,7 +98,7 @@ module MetzScan
       end
 
       def row(values, widths)
-        values.zip(widths.values).map { |value, width| format("%-#{width}s", value) }.join("  ")
+        values.zip(widths.values).map { |value, width| format("%-#{width}s", value) }.join("  ").rstrip
       end
     end
   end

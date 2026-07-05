@@ -13,6 +13,21 @@ BASELINE_FILE = MetzScan::Calibration::ProjectAnalyzerEvidenceRunner::BaselineFi
 USAGE = "Usage: check_project_analyzer_calibration [--json] [--text] [--default-output] " \
         "[--targets-file FILE] [--baseline-file FILE] [--output-dir DIR] [--run-id ID] " \
         "[--analyzer COP_NAME] [--print-baseline] [--baseline-label LABEL] [--no-write] [PATH ...]"
+HELP_EXAMPLES = [
+  "",
+  "Examples:",
+  "  bin/check_project_analyzer_calibration --text --no-write \\",
+  "    --targets-file docs/calibration/project_analyzer_targets.yml \\",
+  "    --baseline-file docs/calibration/project_analyzer_baseline.yml",
+  "",
+  "  bin/check_project_analyzer_calibration --print-baseline \\",
+  "    --baseline-label repeated-branching-local \\",
+  "    --analyzer MetzProject/RepeatedBranching \\",
+  "    tmp/project-analyzer-calibration/apps/redmine/app",
+  "",
+  "Scope rule: --baseline-file compares only when targets_file, default_output,",
+  "and analyzer_filter match the current run."
+].freeze
 
 def parse_options
   default_options.tap { |options| option_parser(options).parse! }
@@ -24,11 +39,18 @@ def default_options
 end
 
 def option_parser(options)
-  OptionParser.new do |parser|
-    parser.banner = USAGE
-    add_output_options(parser, options)
-    add_artifact_options(parser, options)
-  end
+  OptionParser.new { |parser| configure_options(parser, options) }
+end
+
+def configure_options(parser, options)
+  parser.banner = USAGE
+  add_output_options(parser, options)
+  add_artifact_options(parser, options)
+  add_help_examples(parser)
+end
+
+def add_help_examples(parser)
+  HELP_EXAMPLES.each { |line| parser.separator line }
 end
 
 def add_output_options(parser, options)

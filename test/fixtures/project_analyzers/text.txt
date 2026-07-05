@@ -1,0 +1,10 @@
+ANALYZER                               STATUS     DEFAULT  CONFIDENCE  TRIAGE
+-------------------------------------  ---------  -------  ----------  ---------------
+MetzProject/RepeatedBranching          validated  yes      medium      design pressure
+MetzProject/ServiceSoup                validated  yes      medium      design pressure
+MetzProject/DeepInheritanceTree        validated  no       medium      manual review
+MetzProject/PackageDependencyPressure  candidate  no       medium      manual review
+MetzProject/NamespaceLeakPressure      candidate  no       medium      manual review
+MetzProject/ImplicitContextPressure    candidate  no       medium      manual review
+MetzProject/RepeatedQueryCriteria      candidate  no       medium      manual review
+MetzProject/SubclassOverridePressure   candidate  no       medium      manual review
