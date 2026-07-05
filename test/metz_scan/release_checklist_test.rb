@@ -7,6 +7,7 @@ module MetzScan
   class ReleaseChecklistTest < Minitest::Test
     REPO_ROOT = File.expand_path("../..", __dir__)
     CI_PARITY_CHECK = "bin/check_ci_parity"
+    READ_ONLY_GUARD = "bin/check_read_only_commands"
     CALIBRATION_SMOKE = "bundle exec ruby bin/check_project_analyzer_calibration --text --no-write " \
                         "test/fixtures/sample_app"
     GITHUB_ANNOTATIONS_ASSERTION = "grep -q '^::warning file=.*MetzProject/ServiceSoup'"
@@ -41,6 +42,10 @@ module MetzScan
 
     def test_release_checklists_document_ci_parity_check
       release_checklists.each { |path| assert_includes File.read(path), CI_PARITY_CHECK, path }
+    end
+
+    def test_release_checklists_document_read_only_guard
+      release_checklists.each { |path| assert_includes File.read(path), READ_ONLY_GUARD, path }
     end
 
     def test_ci_parity_script_covers_ci_single_command_steps

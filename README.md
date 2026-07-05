@@ -371,6 +371,20 @@ bin/check_sample_app_frozen
 It accepts zero project-analyzer findings. It fails if any
 non-project-analyzer offense appears or if a project-analyzer finding appears.
 
+Use `bin/check_read_only_commands` for maintenance commands that must leave
+tracked files unchanged. The guard runs each command with `BUNDLE_FROZEN=1`,
+fails if tracked files are dirty before or after a command, and currently covers
+these read-only checks:
+
+```bash
+bundle exec ruby bin/check_project_analyzer_calibration --text --no-write test/fixtures/sample_app
+bin/check_rubydex_drift --allow-missing-rubydex --text test/fixtures/sample_app
+bin/render_issue_comment_summary 27
+```
+
+Add future read-only maintenance commands to that guard instead of creating a
+one-off wrapper.
+
 Build both gems:
 
 ```bash

@@ -39,6 +39,12 @@ bin/check_dependency_direction
 bin/check_sample_app_frozen
 ```
 
+- [ ] Run the read-only maintenance command guard.
+
+```bash
+bin/check_read_only_commands
+```
+
 - [ ] Run calibration artifact smoke against the sample app.
 
 ```bash

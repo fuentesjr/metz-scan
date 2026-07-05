@@ -47,8 +47,8 @@ calibration.
 ## Current Snapshot
 
 - Date: 2026-07-05.
-- Latest pushed baseline: `0d902f9 Add calibration baseline deltas`.
-- CI state: run `28729326817` for `0d902f9` succeeded in 1m 27s after the
+- Latest pushed baseline: `8881795 Improve workflow diagnostics and summaries`.
+- CI state: run `28747058143` for `8881795` succeeded in 1m 45s after the
   upstream push. Earlier runs for `c0a01f5` (`28672899400`) and `64bceea`
   (`28680427556`) failed on calibration evidence runner environment
   assumptions, both since fixed.
@@ -65,14 +65,13 @@ calibration.
   tracker checkpoints, README analyzer-details cleanup, Rubydex spike results,
   the Rubydex 0.2.7 calibration drift checkpoint, the Rubydex release-response
   playbook, the actionable tracker rewrite (`74f3d75`), workflow-hardening
-  slice (`8c740ee`), and calibration-summary slice (`0d902f9`) are pushed to
-  `origin/main`. This workflow-diagnostics slice is local until validation,
-  commit, parity check, and upstream push complete.
-- Latest checkpoint window: 2026-07-04 21:21:14-2026-07-05 09:08:39 -0700,
-  11h 47m 25s wall-clock elapsed through four workflow-diagnostics tasks,
-  agenticon evidence collection, design review and blocker fix, focused command
-  tests, fast/slow test partitions, full RuboCop, docs updates, and tracker
-  update.
+  slice (`8c740ee`), calibration-summary slice (`0d902f9`), and
+  workflow-diagnostics slice (`8881795`) are pushed to `origin/main`. This
+  README/read-only/Rubydex drift guard slice is local until validation, commit,
+  and any requested upstream push complete.
+- Latest checkpoint window: 2026-07-05 09:09:00-09:32:26 -0700, 23m 26s
+  wall-clock elapsed through four guard/documentation tasks, agenticon evidence
+  collection, focused tests, release-checklist docs, and tracker update.
 - Working tree expectation: keep tracked work clean before starting another
   slice; keep ignored `logs/` notes out of commits unless explicitly requested.
 
@@ -83,60 +82,15 @@ calibration.
 | Release readiness | Complete | `v0.4.0` is tagged, released on GitHub, published to GitHub Packages for both gems, verified with repeated post-publish smoke, issue #30 is closed, and post-release CI for `f9f5a10` is green. | Monitor package installation feedback; no `0.4.x` follow-up milestone is open without a concrete defect. |
 | Calibration artifact pipeline | Healthy | Markdown output, artifact write path, sample-app calibration smoke, and the tracked target manifest under `docs/calibration/` are covered. | Maintain; change only when artifact or target-manifest behavior changes. |
 | Analyzer behavior | Parked | Fresh #27/#28 Mastodon and Discourse reruns did not show enough misleading or underexplained findings to justify behavior, threshold, or output-policy changes. | Reopen only with new generic evidence, not app-specific suppressions. |
-| Calibration evidence | Guarded | Redmine, Rubygems.org, ManageIQ, and Foreman evidence has been consolidated; Rubydex `0.2.7` was rechecked against the active manifest. Full active-manifest output is 697 findings/806 offenses; the four Rubydex-index-backed analyzers account for 607 findings/607 offenses. A compact Rubydex drift check covers those four analyzers, and `docs/calibration/project_analyzer_baseline.yml` now captures the full active-manifest baseline for delta reporting. | Recheck only Rubydex-index-backed analyzers after future Rubydex upgrades unless an AST-only analyzer changes; use `--baseline-file docs/calibration/project_analyzer_baseline.yml` for full-manifest drift. |
-| Workflow friction | Guarded | The lockfile rewrite came from a stale path dependency entry in `Gemfile.lock`; the lockfile now matches the gemspec's `rubocop-metz (~> 0.4.0)` constraint, read-only maintenance commands have a tracked-worktree mutation guard, and `bin/check_ci_parity` now runs tracker hygiene before Bundler work while preserving failed clean clones for inspection. | Maintain the guard list as new read-only commands are added; do not bypass `BUNDLE_FROZEN=1` for read-only calibration checks. |
+| Calibration evidence | Guarded | Redmine, Rubygems.org, ManageIQ, and Foreman evidence has been consolidated; Rubydex `0.2.7` was rechecked against the active manifest. Full active-manifest output is 697 findings/806 offenses; the four Rubydex-index-backed analyzers account for 607 findings/607 offenses. A compact Rubydex drift check covers those four analyzers, now with missing-Rubydex skip-path coverage and an exact sample-app text fixture, and `docs/calibration/project_analyzer_baseline.yml` captures the full active-manifest baseline for delta reporting. | Recheck only Rubydex-index-backed analyzers after future Rubydex upgrades unless an AST-only analyzer changes; use `--baseline-file docs/calibration/project_analyzer_baseline.yml` for full-manifest drift. |
+| Workflow friction | Guarded | The lockfile rewrite came from a stale path dependency entry in `Gemfile.lock`; the lockfile now matches the gemspec's `rubocop-metz (~> 0.4.0)` constraint, read-only maintenance commands have a tracked-worktree mutation guard, the read-only command contract is documented in contributor/calibration/release docs, and `bin/check_ci_parity` runs tracker hygiene before Bundler work while preserving failed clean clones for inspection. | Maintain the guard list and docs as new read-only commands are added; do not bypass `BUNDLE_FROZEN=1` for read-only calibration checks. |
 | Sorbet adoption spike | Complete | Issue #26 was evaluated in a disposable workspace, documented, synced back to GitHub, and closed. The report recommends not adopting now: a narrow static setup is possible, but generated RBI churn, command policy, fixture scope, and runtime signature implications outweigh observed value. | Do not add Sorbet unless a concrete type-related defect, contributor ergonomics need, or stable public API typing requirement appears. |
-| Docs/adoption | Stable | README points contributors and agents to this tracker; old implementation notes are archived, current notes are short, and the Sorbet spike report records the tooling decision. The README now splits RepeatedBranching generic-subject guidance into a short list, the analyzer behavior details into per-analyzer subsections, package install troubleshooting points at `bin/check_published_gem`, and calibration docs point future Rubydex upgrades plus parked issue updates at repeatable local commands. | Keep docs changes minimal and evidence-led. |
+| Docs/adoption | Stable | README points contributors and agents to this tracker; old implementation notes are archived, current notes are short, and the Sorbet spike report records the tooling decision. The README now splits RepeatedBranching generic-subject guidance into a short list, the analyzer behavior details into per-analyzer subsections, package install troubleshooting points at `bin/check_published_gem`, the analyzer status table has freshness coverage, and calibration docs point future Rubydex upgrades plus parked issue updates at repeatable local commands. | Keep docs changes minimal and evidence-led. |
 | Handoff continuity | Active | Local ignored handoff `.handoffs/20260703173813_next_four_tasks_after_issue_sync.md` captures the pushed issue-sync summary, conversation-only requirements, and the next four evidence-gated tasks. | Use it as the first continuation surface if context resets in this workspace; do not commit handoff files. |
 
 ## Next Queue
 
-1. Add a docs freshness check for README analyzer-status claims.
-    - Why now: README status tables, readiness catalog text, and calibration
-      docs can drift as analyzer status and default-output eligibility change.
-    - Definition of done: a focused test checks README analyzer statuses against
-      the analyzer constants/readiness catalog for status and default-output
-      eligibility.
-    - Files likely touched: `README.md`,
-      `lib/metz_scan/calibration/project_analyzer_evidence_runner/readiness_catalog.rb`,
-      and docs/tests.
-    - Not in scope: rewriting analyzer behavior.
-
-2. Add Rubydex drift skip-path coverage without the optional bundle group.
-    - Why now: `bin/check_rubydex_drift --allow-missing-rubydex` is intended for
-      environments without the optional project index, but the current command
-      tests exercise the installed-Rubydex path.
-    - Definition of done: a subprocess test simulates missing `rubydex`, asserts
-      the default command fails clearly, and asserts `--allow-missing-rubydex`
-      exits successfully with a skip message.
-    - Files likely touched: `bin/check_rubydex_drift` and
-      `test/metz_scan/check_rubydex_drift_test.rb`.
-    - Not in scope: changing optional dependency constraints.
-
-3. Document the read-only maintenance command contract.
-    - Why now: `--no-write`, `BUNDLE_FROZEN=1`, and tracked-worktree mutation
-      checks now have repo behavior behind them, but contributors need one
-      short place to see the contract.
-    - Definition of done: contributor-facing docs name the read-only commands,
-      explain the tracked-file guard, and point future command authors at
-      `bin/check_read_only_commands`.
-    - Files likely touched: `README.md`, `docs/project-analyzer-calibration.md`,
-      and possibly `CONTRIBUTING.md` if it exists by then.
-    - Not in scope: documenting commands that intentionally write artifacts.
-
-4. Add a stable output fixture for the Rubydex drift command.
-    - Why now: the compact drift command is intended for release-response notes,
-      so its summary shape should be pinned before it becomes another manual
-      reporting surface.
-    - Definition of done: a fixture or exact-output test covers text output for
-      the sample app, including analyzer list, finding/offense counts, and
-      confidence/severity breakdowns.
-    - Files likely touched: `test/fixtures/`, `bin/check_rubydex_drift`, and
-      `test/metz_scan/check_rubydex_drift_test.rb`.
-    - Not in scope: pinning active-manifest counts that change with upstream
-      fixture repositories.
-
-5. Add a stable fixture for baseline-delta Markdown output.
+1. Add a stable fixture for baseline-delta Markdown output.
    - Why now: baseline deltas now persist to Markdown artifacts, but the exact
      Markdown shape is covered through behavioral assertions rather than a
      stable fixture pair.
@@ -148,7 +102,7 @@ calibration.
      and possibly `markdown_renderer.rb`.
    - Not in scope: changing the baseline-delta JSON payload.
 
-6. Add analyzer-filter baseline guidance and examples.
+2. Add analyzer-filter baseline guidance and examples.
     - Why now: the baseline scope guard intentionally rejects comparing a
       filtered analyzer run against the full active-manifest baseline, but the
       docs only describe the full-manifest path.
@@ -159,7 +113,7 @@ calibration.
       command help tests if examples become part of help output.
     - Not in scope: relaxing the scope guard.
 
-7. Add exact text-output fixture coverage for aggregate project analyzer counts.
+3. Add exact text-output fixture coverage for aggregate project analyzer counts.
     - Why now: text output now shows analyzer, confidence, severity, and
       category aggregate lines, but current tests assert selected substrings.
     - Definition of done: an exact-output or fixture-backed test pins the
@@ -169,7 +123,7 @@ calibration.
       and `test/fixtures/`.
     - Not in scope: changing JSON/SARIF schemas.
 
-8. Add a baseline refresh helper in dry-run mode.
+4. Add a baseline refresh helper in dry-run mode.
     - Why now: `docs/calibration/project_analyzer_baseline.yml` is manually
       checked in, and future fixture updates need a repeatable way to preview
       the next baseline without writing artifacts or guessing the compact
@@ -182,7 +136,7 @@ calibration.
     - Not in scope: automatically changing the baseline during normal
       calibration runs.
 
-9. Add exact-output fixture coverage for issue-comment summaries.
+5. Add exact-output fixture coverage for issue-comment summaries.
    - Why now: `bin/render_issue_comment_summary` is intentionally concise, so
      its paste-ready shape should be pinned before more parked issues use it.
    - Definition of done: fixture-backed tests cover #25, #27, and #28 output
@@ -191,7 +145,7 @@ calibration.
      `bin/render_issue_comment_summary`.
    - Not in scope: posting comments to GitHub.
 
-10. Add `GEM_CREDENTIALS` fallback coverage for the package install smoke.
+6. Add `GEM_CREDENTIALS` fallback coverage for the package install smoke.
     - Why now: `bin/check_published_gem` supports Bundler credentials,
       `GITHUB_PACKAGES_TOKEN`, and `GEM_CREDENTIALS`, but the new failure-mode
       coverage still does not exercise the credentials-file fallback.
@@ -201,7 +155,7 @@ calibration.
       and `test/fixtures/check_published_gem/fake_bundle`.
     - Not in scope: changing credential precedence.
 
-11. Add contributor docs for parity failure inspection.
+7. Add contributor docs for parity failure inspection.
     - Why now: release checklists note that failed clones are preserved, but
       contributors need one short troubleshooting example for rerunning the
       failed phase in that clone.
@@ -211,7 +165,7 @@ calibration.
     - Files likely touched: `README.md` and `RELEASE_CHECKLIST.md`.
     - Not in scope: adding automatic cleanup of failed clones.
 
-12. Add issue-summary help examples and supported-target docs.
+8. Add issue-summary help examples and supported-target docs.
     - Why now: `bin/render_issue_comment_summary --help` currently shows only
       the argument shape, while the supported issues and analyzer aliases live
       in code.
@@ -221,59 +175,111 @@ calibration.
       `docs/project-analyzer-calibration.md`.
     - Not in scope: posting comments to GitHub or adding live issue lookups.
 
+9. Add ProjectIndex missing-Rubydex backend subprocess coverage.
+    - Why now: the drift command now simulates missing `rubydex` with a scoped
+      `RUBYOPT` shim, but backend fallback behavior still relies on existing
+      in-process coverage and manual confidence.
+    - Definition of done: subprocess coverage forces `require "rubydex"` to
+      raise, asserts `ProjectIndex.build(..., backend: :auto)` falls back to
+      the null backend with a clear reason, and asserts explicit
+      `backend: :rubydex` raises the expected unavailable-backend error.
+    - Files likely touched: `test/metz_scan/project_index_test.rb` and
+      possibly test support for scoped missing-Rubydex subprocess helpers.
+    - Not in scope: changing backend selection behavior.
+
+10. Add non-Rubydex compact text renderer fixture coverage.
+    - Why now: the Rubydex drift text fixture is exact, but it still skips when
+      the optional `rubydex` bundle group is unavailable.
+    - Definition of done: a deterministic summary fixture or extracted renderer
+      test pins the compact text shape without requiring the Rubydex backend,
+      while keeping the end-to-end sample-app Rubydex test as optional
+      integration coverage.
+    - Files likely touched: `bin/check_rubydex_drift`, renderer/support code,
+      `test/fixtures/check_rubydex_drift/`, and tests.
+    - Not in scope: changing the command's user-facing text output.
+
+11. Expose the read-only default command list as a public testable contract.
+    - Why now: the docs freshness test now derives commands from
+      `bin/check_read_only_commands`, but it parses the script's source layout.
+    - Definition of done: the guard exposes default commands through a stable
+      command-listing mode or importable constant, and docs tests use that
+      surface instead of regexing the script body.
+    - Files likely touched: `bin/check_read_only_commands`,
+      `test/metz_scan/read_only_command_docs_test.rb`, and command/help tests.
+    - Not in scope: changing the default guarded commands.
+
+12. Add a compact JSON fixture for the Rubydex drift command.
+    - Why now: text output is now fixture-backed, but JSON output is still
+      covered only by selected field assertions.
+    - Definition of done: a sample-app JSON fixture pins targets, analyzer
+      names, finding/offense counts, rule summaries, and breakdown payload.
+    - Files likely touched: `test/fixtures/check_rubydex_drift/` and
+      `test/metz_scan/check_rubydex_drift_test.rb`.
+    - Not in scope: pinning active-manifest JSON counts.
+
 ## Latest Slice Checkpoint
 
-Slice: 2026-07-04/2026-07-05 workflow diagnostics next four tasks.
+Slice: 2026-07-05 README/read-only/Rubydex drift guard next four tasks.
 
-Window: 2026-07-04 21:21:14-2026-07-05 09:08:39 -0700, 11h 47m 25s
-wall-clock elapsed through four workflow diagnostics tasks, agenticon evidence
-collection, focused tests, fast/slow test partitions, full RuboCop, design
-review and blocker fix, docs, and tracker update.
+Window: 2026-07-05 09:09:00-09:32:26 -0700, 23m 26s wall-clock
+elapsed through four guard/documentation tasks, agenticon evidence collection,
+focused tests, release-checklist docs, and tracker update.
 
-1. Completed task 1: wired tracker hygiene into the push/parity path.
-   - `bin/check_ci_parity` now runs `bin/check_tracker_queue` before Bundler
-     work, so stale parked/watch-only queues fail before the slow CI parity
-     phases.
-   - Added subprocess coverage proving a committed watch-only queue fails
-     without dirtying the live worktree and without reaching `bundle install`.
-2. Completed task 2: made the package install smoke contributor-facing.
-   - README now points install troubleshooting at `bin/check_published_gem`.
-   - Missing credentials and Bundler install failures now mention
-     `GITHUB_PACKAGES_TOKEN`, `read:packages`, package source configuration, and
-     `KEEP_PUBLISHED_GEM_SMOKE=1` inspection.
-   - Added fake-Bundler failure coverage while preserving token redaction.
-3. Completed task 3: improved CI parity failure diagnostics.
-   - Each parity step now has a phase label and elapsed timing.
-   - Failing phases report the exact phase, command, preserved clean clone path,
-     and a `next action` rerun command.
-   - Successful parity runs still remove their temp clone, with subprocess
-     coverage for the cleanup path.
-4. Completed task 4: added a read-only issue-comment evidence summary command.
-   - Added `bin/render_issue_comment_summary` for #25, #27, #28, and mapped
-     analyzer names.
-   - The command reads `PROJECT_TRACKER.md`, the readiness catalog, and the
-     checked-in active-manifest baseline to render paste-ready local evidence
-     without posting to GitHub.
-   - Missing required tracker boundaries now fail clearly instead of rendering
-     placeholder issue evidence.
-   - `bin/check_read_only_commands` now includes the new summary renderer.
-5. Verified the slice locally.
-   - Focused tests passed for CI parity, package install smoke, package failure
-     hints, read-only commands, release checklist parity, and issue summaries.
-   - `bundle exec rake test:fast` passed with 408 runs, 1868 assertions, no
+1. Completed task 1: added README analyzer-status freshness coverage.
+   - `test/metz_scan/readme_project_analyzer_status_test.rb` parses the README
+     status table and compares analyzer names, rollout status, and default scan
+     eligibility against `ProjectAnalyzerRunner::ANALYZERS` plus
+     `default_output_analyzer?`.
+   - The check ignores expected-finding prose and row order so it guards the
+     status/default-output claims without freezing hand-written examples.
+2. Completed task 2: added Rubydex drift missing-backend coverage.
+   - `test/metz_scan/check_rubydex_drift_test.rb` now uses a scoped child
+     `RUBYOPT` shim to make `require "rubydex"` raise without changing the
+     installed bundle or adding a production-only test knob.
+   - The default command now has subprocess coverage for clear failure, and
+     `--allow-missing-rubydex` has subprocess coverage for a successful skip
+     message.
+3. Completed task 3: documented the read-only maintenance command contract.
+   - README and calibration docs now name `bin/check_read_only_commands`,
+     `BUNDLE_FROZEN=1`, tracked-file dirtiness checks, and the current
+     read-only command set.
+   - `RELEASE_CHECKLIST.md` and the release issue template now include
+     `bin/check_read_only_commands` as an explicit verification step.
+   - Added docs tests for the read-only contract and release-checklist
+     coverage; the read-only docs test derives the expected command list from
+     `bin/check_read_only_commands`.
+4. Completed task 4: added stable Rubydex drift text output coverage.
+   - `test/fixtures/check_rubydex_drift/sample_app_text.txt` pins the compact
+     sample-app text output, including analyzer list, finding/offense counts,
+     rule summary, and confidence/severity breakdowns.
+   - The test intentionally uses the positional sample-app path, not the active
+     target manifest, so it avoids volatile upstream fixture counts.
+5. Verification so far.
+   - Focused tests passed for Rubydex drift, README analyzer status, read-only
+     docs, release checklist sync, and release issue dry-run rendering.
+   - `bundle exec rake test:fast` passed with 412 runs, 1910 assertions, no
      failures/errors, and 2 skips.
-   - `bundle exec rake test:slow` passed with 84 runs, 414 assertions, and no
+   - `bundle exec rake test:slow` passed with 86 runs, 424 assertions, and no
      failures/errors/skips.
-   - Full `bundle exec rubocop` passed across 209 files with no offenses.
+   - Full `bundle exec rubocop` passed across 211 files with no offenses.
+   - `bin/check_tracker_queue` and `git diff --check` passed.
+   - `bin/check_read_only_commands` was spot-checked before commit and
+     correctly refused the dirty tracked worktree; run it only from a clean
+     tree.
+   - Strategic validation passed: slice tests, red/green, lint, TODO gate, and
+     warnings all clean.
+   - Required design review verdict was clean. One remaining concern is tracked
+     in the next queue: the read-only docs test derives commands by parsing the
+     guard script's source layout instead of a public listing surface.
 
-Agenticons used: `helper_worker: tracker hygiene guard push/parity path`
-(`019f3082-90e1-7eb3-a773-b47079bf9079`),
-`helper_worker: package install troubleshooting smoke`
-(`019f3084-944a-7052-8613-0b2e3e0433a0`),
-`helper_worker: CI parity diagnostics`
-(`019f3084-ab01-7b61-8c50-9b2c8675b676`), and
-`helper_worker: issue-comment evidence summary`
-(`019f3084-c062-7c22-b0b8-6fecbcd78d9a`).
+Agenticons used: `helper_worker: README analyzer-status freshness`
+(`019f3316-d801-7d10-8d29-582391892713`),
+`helper_worker: Rubydex missing-backend skip path`
+(`019f3317-0e4a-7cf3-a18d-9be8bcaf72f0`),
+`helper_worker: read-only maintenance command contract docs`
+(`019f3317-273b-77e1-b345-5f377a7b31f6`), and
+`helper_worker: Rubydex drift output fixture coverage`
+(`019f3317-41fd-7461-bd6a-08711cb09303`).
 
 ## Parked / Not Next
 
@@ -301,7 +307,8 @@ Agenticons used: `helper_worker: tracker hygiene guard push/parity path`
 
 | Date | Commit | Summary |
 | --- | --- | --- |
-| 2026-07-04 | `this commit` | Wired tracker hygiene into CI parity, improved parity/package troubleshooting diagnostics, added issue-comment evidence summaries, and updated the tracker queue. |
+| 2026-07-05 | `this commit` | Added README analyzer-status freshness coverage, Rubydex drift missing-backend and exact text fixture coverage, read-only maintenance docs, release guard checklist coverage, and tracker updates. |
+| 2026-07-05 | `8881795` | Wired tracker hygiene into CI parity, improved parity/package troubleshooting diagnostics, added issue-comment evidence summaries, and updated the tracker queue. |
 | 2026-07-04 | `0d902f9` | Added calibration baseline deltas, broader DeepInheritanceTree and RepeatedBranching fixture coverage, aggregate project-analyzer text summaries, and tracker updates. |
 | 2026-07-04 | `8c740ee` | Added lockfile no-mutation coverage, read-only command guard, tracker hygiene guard, Rubydex drift command, and workflow-hardening tracker updates. |
 | 2026-07-04 | `74f3d75` | Rewrote the tracker queue with at least ten actionable tasks and recorded the tracker-only commit rule. |

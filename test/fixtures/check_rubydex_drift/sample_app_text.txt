@@ -1,0 +1,9 @@
+rubydex drift check
+targets: sample_app
+analyzers: MetzProject/DeepInheritanceTree, MetzProject/PackageDependencyPressure, MetzProject/NamespaceLeakPressure, MetzProject/SubclassOverridePressure
+findings: 1 (offenses: 1)
+rules:
+  - MetzProject/DeepInheritanceTree: 1 finding(s), 1 offense(s), status=validated, confidence=low, severity=broad base
+breakdowns:
+  - confidence: low=1
+  - severity: broad base=1

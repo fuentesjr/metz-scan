@@ -134,13 +134,25 @@ the same baseline delta payload.
 Discovered targets without top-level `app/` or `lib/` are recorded with
 no-scan metadata instead of falling back to a whole-root scan. Pass explicit
 paths for intentional one-off scans, `--analyzer` one or more times for a
-focused rule sample, or `--no-write` for a dry local summary. Use
+focused rule sample, or `--no-write` for a dry local summary.
+`--no-write` is the dry local summary mode for calibration runs. Use
 `--targets-file` for approved nested or multi-root fixtures that should not be
 scanned from the checkout root. Target-file roots are resolved relative to the
 current working directory; each `scan_paths` entry is resolved relative to its
 target root, and missing scan paths fail the run. Do not combine
 `--targets-file` with positional `PATH` arguments; use one target source per
 run.
+
+Use `bin/check_read_only_commands` when changing maintenance commands that
+claim to leave the repository untouched. It runs its default checks with
+`BUNDLE_FROZEN=1`, verifies tracked files are clean before each command, and
+fails if tracked files change afterward. The current read-only command set is:
+
+```bash
+bundle exec ruby bin/check_project_analyzer_calibration --text --no-write test/fixtures/sample_app
+bin/check_rubydex_drift --allow-missing-rubydex --text test/fixtures/sample_app
+bin/render_issue_comment_summary 27
+```
 
 ```yaml
 targets:
