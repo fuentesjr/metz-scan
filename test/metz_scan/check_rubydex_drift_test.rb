@@ -4,12 +4,13 @@ require "minitest/autorun"
 require "json"
 require "open3"
 require "rbconfig"
-require "tmpdir"
 
-require "metz_scan/commands/scan/project_analyzer_runner"
+require "support/missing_rubydex"
 
 module MetzScan
   class CheckRubydexDriftTest < Minitest::Test
+    include MissingRubydexSupport
+
     REPO_ROOT = File.expand_path("../..", __dir__)
     SAMPLE_APP_PATH = "test/fixtures/sample_app"
     MISSING_RUBYDEX_MESSAGE =
@@ -48,20 +49,16 @@ module MetzScan
       assert_missing_rubydex_skip(stdout, stderr, status)
     end
 
-    def test_json_analyzers_match_project_runner_index_backed_analyzers
+    def test_json_output_is_compact_for_sample_app
       skip "rubydex is unavailable" unless rubydex_available?
 
       stdout, stderr, status = capture_command("--json", "test/fixtures/sample_app")
 
       assert_predicate status, :success?, stderr
-      assert_equal index_backed_rule_ids, JSON.parse(stdout).fetch("analyzers")
+      assert_equal JSON.parse(fixture("sample_app_json.json")), JSON.parse(stdout)
     end
 
     private
-
-    def index_backed_rule_ids
-      Commands::Scan::ProjectAnalyzerRunner::INDEX_BACKED_ANALYZERS.map { |analyzer| analyzer::RULE_ID }
-    end
 
     def assert_no_noisy_sections(stdout)
       refute_includes stdout, "notable findings:"
@@ -85,25 +82,7 @@ module MetzScan
     end
 
     def capture_command_with_missing_rubydex(*args)
-      Dir.mktmpdir("metz-scan-missing-rubydex") do |dir|
-        shim = File.join(dir, "missing_rubydex.rb")
-        File.write(shim, missing_rubydex_shim)
-        capture_command({ "RUBYOPT" => "-r#{shim}" }, *args)
-      end
-    end
-
-    def missing_rubydex_shim
-      <<~RUBY
-        module Kernel
-          alias_method :metz_scan_original_require, :require
-
-          def require(feature)
-            raise LoadError, "cannot load such file -- rubydex" if feature == "rubydex"
-
-            metz_scan_original_require(feature)
-          end
-        end
-      RUBY
+      with_missing_rubydex_shim { |env| capture_command(env, *args) }
     end
 
     def rubydex_available?

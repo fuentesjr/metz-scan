@@ -1,9 +1,13 @@
 # frozen_string_literal: true
 
 require "minitest/autorun"
+require "json"
+require "open3"
+require "rbconfig"
 require "tmpdir"
 
 require "metz_scan/project_index"
+require "support/missing_rubydex"
 
 module MetzScan
   class ProjectIndexTest < Minitest::Test
@@ -118,6 +122,64 @@ module MetzScan
 
     def declaration(index, name)
       index.declarations.find { |candidate| candidate.name == name }
+    end
+  end
+
+  class ProjectIndexMissingRubydexSubprocessTest < Minitest::Test
+    include MissingRubydexSupport
+
+    REPO_ROOT = File.expand_path("../..", __dir__)
+
+    def test_auto_backend_falls_back_to_null_when_rubydex_require_fails
+      result = parsed_project_index_probe(auto_backend_probe)
+
+      assert_equal "null", result.fetch("backend_name")
+      refute result.fetch("available")
+      assert_match(/rubydex is not installed/, result.fetch("reason"))
+    end
+
+    def test_explicit_rubydex_backend_fails_when_rubydex_require_fails
+      result = parsed_project_index_probe(explicit_rubydex_backend_probe)
+
+      assert_equal "MetzScan::ProjectIndex::UnavailableBackendError", result.fetch("error_class")
+      assert_match(/rubydex is not installed/, result.fetch("message"))
+    end
+
+    private
+
+    def parsed_project_index_probe(source)
+      stdout, stderr, status = capture_project_index_with_missing_rubydex(source)
+      assert_predicate status, :success?, stderr
+      JSON.parse(stdout)
+    end
+
+    def capture_project_index_with_missing_rubydex(source)
+      with_missing_rubydex_shim do |env|
+        Open3.capture3(env, RbConfig.ruby, "-Ilib", "-rjson", "-e", source, chdir: REPO_ROOT)
+      end
+    end
+
+    def auto_backend_probe
+      <<~RUBY
+        require "metz_scan/project_index"
+        index = MetzScan::ProjectIndex.build(["."], backend: :auto)
+        puts JSON.dump(
+          "backend_name" => index.backend_name,
+          "available" => index.available?,
+          "reason" => index.reason
+        )
+      RUBY
+    end
+
+    def explicit_rubydex_backend_probe
+      <<~RUBY
+        require "metz_scan/project_index"
+        begin
+          MetzScan::ProjectIndex.build(["."], backend: :rubydex)
+        rescue MetzScan::ProjectIndex::UnavailableBackendError => error
+          puts JSON.dump("error_class" => error.class.name, "message" => error.message)
+        end
+      RUBY
     end
   end
 

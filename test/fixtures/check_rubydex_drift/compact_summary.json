@@ -1,0 +1,67 @@
+{
+  "targets_file": "/tmp/project_analyzer_targets.yml",
+  "targets": [
+    "sample",
+    "empty"
+  ],
+  "analyzers": [
+    "MetzProject/DeepInheritanceTree",
+    "MetzProject/PackageDependencyPressure",
+    "MetzProject/NamespaceLeakPressure",
+    "MetzProject/SubclassOverridePressure"
+  ],
+  "finding_count": 3,
+  "offense_count": 4,
+  "rules": [
+    {
+      "cop_name": "MetzProject/DeepInheritanceTree",
+      "finding_count": 1,
+      "offense_count": 1,
+      "status": "validated",
+      "confidence": "low",
+      "triage_severity": "broad base"
+    },
+    {
+      "cop_name": "MetzProject/PackageDependencyPressure",
+      "finding_count": 2,
+      "offense_count": 3,
+      "status": "candidate",
+      "confidence": "medium",
+      "triage_severity": "shared dependency"
+    }
+  ],
+  "breakdowns": {
+    "confidence": [
+      {
+        "value": "low",
+        "finding_count": 1
+      },
+      {
+        "value": "medium",
+        "finding_count": 2
+      }
+    ],
+    "triage_severity": [
+      {
+        "value": "broad base",
+        "finding_count": 1
+      },
+      {
+        "value": "shared dependency",
+        "finding_count": 2
+      }
+    ],
+    "metadata": {
+      "project_analyzer_category": [
+        {
+          "value": "inheritance",
+          "finding_count": 1
+        },
+        {
+          "value": "shared_dependency",
+          "finding_count": 2
+        }
+      ]
+    }
+  }
+}

@@ -3,10 +3,10 @@
 
 $LOAD_PATH.unshift(File.expand_path("../lib", __dir__))
 
-require "json"
 require "optparse"
 
 require "metz_scan/calibration/project_analyzer_evidence_runner"
+require "metz_scan/calibration/rubydex_drift_formatter"
 require "metz_scan/commands/scan/project_analyzer_runner"
 
 PROJECT_ANALYZER_RUNNER = MetzScan::Commands::Scan::ProjectAnalyzerRunner
@@ -80,74 +80,16 @@ def summary_for(options)
   RUNNER.summarize(paths: ARGV, default_output: false, analyzer_names: ANALYZERS, targets_file: targets_file)
 end
 
-def compact_json(summary)
-  JSON.pretty_generate(compact_payload(summary))
-end
-
-def compact_payload(summary)
-  compact_identity(summary).merge(compact_results(summary))
-end
-
-def compact_identity(summary)
-  { "targets_file" => summary["targets_file"],
-    "targets" => summary.fetch("targets").map { |target| target.fetch("name") },
-    "analyzers" => ANALYZERS }.compact
-end
-
-def compact_results(summary)
-  { "finding_count" => summary.fetch("finding_count"),
-    "offense_count" => summary.fetch("offense_count"),
-    "rules" => summary.fetch("project_analyzers", {}).fetch("rules", []),
-    "breakdowns" => summary.fetch("breakdowns", {}) }
-end
-
-def compact_text(summary)
-  [header_lines(summary), rule_lines(summary), breakdown_lines(summary)].flatten.compact.join("\n")
-end
-
-def header_lines(summary)
-  ["rubydex drift check",
-   targets_file_line(summary),
-   "targets: #{summary.fetch('targets').map { |target| target.fetch('name') }.join(', ')}",
-   "analyzers: #{ANALYZERS.join(', ')}",
-   "findings: #{summary.fetch('finding_count')} (offenses: #{summary.fetch('offense_count')})"]
-end
-
-def targets_file_line(summary)
-  "targets file: #{summary['targets_file']}" if summary["targets_file"]
-end
-
-def rule_lines(summary)
-  rules = summary.fetch("project_analyzers", {}).fetch("rules", [])
-  return ["rules: none"] if rules.empty?
-
-  ["rules:", *rules.map { |rule| rule_line(rule) }]
-end
-
-def rule_line(rule)
-  "  - #{rule.fetch('cop_name')}: #{rule.fetch('finding_count')} finding(s), " \
-    "#{rule.fetch('offense_count')} offense(s), status=#{rule.fetch('status', '?')}, " \
-    "confidence=#{rule.fetch('confidence', '?')}, severity=#{rule.fetch('triage_severity', '?')}"
-end
-
-def breakdown_lines(summary)
-  breakdowns = summary.fetch("breakdowns", {})
-  lines = [breakdown_line("confidence", breakdowns["confidence"]),
-           breakdown_line("severity", breakdowns["triage_severity"])].compact
-  lines.empty? ? [] : ["breakdowns:", *lines]
-end
-
-def breakdown_line(label, values)
-  return if values.to_a.empty?
-
-  "  - #{label}: #{values.map { |value| "#{value.fetch('value')}=#{value.fetch('finding_count')}" }.join(', ')}"
+def formatter_for(summary)
+  MetzScan::Calibration::RubydexDriftFormatter.new(summary, analyzers: ANALYZERS)
 end
 
 begin
   options = parse_options
   ensure_rubydex_available!(options.fetch(:allow_missing_rubydex))
   summary = summary_for(options)
-  puts(options.fetch(:json) ? compact_json(summary) : compact_text(summary))
+  formatter = formatter_for(summary)
+  puts(options.fetch(:json) ? formatter.json : formatter.text)
   exit 0
 rescue OptionParser::ParseError, MetzScan::Calibration::ProjectAnalyzerEvidenceRunner::Error => e
   warn "check_rubydex_drift: #{e.message}"

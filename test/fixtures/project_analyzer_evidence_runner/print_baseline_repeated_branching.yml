@@ -1,0 +1,29 @@
+---
+label: test-filtered-baseline
+generated_from: paths
+scope:
+  targets_file:
+  default_output: false
+  analyzer_filter:
+  - MetzProject/RepeatedBranching
+summary:
+  finding_count: 1
+  offense_count: 2
+  rules:
+  - cop_name: MetzProject/RepeatedBranching
+    finding_count: 1
+    offense_count: 2
+  breakdowns:
+    cop_name:
+    - value: MetzProject/RepeatedBranching
+      finding_count: 1
+    confidence:
+    - value: medium
+      finding_count: 1
+    triage_severity:
+    - value: design pressure
+      finding_count: 1
+    metadata:
+      project_analyzer_category:
+      - value: state
+        finding_count: 1

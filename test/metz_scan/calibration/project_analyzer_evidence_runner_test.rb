@@ -949,8 +949,12 @@ module MetzScan
       def assert_print_baseline_output(dir)
         write_repeated_branching_files(dir)
         stdout, stderr, status = run_print_baseline(dir)
+        assert_print_baseline_result(stdout, stderr, status, dir)
+      end
 
+      def assert_print_baseline_result(stdout, stderr, status, dir)
         assert_predicate status, :success?, stderr
+        assert_equal fixture("print_baseline_repeated_branching.yml"), stdout
         assert_compact_baseline(YAML.safe_load(stdout, aliases: false))
         refute_path_exists File.join(dir, "calibration-results")
       end
@@ -1036,6 +1040,10 @@ module MetzScan
       def repeated_branching_scope
         { "default_output" => false, "analyzer_filter" => ["MetzProject/RepeatedBranching"],
           "targets_file" => nil }
+      end
+
+      def fixture(name)
+        File.read(File.expand_path("../../fixtures/project_analyzer_evidence_runner/#{name}", __dir__))
       end
     end
 

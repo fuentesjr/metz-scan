@@ -1,0 +1,79 @@
+{
+  "targets": [
+    "sample_app"
+  ],
+  "analyzers": [
+    "MetzProject/DeepInheritanceTree",
+    "MetzProject/PackageDependencyPressure",
+    "MetzProject/NamespaceLeakPressure",
+    "MetzProject/SubclassOverridePressure"
+  ],
+  "finding_count": 1,
+  "offense_count": 1,
+  "rules": [
+    {
+      "status": "validated",
+      "confidence": "low",
+      "triage_severity": "broad base",
+      "cop_name": "MetzProject/DeepInheritanceTree",
+      "finding_count": 1,
+      "offense_count": 1,
+      "breakdowns": {
+        "cop_name": [
+          {
+            "value": "MetzProject/DeepInheritanceTree",
+            "finding_count": 1
+          }
+        ],
+        "confidence": [
+          {
+            "value": "low",
+            "finding_count": 1
+          }
+        ],
+        "triage_severity": [
+          {
+            "value": "broad base",
+            "finding_count": 1
+          }
+        ],
+        "metadata": {
+          "project_analyzer_category": [
+            {
+              "value": "rails application base",
+              "finding_count": 1
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "breakdowns": {
+    "cop_name": [
+      {
+        "value": "MetzProject/DeepInheritanceTree",
+        "finding_count": 1
+      }
+    ],
+    "confidence": [
+      {
+        "value": "low",
+        "finding_count": 1
+      }
+    ],
+    "triage_severity": [
+      {
+        "value": "broad base",
+        "finding_count": 1
+      }
+    ],
+    "metadata": {
+      "project_analyzer_category": [
+        {
+          "value": "rails application base",
+          "finding_count": 1
+        }
+      ]
+    }
+  }
+}
