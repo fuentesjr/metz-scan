@@ -27,22 +27,55 @@ Standing rules:
 - Do not commit tracker-only updates unless they accompany real project work.
   If the tracker is stale, rewrite it before proceeding, but commit that
   rewrite with the implementation, test, documentation, or tooling change that
-  made the update necessary.
+  made the update necessary. Exception: a deliberate direction change (new
+  goals, queue strategy, or standing rules) may land as its own commit — the
+  rule targets checkpoint churn, not strategy decisions.
 - Do not keep rechecking parked/watch-only items just because they are listed
   near the top of the tracker. Move them to trigger-gated parked work and pick
   the next actionable improvement.
+- Keep process overhead capped: slice checkpoints are a few lines (what
+  changed, how it was verified, anything surprising) — git history carries the
+  rest. Tracker/docs churn should not outweigh product-code churn across a
+  multi-slice window; if it does, the queue has drifted inward.
+- Prefer queue work that a user of the tool would notice over work only this
+  repo's tests would notice. Coverage sweeps are parked by default.
 
 ## Current Direction
 
-`metz-scan` is currently optimizing for developer workflow reliability,
-calibration confidence, and evidence-led tooling decisions, not detector
-expansion or repeated tracker-only sweeps.
+`metz-scan` is heading toward a public rubygems.org release, gated on product
+quality proven through dogfooding — not on more internal process hardening.
+The 2026-07-05 direction review found effort had drifted inward (docs/tracker
+churn 2.6x product-code churn, test suite larger than both gems' product code)
+while the first real dogfooding run immediately surfaced a headline UX defect
+(#31). The engine for direction is now real usage: run the tool on real
+codebases, triage what the output gets wrong or explains poorly, fix that, and
+repeat.
 
-The project analyzer detector set has enough current evidence to stay
-candidate-heavy and opt-in. The next useful work is to remove recurring
-workflow friction, make calibration commands safer and easier to interpret, and
-add focused tests around behavior that has already been learned through
-calibration.
+Test-hardening is declared done: the fixture/guard surface built through
+`3fb5747` is maintained, not extended. New tests accompany behavior changes or
+defects, not coverage sweeps.
+
+### Path to rubygems.org
+
+Publishing to rubygems.org is intended but quality-gated: it is a larger
+distribution surface and a bad first impression costs future adoption. To keep
+that gate from becoming an indefinite "not good enough yet," the exit criteria
+are concrete:
+
+1. #31 (Metz-only scan default) and #32 (Metrics shadowing) are fixed and
+   released on GitHub Packages.
+2. A dogfooding round across 3-5 real external-shaped codebases produces no
+   new defects in the headline-UX class (wrong default output, misleading or
+   duplicated findings, broken quickstart) — findings-quality nits are fine
+   and become queue work, they do not block.
+3. The README quickstart is verified end-to-end against a clean install of the
+   release candidate.
+4. Gem metadata is release-ready: changelog, license, description, and
+   homepage read correctly on a `gem build` inspection.
+
+Both `metz-scan` and `rubocop-metz` were unclaimed on rubygems.org as of
+2026-07-05. When the criteria pass, publish the then-current version; do not
+burn a `1.0.0` signal on the first public push.
 
 ## Current Snapshot
 
@@ -93,6 +126,8 @@ calibration.
 | Workflow friction | Guarded | The lockfile rewrite came from a stale path dependency entry in `Gemfile.lock`; the lockfile now matches the gemspec's `rubocop-metz (~> 0.4.0)` constraint, read-only maintenance commands have a tracked-worktree mutation guard plus a public command-listing mode, `--print-baseline` is in the default read-only guard list, the read-only command contract is documented in contributor/calibration/release docs, and `bin/check_ci_parity` runs tracker hygiene before Bundler work while preserving failed clean clones and printing `next action:` commands for inspection. | Maintain the guard list and docs as new read-only commands are added; do not bypass `BUNDLE_FROZEN=1` for read-only calibration checks. |
 | Sorbet adoption spike | Complete | Issue #26 was evaluated in a disposable workspace, documented, synced back to GitHub, and closed. The report recommends not adopting now: a narrow static setup is possible, but generated RBI churn, command policy, fixture scope, and runtime signature implications outweigh observed value. | Do not add Sorbet unless a concrete type-related defect, contributor ergonomics need, or stable public API typing requirement appears. |
 | Docs/adoption | Stable | README points contributors and agents to this tracker; old implementation notes are archived, current notes are short, and the Sorbet spike report records the tooling decision. The README now splits RepeatedBranching generic-subject guidance into a short list, the analyzer behavior details into per-analyzer subsections, package install troubleshooting points at `bin/check_published_gem`, parity failure inspection points at preserved clone/`next action:` output, the analyzer status table has freshness coverage, `skills/metz-scan/SKILL.md` gives agents consumer-facing usage guidance, and calibration docs point future Rubydex upgrades, filtered baselines, compact baseline previews, and parked issue updates at repeatable local commands. | Keep docs changes minimal and evidence-led. |
+| Path to rubygems.org | Active | Direction set 2026-07-05: quality-gated public release with four concrete exit criteria (see Current Direction). Both gem names verified unclaimed on rubygems.org. | Work queue tasks 1-6 in order: fix #31/#32, release to GitHub Packages, dogfooding round, quickstart verification, release preflight. |
+| Test hardening | Done | Fixture/guard surface through `599a935` covers CLI text/JSON/help contracts, read-only guards, drift checks, package smoke, and CI parity output. Suite: 438 fast + 88 slow runs, all green. | Maintain only; new tests accompany behavior changes or defects, not coverage sweeps. |
 | Handoff continuity | Active | Local ignored handoff `.handoffs/20260703173813_next_four_tasks_after_issue_sync.md` captures the pushed issue-sync summary, conversation-only requirements, and the next four evidence-gated tasks. | Use it as the first continuation surface if context resets in this workspace; do not commit handoff files. |
 
 ## Next Queue
@@ -124,84 +159,49 @@ calibration.
      `rubocop-metz/` tests.
    - Not in scope: changing Metz cop thresholds or messages.
 
-3. Add exact help fixture coverage for `bin/check_rubydex_drift`.
-   - Why now: the drift command now has a shared formatter and compatibility
-     flags, but help coverage still checks selected substrings.
-   - Definition of done: a fixture-backed help test pins output for `--json`,
-     `--text`, `--targets-file`, `--allow-missing-rubydex`, and `--no-write`.
-   - Files likely touched: `test/fixtures/check_rubydex_drift/` and
-     `test/metz_scan/check_rubydex_drift_test.rb`.
-   - Not in scope: changing drift behavior or active-manifest counts.
+3. Release the #31/#32 fixes to GitHub Packages.
+   - Why now: shipping the default-behavior fix quickly makes every subsequent
+     dogfooding run reflect the real product, and it is rubygems.org exit
+     criterion 1.
+   - Definition of done: a release (likely `0.5.0` given the default-behavior
+     change) is tagged, published to GitHub Packages, and smoke-verified with
+     `bin/check_published_gem`.
+   - Files likely touched: version constants, `docs/releases/`, README.
+   - Not in scope: publishing to rubygems.org.
 
-4. Add empty-result Rubydex drift formatter fixture coverage.
-    - Why now: the new non-Rubydex formatter fixtures cover non-empty rules and
-      breakdowns, but the `rules: none` and no-breakdown text paths are still
-      unpinned.
-    - Definition of done: deterministic text and JSON fixtures cover zero
-      findings, empty rules, empty breakdowns, and target naming.
-    - Files likely touched: `test/fixtures/check_rubydex_drift/` and
-      `test/metz_scan/calibration/rubydex_drift_formatter_test.rb`.
-    - Not in scope: changing text or JSON wording.
+4. Run a qualitative dogfooding round on 3-5 real codebases.
+   - Why now: this is the direction engine and rubygems.org exit criterion 2.
+     Calibration counted findings; nobody has judged whether findings are
+     worth reading. #31/#32 both came from a single afternoon on ctxpack.
+   - Definition of done: install the released gems into 3-5 external-shaped
+     projects (candidates: existing manifest targets plus at least one small
+     project without a `.rubocop.yml`), read the actual output, and record per
+     project: headline-UX defects, misleading or poorly-explained findings,
+     and findings that earned their space. File issues for defects; fold
+     findings-quality notes into the queue.
+   - Files likely touched: `docs/` dogfooding notes, GitHub issues.
+   - Not in scope: fixing what the round finds (that becomes the next queue).
 
-5. Add exact JSON fixture coverage for calibration `--json --no-write`.
-    - Why now: project analyzer calibration JSON is structurally exercised, but
-      the command-level JSON shape is not pinned by a compact fixture.
-    - Definition of done: a tiny sample app or deterministic collaborator path
-      pins `default_output`, analyzer filter, target names, rule summaries, and
-      breakdowns without writing artifacts.
-    - Files likely touched:
-      `test/metz_scan/calibration/project_analyzer_evidence_runner_test.rb`
-      and `test/fixtures/project_analyzer_evidence_runner/`.
-    - Not in scope: active-manifest count snapshots.
+5. Verify the README quickstart end-to-end against a clean install.
+   - Why now: rubygems.org exit criterion 3; the quickstart is the first
+     impression a public release trades on.
+   - Definition of done: follow the README from a clean environment (fresh
+     gem install through first scan) exactly as written; fix any step that
+     does not work or under-explains.
+   - Files likely touched: README, possibly install tooling.
+   - Not in scope: restructuring the README beyond what the walkthrough
+     demands.
 
-6. Add read-only mutation guard coverage for fixture-backed drift commands.
-    - Why now: read-only command tests cover command list behavior, but the
-      newly fixture-backed Rubydex drift paths should stay protected from
-      accidental writes when helpers or formatters change.
-    - Definition of done: guard tests run the drift command through the tracked
-      worktree mutation check and assert no tracked files change.
-    - Files likely touched: `bin/check_read_only_commands`,
-      `test/metz_scan/check_read_only_commands_test.rb`, and possibly
-      `test/fixtures/check_rubydex_drift/`.
-    - Not in scope: adding long active-manifest drift reruns to read-only CI.
-
-7. Add exact JSON fixture coverage for `metz-scan project-analyzers --json`.
-   - Why now: the standalone analyzer catalog now has exact text coverage, but
-     JSON coverage still asserts selected fields only.
-   - Definition of done: a fixture-backed test pins analyzer order, status,
-     default-output flags, confidence, triage severity, summaries, and suggested
-     next moves.
-   - Files likely touched: `test/metz_scan/commands/project_analyzers_test.rb`
-     and `test/fixtures/project_analyzers/`.
-   - Not in scope: changing analyzer catalog contents.
-
-8. Add exact help fixture coverage for `metz-scan project-analyzers --help`.
-    - Why now: the command now has an exact text output fixture, but usage
-      output remains covered only through unknown-option substring assertions.
-    - Definition of done: a fixture-backed test pins the usage banner and JSON
-      flag description.
-    - Files likely touched: `test/metz_scan/commands/project_analyzers_test.rb`
-      and `test/fixtures/project_analyzers/`.
-    - Not in scope: adding new `project-analyzers` options.
-
-9. Add exact text fixture coverage for `metz-scan scan --project-analyzers`.
-    - Why now: the tracker wording exposed ambiguity between the standalone
-      catalog command and scan text output with project analyzer findings.
-    - Definition of done: a tiny deterministic scan fixture pins the text
-      project-analyzer summary and rule block ordering without relying on
-      active-manifest counts.
-    - Files likely touched: `test/metz_scan/commands/scan_project_analyzers_test.rb`
-      and `test/fixtures/scan_project_analyzers/`.
-    - Not in scope: JSON/SARIF scan output changes.
-
-10. Add exact help fixture coverage for `bin/check_project_analyzer_calibration`.
-    - Why now: help now includes baseline examples and a scope rule, but tests
-      still assert selected substrings rather than the full help contract.
-    - Definition of done: a fixture-backed test pins option descriptions,
-      examples, and the scope rule while avoiding runtime calibration work.
-    - Files likely touched: `test/metz_scan/check_project_analyzer_calibration_test.rb`
-      and `test/fixtures/project_analyzer_evidence_runner/`.
-    - Not in scope: adding new calibration flags.
+6. Run the rubygems.org release preflight.
+   - Why now: final exit criterion once 1-5 are done; both gem names were
+     unclaimed as of 2026-07-05 and name availability should not be assumed
+     indefinitely.
+   - Definition of done: gem metadata (changelog, license, description,
+     homepage, links) reads correctly on `gem build` inspection for both gems,
+     and a go/no-go decision is recorded against the Path to rubygems.org
+     criteria.
+   - Files likely touched: gemspecs, `CHANGELOG`, README.
+   - Not in scope: the publish itself, which is an explicit user decision.
 
 ## Latest Slice Checkpoint
 
@@ -245,6 +245,12 @@ concrete-defect trigger the package/release feedback watch was gated on.
 
 ## Parked / Not Next
 
+- Fixture/coverage sweeps are parked as a class per the 2026-07-05 direction
+  review (this retired the former queue tasks 3-10: drift-command help and
+  empty-result fixtures, calibration JSON fixtures, drift read-only guard
+  coverage, project-analyzers JSON/help fixtures, scan project-analyzer text
+  fixtures, and calibration help fixtures). Reopen an individual item only
+  when a defect shows that exact missing fixture would have caught it.
 - Package/release feedback watch trigger has FIRED: ctxpack dogfooding filed
   #31 (default scan buries Metz findings) and #32 (Metz/Metrics duplicate
   findings). Both are now queue tasks 1 and 2; the watch returns to

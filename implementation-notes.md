@@ -9,6 +9,30 @@ Use `PROJECT_TRACKER.md` for the current direction, next queue, parked work, and
 latest checkpoint. Add new notes here only when a slice needs more durable
 detail than the tracker should carry.
 
+## 2026-07-05: Direction review and course correction
+
+Task: review whether the project was proceeding in the right direction.
+
+Findings: effort had drifted inward — since 2026-06-25, docs/tracker churn
+(18.2k lines) ran 2.6x product-code churn (6.8k), the test suite (10.3k lines)
+outgrew both gems' product code (8.8k), and the extensive internal
+verification surface still missed the headline UX defect (#31) that one
+afternoon of ctxpack dogfooding found immediately.
+
+Decisions:
+
+- Direction is now a quality-gated path to rubygems.org with four concrete
+  exit criteria (see `PROJECT_TRACKER.md` Current Direction). The gate is
+  deliberately concrete so "not good enough yet" cannot become indefinite.
+- Test hardening is declared done; fixture/coverage sweeps are parked as a
+  class with a defect-based reopen trigger.
+- Dogfooding on real codebases is the direction engine going forward;
+  qualitative "was this finding worth reading?" evidence outranks drift
+  counts.
+- Added standing rules capping checkpoint prose and requiring queue work a
+  tool user would notice over work only this repo's tests would notice.
+- Both gem names verified unclaimed on rubygems.org (API 404) on 2026-07-05.
+
 ## 2026-07-05: Codex-delegated queue tasks 1-4 (test-hardening fixtures)
 
 Task: delegate tracker Next Queue tasks 1-4 to Codex (session
