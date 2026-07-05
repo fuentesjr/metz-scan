@@ -322,8 +322,10 @@ counts references to `RuboCop::Cop::Metz::OnSendCsendBridge`.
 See [docs/rubydex-spike.md](docs/rubydex-spike.md) for current results and
 feasibility notes.
 
-For common questions and adoption guidance, see [docs/faq.md](docs/faq.md). For
-release checks, see [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md).
+For common questions and adoption guidance, see [docs/faq.md](docs/faq.md).
+For agent-oriented consumer guidance, see
+[skills/metz-scan/SKILL.md](skills/metz-scan/SKILL.md). For release checks,
+see [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md).
 
 ## Configuration
 

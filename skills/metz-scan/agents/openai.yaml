@@ -1,0 +1,4 @@
+interface:
+  display_name: "Metz Scan"
+  short_description: "Use metz-scan on Ruby apps"
+  default_prompt: "Use $metz-scan to scan this Ruby project for Sandi-Metz-style design pressure."
