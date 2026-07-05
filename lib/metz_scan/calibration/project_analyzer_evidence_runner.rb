@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "project_analyzer_evidence_runner/artifact_writer"
+require_relative "project_analyzer_evidence_runner/baseline_delta"
 require_relative "project_analyzer_evidence_runner/collaborators"
 require_relative "project_analyzer_evidence_runner/markdown_renderer"
 require_relative "project_analyzer_evidence_runner/summary"
@@ -36,13 +37,13 @@ module MetzScan
 
       def self.summarize_options(options)
         { paths: nil, default_output: false, analyzer_names: nil, targets_file: nil,
-          index_builder: nil, finding_runner: nil }.merge(options)
+          baseline_file: nil, index_builder: nil, finding_runner: nil }.merge(options)
       end
 
       def self.summary_options(targets, options)
         analyzer_names = Array(options[:analyzer_names]).compact
         analyzers = AnalyzerSelection.new(analyzer_names).call
-        base_summary_options(targets, options[:default_output], analyzer_names)
+        base_summary_options(targets, options[:default_output], analyzer_names, options[:baseline_file])
           .merge(collaborator_options(options, analyzers))
       end
 
@@ -51,10 +52,10 @@ module MetzScan
           finding_runner: options[:finding_runner] || FindingRunner.new(analyzers: analyzers) }
       end
 
-      def self.base_summary_options(targets, default_output, analyzer_names)
+      def self.base_summary_options(targets, default_output, analyzer_names, baseline_file)
         { targets: targets.paths, target_set: targets,
           default_output: default_output, fixture_root: default_apps_path,
-          analyzer_names: analyzer_names, targets_file: targets.targets_file }
+          analyzer_names: analyzer_names, targets_file: targets.targets_file, baseline_file: baseline_file }
       end
       private_class_method :target_set, :summary_options
       private_class_method :base_summary_options

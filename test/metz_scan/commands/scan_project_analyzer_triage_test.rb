@@ -45,6 +45,14 @@ module MetzScan
         assert_repeated_branching_rule_summary
       end
 
+      def test_repeated_branching_offenses_preserve_decision_subject_metadata
+        metadata = repeated_branching_offense.fetch("project_analyzer")
+
+        assert_equal "state", metadata.fetch("decision_subject_kind")
+        assert_equal "state branch subject", metadata.fetch("decision_subject_label")
+        assert_includes repeated_branching_offense.fetch("message"), "order.status (state branch subject) branches"
+      end
+
       private
 
       def assert_service_soup_triage_metadata
@@ -62,6 +70,12 @@ module MetzScan
 
       def repeated_branching_summary
         merged_repeated_branching.dig("summary", "project_analyzers")
+      end
+
+      def repeated_branching_offense
+        offenses(merged_repeated_branching).find do |offense|
+          offense.fetch("cop_name") == "MetzProject/RepeatedBranching"
+        end
       end
 
       def assert_repeated_branching_rule_summary

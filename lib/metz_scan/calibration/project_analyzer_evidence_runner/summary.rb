@@ -36,7 +36,7 @@ module MetzScan
 
         def summary_payload_options(target_runs)
           { target_runs: target_runs, default_output: default_output, fixture_root: fixture_root,
-            analyzer_names: analyzer_names, targets_file: targets_file }
+            analyzer_names: analyzer_names, targets_file: targets_file, baseline_file: baseline_file }
         end
 
         def targets = options.fetch(:targets)
@@ -48,6 +48,8 @@ module MetzScan
         def analyzer_names = options.fetch(:analyzer_names)
 
         def targets_file = options.fetch(:targets_file)
+
+        def baseline_file = options[:baseline_file]
       end
 
       class TargetRun
@@ -129,7 +131,8 @@ module MetzScan
         end
 
         def to_h
-          identity_fields.merge(target_fields).merge(project_fields)
+          summary = identity_fields.merge(target_fields).merge(project_fields)
+          baseline_file ? summary.merge("baseline_delta" => baseline_delta_for(summary)) : summary
         end
 
         private
@@ -145,6 +148,8 @@ module MetzScan
         def analyzer_names = options.fetch(:analyzer_names)
 
         def targets_file = options.fetch(:targets_file)
+
+        def baseline_file = options[:baseline_file]
 
         def identity_fields
           { "generated_at" => Time.now.utc.iso8601, "default_output" => default_output,
@@ -182,6 +187,10 @@ module MetzScan
 
         def breakdowns
           Commands::Scan::ProjectAnalyzerBreakdown.new(findings).to_h
+        end
+
+        def baseline_delta_for(summary)
+          BaselineDelta.new(summary: summary, baseline_file: baseline_file).to_h
         end
       end
 

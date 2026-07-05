@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "offense_extractor"
+require_relative "project_analyzer_summary_aggregate_formatter"
 require_relative "project_analyzer_summary_breakdown_formatter"
 require_relative "project_analyzer_triage_formatter"
 require_relative "project_analyzer_triage_priority"
@@ -37,10 +38,10 @@ module MetzScan
         end
 
         def emit_project_analyzer_summary
-          summary = parsed.dig("summary", "project_analyzers")
-          return unless summary
+          return unless (summary = parsed.dig("summary", "project_analyzers"))
 
           emit_project_analyzer_summary_heading(summary)
+          emit_project_analyzer_aggregate_summaries(summary)
           emit_project_analyzer_rule_summaries(summary)
           stdout.puts
         end
@@ -62,6 +63,10 @@ module MetzScan
 
         def emit_project_analyzer_rule_summaries(summary)
           sorted_project_analyzer_rules(summary).each { |rule| stdout.puts "  #{project_analyzer_rule_summary(rule)}" }
+        end
+
+        def emit_project_analyzer_aggregate_summaries(summary)
+          ProjectAnalyzerSummaryAggregateFormatter.new(summary).lines.each { |line| stdout.puts line }
         end
 
         def project_analyzer_rule_summary(rule)

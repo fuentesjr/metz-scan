@@ -64,6 +64,17 @@ module MetzScan
       def test_project_analyzer_summary_renders_before_rule_blocks
         assert_match(/\AProject analyzers: 2 findings, 2 offenses \(advisory signals; review in context\)/,
                      rendered)
+        assert_project_analyzer_aggregate_lines
+        assert_repeated_branching_summary_line
+      end
+
+      def assert_project_analyzer_aggregate_lines
+        assert_includes rendered, "  Analyzer counts: MetzProject/RepeatedBranching=1, MetzProject/ServiceSoup=1"
+        assert_includes rendered, "  Confidence counts: medium=2"
+        assert_includes rendered, "  Severity counts: design pressure=2"
+      end
+
+      def assert_repeated_branching_summary_line
         assert_includes rendered,
                         "MetzProject/RepeatedBranching: 1 finding, 1 offense, status: validated, " \
                         "confidence: medium, severity: design pressure"
@@ -103,6 +114,18 @@ module MetzScan
 
     class ScanTextRendererProjectAnalyzerBreakdownTest < Minitest::Test
       def test_project_analyzer_summary_renders_mixed_triage_breakdowns
+        assert_mixed_aggregate_lines
+        assert_mixed_rule_line
+      end
+
+      def assert_mixed_aggregate_lines
+        assert_includes rendered, "  Analyzer counts: MetzProject/DeepInheritanceTree=3"
+        assert_includes rendered, "  Confidence counts: medium=3"
+        assert_includes rendered, "  Severity counts: broad base=2, manual review=1"
+        assert_includes rendered, "  Category counts: controller base=1, rails application base=1"
+      end
+
+      def assert_mixed_rule_line
         assert_includes rendered,
                         "MetzProject/DeepInheritanceTree: 3 findings, 3 offenses, status: validated, " \
                         "confidence: medium, severity: manual review; mix: severity broad base=2, " \

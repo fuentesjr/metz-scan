@@ -10,7 +10,8 @@ require "metz_scan/calibration/project_analyzer_evidence_runner"
 
 RUNNER = MetzScan::Calibration::ProjectAnalyzerEvidenceRunner
 USAGE = "Usage: check_project_analyzer_calibration [--json] [--text] [--default-output] " \
-        "[--targets-file FILE] [--output-dir DIR] [--run-id ID] [--analyzer COP_NAME] [--no-write] [PATH ...]"
+        "[--targets-file FILE] [--baseline-file FILE] [--output-dir DIR] [--run-id ID] " \
+        "[--analyzer COP_NAME] [--no-write] [PATH ...]"
 
 def parse_options
   default_options.tap { |options| option_parser(options).parse! }
@@ -18,7 +19,7 @@ end
 
 def default_options
   { json: true, default_output: false, write: true, output_dir: RUNNER.default_results_path, run_id: nil,
-    analyzer_names: [], targets_file: nil }
+    analyzer_names: [], targets_file: nil, baseline_file: nil }
 end
 
 def option_parser(options)
@@ -51,7 +52,16 @@ end
 def add_artifact_options(parser, options)
   parser.on("--output-dir DIR", "Write artifacts under DIR") { |dir| options[:output_dir] = dir }
   add_targets_file_option(parser, options)
+  add_baseline_file_option(parser, options)
+  add_run_id_option(parser, options)
+  add_write_options(parser, options)
+end
+
+def add_run_id_option(parser, options)
   parser.on("--run-id ID", "Use ID as the artifact subdirectory name") { |id| options[:run_id] = id }
+end
+
+def add_write_options(parser, options)
   parser.on("--no-write", "Do not write calibration artifacts") { options[:write] = false }
   parser.on("-h", "--help", "Show usage") { exit_with_help(parser) }
 end
@@ -59,6 +69,12 @@ end
 def add_targets_file_option(parser, options)
   parser.on("--targets-file FILE", "Read calibration targets and scan paths from FILE") do |file|
     options[:targets_file] = file
+  end
+end
+
+def add_baseline_file_option(parser, options)
+  parser.on("--baseline-file FILE", "Compare calibration counts with FILE") do |file|
+    options[:baseline_file] = file
   end
 end
 
@@ -73,7 +89,7 @@ end
 
 def text_lines(summary)
   [target_line(summary), targets_file_line(summary), analyzer_filter_line(summary), finding_line(summary),
-   *rule_section(summary), *readiness_lines(summary), *notable_finding_lines(summary),
+   *baseline_delta_lines(summary), *rule_section(summary), *readiness_lines(summary), *notable_finding_lines(summary),
    *breakdown_lines(summary), artifact_line(summary)].compact
 end
 
@@ -115,6 +131,69 @@ def readiness_lines(summary)
   return [] if readiness.empty?
 
   ["readiness:", *readiness.map { |entry| readiness_line(entry) }]
+end
+
+def baseline_delta_lines(summary)
+  delta = summary["baseline_delta"]
+  return [] unless delta
+
+  baseline_delta_header_lines(delta) + baseline_delta_detail_lines(delta)
+end
+
+def baseline_delta_header_lines(delta)
+  ["baseline deltas: #{baseline_delta_label(delta)}",
+   "  - findings: #{count_delta_label(delta.fetch('finding_count'))}",
+   "  - offenses: #{count_delta_label(delta.fetch('offense_count'))}"]
+end
+
+def baseline_delta_detail_lines(delta)
+  [baseline_rule_delta_line(delta),
+   baseline_breakdown_delta_line("confidence", delta.dig("breakdowns", "confidence")),
+   baseline_breakdown_delta_line("severity", delta.dig("breakdowns", "triage_severity")),
+   baseline_breakdown_delta_line("category", delta.dig("breakdowns", "metadata", "project_analyzer_category"))]
+end
+
+def baseline_delta_label(delta)
+  baseline = delta.fetch("baseline")
+  [baseline["label"], baseline["file"]].compact.join(" ")
+end
+
+def baseline_rule_delta_line(delta)
+  changed = delta.fetch("rules", []).select do |rule|
+    changed_count?(rule.fetch("finding_count")) || changed_count?(rule.fetch("offense_count"))
+  end
+  return "  - analyzers: none" if changed.empty?
+
+  "  - analyzers: #{changed.map { |rule| rule_delta_label(rule) }.join(', ')}"
+end
+
+def rule_delta_label(rule)
+  "#{rule.fetch('cop_name')} findings=#{signed_delta(rule.fetch('finding_count'))} " \
+    "offenses=#{signed_delta(rule.fetch('offense_count'))}"
+end
+
+def baseline_breakdown_delta_line(label, entries)
+  changed = Array(entries).select { |entry| changed_count?(entry.fetch("finding_count")) }
+  return "  - #{label}: none" if changed.empty?
+
+  "  - #{label}: #{breakdown_delta_labels(changed).join(', ')}"
+end
+
+def breakdown_delta_labels(entries)
+  entries.map { |entry| "#{entry.fetch('value')}=#{signed_delta(entry.fetch('finding_count'))}" }
+end
+
+def count_delta_label(count)
+  "#{signed_delta(count)} (baseline=#{count.fetch('baseline')}, current=#{count.fetch('current')})"
+end
+
+def signed_delta(count)
+  delta = count.fetch("delta")
+  delta.positive? ? "+#{delta}" : delta.to_s
+end
+
+def changed_count?(count)
+  count.fetch("delta").nonzero?
 end
 
 def readiness_line(entry)
@@ -175,7 +254,8 @@ end
 
 def summary_for(options)
   RUNNER.summarize(paths: ARGV, default_output: options.fetch(:default_output),
-                   analyzer_names: options.fetch(:analyzer_names), targets_file: options[:targets_file])
+                   analyzer_names: options.fetch(:analyzer_names), targets_file: options[:targets_file],
+                   baseline_file: options[:baseline_file])
 end
 
 def write_artifacts(summary, options)

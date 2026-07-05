@@ -17,6 +17,12 @@ module MetzScan
         end
       end
 
+      def test_labels_state_branch_subjects
+        with_branching_files(state_subject_branching_files) do |files|
+          assert_state_branch_subject(analyze(files).first)
+        end
+      end
+
       def test_labels_expression_branch_subjects
         with_branching_files(expression_subject_branching_files) do |files|
           finding = analyze(files).first
@@ -27,6 +33,13 @@ module MetzScan
       end
 
       private
+
+      def assert_state_branch_subject(finding)
+        assert_equal "state", finding.project_analyzer_metadata.fetch("decision_subject_kind")
+        assert_equal "state branch subject", finding.project_analyzer_metadata.fetch("decision_subject_label")
+        assert_includes finding.project_analyzer_metadata.fetch("decision_subject_summary"), "State-like subject"
+        assert_includes finding.message, "order.status (state branch subject) branches"
+      end
 
       def analyze(files)
         RepeatedBranching.new(index: SubjectFakeBranchIndex.new(available: true, indexed_files: files)).call
@@ -43,6 +56,23 @@ module MetzScan
               case action
               when "block" then nil
               when "silence" then nil
+              end
+            end
+          end
+        RUBY
+      end
+
+      def state_subject_branching_files
+        [state_subject_branching_source("OrderExporter"), state_subject_branching_source("OrderNotifier")]
+      end
+
+      def state_subject_branching_source(class_name)
+        <<~RUBY
+          class #{class_name}
+            def call(order)
+              case order.status
+              when "pending" then nil
+              when "paid" then nil
               end
             end
           end

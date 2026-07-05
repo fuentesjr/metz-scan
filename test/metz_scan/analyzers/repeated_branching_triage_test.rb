@@ -13,6 +13,7 @@ module MetzScan
           finding = RepeatedBranching.new(index: fake_index(files)).call.first
 
           assert_validated_design_pressure(finding)
+          assert_equal "state", finding.project_analyzer_metadata.fetch("decision_subject_kind")
         end
       end
 
@@ -21,6 +22,15 @@ module MetzScan
           finding = RepeatedBranching.new(index: fake_index(files)).call.first
 
           assert_context_required(finding)
+        end
+      end
+
+      def test_expression_subjects_are_validated_design_pressure
+        with_branching_files(source: expression_branching_source) do |files|
+          finding = RepeatedBranching.new(index: fake_index(files)).call.first
+
+          assert_validated_design_pressure(finding)
+          assert_equal "expression", finding.project_analyzer_metadata.fetch("decision_subject_kind")
         end
       end
 
@@ -55,6 +65,10 @@ module MetzScan
 
       def generic_branching_source
         "case action\nwhen \"block\"\n  nil\nwhen \"silence\"\n  nil\nend\n"
+      end
+
+      def expression_branching_source
+        "case File.extname(URI(url).path || \"\")\nwhen \".png\"\n  nil\nwhen \".jpg\"\n  nil\nend\n"
       end
 
       def fake_index(files)

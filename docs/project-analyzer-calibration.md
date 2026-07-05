@@ -56,7 +56,8 @@ active manifest was rechecked with the repo-local calibration fixtures:
 
 ```bash
 bin/check_project_analyzer_calibration --text --no-write \
-  --targets-file docs/calibration/project_analyzer_targets.yml
+  --targets-file docs/calibration/project_analyzer_targets.yml \
+  --baseline-file docs/calibration/project_analyzer_baseline.yml
 ```
 
 The full active-manifest run covered `chatwoot`, `decidim`, `discourse`,
@@ -123,6 +124,13 @@ Package- and namespace-pressure analyzers also include a shared
 count, referring package roots, and referring package leafs so future
 calibration can compare cross-package spread without duplicating metadata
 logic.
+The checked-in `docs/calibration/project_analyzer_baseline.yml` stores this
+active-manifest snapshot without volatile target revisions or artifact paths.
+Pass `--baseline-file docs/calibration/project_analyzer_baseline.yml` when a
+rerun needs count deltas by analyzer, confidence, severity, and
+`project_analyzer_category`; text, JSON, and Markdown artifact output include
+the same baseline delta payload.
+
 Discovered targets without top-level `app/` or `lib/` are recorded with
 no-scan metadata instead of falling back to a whole-root scan. Pass explicit
 paths for intentional one-off scans, `--analyzer` one or more times for a
@@ -147,9 +155,9 @@ The runner writes `summary.json` plus `summary.md` under
 summaries include a limited, priority-sorted `notable_findings` list for
 medium-confidence findings so calibration artifacts preserve the named manual
 review prompts instead of only aggregate counts. Summaries also include a
-readiness/backlog section keyed by analyzer rule id. That section records the
-current disposition, evidence boundary, next useful task, and explicit
-not-next boundary so calibration output can show analyzer readiness without
+readiness/backlog section keyed by analyzer rule id and, when requested, a
+baseline-delta section. Those sections record the current disposition, evidence
+boundary, next useful task, explicit not-next boundary, and count drift without
 changing scan behavior or analyzer status.
 
 Initial targets:
@@ -337,6 +345,12 @@ project-analyzer summary with status, confidence, and severity, and the summary
 heading explicitly calls these findings advisory signals. Text and GitHub
 annotation triage lines now label the same status, confidence, and severity
 fields before the analyzer-specific triage summary.
+
+High-volume summary follow-up on 2026-07-04: text output now adds compact
+aggregate analyzer, confidence, severity, and category count lines immediately
+after the project-analyzer heading. Per-rule `mix:` hints remain for rules with
+multiple severities or metadata categories, but the top-level aggregate lines
+make full opt-in runs scannable before detailed rule and offense blocks.
 
 Real-output sampling follow-up on 2026-06-24: direct `ProjectAnalyzerRunner`
 text rendering against the repo-local Discourse checkout produced 53 findings
@@ -1617,8 +1631,9 @@ the generic findings carried `context required` triage while state-like and
 expression findings stayed medium-confidence design-pressure candidates.
 
 Project-analyzer summaries now include per-rule breakdown metadata. Text
-reports show a compact `mix:` hint when one rule has multiple severities or
-metadata categories, so high-volume `DeepInheritanceTree` output can reveal the
+reports show aggregate analyzer/confidence/severity/category counts first, then
+a compact `mix:` hint when one rule has multiple severities or metadata
+categories, so high-volume `DeepInheritanceTree` output can reveal the
 broad-base/manual-review split without filtering root kinds.
 
 ## `MetzProject/DeepInheritanceTree`

@@ -22,7 +22,7 @@ module MetzScan
 
         def section_renderers
           [HeaderMarkdown, TargetsMarkdown, RulesMarkdown, ReadinessMarkdown,
-           NotableFindingsMarkdown, BreakdownsMarkdown]
+           NotableFindingsMarkdown, BaselineDeltaMarkdown, BreakdownsMarkdown]
         end
       end
 
@@ -254,8 +254,100 @@ module MetzScan
         end
       end
 
+      class BaselineDeltaMarkdown
+        include MarkdownTableCells
+
+        def initialize(summary)
+          @delta = summary["baseline_delta"]
+        end
+
+        def call
+          return [] unless delta
+
+          header_lines + totals_lines + detail_lines
+        end
+
+        private
+
+        attr_reader :delta
+
+        def baseline_label
+          baseline = delta.fetch("baseline")
+          label = baseline["label"] ? "#{baseline['label']} " : ""
+          "#{label}`#{baseline.fetch('file')}`"
+        end
+
+        def header_lines
+          ["", "## Baseline Deltas", "", "Baseline: #{baseline_label}", ""]
+        end
+
+        def totals_lines
+          [totals_header, total_row("Findings", delta.fetch("finding_count")),
+           total_row("Offenses", delta.fetch("offense_count")), ""]
+        end
+
+        def detail_lines
+          analyzer_table + confidence_table + severity_table + category_table
+        end
+
+        def analyzer_table
+          table("Analyzer", "Rule", analyzer_rows)
+        end
+
+        def confidence_table
+          table("Confidence", "Value", breakdown_rows(delta.dig("breakdowns", "confidence")))
+        end
+
+        def severity_table
+          table("Severity", "Value", breakdown_rows(delta.dig("breakdowns", "triage_severity")))
+        end
+
+        def category_table
+          table("Category", "Value", breakdown_rows(delta.dig("breakdowns", "metadata",
+                                                              "project_analyzer_category")))
+        end
+
+        def totals_header
+          "| Metric | Baseline | Current | Delta |\n| --- | ---: | ---: | ---: |"
+        end
+
+        def total_row(label, count)
+          "| #{label} | #{count.fetch('baseline')} | #{count.fetch('current')} | #{signed(count)} |"
+        end
+
+        def analyzer_rows
+          delta.fetch("rules", []).map do |rule|
+            ["#{cell(rule.fetch('cop_name'))} findings", rule.fetch("finding_count")]
+          end + delta.fetch("rules", []).map do |rule|
+            ["#{cell(rule.fetch('cop_name'))} offenses", rule.fetch("offense_count")]
+          end
+        end
+
+        def breakdown_rows(entries)
+          Array(entries).map { |entry| [cell(entry.fetch("value")), entry.fetch("finding_count")] }
+        end
+
+        def table(title, value_header, rows)
+          changed = rows.select { |_value, count| count.fetch("delta").nonzero? }
+          return ["### #{title}", "", "No #{title.downcase} count changes.", ""] if changed.empty?
+
+          ["### #{title}", "", "| #{value_header} | Baseline | Current | Delta |",
+           "| --- | ---: | ---: | ---: |",
+           *changed.map { |value, count| row(value, count) }, ""]
+        end
+
+        def row(value, count)
+          "| #{value} | #{count.fetch('baseline')} | #{count.fetch('current')} | #{signed(count)} |"
+        end
+
+        def signed(count)
+          delta_value = count.fetch("delta")
+          delta_value.positive? ? "+#{delta_value}" : delta_value.to_s
+        end
+      end
+
       private_constant :MarkdownTableCells, :HeaderMarkdown, :TargetsMarkdown, :RulesMarkdown
-      private_constant :ReadinessMarkdown, :NotableFindingsMarkdown, :BreakdownsMarkdown
+      private_constant :ReadinessMarkdown, :NotableFindingsMarkdown, :BaselineDeltaMarkdown, :BreakdownsMarkdown
     end
   end
 end

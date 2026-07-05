@@ -595,6 +595,122 @@ module MetzScan
       end
     end
 
+    class ProjectAnalyzerEvidenceRunnerBaselineDeltaTest < Minitest::Test
+      include ProjectAnalyzerEvidenceRunnerHelpers
+
+      def test_summary_records_baseline_deltas
+        with_tmpdir { |dir| assert_baseline_deltas(dir) }
+      end
+
+      def test_summary_rejects_baseline_scope_mismatch
+        with_tmpdir { |dir| assert_baseline_scope_mismatch(dir) }
+      end
+
+      private
+
+      def assert_baseline_deltas(dir)
+        summary, baseline = summary_with_baseline_deltas(dir)
+
+        assert_baseline_delta_summary(summary, baseline)
+        assert_includes ProjectAnalyzerEvidenceRunner::MarkdownRenderer.new(summary).call, "## Baseline Deltas"
+      end
+
+      def summary_with_baseline_deltas(dir)
+        baseline = prepare_baseline_dir(dir)
+        findings = [REPEATED_BRANCHING_FINDING, PACKAGE_DEPENDENCY_FINDING]
+        [summarize_with_baseline(dir, baseline, findings), baseline]
+      end
+
+      def assert_baseline_delta_summary(summary, baseline)
+        delta = summary.fetch("baseline_delta")
+
+        assert_equal File.expand_path(baseline), delta.dig("baseline", "file")
+        assert_baseline_total_deltas(delta)
+        assert_baseline_breakdown_deltas(delta)
+      end
+
+      def assert_baseline_total_deltas(delta)
+        assert_equal 1, delta.fetch("finding_count").fetch("delta")
+        assert_equal 1, delta.fetch("offense_count").fetch("delta")
+        assert_rule_delta(delta, "MetzProject/PackageDependencyPressure", findings: 1, offenses: 1)
+      end
+
+      def assert_baseline_breakdown_deltas(delta)
+        assert_breakdown_delta(delta.dig("breakdowns", "confidence"), "low", 1)
+        assert_breakdown_delta(delta.dig("breakdowns", "triage_severity"), "shared dependency", 1)
+        assert_breakdown_delta(delta.dig("breakdowns", "metadata", "project_analyzer_category"),
+                               "shared_dependency", 1)
+      end
+
+      def assert_rule_delta(delta, rule_id, findings:, offenses:)
+        rule = delta.fetch("rules").find { |entry| entry.fetch("cop_name") == rule_id }
+
+        assert_equal findings, rule.fetch("finding_count").fetch("delta")
+        assert_equal offenses, rule.fetch("offense_count").fetch("delta")
+      end
+
+      def assert_breakdown_delta(entries, value, expected_delta)
+        entry = entries.find { |candidate| candidate.fetch("value") == value }
+
+        assert_equal expected_delta, entry.fetch("finding_count").fetch("delta")
+      end
+
+      def assert_baseline_scope_mismatch(dir)
+        assert_match(/baseline scope mismatch for default_output/, baseline_scope_mismatch_error(dir).message)
+      end
+
+      def baseline_scope_mismatch_error(dir)
+        assert_raises(ProjectAnalyzerEvidenceRunner::Error) do
+          summarize_with_baseline(dir, mismatched_baseline_file(dir), [REPEATED_BRANCHING_FINDING])
+        end
+      end
+
+      def summarize_with_baseline(dir, baseline, findings)
+        with_calibration_stubs(dir, captures, findings) do
+          ProjectAnalyzerEvidenceRunner.summarize(paths: [dir], baseline_file: baseline)
+        end
+      end
+
+      def mismatched_baseline_file(dir)
+        prepare_dir(dir)
+        write_baseline_file(dir, baseline_summary, scope: baseline_scope.merge("default_output" => true))
+      end
+
+      def prepare_baseline_dir(dir)
+        prepare_dir(dir)
+        write_baseline_file(dir, baseline_summary)
+      end
+
+      def prepare_dir(dir)
+        FileUtils.mkdir_p(dir)
+      end
+
+      def write_baseline_file(dir, summary, scope: baseline_scope)
+        File.join(dir, "baseline.yml").tap do |path|
+          File.write(path, YAML.dump("label" => "test-baseline", "scope" => scope, "summary" => summary))
+        end
+      end
+
+      def baseline_scope
+        { "default_output" => false, "analyzer_filter" => [], "targets_file" => nil }
+      end
+
+      def baseline_summary
+        { "finding_count" => 1, "offense_count" => 1,
+          "rules" => baseline_rules, "breakdowns" => baseline_breakdowns }
+      end
+
+      def baseline_rules
+        [{ "cop_name" => "MetzProject/RepeatedBranching", "finding_count" => 1, "offense_count" => 1 }]
+      end
+
+      def baseline_breakdowns
+        { "confidence" => [{ "value" => "medium", "finding_count" => 1 }],
+          "triage_severity" => [{ "value" => "design pressure", "finding_count" => 1 }],
+          "metadata" => { "project_analyzer_category" => [{ "value" => "state", "finding_count" => 1 }] } }
+      end
+    end
+
     class ProjectAnalyzerEvidenceRunnerNotableFindingsTest < Minitest::Test
       include ProjectAnalyzerEvidenceRunnerHelpers
 
@@ -717,6 +833,10 @@ module MetzScan
         with_tmpdir { |dir| assert_text_output_written_artifacts(run_calibration_write(dir), dir) }
       end
 
+      def test_text_output_renders_baseline_deltas
+        with_tmpdir { |dir| assert_text_output_baseline_delta(dir) }
+      end
+
       private
 
       def assert_text_output_readiness(result)
@@ -732,6 +852,27 @@ module MetzScan
 
         assert_predicate status, :success?, stderr
         assert_written_artifact_paths(stdout, artifact_dir(dir))
+      end
+
+      def assert_text_output_baseline_delta(dir)
+        write_repeated_branching_files(dir)
+        stdout, stderr, status = run_calibration_with_baseline(dir, write_zero_baseline(dir))
+
+        assert_predicate status, :success?, stderr
+        assert_text_baseline_delta_output(stdout)
+      end
+
+      def assert_text_baseline_delta_output(stdout)
+        assert_includes stdout, "baseline deltas:"
+        assert_includes stdout, "findings: +1"
+        assert_includes stdout, "offenses: +2"
+        assert_text_baseline_delta_details(stdout)
+      end
+
+      def assert_text_baseline_delta_details(stdout)
+        assert_includes stdout, "MetzProject/RepeatedBranching findings=+1 offenses=+2"
+        assert_includes stdout, "confidence: medium=+1"
+        assert_includes stdout, "category: state=+1"
       end
 
       def assert_written_artifact_paths(stdout, artifact_dir)
@@ -757,6 +898,34 @@ module MetzScan
           "--output-dir", File.join(dir, "calibration-results"), "--run-id", "write-smoke",
           "--analyzer", "MetzProject/RepeatedQueryCriteria", sample_app_path
         )
+      end
+
+      def run_calibration_with_baseline(dir, baseline)
+        Open3.capture3(
+          RbConfig.ruby, "bin/check_project_analyzer_calibration", "--text", "--no-write",
+          "--baseline-file", baseline, "--analyzer", "MetzProject/RepeatedBranching", dir
+        )
+      end
+
+      def write_repeated_branching_files(dir)
+        2.times { |index| File.write(File.join(dir, "branching_#{index}.rb"), branching_source) }
+      end
+
+      def branching_source
+        "case order.status\nwhen \"pending\"\n  nil\nwhen \"paid\"\n  nil\nend\n"
+      end
+
+      def write_zero_baseline(dir)
+        File.join(dir, "zero-baseline.yml").tap do |path|
+          File.write(path, YAML.dump("scope" => repeated_branching_scope,
+                                     "summary" => { "finding_count" => 0, "offense_count" => 0,
+                                                    "rules" => [], "breakdowns" => {} }))
+        end
+      end
+
+      def repeated_branching_scope
+        { "default_output" => false, "analyzer_filter" => ["MetzProject/RepeatedBranching"],
+          "targets_file" => nil }
       end
 
       def sample_app_path

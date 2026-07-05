@@ -246,13 +246,16 @@ Project analyzer output includes status, confidence, triage severity, and triage
 summary metadata. Default output includes only explicitly eligible, validated,
 medium-confidence design-pressure findings; `--project-analyzers` includes
 candidates, validated opt-in-only analyzers, and lower-confidence findings too.
-Text output shows a project-analyzer summary before rule blocks; JSON and SARIF
-output include machine-readable
+Text output shows a project-analyzer summary before rule blocks, including
+aggregate analyzer, confidence, severity, and category counts for opt-in
+high-volume runs; JSON and SARIF output include machine-readable
 project-analyzer metadata, and GitHub annotations append the same triage context
 to the annotation message. Calibration evidence summaries from
 `bin/check_project_analyzer_calibration` also include a readiness/backlog section
 that records the current analyzer disposition, evidence boundary, next useful
-task, and explicit not-next boundary without changing scan output.
+task, and explicit not-next boundary without changing scan output. Pass
+`--baseline-file docs/calibration/project_analyzer_baseline.yml` to compare a
+calibration run with the last checked-in active-manifest baseline.
 
 Run safe auto-correction or preview it first:
 

@@ -1,0 +1,116 @@
+---
+label: active-manifest-rubydex-0.2.7
+generated_from: docs/calibration/project_analyzer_targets.yml
+scope:
+  targets_file: docs/calibration/project_analyzer_targets.yml
+  default_output: false
+  analyzer_filter: []
+summary:
+  finding_count: 697
+  offense_count: 806
+  rules:
+    - cop_name: MetzProject/DeepInheritanceTree
+      finding_count: 363
+      offense_count: 363
+    - cop_name: MetzProject/ImplicitContextPressure
+      finding_count: 12
+      offense_count: 12
+    - cop_name: MetzProject/NamespaceLeakPressure
+      finding_count: 49
+      offense_count: 49
+    - cop_name: MetzProject/PackageDependencyPressure
+      finding_count: 47
+      offense_count: 47
+    - cop_name: MetzProject/RepeatedBranching
+      finding_count: 51
+      offense_count: 122
+    - cop_name: MetzProject/RepeatedQueryCriteria
+      finding_count: 16
+      offense_count: 16
+    - cop_name: MetzProject/ServiceSoup
+      finding_count: 11
+      offense_count: 49
+    - cop_name: MetzProject/SubclassOverridePressure
+      finding_count: 148
+      offense_count: 148
+  breakdowns:
+    confidence:
+      - value: low
+        finding_count: 399
+      - value: medium
+        finding_count: 298
+    triage_severity:
+      - value: broad base
+        finding_count: 306
+      - value: context required
+        finding_count: 13
+      - value: design pressure
+        finding_count: 48
+      - value: manual review
+        finding_count: 250
+      - value: setup orchestration
+        finding_count: 1
+      - value: shared dependency
+        finding_count: 42
+      - value: shared namespace
+        finding_count: 37
+    metadata:
+      project_analyzer_category:
+        - value: abstract base
+          finding_count: 57
+        - value: abstract_hook_override
+          finding_count: 33
+        - value: application job base
+          finding_count: 9
+        - value: application service base
+          finding_count: 8
+        - value: broad_root_override
+          finding_count: 93
+        - value: cli base
+          finding_count: 1
+        - value: compound_association_where_criteria
+          finding_count: 2
+        - value: controller base
+          finding_count: 58
+        - value: cooperative_override
+          finding_count: 9
+        - value: exception base
+          finding_count: 23
+        - value: expression
+          finding_count: 13
+        - value: framework root
+          finding_count: 2
+        - value: generic
+          finding_count: 13
+        - value: namespace_boundary
+          finding_count: 12
+        - value: namespaced_current_write
+          finding_count: 5
+        - value: package_boundary
+          finding_count: 5
+        - value: policy base
+          finding_count: 6
+        - value: polymorphic_where_criteria
+          finding_count: 1
+        - value: rails application base
+          finding_count: 27
+        - value: replacement_override
+          finding_count: 13
+        - value: root_current_write
+          finding_count: 6
+        - value: scoped_association_where_criteria
+          finding_count: 9
+        - value: serializer base
+          finding_count: 18
+        - value: shared_dependency
+          finding_count: 42
+        - value: shared_namespace
+          finding_count: 37
+        - value: state
+          finding_count: 25
+        - value: thread_current_write
+          finding_count: 1
+        - value: where_hash_criteria
+          finding_count: 4
+        - value: worker base
+          finding_count: 4
