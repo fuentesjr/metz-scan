@@ -131,6 +131,39 @@ rerun needs count deltas by analyzer, confidence, severity, and
 `project_analyzer_category`; text, JSON, and Markdown artifact output include
 the same baseline delta payload.
 
+Use the checked-in baseline only with the same run scope that produced it. The
+scope match checks `targets_file`, `default_output`, and `analyzer_filter`. The
+active baseline is a full active-manifest snapshot, so pair it with the tracked
+target manifest and no analyzer filter:
+
+```bash
+bin/check_project_analyzer_calibration --text --no-write \
+  --targets-file docs/calibration/project_analyzer_targets.yml \
+  --baseline-file docs/calibration/project_analyzer_baseline.yml
+```
+
+For a focused `--analyzer` rerun, first create or choose a baseline with the
+same analyzer filter, target source, and default-output setting. Comparing a
+filtered run with the full active-manifest baseline intentionally fails with a
+scope mismatch instead of reporting misleading deltas:
+
+```bash
+bin/check_project_analyzer_calibration --text --no-write \
+  --analyzer MetzProject/RepeatedBranching \
+  --baseline-file tmp/repeated_branching_baseline.yml \
+  tmp/project-analyzer-calibration/apps/redmine/app
+```
+
+Preview a refreshed compact baseline without writing calibration artifacts by
+printing it to standard output:
+
+```bash
+bin/check_project_analyzer_calibration --print-baseline \
+  --baseline-label repeated-branching-local \
+  --analyzer MetzProject/RepeatedBranching \
+  tmp/project-analyzer-calibration/apps/redmine/app
+```
+
 Discovered targets without top-level `app/` or `lib/` are recorded with
 no-scan metadata instead of falling back to a whole-root scan. Pass explicit
 paths for intentional one-off scans, `--analyzer` one or more times for a

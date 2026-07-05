@@ -64,6 +64,7 @@ module MetzScan
       def test_project_analyzer_summary_renders_before_rule_blocks
         assert_match(/\AProject analyzers: 2 findings, 2 offenses \(advisory signals; review in context\)/,
                      rendered)
+        assert_equal fixture("summary_block.txt"), aggregate_summary_block(rendered)
         assert_project_analyzer_aggregate_lines
         assert_repeated_branching_summary_line
       end
@@ -110,10 +111,19 @@ module MetzScan
       def rendered_for(parsed)
         StringIO.new.tap { |stdout| Scan::TextRenderer.new(stdout, parsed).render }.string
       end
+
+      def aggregate_summary_block(text)
+        text.lines.take_while { |line| !line.start_with?("  MetzProject/") }.join
+      end
+
+      def fixture(name)
+        File.read(File.expand_path("../../fixtures/scan_text_renderer_project_analyzer/#{name}", __dir__))
+      end
     end
 
     class ScanTextRendererProjectAnalyzerBreakdownTest < Minitest::Test
       def test_project_analyzer_summary_renders_mixed_triage_breakdowns
+        assert_equal fixture("mixed_summary_block.txt"), aggregate_summary_block(rendered)
         assert_mixed_aggregate_lines
         assert_mixed_rule_line
       end
@@ -136,6 +146,14 @@ module MetzScan
 
       def rendered
         StringIO.new.tap { |stdout| Scan::TextRenderer.new(stdout, parsed).render }.string
+      end
+
+      def aggregate_summary_block(text)
+        text.lines.take_while { |line| !line.start_with?("  MetzProject/") }.join
+      end
+
+      def fixture(name)
+        File.read(File.expand_path("../../fixtures/scan_text_renderer_project_analyzer/#{name}", __dir__))
       end
 
       def parsed

@@ -1,0 +1,5 @@
+Project analyzers: 3 findings, 3 offenses (advisory signals; review in context)
+  Analyzer counts: MetzProject/DeepInheritanceTree=3
+  Confidence counts: medium=3
+  Severity counts: broad base=2, manual review=1
+  Category counts: controller base=1, rails application base=1

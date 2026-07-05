@@ -7,13 +7,12 @@ module MetzScan
   module Calibration
     module ProjectAnalyzerEvidenceRunner
       class BaselineDelta
-        SCOPE_KEYS = %w[targets_file default_output analyzer_filter].freeze
         COUNT_KEYS = %w[finding_count offense_count].freeze
-        private_constant :SCOPE_KEYS, :COUNT_KEYS
+        private_constant :COUNT_KEYS
 
         def initialize(summary:, baseline_file:)
           @summary = summary
-          @baseline = BaselineFile.new(baseline_file)
+          @baseline = BaselineFile.load(baseline_file)
         end
 
         def to_h
@@ -34,7 +33,7 @@ module MetzScan
         end
 
         def validate_scope!
-          SCOPE_KEYS.each { |key| validate_scope_value!(key) if baseline_scope.key?(key) }
+          BaselineFile.scope_keys.each { |key| validate_scope_value!(key) if baseline_scope.key?(key) }
         end
 
         def validate_scope_value!(key)
@@ -83,7 +82,7 @@ module MetzScan
         end
 
         def rules_for(source)
-          source["rules"] || source.dig("project_analyzers", "rules") || []
+          BaselineFile.rules_for(source)
         end
 
         def breakdown_deltas
@@ -133,8 +132,27 @@ module MetzScan
       end
 
       class BaselineFile
-        def initialize(path)
-          @path = File.expand_path(path)
+        SCOPE_KEYS = %w[targets_file default_output analyzer_filter].freeze
+        private_constant :SCOPE_KEYS
+
+        def self.load(path)
+          new(path: path)
+        end
+
+        def self.from_summary(summary, label:, generated_from:, targets_file: nil)
+          document = document_for(summary, label: label, generated_from: generated_from, targets_file: targets_file)
+          new(document: document)
+        end
+
+        def self.scope_keys = SCOPE_KEYS
+
+        def self.rules_for(source)
+          source["rules"] || source.dig("project_analyzers", "rules") || []
+        end
+
+        def initialize(path: nil, document: nil)
+          @path = path && File.expand_path(path)
+          @document = document
         end
 
         attr_reader :path
@@ -143,12 +161,53 @@ module MetzScan
           { "file" => path, "label" => document["label"], "generated_from" => document["generated_from"] }.compact
         end
 
+        def to_h
+          document
+        end
+
+        def to_yaml
+          YAML.dump(to_h)
+        end
+
         def summary
           document.fetch("summary", document)
         end
 
         def scope
           document.fetch("scope", {})
+        end
+
+        class << self
+          private
+
+          def document_for(summary, label:, generated_from:, targets_file:)
+            { "label" => label, "generated_from" => generated_from,
+              "scope" => scope_for(summary, targets_file: targets_file),
+              "summary" => compact_summary_for(summary) }
+          end
+
+          def scope_for(summary, targets_file:)
+            { "targets_file" => targets_file || summary["targets_file"],
+              "default_output" => summary.fetch("default_output"),
+              "analyzer_filter" => summary.fetch("analyzer_filter", []) }
+          end
+
+          def compact_summary_for(summary)
+            { "finding_count" => summary.fetch("finding_count"),
+              "offense_count" => summary.fetch("offense_count"),
+              "rules" => compact_rules_for(summary),
+              "breakdowns" => summary.fetch("breakdowns", {}) }
+          end
+
+          def compact_rules_for(summary)
+            rules_for(summary).map { |rule| compact_rule_for(rule) }
+          end
+
+          def compact_rule_for(rule)
+            { "cop_name" => rule.fetch("cop_name"),
+              "finding_count" => rule.fetch("finding_count"),
+              "offense_count" => rule.fetch("offense_count") }
+          end
         end
 
         private

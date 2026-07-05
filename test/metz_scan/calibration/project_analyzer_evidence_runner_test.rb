@@ -933,6 +933,112 @@ module MetzScan
       end
     end
 
+    class ProjectAnalyzerCalibrationBaselinePrintCommandTest < Minitest::Test
+      include ProjectAnalyzerEvidenceRunnerHelpers
+
+      def test_print_baseline_renders_compact_baseline_without_artifacts
+        with_tmpdir { |dir| assert_print_baseline_output(dir) }
+      end
+
+      def test_print_baseline_preserves_relative_targets_file_scope
+        with_repo_tmpdir { |dir| assert_print_baseline_targets_file_scope(dir) }
+      end
+
+      private
+
+      def assert_print_baseline_output(dir)
+        write_repeated_branching_files(dir)
+        stdout, stderr, status = run_print_baseline(dir)
+
+        assert_predicate status, :success?, stderr
+        assert_compact_baseline(YAML.safe_load(stdout, aliases: false))
+        refute_path_exists File.join(dir, "calibration-results")
+      end
+
+      def assert_compact_baseline(baseline)
+        assert_compact_baseline_identity(baseline)
+        assert_equal 1, baseline.dig("summary", "finding_count")
+        assert_equal ["MetzProject/RepeatedBranching"], baseline_rule_names(baseline)
+      end
+
+      def assert_print_baseline_targets_file_scope(dir)
+        relative_manifest = repo_relative_path(arrange_targets_file_fixture(dir))
+        stdout, stderr, status = run_print_baseline_with_targets_file(relative_manifest)
+
+        assert_predicate status, :success?, stderr
+        assert_targets_file_scope(YAML.safe_load(stdout, aliases: false), relative_manifest)
+      end
+
+      def assert_targets_file_scope(baseline, relative_manifest)
+        assert_equal relative_manifest, baseline.fetch("generated_from")
+        assert_equal relative_manifest, baseline.fetch("scope").fetch("targets_file")
+      end
+
+      def assert_compact_baseline_identity(baseline)
+        assert_equal "test-filtered-baseline", baseline.fetch("label")
+        assert_equal "paths", baseline.fetch("generated_from")
+        assert_equal repeated_branching_scope, baseline.fetch("scope")
+      end
+
+      def baseline_rule_names(baseline)
+        baseline.dig("summary", "rules").map { |rule| rule.fetch("cop_name") }
+      end
+
+      def run_print_baseline(dir)
+        Open3.capture3(RbConfig.ruby, "bin/check_project_analyzer_calibration", *print_baseline_args(dir))
+      end
+
+      def run_print_baseline_with_targets_file(relative_manifest)
+        Open3.capture3(
+          RbConfig.ruby, "bin/check_project_analyzer_calibration",
+          "--print-baseline", "--baseline-label", "manifest-baseline",
+          "--targets-file", relative_manifest, "--analyzer", "MetzProject/RepeatedBranching"
+        )
+      end
+
+      def print_baseline_args(dir)
+        ["--print-baseline", "--baseline-label", "test-filtered-baseline",
+         "--output-dir", File.join(dir, "calibration-results"),
+         "--analyzer", "MetzProject/RepeatedBranching", dir]
+      end
+
+      def with_repo_tmpdir(&)
+        FileUtils.mkdir_p("tmp")
+        Dir.mktmpdir("metz-scan-baseline-print", File.expand_path("tmp", Dir.pwd), &)
+      end
+
+      def arrange_targets_file_fixture(dir)
+        root = File.join(dir, "manifest-app")
+        app = File.join(root, "app")
+        FileUtils.mkdir_p(app)
+        2.times { |index| File.write(File.join(app, "branching_#{index}.rb"), branching_source) }
+        write_targets_file(dir, root)
+      end
+
+      def write_targets_file(dir, root)
+        File.join(dir, "targets.yml").tap do |path|
+          File.write(path, YAML.dump("targets" => [{ "root" => root, "scan_paths" => ["app"] }]))
+        end
+      end
+
+      def repo_relative_path(path)
+        path.delete_prefix("#{Dir.pwd}/")
+      end
+
+      def write_repeated_branching_files(dir)
+        2.times { |index| File.write(File.join(dir, "branching_#{index}.rb"), branching_source) }
+      end
+
+      def branching_source
+        "case order.status\nwhen \"pending\"\n  nil\nwhen \"paid\"\n  nil\nend\n"
+      end
+
+      def repeated_branching_scope
+        { "default_output" => false, "analyzer_filter" => ["MetzProject/RepeatedBranching"],
+          "targets_file" => nil }
+      end
+    end
+
     class FakeIndex
       def backend_name = :fake
 

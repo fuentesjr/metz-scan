@@ -1,0 +1,145 @@
+{
+  "generated_at": "2026-07-05T17:15:00Z",
+  "default_output": false,
+  "analyzer_filter": [],
+  "fixture_root": "/tmp/apps",
+  "finding_count": 3,
+  "offense_count": 3,
+  "targets": [
+    {
+      "name": "sample",
+      "git": {
+        "revision": "abcdef1234567890"
+      },
+      "scan_paths": [
+        "/tmp/apps/sample/app"
+      ],
+      "index": {
+        "backend": "null"
+      },
+      "finding_count": 3,
+      "offense_count": 3
+    }
+  ],
+  "project_analyzers": {
+    "rules": [
+      {
+        "cop_name": "MetzProject/RepeatedBranching",
+        "finding_count": 2,
+        "offense_count": 2,
+        "status": "validated",
+        "confidence": "medium",
+        "triage_severity": "design pressure"
+      },
+      {
+        "cop_name": "MetzProject/ServiceSoup",
+        "finding_count": 1,
+        "offense_count": 1,
+        "status": "validated",
+        "confidence": "medium",
+        "triage_severity": "design pressure"
+      }
+    ],
+    "readiness": []
+  },
+  "baseline_delta": {
+    "baseline": {
+      "label": "test-baseline",
+      "file": "/tmp/baseline.yml"
+    },
+    "finding_count": {
+      "baseline": 3,
+      "current": 3,
+      "delta": 0
+    },
+    "offense_count": {
+      "baseline": 3,
+      "current": 3,
+      "delta": 0
+    },
+    "rules": [
+      {
+        "cop_name": "MetzProject/RepeatedBranching",
+        "finding_count": {
+          "baseline": 1,
+          "current": 2,
+          "delta": 1
+        },
+        "offense_count": {
+          "baseline": 1,
+          "current": 2,
+          "delta": 1
+        }
+      },
+      {
+        "cop_name": "MetzProject/ServiceSoup",
+        "finding_count": {
+          "baseline": 2,
+          "current": 1,
+          "delta": -1
+        },
+        "offense_count": {
+          "baseline": 2,
+          "current": 1,
+          "delta": -1
+        }
+      }
+    ],
+    "breakdowns": {
+      "confidence": [
+        {
+          "value": "medium",
+          "finding_count": {
+            "baseline": 3,
+            "current": 3,
+            "delta": 0
+          }
+        }
+      ],
+      "triage_severity": [
+        {
+          "value": "design pressure",
+          "finding_count": {
+            "baseline": 3,
+            "current": 3,
+            "delta": 0
+          }
+        }
+      ],
+      "metadata": {
+        "project_analyzer_category": [
+          {
+            "value": "state",
+            "finding_count": {
+              "baseline": 3,
+              "current": 3,
+              "delta": 0
+            }
+          }
+        ]
+      }
+    }
+  },
+  "breakdowns": {
+    "confidence": [
+      {
+        "value": "medium",
+        "finding_count": 3
+      }
+    ],
+    "triage_severity": [
+      {
+        "value": "design pressure",
+        "finding_count": 3
+      }
+    ],
+    "metadata": {
+      "project_analyzer_category": [
+        {
+          "value": "state",
+          "finding_count": 3
+        }
+      ]
+    }
+  }
+}

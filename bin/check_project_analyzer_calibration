@@ -9,9 +9,10 @@ require "optparse"
 require "metz_scan/calibration/project_analyzer_evidence_runner"
 
 RUNNER = MetzScan::Calibration::ProjectAnalyzerEvidenceRunner
+BASELINE_FILE = MetzScan::Calibration::ProjectAnalyzerEvidenceRunner::BaselineFile
 USAGE = "Usage: check_project_analyzer_calibration [--json] [--text] [--default-output] " \
         "[--targets-file FILE] [--baseline-file FILE] [--output-dir DIR] [--run-id ID] " \
-        "[--analyzer COP_NAME] [--no-write] [PATH ...]"
+        "[--analyzer COP_NAME] [--print-baseline] [--baseline-label LABEL] [--no-write] [PATH ...]"
 
 def parse_options
   default_options.tap { |options| option_parser(options).parse! }
@@ -19,7 +20,7 @@ end
 
 def default_options
   { json: true, default_output: false, write: true, output_dir: RUNNER.default_results_path, run_id: nil,
-    analyzer_names: [], targets_file: nil, baseline_file: nil }
+    analyzer_names: [], targets_file: nil, baseline_file: nil, print_baseline: false, baseline_label: nil }
 end
 
 def option_parser(options)
@@ -52,9 +53,14 @@ end
 def add_artifact_options(parser, options)
   parser.on("--output-dir DIR", "Write artifacts under DIR") { |dir| options[:output_dir] = dir }
   add_targets_file_option(parser, options)
-  add_baseline_file_option(parser, options)
+  add_baseline_options(parser, options)
   add_run_id_option(parser, options)
   add_write_options(parser, options)
+end
+
+def add_baseline_options(parser, options)
+  add_baseline_file_option(parser, options)
+  add_print_baseline_option(parser, options)
 end
 
 def add_run_id_option(parser, options)
@@ -73,8 +79,22 @@ def add_targets_file_option(parser, options)
 end
 
 def add_baseline_file_option(parser, options)
-  parser.on("--baseline-file FILE", "Compare calibration counts with FILE") do |file|
+  parser.on("--baseline-file FILE", "Compare counts with FILE; run scope must match") do |file|
     options[:baseline_file] = file
+  end
+end
+
+def add_print_baseline_option(parser, options)
+  parser.on("--print-baseline", "Print a compact baseline document and do not write artifacts") do
+    options[:print_baseline] = true
+    options[:write] = false
+  end
+  add_baseline_label_option(parser, options)
+end
+
+def add_baseline_label_option(parser, options)
+  parser.on("--baseline-label LABEL", "Use LABEL in --print-baseline output") do |label|
+    options[:baseline_label] = label
   end
 end
 
@@ -262,9 +282,35 @@ def write_artifacts(summary, options)
   RUNNER.write_artifacts(summary, output_dir: options.fetch(:output_dir), run_id: options[:run_id])
 end
 
+def emit_baseline(summary, options)
+  baseline_for(summary, options).to_yaml
+end
+
+def baseline_for(summary, options)
+  BASELINE_FILE.from_summary(summary, **baseline_options(options))
+end
+
+def baseline_options(options)
+  { label: baseline_label(options),
+    generated_from: generated_from(options),
+    targets_file: options[:targets_file] }
+end
+
+def baseline_label(options)
+  options[:baseline_label] || "calibration-baseline"
+end
+
+def generated_from(options)
+  options[:targets_file] || "paths"
+end
+
 begin
   options = parse_options
   summary = summary_for(options)
+  if options.fetch(:print_baseline)
+    puts emit_baseline(summary, options)
+    exit 0
+  end
   summary = summary.merge("artifacts" => write_artifacts(summary, options)) if options.fetch(:write)
   puts(options.fetch(:json) ? emit_json(summary) : render_text(summary))
   exit 0

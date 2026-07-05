@@ -14,14 +14,28 @@ module MetzScan
         assert_equal expected_markdown, rendered
       end
 
+      def test_renders_baseline_delta_summary_exactly
+        rendered = ProjectAnalyzerEvidenceRunner::MarkdownRenderer.new(baseline_delta_summary).call
+
+        assert_equal baseline_delta_markdown, rendered
+      end
+
       private
 
       def summary
         JSON.parse(File.read(fixture_path("representative_summary.json")))
       end
 
+      def baseline_delta_summary
+        JSON.parse(File.read(fixture_path("baseline_delta_summary.json")))
+      end
+
       def expected_markdown
         File.read(fixture_path("representative_summary.md"))
+      end
+
+      def baseline_delta_markdown
+        File.read(fixture_path("baseline_delta_summary.md"))
       end
 
       def fixture_path(name)

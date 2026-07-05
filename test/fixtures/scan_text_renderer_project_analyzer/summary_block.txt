@@ -1,0 +1,4 @@
+Project analyzers: 2 findings, 2 offenses (advisory signals; review in context)
+  Analyzer counts: MetzProject/RepeatedBranching=1, MetzProject/ServiceSoup=1
+  Confidence counts: medium=2
+  Severity counts: design pressure=2

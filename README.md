@@ -260,7 +260,11 @@ to the annotation message. Calibration evidence summaries from
 that records the current analyzer disposition, evidence boundary, next useful
 task, and explicit not-next boundary without changing scan output. Pass
 `--baseline-file docs/calibration/project_analyzer_baseline.yml` to compare a
-calibration run with the last checked-in active-manifest baseline.
+full active-manifest calibration run with the last checked-in active-manifest
+baseline. Filtered `--analyzer` reruns need a matching filtered baseline; see
+[docs/project-analyzer-calibration.md](docs/project-analyzer-calibration.md) for
+examples. Use `--print-baseline` to preview a compact refreshed baseline on
+standard output without writing calibration artifacts.
 
 Run safe auto-correction or preview it first:
 
