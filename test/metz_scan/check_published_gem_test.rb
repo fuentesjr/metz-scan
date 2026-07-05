@@ -76,7 +76,8 @@ module MetzScan
     end
 
     def env_for(tmp_base, fake_bundle_path, options)
-      base_env.merge("BUNDLE_BIN" => fake_bundle_path, "PUBLISHED_GEM_SMOKE_TMPDIR" => tmp_base)
+      base_env.merge("BUNDLE_BIN" => fake_bundle_path, "HOME" => File.join(tmp_base, "home"),
+                     "PUBLISHED_GEM_SMOKE_TMPDIR" => tmp_base)
               .merge(options.fetch(:ambient_env, {}))
               .merge(credential_env(options.fetch(:bundler_credential, false)))
     end
@@ -116,7 +117,7 @@ module MetzScan
 
     def base_env
       { "BUNDLE_RUBYGEMS__PKG__GITHUB__COM" => nil, "PATH" => ENV.fetch("PATH"),
-        "RUBY_BIN" => RbConfig.ruby }
+        "GEM_CREDENTIALS" => nil, "GITHUB_PACKAGES_TOKEN" => nil, "RUBY_BIN" => RbConfig.ruby }
     end
 
     def credential_env(bundler_credential)

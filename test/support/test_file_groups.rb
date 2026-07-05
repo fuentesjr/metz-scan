@@ -9,7 +9,9 @@ module MetzScan
     SLOW_PATTERNS = [
       "rubocop-metz/test/integration/**/*_test.rb",
       "rubocop-metz/test/cop/metz/views_deep_navigation_test.rb",
+      "test/metz_scan/check_ci_parity_test.rb",
       "test/metz_scan/check_dogfood_test.rb",
+      "test/metz_scan/check_published_gem_failure_test.rb",
       "test/metz_scan/check_published_gem_test.rb",
       "test/metz_scan/check_project_analyzer_calibration_lockfile_test.rb",
       "test/metz_scan/check_read_only_commands_test.rb",

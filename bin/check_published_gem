@@ -79,7 +79,7 @@ github_packages_credential() {
   fi
 
   local credentials_file="${GEM_CREDENTIALS:-$HOME/.gem/credentials}"
-  [ -f "$credentials_file" ] || fail "missing GitHub Packages credentials; set GITHUB_PACKAGES_TOKEN or GEM_CREDENTIALS"
+  [ -f "$credentials_file" ] || fail "missing GitHub Packages credentials; set GITHUB_PACKAGES_TOKEN from a token with read:packages scope or set GEM_CREDENTIALS"
 
   clean_ruby -ryaml -e '
     creds = YAML.load_file(ARGV.fetch(0))
@@ -204,7 +204,9 @@ bundle_exec() {
 }
 
 printf 'check_published_gem: installing metz-scan %s in %s\n' "$version" "$workdir"
-run_redacted bundle_install
+if ! run_redacted bundle_install; then
+  fail "bundle install failed for metz-scan ${version}; confirm the package exists, the GitHub Packages source is configured, and GITHUB_PACKAGES_TOKEN has read:packages scope. Set KEEP_PUBLISHED_GEM_SMOKE=1 to inspect ${workdir}"
+fi
 
 actual_version="$(bundle_exec metz-scan --version)"
 [ "$actual_version" = "$version" ] || fail "expected metz-scan $version, got $actual_version"

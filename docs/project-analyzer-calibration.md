@@ -340,6 +340,18 @@ evidence boundary, next useful task, and not-next boundary. This document keeps
 the historical evidence trail and rationale behind those current generated
 entries.
 
+For short parked-issue updates, render a local paste-ready summary without
+posting to GitHub:
+
+```bash
+bin/render_issue_comment_summary 27
+bin/render_issue_comment_summary MetzProject/RepeatedBranching
+```
+
+The command reads the tracker boundary, readiness catalog, and checked-in
+active-manifest baseline, then prints the current status, count evidence, next
+step, and not-next boundary for issue #25, #27, #28, or the mapped analyzer.
+
 Reporting-language follow-up on 2026-06-24: text output now labels each
 project-analyzer summary with status, confidence, and severity, and the summary
 heading explicitly calls these findings advisory signals. Text and GitHub

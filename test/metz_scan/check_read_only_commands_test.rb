@@ -27,6 +27,10 @@ module MetzScan
       end
     end
 
+    def test_default_commands_include_issue_comment_summary_renderer
+      assert_includes File.read(check_read_only_commands_path), "bin/render_issue_comment_summary 27"
+    end
+
     private
 
     def assert_mutation_failure(result)

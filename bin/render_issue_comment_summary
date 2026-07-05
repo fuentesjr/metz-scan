@@ -1,0 +1,179 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+$LOAD_PATH.unshift(File.expand_path("../lib", __dir__))
+
+require "optparse"
+require "yaml"
+
+require "metz_scan/calibration/project_analyzer_evidence_runner/readiness_catalog"
+
+ROOT = File.expand_path("..", __dir__)
+TRACKER_PATH = ENV.fetch("RENDER_ISSUE_COMMENT_TRACKER_PATH", File.join(ROOT, "PROJECT_TRACKER.md"))
+BASELINE_PATH = File.join(ROOT, "docs/calibration/project_analyzer_baseline.yml")
+CATALOG = MetzScan::Calibration::ProjectAnalyzerEvidenceRunner::ReadinessCatalog
+
+ISSUES = {
+  "25" => {
+    title: "Dogfood CI enforcement",
+    aliases: %w[dogfood dogfood-ci],
+    tracker_issue: "25"
+  },
+  "27" => {
+    title: "DeepInheritanceTree",
+    analyzer: "MetzProject/DeepInheritanceTree",
+    aliases: %w[deepinheritancetree deep-inheritance-tree],
+    tracker_issue: "27"
+  },
+  "28" => {
+    title: "RepeatedBranching",
+    analyzer: "MetzProject/RepeatedBranching",
+    aliases: %w[repeatedbranching repeated-branching],
+    tracker_issue: "28"
+  }
+}.freeze
+
+def parse_args
+  argument_parser.parse!
+  ARGV.size == 1 ? ARGV.fetch(0) : abort_with("expected one issue number or analyzer name")
+end
+
+def argument_parser
+  OptionParser.new { |parser| configure_parser(parser) }
+end
+
+def configure_parser(parser)
+  parser.banner = "Usage: bin/render_issue_comment_summary ISSUE_OR_ANALYZER"
+  parser.on("-h", "--help", "Show usage") { show_help(parser) }
+end
+
+def show_help(parser)
+  puts parser
+  exit 0
+end
+
+def abort_with(message)
+  warn "render_issue_comment_summary: #{message}"
+  exit 1
+end
+
+def issue_for(token)
+  normalized = normalize(token)
+  ISSUES.find { |number, issue| issue_match?(normalized, number, issue) }
+end
+
+def issue_match?(normalized, number, issue)
+  normalized == number || normalized == normalize(issue.fetch(:title)) ||
+    Array(issue[:aliases]).include?(normalized) ||
+    (issue[:analyzer] && normalized == normalize(issue.fetch(:analyzer)))
+end
+
+def normalize(value)
+  value.to_s.downcase.gsub(/[^a-z0-9#]/, "").sub(/\A#/, "")
+end
+
+def tracker_markdown
+  @tracker_markdown ||= File.read(TRACKER_PATH)
+end
+
+def baseline
+  @baseline ||= YAML.safe_load_file(BASELINE_PATH)
+end
+
+def readiness_entries
+  @readiness_entries ||= CATALOG.new.to_a
+end
+
+def analyzer_rule(rule_id)
+  baseline.fetch("summary").fetch("rules").find { |rule| rule.fetch("cop_name") == rule_id }
+end
+
+def readiness_entry(rule_id)
+  readiness_entries.find { |entry| entry.fetch("rule_id") == rule_id }
+end
+
+def tracker_boundary(issue_number)
+  lines = tracker_markdown.lines
+  index = tracker_boundary_index(lines, issue_number)
+  abort_with("missing tracker boundary for ##{issue_number}") unless index
+
+  tracker_boundary_text(lines, index)
+end
+
+def tracker_boundary_index(lines, issue_number)
+  lines.index { |line| line.start_with?("- ##{issue_number} ") }
+end
+
+def tracker_boundary_text(lines, index)
+  bullet_lines = [lines.fetch(index).sub(/\A-\s*/, "").strip]
+  append_tracker_continuations(lines, bullet_lines, index + 1)
+  bullet_lines.join(" ")
+end
+
+def append_tracker_continuations(lines, bullet_lines, index)
+  while index < lines.length && lines.fetch(index).start_with?("  ")
+    bullet_lines << lines.fetch(index).strip
+    index += 1
+  end
+end
+
+def analyzer_lines(issue)
+  rule_id = issue.fetch(:analyzer)
+  rule = analyzer_rule(rule_id) || abort_with("missing baseline rule for #{rule_id}")
+  readiness = readiness_entry(rule_id) || abort_with("missing readiness entry for #{rule_id}")
+
+  analyzer_identity_lines(rule_id, rule, readiness) + analyzer_readiness_lines(readiness)
+end
+
+def analyzer_identity_lines(rule_id, rule, readiness)
+  ["Analyzer: #{rule_id}", "Status: #{readiness.fetch('disposition')}", baseline_line(rule)]
+end
+
+def baseline_line(rule)
+  "Baseline: #{rule.fetch('finding_count')} findings / #{rule.fetch('offense_count')} offenses " \
+    "in #{baseline.fetch('label')}."
+end
+
+def analyzer_readiness_lines(readiness)
+  ["Evidence: #{readiness.fetch('evidence')}",
+   "Next: #{readiness.fetch('next')}",
+   "Not next: #{readiness.fetch('not_next')}"]
+end
+
+def non_analyzer_lines(issue)
+  boundary = tracker_boundary(issue.fetch(:tracker_issue))
+  ["Status: #{status_from_boundary(boundary)}",
+   "Evidence: #{evidence_from_boundary(boundary)}",
+   "Next: #{next_from_boundary(boundary)}"]
+end
+
+def status_from_boundary(boundary)
+  boundary[/\bis ([^.]+)\./, 1] || "see tracker boundary"
+end
+
+def evidence_from_boundary(boundary)
+  first_sentence(boundary)
+end
+
+def next_from_boundary(boundary)
+  boundary[/\b(Reopen only when .*)\z/, 1] || "See tracker boundary."
+end
+
+def first_sentence(text)
+  text[/\A.*?\./] || text
+end
+
+def render_issue(number, issue)
+  lines = ["Issue ##{number}: #{issue.fetch(:title)}", ""]
+  lines.concat(issue[:analyzer] ? analyzer_lines(issue) : non_analyzer_lines(issue))
+  lines.push("", "Tracker boundary: #{tracker_boundary(issue.fetch(:tracker_issue))}", "", generated_line)
+  lines.join("\n")
+end
+
+def generated_line
+  "Generated locally by `bin/render_issue_comment_summary`; no GitHub comment was posted."
+end
+
+token = parse_args
+number, issue = issue_for(token) || abort_with("unknown issue or analyzer: #{token}")
+puts render_issue(number, issue)

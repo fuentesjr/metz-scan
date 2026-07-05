@@ -21,9 +21,9 @@ Standing rules:
 - Do not start a new slice while `origin/main` CI is red; triage and fix the
   failure first so red runs cannot accumulate behind local work.
 - Run `bin/check_ci_parity` before pushing. It reruns the single-command CI
-  steps against the committed HEAD in a clean clone, so local-only environment
-  assumptions (bundler config such as the optional rubydex group, untracked
-  files) fail locally instead of in CI.
+  steps and tracker hygiene against the committed HEAD in a clean clone, so
+  local-only environment assumptions (bundler config such as the optional
+  rubydex group, untracked files) fail locally instead of in CI.
 - Do not commit tracker-only updates unless they accompany real project work.
   If the tracker is stale, rewrite it before proceeding, but commit that
   rewrite with the implementation, test, documentation, or tooling change that
@@ -46,13 +46,11 @@ calibration.
 
 ## Current Snapshot
 
-- Date: 2026-07-04.
-- Latest pushed baseline: `74f3d75 Rewrite tracker queue with actionable
-  tasks`.
-- CI state: run `28722875969` for `74f3d75` succeeded in about 1m 24s after
-  the upstream push. The previous pushed baseline `e954cee` succeeded in run
-  `28722722473` in 1m 27s. Earlier runs for `c0a01f5` (`28672899400`) and
-  `64bceea` (`28680427556`) failed on calibration evidence runner environment
+- Date: 2026-07-05.
+- Latest pushed baseline: `0d902f9 Add calibration baseline deltas`.
+- CI state: run `28729326817` for `0d902f9` succeeded in 1m 27s after the
+  upstream push. Earlier runs for `c0a01f5` (`28672899400`) and `64bceea`
+  (`28680427556`) failed on calibration evidence runner environment
   assumptions, both since fixed.
 - Release checklist issue: [#30](https://github.com/fuentesjr/metz-scan/issues/30),
   `Release v0.4.0`, is closed with the checklist complete.
@@ -66,14 +64,15 @@ calibration.
   next-four evidence sweep, Dependabot PR #29, README cleanup, parked-queue
   tracker checkpoints, README analyzer-details cleanup, Rubydex spike results,
   the Rubydex 0.2.7 calibration drift checkpoint, the Rubydex release-response
-  playbook, and the actionable tracker rewrite (`74f3d75`) are pushed to
-  `origin/main`. The workflow-hardening slice (`8c740ee`) and this
-  calibration-summary slice are local until the post-commit parity check and
-  upstream push complete.
-- Latest checkpoint window: 16:54:35-18:21:58 -0700, 1h 27m 23s elapsed through
-  four calibration-summary tasks, agenticon evidence collection, full active
-  manifest baseline comparison, focused tests, fast/slow test partitions, full
-  RuboCop, and tracker update.
+  playbook, the actionable tracker rewrite (`74f3d75`), workflow-hardening
+  slice (`8c740ee`), and calibration-summary slice (`0d902f9`) are pushed to
+  `origin/main`. This workflow-diagnostics slice is local until validation,
+  commit, parity check, and upstream push complete.
+- Latest checkpoint window: 2026-07-04 21:21:14-2026-07-05 09:08:39 -0700,
+  11h 47m 25s wall-clock elapsed through four workflow-diagnostics tasks,
+  agenticon evidence collection, design review and blocker fix, focused command
+  tests, fast/slow test partitions, full RuboCop, docs updates, and tracker
+  update.
 - Working tree expectation: keep tracked work clean before starting another
   slice; keep ignored `logs/` notes out of commits unless explicitly requested.
 
@@ -85,55 +84,14 @@ calibration.
 | Calibration artifact pipeline | Healthy | Markdown output, artifact write path, sample-app calibration smoke, and the tracked target manifest under `docs/calibration/` are covered. | Maintain; change only when artifact or target-manifest behavior changes. |
 | Analyzer behavior | Parked | Fresh #27/#28 Mastodon and Discourse reruns did not show enough misleading or underexplained findings to justify behavior, threshold, or output-policy changes. | Reopen only with new generic evidence, not app-specific suppressions. |
 | Calibration evidence | Guarded | Redmine, Rubygems.org, ManageIQ, and Foreman evidence has been consolidated; Rubydex `0.2.7` was rechecked against the active manifest. Full active-manifest output is 697 findings/806 offenses; the four Rubydex-index-backed analyzers account for 607 findings/607 offenses. A compact Rubydex drift check covers those four analyzers, and `docs/calibration/project_analyzer_baseline.yml` now captures the full active-manifest baseline for delta reporting. | Recheck only Rubydex-index-backed analyzers after future Rubydex upgrades unless an AST-only analyzer changes; use `--baseline-file docs/calibration/project_analyzer_baseline.yml` for full-manifest drift. |
-| Workflow friction | Guarded | The lockfile rewrite came from a stale path dependency entry in `Gemfile.lock`; the lockfile now matches the gemspec's `rubocop-metz (~> 0.4.0)` constraint, and read-only maintenance commands have a tracked-worktree mutation guard. | Maintain the guard list as new read-only commands are added; do not bypass `BUNDLE_FROZEN=1` for read-only calibration checks. |
+| Workflow friction | Guarded | The lockfile rewrite came from a stale path dependency entry in `Gemfile.lock`; the lockfile now matches the gemspec's `rubocop-metz (~> 0.4.0)` constraint, read-only maintenance commands have a tracked-worktree mutation guard, and `bin/check_ci_parity` now runs tracker hygiene before Bundler work while preserving failed clean clones for inspection. | Maintain the guard list as new read-only commands are added; do not bypass `BUNDLE_FROZEN=1` for read-only calibration checks. |
 | Sorbet adoption spike | Complete | Issue #26 was evaluated in a disposable workspace, documented, synced back to GitHub, and closed. The report recommends not adopting now: a narrow static setup is possible, but generated RBI churn, command policy, fixture scope, and runtime signature implications outweigh observed value. | Do not add Sorbet unless a concrete type-related defect, contributor ergonomics need, or stable public API typing requirement appears. |
-| Docs/adoption | Stable | README points contributors and agents to this tracker; old implementation notes are archived, current notes are short, and the Sorbet spike report records the tooling decision. The README now splits RepeatedBranching generic-subject guidance into a short list, the analyzer behavior details into per-analyzer subsections, and the calibration docs point future Rubydex upgrades at the compact drift command plus active-manifest baseline deltas. | Keep docs changes minimal and evidence-led. |
+| Docs/adoption | Stable | README points contributors and agents to this tracker; old implementation notes are archived, current notes are short, and the Sorbet spike report records the tooling decision. The README now splits RepeatedBranching generic-subject guidance into a short list, the analyzer behavior details into per-analyzer subsections, package install troubleshooting points at `bin/check_published_gem`, and calibration docs point future Rubydex upgrades plus parked issue updates at repeatable local commands. | Keep docs changes minimal and evidence-led. |
 | Handoff continuity | Active | Local ignored handoff `.handoffs/20260703173813_next_four_tasks_after_issue_sync.md` captures the pushed issue-sync summary, conversation-only requirements, and the next four evidence-gated tasks. | Use it as the first continuation surface if context resets in this workspace; do not commit handoff files. |
 
 ## Next Queue
 
-1. Wire the tracker hygiene guard into the push/parity path.
-   - Why now: `bin/check_tracker_queue` now catches stale watch-only queues, but
-     it is not yet part of the required push guard.
-   - Definition of done: `bin/check_ci_parity` or another documented pre-push
-     command runs `bin/check_tracker_queue`, and tests cover a failing queue
-     without requiring a dirty worktree.
-   - Files likely touched: `bin/check_ci_parity`, `bin/check_tracker_queue`,
-     `test/metz_scan/check_tracker_queue_test.rb`, and this tracker.
-   - Not in scope: blocking ordinary documentation changes when the queue
-     remains actionable.
-
-2. Add a contributor-facing package install troubleshooting smoke.
-   - Why now: package watch is no longer active work, but the release response
-     path would be faster with a scripted consumer install diagnostic.
-   - Definition of done: a command or documented smoke verifies GitHub Packages
-     credentials, installs `metz-scan`, and reports actionable failures without
-     publishing or mutating the repo.
-   - Files likely touched: `bin/check_published_gem`, README install docs,
-     `docs/releases/`, and tests around error messages.
-   - Not in scope: changing package ownership or publishing a new gem.
-
-3. Make `bin/check_ci_parity` faster to diagnose when it fails.
-    - Why now: the parity guard is required before pushes and can take enough
-      time that failures should point directly to the failing phase and clone
-      path.
-    - Definition of done: failure output names the exact phase, preserves the
-      clean clone path for inspection, and has tests for at least one failing
-      phase.
-    - Files likely touched: `bin/check_ci_parity` and command tests.
-    - Not in scope: removing any existing parity phase.
-
-4. Add a command for generating a concise issue-comment evidence summary.
-    - Why now: parked issues #25/#27/#28 repeatedly need the same concise
-      evidence, but agents should not manually rewrite it each time.
-    - Definition of done: a script can render a read-only summary for a chosen
-      issue or analyzer from current tracker/calibration state without posting
-      to GitHub.
-    - Files likely touched: `bin/`, `docs/project-analyzer-calibration.md`, and
-      tests for rendered output.
-    - Not in scope: automatically commenting on GitHub issues.
-
-5. Add a docs freshness check for README analyzer-status claims.
+1. Add a docs freshness check for README analyzer-status claims.
     - Why now: README status tables, readiness catalog text, and calibration
       docs can drift as analyzer status and default-output eligibility change.
     - Definition of done: a focused test checks README analyzer statuses against
@@ -144,7 +102,7 @@ calibration.
       and docs/tests.
     - Not in scope: rewriting analyzer behavior.
 
-6. Add Rubydex drift skip-path coverage without the optional bundle group.
+2. Add Rubydex drift skip-path coverage without the optional bundle group.
     - Why now: `bin/check_rubydex_drift --allow-missing-rubydex` is intended for
       environments without the optional project index, but the current command
       tests exercise the installed-Rubydex path.
@@ -155,7 +113,7 @@ calibration.
       `test/metz_scan/check_rubydex_drift_test.rb`.
     - Not in scope: changing optional dependency constraints.
 
-7. Document the read-only maintenance command contract.
+3. Document the read-only maintenance command contract.
     - Why now: `--no-write`, `BUNDLE_FROZEN=1`, and tracked-worktree mutation
       checks now have repo behavior behind them, but contributors need one
       short place to see the contract.
@@ -166,7 +124,7 @@ calibration.
       and possibly `CONTRIBUTING.md` if it exists by then.
     - Not in scope: documenting commands that intentionally write artifacts.
 
-8. Add a stable output fixture for the Rubydex drift command.
+4. Add a stable output fixture for the Rubydex drift command.
     - Why now: the compact drift command is intended for release-response notes,
       so its summary shape should be pinned before it becomes another manual
       reporting surface.
@@ -178,7 +136,7 @@ calibration.
     - Not in scope: pinning active-manifest counts that change with upstream
       fixture repositories.
 
-9. Add a stable fixture for baseline-delta Markdown output.
+5. Add a stable fixture for baseline-delta Markdown output.
    - Why now: baseline deltas now persist to Markdown artifacts, but the exact
      Markdown shape is covered through behavioral assertions rather than a
      stable fixture pair.
@@ -190,7 +148,7 @@ calibration.
      and possibly `markdown_renderer.rb`.
    - Not in scope: changing the baseline-delta JSON payload.
 
-10. Add analyzer-filter baseline guidance and examples.
+6. Add analyzer-filter baseline guidance and examples.
     - Why now: the baseline scope guard intentionally rejects comparing a
       filtered analyzer run against the full active-manifest baseline, but the
       docs only describe the full-manifest path.
@@ -201,7 +159,7 @@ calibration.
       command help tests if examples become part of help output.
     - Not in scope: relaxing the scope guard.
 
-11. Add exact text-output fixture coverage for aggregate project analyzer counts.
+7. Add exact text-output fixture coverage for aggregate project analyzer counts.
     - Why now: text output now shows analyzer, confidence, severity, and
       category aggregate lines, but current tests assert selected substrings.
     - Definition of done: an exact-output or fixture-backed test pins the
@@ -211,7 +169,7 @@ calibration.
       and `test/fixtures/`.
     - Not in scope: changing JSON/SARIF schemas.
 
-12. Add a baseline refresh helper in dry-run mode.
+8. Add a baseline refresh helper in dry-run mode.
     - Why now: `docs/calibration/project_analyzer_baseline.yml` is manually
       checked in, and future fixture updates need a repeatable way to preview
       the next baseline without writing artifacts or guessing the compact
@@ -224,69 +182,98 @@ calibration.
     - Not in scope: automatically changing the baseline during normal
       calibration runs.
 
+9. Add exact-output fixture coverage for issue-comment summaries.
+   - Why now: `bin/render_issue_comment_summary` is intentionally concise, so
+     its paste-ready shape should be pinned before more parked issues use it.
+   - Definition of done: fixture-backed tests cover #25, #27, and #28 output
+     shape, including tracker boundary, readiness text, and baseline counts.
+   - Files likely touched: `test/fixtures/`, `test/metz_scan/`, and
+     `bin/render_issue_comment_summary`.
+   - Not in scope: posting comments to GitHub.
+
+10. Add `GEM_CREDENTIALS` fallback coverage for the package install smoke.
+    - Why now: `bin/check_published_gem` supports Bundler credentials,
+      `GITHUB_PACKAGES_TOKEN`, and `GEM_CREDENTIALS`, but the new failure-mode
+      coverage still does not exercise the credentials-file fallback.
+    - Definition of done: a subprocess test uses a temp credentials file with a
+      `:github` token and verifies install output remains redacted.
+    - Files likely touched: `test/metz_scan/check_published_gem_failure_test.rb`
+      and `test/fixtures/check_published_gem/fake_bundle`.
+    - Not in scope: changing credential precedence.
+
+11. Add contributor docs for parity failure inspection.
+    - Why now: release checklists note that failed clones are preserved, but
+      contributors need one short troubleshooting example for rerunning the
+      failed phase in that clone.
+    - Definition of done: docs show how to use the `clean clone preserved at`
+      and `next action` lines without implying the temp clone should be kept
+      after successful runs.
+    - Files likely touched: `README.md` and `RELEASE_CHECKLIST.md`.
+    - Not in scope: adding automatic cleanup of failed clones.
+
+12. Add issue-summary help examples and supported-target docs.
+    - Why now: `bin/render_issue_comment_summary --help` currently shows only
+      the argument shape, while the supported issues and analyzer aliases live
+      in code.
+    - Definition of done: help or docs list #25, #27, #28, mapped analyzer
+      names, and the local-only/no-posting boundary.
+    - Files likely touched: `bin/render_issue_comment_summary`, README, and
+      `docs/project-analyzer-calibration.md`.
+    - Not in scope: posting comments to GitHub or adding live issue lookups.
+
 ## Latest Slice Checkpoint
 
-Slice: 2026-07-04 calibration summary next four tasks.
+Slice: 2026-07-04/2026-07-05 workflow diagnostics next four tasks.
 
-Window: 16:54:35-18:21:58 -0700, 1h 27m 23s elapsed through four
-calibration-summary tasks, agenticon evidence collection, full active-manifest
-baseline comparison, focused tests, fast/slow test partitions, full RuboCop,
-and tracker update.
+Window: 2026-07-04 21:21:14-2026-07-05 09:08:39 -0700, 11h 47m 25s
+wall-clock elapsed through four workflow diagnostics tasks, agenticon evidence
+collection, focused tests, fast/slow test partitions, full RuboCop, design
+review and blocker fix, docs, and tracker update.
 
-1. Completed task 1: added calibration delta reporting against the checked-in
-   active-manifest baseline.
-   - Added `docs/calibration/project_analyzer_baseline.yml`, seeded from the
-     full active manifest at 697 findings and 806 offenses.
-   - Added `--baseline-file` to `bin/check_project_analyzer_calibration`.
-   - Baseline deltas now compare total findings/offenses, analyzer rule counts,
-     confidence counts, severity counts, and `project_analyzer_category`
-     counts. The comparison is in the summary payload, so text, JSON, and
-     Markdown artifacts share the same result.
-   - Scope validation rejects misleading comparisons across `targets_file`,
-     `default_output`, or analyzer-filter mismatches.
-2. Completed task 2: broadened DeepInheritanceTree category fixture coverage.
-   - Added command-level merged-output coverage for representative broad-root
-     categories: `rails application base`, `controller base`, `serializer base`,
-     `application job base`, and `framework root`.
-   - The tests assert low-confidence `broad base` triage, root-kind metadata,
-     message labels, and summary breakdowns without changing analyzer behavior.
-3. Completed task 3: broadened RepeatedBranching triage fixture coverage.
-   - Added explicit state-subject metadata assertions, including
-     `decision_subject_kind`, `decision_subject_label`, and message text.
-   - Added expression-subject triage coverage showing expression subjects stay
-     validated medium-confidence `design pressure`.
-   - Added command-level merged-offense coverage proving
-     `decision_subject_kind` survives into the emitted project-analyzer
-     metadata.
-4. Completed task 4: improved high-volume project analyzer text summaries.
-   - Text output now prints aggregate analyzer, confidence, severity, and
-     category count lines immediately after the project-analyzer heading and
-     before per-rule summaries.
-   - JSON and SARIF schemas remain unchanged; the formatter derives aggregate
-     lines from existing rule summaries and breakdowns.
-   - README and calibration docs now describe aggregate summary output and
-     baseline delta usage.
+1. Completed task 1: wired tracker hygiene into the push/parity path.
+   - `bin/check_ci_parity` now runs `bin/check_tracker_queue` before Bundler
+     work, so stale parked/watch-only queues fail before the slow CI parity
+     phases.
+   - Added subprocess coverage proving a committed watch-only queue fails
+     without dirtying the live worktree and without reaching `bundle install`.
+2. Completed task 2: made the package install smoke contributor-facing.
+   - README now points install troubleshooting at `bin/check_published_gem`.
+   - Missing credentials and Bundler install failures now mention
+     `GITHUB_PACKAGES_TOKEN`, `read:packages`, package source configuration, and
+     `KEEP_PUBLISHED_GEM_SMOKE=1` inspection.
+   - Added fake-Bundler failure coverage while preserving token redaction.
+3. Completed task 3: improved CI parity failure diagnostics.
+   - Each parity step now has a phase label and elapsed timing.
+   - Failing phases report the exact phase, command, preserved clean clone path,
+     and a `next action` rerun command.
+   - Successful parity runs still remove their temp clone, with subprocess
+     coverage for the cleanup path.
+4. Completed task 4: added a read-only issue-comment evidence summary command.
+   - Added `bin/render_issue_comment_summary` for #25, #27, #28, and mapped
+     analyzer names.
+   - The command reads `PROJECT_TRACKER.md`, the readiness catalog, and the
+     checked-in active-manifest baseline to render paste-ready local evidence
+     without posting to GitHub.
+   - Missing required tracker boundaries now fail clearly instead of rendering
+     placeholder issue evidence.
+   - `bin/check_read_only_commands` now includes the new summary renderer.
 5. Verified the slice locally.
-   - Full active-manifest baseline comparison passed with zero deltas:
-     697 findings, 806 offenses, analyzer deltas none, confidence deltas none,
-     severity deltas none, and category deltas none.
-   - Focused tests passed for calibration evidence runner, scan text renderer,
-     RepeatedBranching subject/triage, DeepInheritanceTree runner output, and
-     project-analyzer triage metadata.
-   - `bundle exec rake test:fast` passed with 404 runs, 1830 assertions, no
+   - Focused tests passed for CI parity, package install smoke, package failure
+     hints, read-only commands, release checklist parity, and issue summaries.
+   - `bundle exec rake test:fast` passed with 408 runs, 1868 assertions, no
      failures/errors, and 2 skips.
-   - `bundle exec rake test:slow` passed with 77 runs, 368 assertions, and no
+   - `bundle exec rake test:slow` passed with 84 runs, 414 assertions, and no
      failures/errors/skips.
-   - Full `bundle exec rubocop` passed across 205 files with no offenses.
+   - Full `bundle exec rubocop` passed across 209 files with no offenses.
 
-Agenticons used: `helper_worker: calibration delta reporting design`
-(`019f2f8e-d830-7041-a8ff-259bffae08f0`),
-`helper_worker: DeepInheritanceTree category fixture coverage`
-(`019f2f8e-edc2-7310-86d6-4cd001d14040`),
-`helper_worker: RepeatedBranching triage fixture coverage`
-(`019f2f8f-027b-7662-98eb-b4def1524c8d`), and
-`helper_worker: project analyzer text summary output`
-(`019f2f8f-231c-7c01-b167-900183817edf`).
+Agenticons used: `helper_worker: tracker hygiene guard push/parity path`
+(`019f3082-90e1-7eb3-a773-b47079bf9079`),
+`helper_worker: package install troubleshooting smoke`
+(`019f3084-944a-7052-8613-0b2e3e0433a0`),
+`helper_worker: CI parity diagnostics`
+(`019f3084-ab01-7b61-8c50-9b2c8675b676`), and
+`helper_worker: issue-comment evidence summary`
+(`019f3084-c062-7c22-b0b8-6fecbcd78d9a`).
 
 ## Parked / Not Next
 
@@ -314,7 +301,8 @@ Agenticons used: `helper_worker: calibration delta reporting design`
 
 | Date | Commit | Summary |
 | --- | --- | --- |
-| 2026-07-04 | `this commit` | Added calibration baseline deltas, broader DeepInheritanceTree and RepeatedBranching fixture coverage, aggregate project-analyzer text summaries, and tracker updates. |
+| 2026-07-04 | `this commit` | Wired tracker hygiene into CI parity, improved parity/package troubleshooting diagnostics, added issue-comment evidence summaries, and updated the tracker queue. |
+| 2026-07-04 | `0d902f9` | Added calibration baseline deltas, broader DeepInheritanceTree and RepeatedBranching fixture coverage, aggregate project-analyzer text summaries, and tracker updates. |
 | 2026-07-04 | `8c740ee` | Added lockfile no-mutation coverage, read-only command guard, tracker hygiene guard, Rubydex drift command, and workflow-hardening tracker updates. |
 | 2026-07-04 | `74f3d75` | Rewrote the tracker queue with at least ten actionable tasks and recorded the tracker-only commit rule. |
 | 2026-07-04 | `e954cee` | Recorded the parked-queue follow-up and kept package/#25/#27/#28 parked. |

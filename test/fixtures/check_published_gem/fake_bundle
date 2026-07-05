@@ -62,6 +62,10 @@ in ["install", *]
   log("gem_line=#{File.read("Gemfile").lines.grep(/gem "metz-scan"/).first.strip}")
   puts ENV.fetch("BUNDLE_RUBYGEMS__PKG__GITHUB__COM")
   warn ENV.fetch("BUNDLE_RUBYGEMS__PKG__GITHUB__COM")
+  if File.exist?(File.join(File.dirname(ENV.fetch("FAKE_BUNDLE_LOG")), "fail_install"))
+    warn "simulated bundle install failure"
+    exit 17
+  end
 in ["exec", "metz-scan", "--version"]
   assert_runtime_env!
   puts version

@@ -44,7 +44,7 @@ module MetzScan
     end
 
     def test_ci_parity_script_covers_ci_single_command_steps
-      script = File.read(repo_path(CI_PARITY_CHECK))
+      script = normalized_ruby_script(File.read(repo_path(CI_PARITY_CHECK)))
 
       refute_empty ci_single_command_steps
       ci_single_command_steps.each { |command| assert_includes script, command }
@@ -79,6 +79,10 @@ module MetzScan
 
     def body_from(markdown)
       markdown[markdown.index("## Verification")..]
+    end
+
+    def normalized_ruby_script(script)
+      script.gsub(/"\s*\\\n\s*"/, "")
     end
 
     def repo_path(path)

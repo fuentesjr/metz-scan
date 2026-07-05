@@ -64,7 +64,9 @@ grep -q '^::warning file=.*MetzProject/ServiceSoup' /tmp/metz-gh-annotations.out
 
 - [ ] Run the CI-parity check. It clones the committed HEAD into a temp dir
   without local bundler config or untracked files and runs the single-command
-  CI steps there, so local-only environment assumptions fail before a push.
+  CI steps there, so local-only environment assumptions fail before a push. It
+  also runs tracker hygiene before Bundler work and preserves the clean clone
+  path when a phase fails.
 
 ```bash
 bin/check_ci_parity
