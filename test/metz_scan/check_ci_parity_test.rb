@@ -137,6 +137,7 @@ module MetzScan
       assert_includes stderr, "failed phase"
       assert_includes stderr, "rubocop"
       assert_includes stderr, "clean clone preserved at"
+      assert_includes stderr, "next action: cd #{preserved_clone_path(stderr)} && bundle exec rubocop"
     end
 
     def run_ci_parity(paths)

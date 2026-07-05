@@ -9,7 +9,32 @@ Use `PROJECT_TRACKER.md` for the current direction, next queue, parked work, and
 latest checkpoint. Add new notes here only when a slice needs more durable
 detail than the tracker should carry.
 
-## 2026-07-03: Release-readiness housekeeping
+## 2026-07-05: Codex-delegated queue tasks 1-4 (test-hardening fixtures)
+
+Task: delegate tracker Next Queue tasks 1-4 to Codex (session
+`019f3434-3ed8-7ec3-8fb1-bf23ae145220`) with agenticons, then review and
+update the tracker.
+
+Scope boundaries: test files and fixtures only; no production script changes,
+no live lookups, no credential precedence changes, no clone cleanup changes.
+
+Decisions:
+
+- `RENDER_ISSUE_COMMENT_TRACKER_PATH` fixture decoupling removes the recurring
+  breakage risk where every tracker edit could invalidate the #25 exact-output
+  test.
+- The default gem-credentials test reuses the existing fake-HOME subprocess
+  pattern rather than adding a new harness.
+
+Verification: Codex ran focused tests, fast/slow suites, full rubocop, diff
+check, strategic validation, and design review, all clean. The orchestrating
+session independently reran the three focused test files (18 runs, 136
+assertions, 0 failures) and reviewed the full diff.
+
+Follow-up: dogfooding issues #31/#32 were triaged into queue positions 1-2;
+see `PROJECT_TRACKER.md`.
+
+
 
 Task: start the next four large tracker tasks, keep using agenticons, track
 elapsed time, update `PROJECT_TRACKER.md`, and commit.

@@ -13,11 +13,11 @@ module MetzScan
     end
 
     def test_renders_non_analyzer_issue_summary
-      assert_fixture_summary("25", "issue_25.txt")
+      assert_fixture_summary("25", "issue_25.txt", tracker_fixture: "issue_25_tracker.md")
     end
 
     def test_renders_non_analyzer_issue_summary_by_alias
-      assert_fixture_summary("dogfood-ci", "issue_25.txt")
+      assert_fixture_summary("dogfood-ci", "issue_25.txt", tracker_fixture: "issue_25_tracker.md")
     end
 
     def test_renders_repeated_branching_issue_summary
@@ -33,7 +33,7 @@ module MetzScan
 
       assert_predicate status, :success?, stderr
       assert_empty stderr
-      assert_help_targets(stdout)
+      assert_equal fixture("help.txt"), stdout
     end
 
     def test_rejects_unknown_issue_or_analyzer
@@ -59,23 +59,23 @@ module MetzScan
       assert_includes stderr, "missing tracker boundary for #25"
     end
 
-    def assert_fixture_summary(token, fixture_name)
-      stdout, = assert_successful_summary(token)
+    def assert_fixture_summary(token, fixture_name, tracker_fixture: nil)
+      stdout, = assert_successful_summary(token, env_for_tracker_fixture(tracker_fixture))
 
       assert_equal fixture(fixture_name), stdout
     end
 
-    def assert_successful_summary(token)
-      stdout, stderr, status = capture_summary(token)
+    def assert_successful_summary(token, env = {})
+      stdout, stderr, status = capture_summary(token, env)
       assert_predicate status, :success?, stderr
       assert_empty stderr
       [stdout, status]
     end
 
-    def assert_help_targets(stdout)
-      ["Supported targets:", "25, dogfood, dogfood-ci", "27,", "deep-inheritance-tree",
-       "MetzProject/DeepInheritanceTree", "28,", "repeated-branching", "MetzProject/RepeatedBranching",
-       "no GitHub comment is posted"].each { |line| assert_includes stdout, line }
+    def env_for_tracker_fixture(name)
+      return {} unless name
+
+      { "RENDER_ISSUE_COMMENT_TRACKER_PATH" => fixture_path(name) }
     end
 
     def with_tracker(contents)
@@ -96,7 +96,11 @@ module MetzScan
     end
 
     def fixture(name)
-      File.read(File.join(REPO_ROOT, "test/fixtures/render_issue_comment_summary", name))
+      File.read(fixture_path(name))
+    end
+
+    def fixture_path(name)
+      File.join(REPO_ROOT, "test/fixtures/render_issue_comment_summary", name)
     end
   end
 end

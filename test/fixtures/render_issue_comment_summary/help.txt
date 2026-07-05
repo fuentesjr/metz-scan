@@ -1,0 +1,13 @@
+Usage: bin/render_issue_comment_summary ISSUE_OR_ANALYZER
+
+Supported targets:
+  25, dogfood, dogfood-ci - Dogfood CI enforcement
+  27, deepinheritancetree, deep-inheritance-tree, MetzProject/DeepInheritanceTree - DeepInheritanceTree
+  28, repeatedbranching, repeated-branching, MetzProject/RepeatedBranching - RepeatedBranching
+
+Examples:
+  bin/render_issue_comment_summary 27
+  bin/render_issue_comment_summary MetzProject/RepeatedBranching
+
+Renders local text only; no GitHub comment is posted.
+    -h, --help                       Show usage

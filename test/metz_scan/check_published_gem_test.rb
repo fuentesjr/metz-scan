@@ -11,6 +11,8 @@ module MetzScan
     def success? = status.success?
   end
   CHECK_PUBLISHED_GEM_SECRET_TOKEN = "token-for-check-published-gem-test"
+  BUNDLER_KEY = "BUNDLE_RUBYGEMS__PKG__GITHUB__COM"
+  BUNDLER_AUTH = "fuentesjr:#{CHECK_PUBLISHED_GEM_SECRET_TOKEN}".freeze
   CHECK_PUBLISHED_GEM_POLLUTED_ENV = {
     "BUNDLE_GEMFILE" => "/tmp/contaminated/Gemfile",
     "BUNDLE_BIN_PATH" => "/tmp/contaminated-bundle-bin",
@@ -21,7 +23,7 @@ module MetzScan
     "GEM_PATH" => "/tmp/contaminated-gem-path",
     "RUBYLIB" => "/tmp/contaminated-rubylib",
     "RUBYOPT" => "-v",
-    "BUNDLE_RUBYGEMS__PKG__GITHUB__COM" => "fuentesjr:#{CHECK_PUBLISHED_GEM_SECRET_TOKEN}",
+    BUNDLER_KEY => BUNDLER_AUTH,
     "GITHUB_PACKAGES_TOKEN" => CHECK_PUBLISHED_GEM_SECRET_TOKEN,
     "GEM_CREDENTIALS" => "/tmp/contaminated-credentials"
   }.freeze
@@ -43,6 +45,12 @@ module MetzScan
 
     def test_published_gem_smoke_uses_gem_credentials_fallback
       with_smoke_result(gem_credentials: true) { |result, tmp_base| assert_successful_smoke(result, tmp_base) }
+    end
+
+    def test_published_gem_smoke_uses_default_home_gem_credentials_fallback
+      with_smoke_result(default_gem_credentials: true) do |result, tmp_base|
+        assert_successful_smoke(result, tmp_base)
+      end
     end
 
     def test_rejects_temp_base_inside_repository
@@ -72,6 +80,7 @@ module MetzScan
 
     def run_check_published_gem(tmp_base, fake_dir, options = {})
       log_path = bundle_log(fake_dir)
+      write_default_gem_credentials(tmp_base) if options.fetch(:default_gem_credentials, false)
       stdout, stderr, status = capture_check_published_gem(tmp_base, fake_bundle(fake_dir), options)
 
       CheckPublishedGemResult.new(stdout: stdout, stderr: stderr, status: status, log: log_for(log_path))
@@ -122,11 +131,12 @@ module MetzScan
     end
 
     def base_env
-      { "BUNDLE_RUBYGEMS__PKG__GITHUB__COM" => nil, "PATH" => ENV.fetch("PATH"),
+      { BUNDLER_KEY => nil, "PATH" => ENV.fetch("PATH"),
         "GEM_CREDENTIALS" => nil, "GITHUB_PACKAGES_TOKEN" => nil, "RUBY_BIN" => RbConfig.ruby }
     end
 
     def credential_env(tmp_base, options)
+      return {} if options.fetch(:default_gem_credentials, false)
       return { "GEM_CREDENTIALS" => write_gem_credentials(tmp_base) } if options.fetch(:gem_credentials, false)
 
       credential_env_from_token(options.fetch(:bundler_credential, false))
@@ -136,19 +146,28 @@ module MetzScan
       { credential_key(bundler_credential) => credential_value(bundler_credential) }
     end
 
-    def credential_key(bundler_credential)
-      bundler_credential ? "BUNDLE_RUBYGEMS__PKG__GITHUB__COM" : "GITHUB_PACKAGES_TOKEN"
-    end
+    def credential_key(bundler_credential) = bundler_credential ? BUNDLER_KEY : "GITHUB_PACKAGES_TOKEN"
 
-    def credential_value(bundler_credential)
-      bundler_credential ? "fuentesjr:#{CHECK_PUBLISHED_GEM_SECRET_TOKEN}" : CHECK_PUBLISHED_GEM_SECRET_TOKEN
-    end
+    def credential_value(bundler_credential) = bundler_credential ? BUNDLER_AUTH : CHECK_PUBLISHED_GEM_SECRET_TOKEN
 
     def write_gem_credentials(tmp_base)
       File.join(tmp_base, "credentials.yml").tap do |path|
-        File.write(path, "---\n:github: Bearer #{CHECK_PUBLISHED_GEM_SECRET_TOKEN}\n")
-        File.chmod(0o600, path)
+        write_credentials_file(path)
       end
+    end
+
+    def write_default_gem_credentials(tmp_base)
+      default_gem_credentials_path(tmp_base).tap do |path|
+        FileUtils.mkdir_p(File.dirname(path))
+        write_credentials_file(path)
+      end
+    end
+
+    def default_gem_credentials_path(tmp_base) = File.join(tmp_base, "home", ".gem", "credentials")
+
+    def write_credentials_file(path)
+      File.write(path, "---\n:github: Bearer #{CHECK_PUBLISHED_GEM_SECRET_TOKEN}\n")
+      File.chmod(0o600, path)
     end
 
     def with_fake_bundle(&)
