@@ -7,6 +7,8 @@ module MetzScan
   class ReleaseChecklistTest < Minitest::Test
     REPO_ROOT = File.expand_path("../..", __dir__)
     CI_PARITY_CHECK = "bin/check_ci_parity"
+    CI_PARITY_NEXT_ACTION = "next action:"
+    CI_PARITY_PRESERVED_CLONE = "clean clone preserved at"
     READ_ONLY_GUARD = "bin/check_read_only_commands"
     CALIBRATION_SMOKE = "bundle exec ruby bin/check_project_analyzer_calibration --text --no-write " \
                         "test/fixtures/sample_app"
@@ -44,6 +46,10 @@ module MetzScan
       release_checklists.each { |path| assert_includes File.read(path), CI_PARITY_CHECK, path }
     end
 
+    def test_release_checklists_document_ci_parity_failure_inspection
+      release_checklists.each { |path| assert_ci_parity_failure_inspection(path) }
+    end
+
     def test_release_checklists_document_read_only_guard
       release_checklists.each { |path| assert_includes File.read(path), READ_ONLY_GUARD, path }
     end
@@ -72,6 +78,13 @@ module MetzScan
 
       assert_includes checklist, RELEASE_METADATA_SMOKE, path
       assert_includes checklist, RELEASE_ISSUE_SMOKE, path
+    end
+
+    def assert_ci_parity_failure_inspection(path)
+      checklist = File.read(path)
+
+      assert_includes checklist, CI_PARITY_PRESERVED_CLONE, path
+      assert_includes checklist, CI_PARITY_NEXT_ACTION, path
     end
 
     def canonical_checklist_body

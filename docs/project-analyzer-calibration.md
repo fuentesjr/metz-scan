@@ -386,7 +386,9 @@ the historical evidence trail and rationale behind those current generated
 entries.
 
 For short parked-issue updates, render a local paste-ready summary without
-posting to GitHub:
+posting to GitHub. Supported targets are #25 (`dogfood`, `dogfood-ci`), #27
+(`DeepInheritanceTree`, `MetzProject/DeepInheritanceTree`), and #28
+(`RepeatedBranching`, `MetzProject/RepeatedBranching`):
 
 ```bash
 bin/render_issue_comment_summary 27

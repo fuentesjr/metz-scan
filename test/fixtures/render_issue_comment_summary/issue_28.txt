@@ -1,0 +1,12 @@
+Issue #28: RepeatedBranching
+
+Analyzer: MetzProject/RepeatedBranching
+Status: Validated opt-in; default-output eligible.
+Baseline: 51 findings / 122 offenses in active-manifest-rubydex-0.2.7.
+Evidence: Repeated branch tables are calibrated; generic subjects are lower-confidence.
+Next: Monitor generic-subject calibration and branch-subject readability.
+Not next: Do not expand branch parsing without sparse fixture-backed evidence.
+
+Tracker boundary: #28 RepeatedBranching remains parked. Reopen only with new evidence that generic low/context-required branch-subject findings are still confusing or underexplained after the README and metadata improvements.
+
+Generated locally by `bin/render_issue_comment_summary`; no GitHub comment was posted.

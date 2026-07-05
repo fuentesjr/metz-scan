@@ -44,7 +44,38 @@ end
 
 def configure_parser(parser)
   parser.banner = "Usage: bin/render_issue_comment_summary ISSUE_OR_ANALYZER"
+  add_supported_targets(parser)
+  add_examples(parser)
   parser.on("-h", "--help", "Show usage") { show_help(parser) }
+end
+
+def add_supported_targets(parser)
+  parser.separator ""
+  parser.separator "Supported targets:"
+  supported_target_lines.each { |line| parser.separator "  #{line}" }
+end
+
+def supported_target_lines
+  ISSUES.map { |number, issue| supported_target_line(number, issue) }
+end
+
+def supported_target_line(number, issue)
+  aliases = Array(issue[:aliases]).join(", ")
+  analyzer = issue[:analyzer] ? ", #{issue.fetch(:analyzer)}" : ""
+  "#{number}, #{aliases}#{analyzer} - #{issue.fetch(:title)}"
+end
+
+def add_examples(parser)
+  parser.separator ""
+  parser.separator "Examples:"
+  parser.separator "  bin/render_issue_comment_summary 27"
+  parser.separator "  bin/render_issue_comment_summary MetzProject/RepeatedBranching"
+  add_local_boundary(parser)
+end
+
+def add_local_boundary(parser)
+  parser.separator ""
+  parser.separator "Renders local text only; no GitHub comment is posted."
 end
 
 def show_help(parser)
@@ -64,8 +95,12 @@ end
 
 def issue_match?(normalized, number, issue)
   normalized == number || normalized == normalize(issue.fetch(:title)) ||
-    Array(issue[:aliases]).include?(normalized) ||
+    normalized_aliases(issue).include?(normalized) ||
     (issue[:analyzer] && normalized == normalize(issue.fetch(:analyzer)))
+end
+
+def normalized_aliases(issue)
+  Array(issue[:aliases]).map { |alias_name| normalize(alias_name) }
 end
 
 def normalize(value)

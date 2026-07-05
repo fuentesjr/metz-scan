@@ -1,0 +1,9 @@
+Issue #25: Dogfood CI enforcement
+
+Status: trigger-gated
+Evidence: #25 dogfood CI enforcement is trigger-gated.
+Next: Reopen only when collaboration expands beyond owner plus Dependabot, when PRs regularly come from multiple people, or when CI-enforced dogfood drift becomes a deliberate policy goal.
+
+Tracker boundary: #25 dogfood CI enforcement is trigger-gated. Reopen only when collaboration expands beyond owner plus Dependabot, when PRs regularly come from multiple people, or when CI-enforced dogfood drift becomes a deliberate policy goal.
+
+Generated locally by `bin/render_issue_comment_summary`; no GitHub comment was posted.

@@ -24,7 +24,17 @@ module MetzScan
       assert_docs_include("without writing calibration artifacts")
     end
 
+    def test_docs_include_issue_summary_supported_targets
+      assert_docs_include("posting to GitHub")
+      assert_docs_include_issue_targets
+    end
+
     private
+
+    def assert_docs_include_issue_targets
+      ["#25 (`dogfood`, `dogfood-ci`)", "#27", "`MetzProject/DeepInheritanceTree`",
+       "#28", "`MetzProject/RepeatedBranching`"].each { |text| assert_docs_include(text) }
+    end
 
     def assert_docs_include(text)
       assert_includes calibration_docs, text

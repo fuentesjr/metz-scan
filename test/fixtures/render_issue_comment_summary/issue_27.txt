@@ -1,0 +1,12 @@
+Issue #27: DeepInheritanceTree
+
+Analyzer: MetzProject/DeepInheritanceTree
+Status: Validated opt-in; not default-output eligible.
+Baseline: 363 findings / 363 offenses in active-manifest-rubydex-0.2.7.
+Evidence: Useful inheritance spread evidence remains dependent on the optional project index.
+Next: Use opt-in calibration to watch grouped output and broad-root downranking.
+Not next: Do not make default-output eligible while findings depend on optional indexing.
+
+Tracker boundary: #27 DeepInheritanceTree remains parked. Reopen only with new misleading root-label evidence that is not already covered by current broad-root labels and downranking.
+
+Generated locally by `bin/render_issue_comment_summary`; no GitHub comment was posted.

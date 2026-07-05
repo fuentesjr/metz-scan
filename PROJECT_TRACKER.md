@@ -47,8 +47,8 @@ calibration.
 ## Current Snapshot
 
 - Date: 2026-07-05.
-- Latest pushed baseline: `bf7a113 Expose read-only command list`.
-- CI state: run `28748322813` for `bf7a113` succeeded in 1m 44s after the
+- Latest pushed baseline: `86733e0 Add calibration baseline preview fixtures`.
+- CI state: run `28750100779` for `86733e0` succeeded in 1m 48s after the
   upstream push. Earlier runs for `c0a01f5` (`28672899400`) and `64bceea`
   (`28680427556`) failed on calibration evidence runner environment
   assumptions, both since fixed.
@@ -67,13 +67,14 @@ calibration.
   playbook, the actionable tracker rewrite (`74f3d75`), workflow-hardening
   slice (`8c740ee`), calibration-summary slice (`0d902f9`),
   workflow-diagnostics slice (`8881795`), README/read-only/Rubydex drift guard
-  slice (`fd8a515`), and LEAK-1 read-only command list fix (`bf7a113`) are
-  pushed to `origin/main`. This baseline fixture and refresh-helper slice is
-  local until validation and commit complete.
-- Latest checkpoint window: 2026-07-05 10:06:29-10:40:13 -0700, 33m 44s
-  wall-clock elapsed through four calibration-output tasks, agenticon evidence
-  collection, focused tests, fast/slow test suites, strategic review fixes, and
-  tracker update.
+  slice (`fd8a515`), LEAK-1 read-only command list fix (`bf7a113`), and
+  calibration baseline preview fixture slice (`86733e0`) are pushed to
+  `origin/main`. This issue-summary/package/parity-docs slice is local until
+  validation and commit complete.
+- Latest checkpoint window: 2026-07-05 11:12:07-11:35:39 -0700, 23m 32s
+  wall-clock elapsed through four workflow/documentation hardening tasks,
+  agenticon evidence collection, focused tests, full validation, strategic
+  review, alias-normalization fix, and tracker update.
 - Working tree expectation: keep tracked work clean before starting another
   slice; keep ignored `logs/` notes out of commits unless explicitly requested.
 
@@ -85,53 +86,14 @@ calibration.
 | Calibration artifact pipeline | Healthy | Markdown output, artifact write path, sample-app calibration smoke, the tracked target manifest under `docs/calibration/`, baseline-delta Markdown fixtures, and compact baseline preview output are covered. | Maintain; change only when artifact, target-manifest, or baseline-document behavior changes. |
 | Analyzer behavior | Parked | Fresh #27/#28 Mastodon and Discourse reruns did not show enough misleading or underexplained findings to justify behavior, threshold, or output-policy changes. | Reopen only with new generic evidence, not app-specific suppressions. |
 | Calibration evidence | Guarded | Redmine, Rubygems.org, ManageIQ, and Foreman evidence has been consolidated; Rubydex `0.2.7` was rechecked against the active manifest. Full active-manifest output is 697 findings/806 offenses; the four Rubydex-index-backed analyzers account for 607 findings/607 offenses. A compact Rubydex drift check covers those four analyzers, now with missing-Rubydex skip-path coverage and an exact sample-app text fixture, and `docs/calibration/project_analyzer_baseline.yml` captures the full active-manifest baseline for delta reporting. | Recheck only Rubydex-index-backed analyzers after future Rubydex upgrades unless an AST-only analyzer changes; use `--baseline-file docs/calibration/project_analyzer_baseline.yml` for full-manifest drift. |
-| Workflow friction | Guarded | The lockfile rewrite came from a stale path dependency entry in `Gemfile.lock`; the lockfile now matches the gemspec's `rubocop-metz (~> 0.4.0)` constraint, read-only maintenance commands have a tracked-worktree mutation guard plus a public command-listing mode, the read-only command contract is documented in contributor/calibration/release docs, and `bin/check_ci_parity` runs tracker hygiene before Bundler work while preserving failed clean clones for inspection. | Maintain the guard list and docs as new read-only commands are added; do not bypass `BUNDLE_FROZEN=1` for read-only calibration checks. |
+| Workflow friction | Guarded | The lockfile rewrite came from a stale path dependency entry in `Gemfile.lock`; the lockfile now matches the gemspec's `rubocop-metz (~> 0.4.0)` constraint, read-only maintenance commands have a tracked-worktree mutation guard plus a public command-listing mode, the read-only command contract is documented in contributor/calibration/release docs, and `bin/check_ci_parity` runs tracker hygiene before Bundler work while preserving failed clean clones and printing `next action:` commands for inspection. | Maintain the guard list and docs as new read-only commands are added; do not bypass `BUNDLE_FROZEN=1` for read-only calibration checks. |
 | Sorbet adoption spike | Complete | Issue #26 was evaluated in a disposable workspace, documented, synced back to GitHub, and closed. The report recommends not adopting now: a narrow static setup is possible, but generated RBI churn, command policy, fixture scope, and runtime signature implications outweigh observed value. | Do not add Sorbet unless a concrete type-related defect, contributor ergonomics need, or stable public API typing requirement appears. |
-| Docs/adoption | Stable | README points contributors and agents to this tracker; old implementation notes are archived, current notes are short, and the Sorbet spike report records the tooling decision. The README now splits RepeatedBranching generic-subject guidance into a short list, the analyzer behavior details into per-analyzer subsections, package install troubleshooting points at `bin/check_published_gem`, the analyzer status table has freshness coverage, and calibration docs point future Rubydex upgrades, filtered baselines, compact baseline previews, and parked issue updates at repeatable local commands. | Keep docs changes minimal and evidence-led. |
+| Docs/adoption | Stable | README points contributors and agents to this tracker; old implementation notes are archived, current notes are short, and the Sorbet spike report records the tooling decision. The README now splits RepeatedBranching generic-subject guidance into a short list, the analyzer behavior details into per-analyzer subsections, package install troubleshooting points at `bin/check_published_gem`, parity failure inspection points at preserved clone/`next action:` output, the analyzer status table has freshness coverage, and calibration docs point future Rubydex upgrades, filtered baselines, compact baseline previews, and parked issue updates at repeatable local commands. | Keep docs changes minimal and evidence-led. |
 | Handoff continuity | Active | Local ignored handoff `.handoffs/20260703173813_next_four_tasks_after_issue_sync.md` captures the pushed issue-sync summary, conversation-only requirements, and the next four evidence-gated tasks. | Use it as the first continuation surface if context resets in this workspace; do not commit handoff files. |
 
 ## Next Queue
 
-1. Add exact-output fixture coverage for issue-comment summaries.
-   - Why now: `bin/render_issue_comment_summary` is intentionally concise, so
-     its paste-ready shape should be pinned before more parked issues use it.
-   - Definition of done: fixture-backed tests cover #25, #27, and #28 output
-     shape, including tracker boundary, readiness text, and baseline counts.
-   - Files likely touched: `test/fixtures/`, `test/metz_scan/`, and
-     `bin/render_issue_comment_summary`.
-   - Not in scope: posting comments to GitHub.
-
-2. Add `GEM_CREDENTIALS` fallback coverage for the package install smoke.
-    - Why now: `bin/check_published_gem` supports Bundler credentials,
-      `GITHUB_PACKAGES_TOKEN`, and `GEM_CREDENTIALS`, but the new failure-mode
-      coverage still does not exercise the credentials-file fallback.
-    - Definition of done: a subprocess test uses a temp credentials file with a
-      `:github` token and verifies install output remains redacted.
-    - Files likely touched: `test/metz_scan/check_published_gem_failure_test.rb`
-      and `test/fixtures/check_published_gem/fake_bundle`.
-    - Not in scope: changing credential precedence.
-
-3. Add contributor docs for parity failure inspection.
-    - Why now: release checklists note that failed clones are preserved, but
-      contributors need one short troubleshooting example for rerunning the
-      failed phase in that clone.
-    - Definition of done: docs show how to use the `clean clone preserved at`
-      and `next action` lines without implying the temp clone should be kept
-      after successful runs.
-    - Files likely touched: `README.md` and `RELEASE_CHECKLIST.md`.
-    - Not in scope: adding automatic cleanup of failed clones.
-
-4. Add issue-summary help examples and supported-target docs.
-    - Why now: `bin/render_issue_comment_summary --help` currently shows only
-      the argument shape, while the supported issues and analyzer aliases live
-      in code.
-    - Definition of done: help or docs list #25, #27, #28, mapped analyzer
-      names, and the local-only/no-posting boundary.
-    - Files likely touched: `bin/render_issue_comment_summary`, README, and
-      `docs/project-analyzer-calibration.md`.
-    - Not in scope: posting comments to GitHub or adding live issue lookups.
-
-5. Add ProjectIndex missing-Rubydex backend subprocess coverage.
+1. Add ProjectIndex missing-Rubydex backend subprocess coverage.
     - Why now: the drift command now simulates missing `rubydex` with a scoped
       `RUBYOPT` shim, but backend fallback behavior still relies on existing
       in-process coverage and manual confidence.
@@ -143,7 +105,7 @@ calibration.
       possibly test support for scoped missing-Rubydex subprocess helpers.
     - Not in scope: changing backend selection behavior.
 
-6. Add non-Rubydex compact text renderer fixture coverage.
+2. Add non-Rubydex compact text renderer fixture coverage.
     - Why now: the Rubydex drift text fixture is exact, but it still skips when
       the optional `rubydex` bundle group is unavailable.
     - Definition of done: a deterministic summary fixture or extracted renderer
@@ -154,7 +116,7 @@ calibration.
       `test/fixtures/check_rubydex_drift/`, and tests.
     - Not in scope: changing the command's user-facing text output.
 
-7. Add a compact JSON fixture for the Rubydex drift command.
+3. Add a compact JSON fixture for the Rubydex drift command.
     - Why now: text output is now fixture-backed, but JSON output is still
       covered only by selected field assertions.
     - Definition of done: a sample-app JSON fixture pins targets, analyzer
@@ -163,7 +125,7 @@ calibration.
       `test/metz_scan/check_rubydex_drift_test.rb`.
     - Not in scope: pinning active-manifest JSON counts.
 
-8. Add exact YAML fixture coverage for `--print-baseline` output.
+4. Add exact YAML fixture coverage for `--print-baseline` output.
    - Why now: the new baseline preview test asserts parsed structure, but not
      the exact compact YAML shape contributors will paste into a tracked
      baseline file.
@@ -173,7 +135,7 @@ calibration.
      and `test/metz_scan/calibration/project_analyzer_evidence_runner_test.rb`.
    - Not in scope: changing the baseline schema.
 
-9. Decide whether `--print-baseline` belongs in the read-only guard list.
+5. Decide whether `--print-baseline` belongs in the read-only guard list.
    - Why now: the command is designed as a no-artifact preview, but the current
      read-only guard list still covers only the original maintenance commands.
    - Definition of done: either add a guarded preview invocation with docs/tests
@@ -183,7 +145,7 @@ calibration.
      `docs/project-analyzer-calibration.md`.
    - Not in scope: broadening the guard to arbitrary project paths.
 
-10. Add command-help examples for baseline previews and scope matching.
+6. Add command-help examples for baseline previews and scope matching.
     - Why now: docs now explain filtered baseline scope, but
       `bin/check_project_analyzer_calibration --help` still lists options
       without concrete command examples.
@@ -195,7 +157,7 @@ calibration.
       `docs/project-analyzer-calibration.md`.
     - Not in scope: changing scope comparison behavior.
 
-11. Add baseline scope mismatch coverage for targets and analyzer filters.
+7. Add baseline scope mismatch coverage for targets and analyzer filters.
     - Why now: negative baseline coverage currently focuses on default-output
       mismatch, while `targets_file` and `analyzer_filter` are equally important
       scope keys.
@@ -206,7 +168,7 @@ calibration.
       and calibration baseline fixtures.
     - Not in scope: loosening the mismatch rules.
 
-12. Add exact-output fixture coverage for `metz-scan project-analyzers`.
+8. Add exact-output fixture coverage for `metz-scan project-analyzers`.
     - Why now: aggregate summary blocks are now fixture-backed at renderer
       level, but the CLI subcommand still lacks a small end-to-end fixture that
       confirms command wiring and text renderer integration together.
@@ -217,64 +179,104 @@ calibration.
       sample app fixture files.
     - Not in scope: changing JSON/SARIF output or analyzer thresholds.
 
+9. Add exact help fixture coverage for `bin/render_issue_comment_summary`.
+   - Why now: the command help now lists supported targets and examples, but
+     tests assert selected substrings instead of the full help text.
+   - Definition of done: a fixture-backed test pins the help output without
+     changing supported issue behavior.
+   - Files likely touched: `test/fixtures/render_issue_comment_summary/` and
+     `test/metz_scan/render_issue_comment_summary_test.rb`.
+   - Not in scope: adding live issue lookups or posting comments.
+
+10. Decouple issue #25 summary fixture coverage from the live tracker body.
+    - Why now: #25 exact output currently reads the active tracker, while the
+      analyzer issue fixtures are backed by stable catalog/baseline data.
+    - Definition of done: a dedicated tracker input fixture drives the #25
+      exact-output test through `RENDER_ISSUE_COMMENT_TRACKER_PATH`.
+    - Files likely touched: `test/fixtures/render_issue_comment_summary/` and
+      `test/metz_scan/render_issue_comment_summary_test.rb`.
+    - Not in scope: changing production tracker parsing.
+
+11. Add default `$HOME/.gem/credentials` fallback coverage for package smoke.
+    - Why now: explicit `GEM_CREDENTIALS` fallback is now covered, but the
+      default credentials-file path remains unpinned.
+    - Definition of done: a subprocess test writes `$HOME/.gem/credentials`,
+      leaves credential env vars unset, and verifies redacted install output.
+    - Files likely touched: `test/metz_scan/check_published_gem_test.rb`.
+    - Not in scope: changing credential precedence or credential file format.
+
+12. Add CI parity failure-output coverage for the `next action:` line.
+    - Why now: docs now instruct contributors to use the `next action:` line,
+      but the script test only pins the preserved-clone wording.
+    - Definition of done: failure-path tests assert both `clean clone preserved
+      at` and `next action:` with the failed command.
+    - Files likely touched: `test/metz_scan/check_ci_parity_test.rb`.
+    - Not in scope: changing clone cleanup behavior.
+
 ## Latest Slice Checkpoint
 
-Slice: 2026-07-05 baseline fixture and refresh-helper next four tasks.
+Slice: 2026-07-05 issue-summary/package/parity-docs next four tasks.
 
-Window: 2026-07-05 10:06:29-10:40:13 -0700, 33m 44s wall-clock
-elapsed through four calibration-output tasks, agenticon evidence collection,
-focused tests, fast/slow test suites, strategic review fixes, and tracker
-update.
+Window: 2026-07-05 11:12:07-11:35:39 -0700, 23m 32s wall-clock
+elapsed through four workflow/documentation hardening tasks, agenticon evidence
+collection, focused tests, full validation, strategic review,
+alias-normalization fix, and tracker update.
 
-1. Completed task 1: added a stable baseline-delta Markdown fixture.
-   - `test/fixtures/project_analyzer_evidence_runner/baseline_delta_summary.json`
-     and `.md` pin the `Baseline Deltas` table shape for no-change totals plus
-     changed analyzer rows.
-   - `ProjectAnalyzerEvidenceRunnerMarkdownRendererTest` now compares the full
-     rendered Markdown output against that fixture.
-2. Completed task 2: added analyzer-filter baseline guidance and examples.
-   - README and `docs/project-analyzer-calibration.md` now distinguish the
-     full active-manifest baseline from filtered rerun baselines and explain
-     the matching-scope rule.
-   - Docs and help tests assert the full-manifest example, filtered baseline
-     guidance, and `--baseline-file` scope wording.
-3. Completed task 3: added exact text-output fixture coverage for aggregate
-   project analyzer counts.
-   - `test/fixtures/scan_text_renderer_project_analyzer/` pins compact summary
-     blocks with analyzer, confidence, severity, and category count rows.
-   - Renderer tests compare only the aggregate summary block, leaving unrelated
-     offense details free to evolve.
-4. Completed task 4: added a dry-run baseline refresh helper.
-   - `--print-baseline` emits a compact baseline document to stdout and forces
-     artifact writing off.
-   - `BaselineFile` centralizes label, generated source, scope, rule, and
-     breakdown serialization for both baseline refreshes and delta comparison.
-   - Docs show a filtered preview command for refreshing a local matching-scope
-     baseline intentionally.
+1. Completed task 1: added exact-output fixture coverage for issue-comment
+   summaries.
+   - `test/fixtures/render_issue_comment_summary/issue_25.txt`,
+     `issue_27.txt`, and `issue_28.txt` pin full stdout including blank lines,
+     tracker boundaries, readiness text, baseline counts, and the local-only
+     footer.
+   - Tests now cover #25, #27, #28, and analyzer-name invocation for
+     `MetzProject/RepeatedBranching`.
+2. Completed task 2: added explicit `GEM_CREDENTIALS` fallback coverage for the
+   package install smoke.
+   - `CheckPublishedGemTest` now writes a temp credentials file with
+     `:github: Bearer <token>`, leaves higher-precedence credential env vars
+     unset, and verifies the smoke remains redacted.
+   - The fake Bundler fixture did not need behavior changes because it already
+     echoes the resolved install credential and rejects runtime env leakage.
+3. Completed task 3: documented parity failure inspection.
+   - README, `RELEASE_CHECKLIST.md`, and the release issue template now explain
+     how to use `clean clone preserved at` plus `next action:` after
+     `bin/check_ci_parity` failures.
+   - Release checklist and README docs tests pin the new wording.
+4. Completed task 4: added issue-summary help examples and supported-target
+   docs.
+   - `bin/render_issue_comment_summary --help` lists supported #25/#27/#28
+     targets, aliases, mapped analyzers, examples, and the no-posting boundary.
+   - Advertised aliases are normalized before matching, so hyphenated aliases
+     such as `dogfood-ci` are accepted.
+   - Calibration docs now list the supported target matrix and local-only
+     boundary.
 5. Verification so far.
-   - Focused tests passed for the Markdown fixture, calibration runner baseline
-     paths, scan text renderer summaries, calibration docs, and command help.
-   - `bundle exec rake test:fast` passed with 419 runs, 1951 assertions, no
+   - Focused issue-summary, package-smoke, release-checklist, README workflow,
+     and calibration-docs tests passed.
+   - Targeted RuboCop passed across the touched command and tests.
+   - `bundle exec rake test:fast` passed with 426 runs, 1998 assertions, no
      failures/errors, and 2 skips.
-   - `bundle exec rake test:slow` passed with 86 runs, 427 assertions, and no
+   - `bundle exec rake test:slow` passed with 87 runs, 442 assertions, and no
      failures/errors/skips.
-   - Full `bundle exec rubocop` passed across 213 files with no offenses.
+   - Full `bundle exec rubocop` passed across 214 files with no offenses.
    - `bin/check_tracker_queue` and `git diff --check` passed.
-   - Strategic validation passed after the final fix: slice tests, red/green,
-     lint, debt-marker gate, and warnings all clean.
-   - Required design review found two `LEAK-1` blockers during the fix cycle:
-     duplicated baseline schema ownership, then machine-specific
-     `targets_file` serialization. Both were fixed, and the final re-review
-     verdict was clean.
+   - Strategic validation passed: slice tests, red/green, lint,
+     debt-marker gate, and warnings all clean.
+   - Required design review initially found a `LEAK-1` blocker: advertised
+     hyphenated issue-summary aliases were not accepted at runtime. The matcher
+     now normalizes aliases and a `dogfood-ci` invocation test pins the fix.
+   - Final re-review verdict was clean with one concern: the issue-summary
+     help-output test does not yet pin the Examples section. That follow-up is
+     item 9 in the next queue.
 
-Agenticons used: `helper_worker: baseline-delta Markdown fixture coverage`
-(`019f333f-2671-7c41-b0a8-6b14b06a3748`),
-`helper_worker: analyzer-filter baseline guidance`
-(`019f333f-4c8d-7411-9099-e409dc86c04c`),
-`helper_worker: aggregate project analyzer text fixture`
-(`019f333f-66a3-7f82-a1a9-6c7c52491649`), and
-`helper_worker: baseline refresh helper`
-(`019f333f-7d10-7790-8d85-0a2eb4c3b7bc`).
+Agenticons used: `helper_worker: issue-comment summary fixtures`
+(`019f337b-2a2f-7db0-bc6b-ae05092fe324`),
+`helper_worker: package GEM_CREDENTIALS fallback`
+(`019f337b-409e-7a53-ac97-12e213a4c0a4`),
+`helper_worker: parity failure inspection docs`
+(`019f337b-56b9-7ae3-815b-a5760df0585e`), and
+`helper_worker: issue-summary help/docs`
+(`019f337b-6e0a-7052-b363-46ca82c789b5`).
 
 ## Parked / Not Next
 
@@ -302,7 +304,8 @@ Agenticons used: `helper_worker: baseline-delta Markdown fixture coverage`
 
 | Date | Commit | Summary |
 | --- | --- | --- |
-| 2026-07-05 | `this commit` | Added baseline-delta Markdown fixtures, analyzer-filter baseline guidance, aggregate project-analyzer text fixtures, `--print-baseline`, and tracker updates. |
+| 2026-07-05 | `this commit` | Added exact issue-comment summary fixtures, `GEM_CREDENTIALS` smoke coverage, parity failure inspection docs, issue-summary help/docs, and tracker updates. |
+| 2026-07-05 | `86733e0` | Added baseline-delta Markdown fixtures, analyzer-filter baseline guidance, aggregate project-analyzer text fixtures, `--print-baseline`, and tracker updates. |
 | 2026-07-05 | `bf7a113` | Fixed LEAK-1 by exposing the read-only default command list through a stable command mode and moving docs freshness coverage off source parsing. |
 | 2026-07-05 | `fd8a515` | Added README analyzer-status freshness coverage, Rubydex drift missing-backend and exact text fixture coverage, read-only maintenance docs, release guard checklist coverage, and tracker updates. |
 | 2026-07-05 | `8881795` | Wired tracker hygiene into CI parity, improved parity/package troubleshooting diagnostics, added issue-comment evidence summaries, and updated the tracker queue. |

@@ -72,7 +72,9 @@ grep -q '^::warning file=.*MetzProject/ServiceSoup' /tmp/metz-gh-annotations.out
   without local bundler config or untracked files and runs the single-command
   CI steps there, so local-only environment assumptions fail before a push. It
   also runs tracker hygiene before Bundler work and preserves the clean clone
-  path when a phase fails.
+  path when a phase fails. On failure, use the printed
+  `clean clone preserved at` path and `next action:` command to reproduce the
+  failed phase in that clone.
 
 ```bash
 bin/check_ci_parity

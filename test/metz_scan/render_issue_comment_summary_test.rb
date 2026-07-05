@@ -9,13 +9,31 @@ module MetzScan
     REPO_ROOT = File.expand_path("../..", __dir__)
 
     def test_renders_parked_analyzer_issue_summary
-      stdout, = assert_successful_summary("27")
-      assert_deep_inheritance_summary(stdout)
+      assert_fixture_summary("27", "issue_27.txt")
     end
 
     def test_renders_non_analyzer_issue_summary
-      stdout, = assert_successful_summary("25")
-      assert_dogfood_summary(stdout)
+      assert_fixture_summary("25", "issue_25.txt")
+    end
+
+    def test_renders_non_analyzer_issue_summary_by_alias
+      assert_fixture_summary("dogfood-ci", "issue_25.txt")
+    end
+
+    def test_renders_repeated_branching_issue_summary
+      assert_fixture_summary("28", "issue_28.txt")
+    end
+
+    def test_renders_repeated_branching_issue_summary_by_analyzer_name
+      assert_fixture_summary("MetzProject/RepeatedBranching", "issue_28.txt")
+    end
+
+    def test_help_lists_supported_targets_and_local_boundary
+      stdout, stderr, status = capture_summary("--help")
+
+      assert_predicate status, :success?, stderr
+      assert_empty stderr
+      assert_help_targets(stdout)
     end
 
     def test_rejects_unknown_issue_or_analyzer
@@ -41,6 +59,12 @@ module MetzScan
       assert_includes stderr, "missing tracker boundary for #25"
     end
 
+    def assert_fixture_summary(token, fixture_name)
+      stdout, = assert_successful_summary(token)
+
+      assert_equal fixture(fixture_name), stdout
+    end
+
     def assert_successful_summary(token)
       stdout, stderr, status = capture_summary(token)
       assert_predicate status, :success?, stderr
@@ -48,26 +72,10 @@ module MetzScan
       [stdout, status]
     end
 
-    def assert_deep_inheritance_summary(stdout)
-      assert_summary_lines(stdout, deep_inheritance_lines)
-      refute_includes stdout, "gh issue comment"
-    end
-
-    def assert_dogfood_summary(stdout)
-      assert_summary_lines(stdout, dogfood_lines)
-    end
-
-    def assert_summary_lines(stdout, lines)
-      lines.each { |line| assert_includes stdout, line }
-    end
-
-    def deep_inheritance_lines
-      ["Issue #27: DeepInheritanceTree", "MetzProject/DeepInheritanceTree", "363 findings",
-       "Validated opt-in; not default-output eligible.", "#27 DeepInheritanceTree remains parked"]
-    end
-
-    def dogfood_lines
-      ["Issue #25: Dogfood CI enforcement", "trigger-gated", "#25 dogfood CI enforcement is trigger-gated"]
+    def assert_help_targets(stdout)
+      ["Supported targets:", "25, dogfood, dogfood-ci", "27,", "deep-inheritance-tree",
+       "MetzProject/DeepInheritanceTree", "28,", "repeated-branching", "MetzProject/RepeatedBranching",
+       "no GitHub comment is posted"].each { |line| assert_includes stdout, line }
     end
 
     def with_tracker(contents)
@@ -85,6 +93,10 @@ module MetzScan
 
     def render_issue_comment_summary_path
       File.join(REPO_ROOT, "bin/render_issue_comment_summary")
+    end
+
+    def fixture(name)
+      File.read(File.join(REPO_ROOT, "test/fixtures/render_issue_comment_summary", name))
     end
   end
 end

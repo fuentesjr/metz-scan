@@ -51,6 +51,12 @@ temporary consumer project and verifies a GitHub Packages install. Use it when
 debugging package credentials, source configuration, or packaged runtime
 behavior; failures include redacted Bundler output and credential hints.
 
+Use `bin/check_ci_parity` before pushing release or workflow changes. It clones
+the committed HEAD into a temp dir and runs the single-command CI phases
+without local Bundler config or untracked files. If a phase fails, use the
+printed `clean clone preserved at` path plus the `next action:` command to
+reproduce that failed phase inside the preserved clone.
+
 For local development:
 
 ```bash
