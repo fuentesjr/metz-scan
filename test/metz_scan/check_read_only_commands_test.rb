@@ -27,8 +27,12 @@ module MetzScan
       end
     end
 
-    def test_default_commands_include_issue_comment_summary_renderer
-      assert_includes File.read(check_read_only_commands_path), "bin/render_issue_comment_summary 27"
+    def test_lists_default_commands
+      stdout, stderr, status = Open3.capture3(check_read_only_commands_path, "--list-default-commands")
+
+      assert_predicate status, :success?, stderr
+      assert_empty stderr
+      assert_equal expected_default_commands, stdout.lines.map(&:chomp)
     end
 
     private
@@ -60,6 +64,12 @@ module MetzScan
 
     def git(dir, *args)
       system("git", *args, chdir: dir, out: File::NULL, err: File::NULL) || flunk("git #{args.join(' ')} failed")
+    end
+
+    def expected_default_commands
+      ["bundle exec ruby bin/check_project_analyzer_calibration --text --no-write test/fixtures/sample_app",
+       "bin/check_rubydex_drift --allow-missing-rubydex --text test/fixtures/sample_app",
+       "bin/render_issue_comment_summary 27"]
     end
 
     def check_read_only_commands_path = File.join(REPO_ROOT, "bin/check_read_only_commands")

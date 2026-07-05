@@ -15,20 +15,27 @@ CLEAN_BUNDLER_ENV = {
 }.freeze
 
 def parse_options
-  commands = []
-  OptionParser.new { |parser| configure_options(parser, commands) }.parse!
-  commands.empty? ? DEFAULT_COMMANDS : commands
+  options = { commands: [], list_default_commands: false }
+  OptionParser.new { |parser| configure_options(parser, options) }.parse!
+  options
 end
 
-def configure_options(parser, commands)
-  parser.banner = "Usage: check_read_only_commands [--command COMMAND ...]"
-  add_command_option(parser, commands)
+def configure_options(parser, options)
+  parser.banner = "Usage: check_read_only_commands [--command COMMAND ...] [--list-default-commands]"
+  add_command_option(parser, options.fetch(:commands))
+  add_list_default_commands_option(parser, options)
   add_help_option(parser)
 end
 
 def add_command_option(parser, commands)
   parser.on("--command COMMAND", "Run COMMAND and assert it leaves tracked files unchanged") do |command|
     commands << command
+  end
+end
+
+def add_list_default_commands_option(parser, options)
+  parser.on("--list-default-commands", "Print the default guarded commands and exit") do
+    options[:list_default_commands] = true
   end
 end
 
@@ -51,6 +58,16 @@ def tracked_status(root)
   abort "check_read_only_commands: #{stderr.strip}" unless status.success?
 
   stdout
+end
+
+def selected_commands(options)
+  commands = options.fetch(:commands)
+  commands.empty? ? DEFAULT_COMMANDS : commands
+end
+
+def list_default_commands
+  puts DEFAULT_COMMANDS
+  exit 0
 end
 
 def ensure_clean_start!(root)
@@ -79,7 +96,9 @@ def ensure_unchanged!(root, command)
   exit 1
 end
 
-commands = parse_options
+options = parse_options
+list_default_commands if options.fetch(:list_default_commands)
+commands = selected_commands(options)
 root = git_root
 ensure_clean_start!(root)
 commands.each do |command|

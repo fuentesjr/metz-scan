@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "minitest/autorun"
+require "open3"
 
 module MetzScan
   class ReadOnlyCommandDocsTest < Minitest::Test
@@ -32,14 +33,11 @@ module MetzScan
     end
 
     def read_only_commands
-      default_command_block.scan(/"([^"]+)"/).flatten
+      stdout, stderr, status = Open3.capture3(check_read_only_commands_path, "--list-default-commands")
+      assert_predicate status, :success?, stderr
+      stdout.lines.map(&:chomp)
     end
 
-    def default_command_block
-      source = File.read(File.join(REPO_ROOT, "bin/check_read_only_commands"))
-      match = source.match(/^DEFAULT_COMMANDS = \[\n(?<commands>.*?)\n\]\.freeze/m)
-      assert match, "bin/check_read_only_commands DEFAULT_COMMANDS block is missing"
-      match[:commands]
-    end
+    def check_read_only_commands_path = File.join(REPO_ROOT, "bin/check_read_only_commands")
   end
 end

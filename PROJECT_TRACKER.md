@@ -266,8 +266,8 @@ focused tests, release-checklist docs, and tracker update.
    - `bin/check_read_only_commands` was spot-checked before commit and
      correctly refused the dirty tracked worktree; run it only from a clean
      tree.
-   - Strategic validation passed: slice tests, red/green, lint, TODO gate, and
-     warnings all clean.
+   - Strategic validation passed: slice tests, red/green, lint,
+     debt-marker gate, and warnings all clean.
    - Required design review verdict was clean. One remaining concern is tracked
      in the next queue: the read-only docs test derives commands by parsing the
      guard script's source layout instead of a public listing surface.
