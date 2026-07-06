@@ -80,23 +80,18 @@ burn a `1.0.0` signal on the first public push.
 ## Current Snapshot
 
 - Date: 2026-07-05.
-- Latest pushed baseline: `82bb331 Default scan to Metz cops and drop
-  shadowed Metrics cops`.
-- CI state: the three most recent `main` runs, including `28761458141` for
-  `82bb331`, all succeeded.
-- Release checklist issue: [#30](https://github.com/fuentesjr/metz-scan/issues/30),
-  `Release v0.4.0`, is closed with the checklist complete.
-- Release state: `v0.4.0` is tagged at `937afd8`, the GitHub Release is
+- Latest pushed baseline: `fb41288 Prepare 0.5.0 release target`.
+- CI state: the three most recent `main` runs, including `28766729872` for
+  `fb41288`, all succeeded.
+- Release state: `v0.5.0` is tagged at `fb41288`, the GitHub Release is
   published, both GitHub Packages gems are published, and
-  `bin/check_published_gem 0.4.0` passed again during the 2026-07-04
-  parked-queue follow-up sweep.
-- Local branch state: everything through `82bb331` (the #31/#32 fixes) is
-  pushed to `origin/main` with green CI. The working tree holds the `0.5.0`
-  release-prep slice (version bumps, release notes, tracker update) pending
-  commit.
-- Latest checkpoint window: 2026-07-05: `0.5.0` release target prep for queue
-  task 1 — version surfaces, lockfile, README install example, release issue
-  expectations, and `docs/releases/v0.5.0.md`.
+  `bin/check_published_gem 0.5.0` passed. Issues #31 and #32 are closed with
+  release links. rubygems.org exit criterion 1 is met.
+- Local branch state: everything through `fb41288` is pushed to
+  `origin/main` with green CI (`28766729872`).
+- Latest checkpoint window: 2026-07-05: `0.5.0` release target prep, push,
+  tag, GitHub Release, GitHub Packages publish for both gems, and
+  post-publish smoke.
 - Working tree expectation: keep tracked work clean before starting another
   slice; keep ignored `logs/` notes out of commits unless explicitly requested.
 
@@ -104,43 +99,33 @@ burn a `1.0.0` signal on the first public push.
 
 | Workstream | Status | Current State | Next Move |
 | --- | --- | --- | --- |
-| Release readiness | Complete | `v0.4.0` is tagged, released on GitHub, published to GitHub Packages for both gems, verified with repeated post-publish smoke, issue #30 is closed, and post-release CI for `f9f5a10` is green. | The #31/#32 fixes are implemented and verified locally; queue task 1 releases them (likely `0.5.0` given the default-behavior change in #31). |
+| Release readiness | Complete | `v0.5.0` (the #31/#32 fixes) is tagged at `fb41288`, released on GitHub, published to GitHub Packages for both gems, and verified with `bin/check_published_gem 0.5.0`; issues #31/#32 are closed with release links. | Queue task 1 (dogfooding round) now runs against the released `0.5.0` gems. |
 | Calibration artifact pipeline | Healthy | Markdown output, artifact write path, sample-app calibration smoke, the tracked target manifest under `docs/calibration/`, baseline-delta Markdown fixtures, compact baseline preview structure, exact `--print-baseline` YAML output, baseline scope mismatch checks, and help examples for scope-matched baseline workflows are covered. | Maintain; change only when artifact, target-manifest, or baseline-document behavior changes. |
 | Analyzer behavior | Parked | Fresh #27/#28 Mastodon and Discourse reruns did not show enough misleading or underexplained findings to justify behavior, threshold, or output-policy changes. | Reopen only with new generic evidence, not app-specific suppressions. |
 | Calibration evidence | Guarded | Redmine, Rubygems.org, ManageIQ, and Foreman evidence has been consolidated; Rubydex `0.2.7` was rechecked against the active manifest. Full active-manifest output is 697 findings/806 offenses; the four Rubydex-index-backed analyzers account for 607 findings/607 offenses. A compact Rubydex drift check covers those four analyzers, now with ProjectIndex missing-Rubydex subprocess coverage, missing-Rubydex skip-path coverage, exact sample-app text/JSON fixtures, and deterministic non-Rubydex formatter fixtures; `docs/calibration/project_analyzer_baseline.yml` captures the full active-manifest baseline for delta reporting. | Recheck only Rubydex-index-backed analyzers after future Rubydex upgrades unless an AST-only analyzer changes; use `--baseline-file docs/calibration/project_analyzer_baseline.yml` for full-manifest drift. |
 | Workflow friction | Guarded | The lockfile rewrite came from a stale path dependency entry in `Gemfile.lock`; the lockfile now matches the gemspec's `rubocop-metz (~> 0.4.0)` constraint, read-only maintenance commands have a tracked-worktree mutation guard plus a public command-listing mode, `--print-baseline` is in the default read-only guard list, the read-only command contract is documented in contributor/calibration/release docs, and `bin/check_ci_parity` runs tracker hygiene before Bundler work while preserving failed clean clones and printing `next action:` commands for inspection. | Maintain the guard list and docs as new read-only commands are added; do not bypass `BUNDLE_FROZEN=1` for read-only calibration checks. |
 | Sorbet adoption spike | Complete | Issue #26 was evaluated in a disposable workspace, documented, synced back to GitHub, and closed. The report recommends not adopting now: a narrow static setup is possible, but generated RBI churn, command policy, fixture scope, and runtime signature implications outweigh observed value. | Do not add Sorbet unless a concrete type-related defect, contributor ergonomics need, or stable public API typing requirement appears. |
 | Docs/adoption | Stable | README points contributors and agents to this tracker; old implementation notes are archived, current notes are short, and the Sorbet spike report records the tooling decision. The README now splits RepeatedBranching generic-subject guidance into a short list, the analyzer behavior details into per-analyzer subsections, package install troubleshooting points at `bin/check_published_gem`, parity failure inspection points at preserved clone/`next action:` output, the analyzer status table has freshness coverage, `skills/metz-scan/SKILL.md` gives agents consumer-facing usage guidance, and calibration docs point future Rubydex upgrades, filtered baselines, compact baseline previews, and parked issue updates at repeatable local commands. | Keep docs changes minimal and evidence-led. |
-| Path to rubygems.org | Active | Direction set 2026-07-05: quality-gated public release with four concrete exit criteria (see Current Direction). Both gem names verified unclaimed on rubygems.org. Exit criterion 1 (#31/#32 fixes) is implemented and verified locally, pending release. | Work queue tasks 1-4 in order: release to GitHub Packages, dogfooding round, quickstart verification, release preflight. |
+| Path to rubygems.org | Active | Direction set 2026-07-05: quality-gated public release with four concrete exit criteria (see Current Direction). Both gem names verified unclaimed on rubygems.org. Exit criterion 1 is met: the #31/#32 fixes are released as `v0.5.0` on GitHub Packages. | Work queue tasks 1-3 in order: dogfooding round, quickstart verification, release preflight. |
 | Test hardening | Done | Fixture/guard surface through `599a935` covers CLI text/JSON/help contracts, read-only guards, drift checks, package smoke, and CI parity output. Suite: 438 fast + 88 slow runs, all green. | Maintain only; new tests accompany behavior changes or defects, not coverage sweeps. |
 | Handoff continuity | Active | Local ignored handoff `.handoffs/20260703173813_next_four_tasks_after_issue_sync.md` captures the pushed issue-sync summary, conversation-only requirements, and the next four evidence-gated tasks. | Use it as the first continuation surface if context resets in this workspace; do not commit handoff files. |
 
 ## Next Queue
 
-1. Release the #31/#32 fixes to GitHub Packages.
-   - Why now: shipping the default-behavior fix quickly makes every subsequent
-     dogfooding run reflect the real product, and it is rubygems.org exit
-     criterion 1.
-   - Definition of done: a release (likely `0.5.0` given the default-behavior
-     change) is tagged, published to GitHub Packages, and smoke-verified with
-     `bin/check_published_gem`.
-   - Files likely touched: version constants, `docs/releases/`, README.
-   - Not in scope: publishing to rubygems.org.
-
-2. Run a qualitative dogfooding round on 3-5 real codebases.
+1. Run a qualitative dogfooding round on 3-5 real codebases.
    - Why now: this is the direction engine and rubygems.org exit criterion 2.
      Calibration counted findings; nobody has judged whether findings are
      worth reading. #31/#32 both came from a single afternoon on ctxpack.
-   - Definition of done: install the released gems into 3-5 external-shaped
-     projects (candidates: existing manifest targets plus at least one small
-     project without a `.rubocop.yml`), read the actual output, and record per
-     project: headline-UX defects, misleading or poorly-explained findings,
-     and findings that earned their space. File issues for defects; fold
-     findings-quality notes into the queue.
+   - Definition of done: install the released `0.5.0` gems into 3-5
+     external-shaped projects (candidates: existing manifest targets plus at
+     least one small project without a `.rubocop.yml`), read the actual
+     output, and record per project: headline-UX defects, misleading or
+     poorly-explained findings, and findings that earned their space. File
+     issues for defects; fold findings-quality notes into the queue.
    - Files likely touched: `docs/` dogfooding notes, GitHub issues.
    - Not in scope: fixing what the round finds (that becomes the next queue).
 
-3. Verify the README quickstart end-to-end against a clean install.
+2. Verify the README quickstart end-to-end against a clean install.
    - Why now: rubygems.org exit criterion 3; the quickstart is the first
      impression a public release trades on.
    - Definition of done: follow the README from a clean environment (fresh
@@ -150,8 +135,8 @@ burn a `1.0.0` signal on the first public push.
    - Not in scope: restructuring the README beyond what the walkthrough
      demands.
 
-4. Run the rubygems.org release preflight.
-   - Why now: final exit criterion once 1-5 are done; both gem names were
+3. Run the rubygems.org release preflight.
+   - Why now: final exit criterion once 1-2 are done; both gem names were
      unclaimed as of 2026-07-05 and name availability should not be assumed
      indefinitely.
    - Definition of done: gem metadata (changelog, license, description,
@@ -163,18 +148,17 @@ burn a `1.0.0` signal on the first public push.
 
 ## Latest Slice Checkpoint
 
-Slice: 2026-07-05 `0.5.0` release target prep (queue task 1).
+Slice: 2026-07-05 `v0.5.0` release (queue task 1), user-authorized full
+release.
 
-What changed: both gem version constants, the lockfile, the README install
-example, and the release issue dry-run expectations moved to `0.5.0`;
-`docs/releases/v0.5.0.md` drafts the release notes centered on the #31/#32
-fixes and the `--all-cops` migration note. `0.5.0` (not `0.4.1`) because #31
-changes default scan behavior. Tagging and publishing wait for explicit
-release authorization.
+What changed: version surfaces moved to `0.5.0` (`fb41288`); `v0.5.0` tagged
+and released on GitHub; both gems published to GitHub Packages
+(`rubocop-metz` first); #31/#32 commented with release links. `0.5.0` (not
+`0.4.1`) because #31 changes default scan behavior.
 
-Verified: full suite, rubocop, release metadata and release issue tests,
-`bin/create_release_issue --dry-run` rendering `Release v0.5.0`, and
-`bin/check_ci_parity` against a clean clone.
+Verified: full suite, rubocop, release metadata/issue tests,
+`bin/check_ci_parity` against a clean clone, green remote CI `28766729872`
+before tagging, and `bin/check_published_gem 0.5.0` post-publish.
 
 ## Parked / Not Next
 
@@ -184,11 +168,9 @@ Verified: full suite, rubocop, release metadata and release issue tests,
   coverage, project-analyzers JSON/help fixtures, scan project-analyzer text
   fixtures, and calibration help fixtures). Reopen an individual item only
   when a defect shows that exact missing fixture would have caught it.
-- Package/release feedback watch trigger has FIRED: ctxpack dogfooding filed
-  #31 (default scan buries Metz findings) and #32 (Metz/Metrics duplicate
-  findings). Both fixes are implemented and verified locally; the watch
-  returns to trigger-gated once queue task 1 releases them and the issues are
-  closed.
+- Package/release feedback watch is back to trigger-gated: the ctxpack
+  dogfooding findings #31/#32 are fixed, released in `v0.5.0`, and closed
+  with release links.
 - #25 dogfood CI enforcement is trigger-gated. Reopen only when collaboration
   expands beyond owner plus Dependabot, when PRs regularly come from multiple
   people, or when CI-enforced dogfood drift becomes a deliberate policy goal.
@@ -211,7 +193,8 @@ Verified: full suite, rubocop, release metadata and release issue tests,
 
 | Date | Commit | Summary |
 | --- | --- | --- |
-| 2026-07-05 | `this commit` | Prepared the `0.5.0` release target: version surfaces, lockfile, README install example, release issue expectations, and `docs/releases/v0.5.0.md`. |
+| 2026-07-05 | `this commit` | Recorded `v0.5.0` release completion: tag, GitHub Release, GitHub Packages publish for both gems, post-publish smoke, and #31/#32 release links. |
+| 2026-07-05 | `fb41288` | Prepared the `0.5.0` release target: version surfaces, lockfile, README install example, release issue expectations, and `docs/releases/v0.5.0.md`. |
 | 2026-07-05 | `82bb331` | Fixed #31 (scan defaults to Metz/* cops with `--all-cops` opt-in) and #32 (default config disables shadowed Metrics cops), with README/help docs, test coverage, and tracker updates. |
 | 2026-07-05 | `574afb7` | Set the quality-gated rubygems.org direction: four exit criteria, outward-facing queue, coverage sweeps parked as a class, process-overhead standing rules. |
 | 2026-07-05 | `599a935` | Added Codex-delegated queue tasks 1-4: exact render-summary help fixture, tracker-fixture decoupling for #25 exact output, default `$HOME/.gem/credentials` smoke coverage, parity `next action:` failure coverage, plus #31/#32 triage and tracker updates. |
@@ -272,6 +255,7 @@ Verified: full suite, rubocop, release metadata and release issue tests,
 - Project analyzer calibration record: `docs/project-analyzer-calibration.md`.
 - Tracked calibration target manifest: `docs/calibration/project_analyzer_targets.yml`.
 - Tracked calibration baseline: `docs/calibration/project_analyzer_baseline.yml`.
+- Published `v0.5.0` release notes: `docs/releases/v0.5.0.md`.
 - Published `v0.4.0` release notes: `docs/releases/v0.4.0.md`.
 - Sorbet adoption spike: `docs/spikes/sorbet-issue-26.md`.
 - Local ignored handoff, not committed:
