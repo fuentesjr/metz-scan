@@ -9,6 +9,29 @@ Use `PROJECT_TRACKER.md` for the current direction, next queue, parked work, and
 latest checkpoint. Add new notes here only when a slice needs more durable
 detail than the tracker should carry.
 
+## 2026-07-06: Dual-agent workspace (Claude Code + OpenAI/Codex)
+
+Task: user-requested — make the agent workspace (brief, skills, guides) usable
+by both Claude Code and OpenAI/Codex sessions.
+
+Decisions:
+
+- One source of truth: `CLAUDE.md` is the canonical shared brief for all
+  agents; `AGENTS.md` is a thin OpenAI entrypoint that routes to it (plus the
+  OpenAI-only sections it already had). No content duplication between them.
+- Skills stay canonical in `.claude/skills/` (known-working Claude discovery);
+  Codex discovers them through a `.agents/skills → ../.claude/skills` symlink.
+  Verified against developers.openai.com/codex/skills: Codex scans
+  `$REPO_ROOT/.agents/skills`, follows symlinked skill folders, and needs only
+  `name`/`description` frontmatter.
+- Skill bodies use harness-neutral wording ("use the land-slice skill") instead
+  of Claude slash syntax; `test/metz_scan/agent_workspace_docs_test.rb` pins
+  the symlink, frontmatter, neutral wording, and cross-references so the two
+  entrypoints cannot silently drift.
+- Codex-specific UI metadata (`agents/openai.yaml`, as `skills/metz-scan/`
+  has) deliberately skipped for the maintainer skills — SKILL.md alone is
+  sufficient per the Codex docs; add it only if the skills misbehave in Codex.
+
 ## 2026-07-06: v0.5.1 release completion
 
 Published the prepped `0.5.1` target (`3ec8f29`) after green CI on the push:

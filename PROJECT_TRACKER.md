@@ -140,7 +140,19 @@ burn a `1.0.0` signal on the first public push.
    - Not in scope: restructuring the README beyond what the walkthrough
      demands.
 
-3. Run the rubygems.org release preflight.
+3. Fix `bin/check_dogfood` failing on clean HEAD since the #33 fix.
+   - Why now: the documented contributor check (README "Contributing") and the
+     land-slice gauntlet are red on every run, so the guard is dead weight
+     until fixed; it may also signal a user-facing #33-class gap (per-cop
+     `Exclude` lists ignored in default mode) worth judging in the next
+     dogfooding round.
+   - Definition of done: `bin/check_dogfood` passes on `main`, with an explicit
+     decision recorded on whether default scans ignoring per-cop excludes is
+     intended behavior (then the repo config or the check adapts) or a defect
+     (then it gets an issue and a fix with regression tests).
+   - Not in scope: changing analyzer thresholds or default-output policy.
+
+4. Run the rubygems.org release preflight.
    - Why now: final exit criterion once 1-2 are done; both gem names were
      unclaimed as of 2026-07-05 and name availability should not be assumed
      indefinitely.
@@ -153,27 +165,28 @@ burn a `1.0.0` signal on the first public push.
 
 ## Latest Slice Checkpoint
 
-Slice: 2026-07-06 `0.5.1` release, carrying the #33 and #34 dogfooding-round
-fixes to published GitHub Packages gems.
+Slice: 2026-07-06 dual-agent workspace (user-requested): agent-facing docs and
+skills now serve both Claude Code and OpenAI/Codex sessions.
 
-What changed: prep (`3ec8f29`) moved both gem version constants and the
-lockfile to `0.5.1` (the gemspec's `"~> #{MetzScan::VERSION}"` pin carried the
-lockfile PATH constraint to `~> 0.5.1` automatically), moved the release-issue
-dry-run expectations to `0.5.1`, and added `docs/releases/v0.5.1.md`. Then
-tagged `v0.5.1` at `3ec8f29`, cut the GitHub Release, and published
-`rubocop-metz` then `metz-scan` to GitHub Packages. Chose patch over minor:
-both changes are pure false-positive/mislabel fixes with no default-behavior
-change from `0.5.0`. README install example left at `~> 0.5.0` (already
-resolves to `0.5.1`).
+What changed: `CLAUDE.md` rewritten as the canonical shared agent brief; four
+maintainer skills under `.claude/skills/` (open Agent Skills format), exposed
+to Codex via a `.agents/skills` symlink; `AGENTS.md` rewritten as the OpenAI
+entrypoint routing to the shared brief; operator playbook and goal backlog
+under `.claude/guides/`; routing pinned by
+`test/metz_scan/agent_workspace_docs_test.rb`.
 
-Verified: full suite (546 runs, 0 failures), rubocop (218 files),
-guard scripts, `gem build` for both gems, `bin/check_ci_parity` against a
-clean clone, green CI on the pushed prep commit, and
-`bin/check_published_gem 0.5.1` PASS against a clean consumer install (the
-#34 fix's `Controller method` label is confirmed live). A `reviewer` pass on
-the prep diff returned clean. Issues #33/#34 carry release-link comments.
+Verified: new docs test (5 runs, 44 assertions, 0 failures), rubocop clean,
+fast suite green, `bin/check_ci_parity` before push.
 
-Surprising: nothing.
+Surprising: Codex has supported the SKILL.md standard and symlinked skill
+folders since 2025-12; `skills/metz-scan/agents/openai.yaml` already carried
+dual-agent metadata. Separately, this slice's verification gauntlet found
+`bin/check_dogfood` red on clean HEAD (pre-existing since `d041d51`, verified
+via stash test): the #33 fix makes default scans ignore per-cop `Exclude`
+lists, and this repo's own `.rubocop.yml` relies on them for
+`rubocop-metz/test/**`, so hundreds of Metz offenses now surface. Neither CI
+nor `bin/check_ci_parity` runs `check_dogfood`, so it went unnoticed. Queued
+as task 3; not fixed in this slice (out of scope).
 
 ## Parked / Not Next
 
@@ -208,7 +221,8 @@ Surprising: nothing.
 
 | Date | Commit | Summary |
 | --- | --- | --- |
-| 2026-07-06 | `this commit` | Recorded `v0.5.1` release completion: tag at `3ec8f29`, GitHub Release, GitHub Packages publish for both gems, `bin/check_published_gem 0.5.1` PASS, and #33/#34 release-link comments. |
+| 2026-07-06 | `this commit` | Made the agent workspace dual-agent: canonical `CLAUDE.md` brief, four maintainer skills under `.claude/skills/`, `.agents/skills` symlink for Codex discovery, `AGENTS.md` router, operator playbook, goal backlog, and a routing freshness test. |
+| 2026-07-06 | `554b89b` | Recorded `v0.5.1` release completion: tag at `3ec8f29`, GitHub Release, GitHub Packages publish for both gems, `bin/check_published_gem 0.5.1` PASS, and #33/#34 release-link comments. |
 | 2026-07-06 | `3ec8f29` | Prepared the `0.5.1` release target carrying the #33/#34 fixes: bumped both gem versions and the lockfile, moved release-issue expectations to `0.5.1`, and drafted `docs/releases/v0.5.1.md`. |
 | 2026-07-06 | `16824db` | Fixed #34: the collaborators cop no longer counts rescue classes, own constants, or core stdlib names, and no longer labels every method "Action"; regression tests per dogfooding spot check. |
 | 2026-07-06 | `d041d51` | Fixed #33 (default scan honors project `AllCops: Exclude` while forcing Metz defaults) with regression tests, and filed #34 for the collaborators-cop miscounting. |
