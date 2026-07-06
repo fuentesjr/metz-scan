@@ -9,6 +9,34 @@ Use `PROJECT_TRACKER.md` for the current direction, next queue, parked work, and
 latest checkpoint. Add new notes here only when a slice needs more durable
 detail than the tracker should carry.
 
+## 2026-07-05: Dogfooding round on released 0.5.0
+
+Task: tracker Next Queue task 1 — qualitative dogfooding round, rubygems.org
+exit criterion 2.
+
+Scope boundaries: judge output only; no fixes to what the round found (that
+became queue tasks 1-2). Target checkouts under
+`tmp/project-analyzer-calibration/apps/` were read, never modified.
+
+Decisions:
+
+- Installed the released GitHub Packages gems into a clean Bundler consumer
+  (README install path) and ran scans via `BUNDLE_GEMFILE` from each target
+  root, rather than editing target Gemfiles — same gems a user gets, without
+  mutating the checkouts.
+- Targets: lobsters + huginn (no `.rubocop.yml`, satisfying the small-project
+  slot), maybe, redmine, rubygems.org.
+- Both headline defects were verified against target source before filing;
+  #33 also got a minimal released-gem repro (default vs `--all-cops`
+  exclude disagreement, rooted at `--force-default-config` in
+  `lib/metz_scan/commands/scan/runner.rb:38`).
+
+Verification status: notes and repro are in
+`docs/dogfooding/2026-07-05-round-0.5.0.md`; #33 filed. The second issue
+(`ControllersTooManyDirectCollaborators` miscounting) is drafted but unfiled —
+issue creation was permission-blocked mid-session; the draft needs user
+approval to file.
+
 ## 2026-07-05: v0.5.0 release target prep
 
 Task: tracker Next Queue task 1 — release the #31/#32 fixes to GitHub
