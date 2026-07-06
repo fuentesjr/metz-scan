@@ -9,6 +9,21 @@ Use `PROJECT_TRACKER.md` for the current direction, next queue, parked work, and
 latest checkpoint. Add new notes here only when a slice needs more durable
 detail than the tracker should carry.
 
+## 2026-07-06: v0.5.1 release completion
+
+Published the prepped `0.5.1` target (`3ec8f29`) after green CI on the push:
+tag `v0.5.1` at `3ec8f29`, GitHub Release cut from `docs/releases/v0.5.1.md`,
+then `gem push` of `rubocop-metz` before `metz-scan` to GitHub Packages.
+
+Verification: `bin/check_published_gem 0.5.1` PASS against a clean consumer
+install resolving both gems from GitHub Packages; the #34 fix is confirmed
+live (`Controller method` label). Both packages are visible under the account
+package pages. Issues #33 and #34 (already closed by their fix commits) carry
+release-link comments. Built `.gem` artifacts were removed after publish.
+
+rubygems.org exit criterion 2 still requires a fresh dogfooding round on these
+released gems — that is the next queue item, not part of this release.
+
 ## 2026-07-06: v0.5.1 release target prep
 
 Task: tracker Next Queue task 1 — release the #33/#34 fixes to GitHub Packages.
