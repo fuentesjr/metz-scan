@@ -9,6 +9,27 @@ Use `PROJECT_TRACKER.md` for the current direction, next queue, parked work, and
 latest checkpoint. Add new notes here only when a slice needs more durable
 detail than the tracker should carry.
 
+## 2026-07-05: v0.5.0 release target prep
+
+Task: tracker Next Queue task 1 — release the #31/#32 fixes to GitHub
+Packages.
+
+Scope boundaries:
+
+- Prepare the `0.5.0` release target only; tagging and publishing wait for
+  explicit release authorization.
+- No behavior changes beyond version surfaces.
+
+Decisions:
+
+- Chose `0.5.0` (not `0.4.1`) because #31 is a default-behavior change: scans
+  now default to Metz-only output and `--all-cops` is required for the old
+  full-suite behavior.
+- Bumped both gem version constants, the lockfile, the README install
+  example, and the release issue dry-run expectations to `0.5.0`.
+- Drafted `docs/releases/v0.5.0.md` centered on the #31/#32 fixes and the
+  `--all-cops` migration note.
+
 ## 2026-07-05: Direction review and course correction
 
 Task: review whether the project was proceeding in the right direction.

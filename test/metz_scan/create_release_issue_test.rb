@@ -30,9 +30,9 @@ module MetzScan
     end
 
     def assert_dry_run_title_and_versions(stdout)
-      assert_includes stdout, "# Release v0.4.0"
-      assert_includes stdout, "- `metz-scan`: `0.4.0`"
-      assert_includes stdout, "- `rubocop-metz`: `0.4.0`"
+      assert_includes stdout, "# Release v0.5.0"
+      assert_includes stdout, "- `metz-scan`: `0.5.0`"
+      assert_includes stdout, "- `rubocop-metz`: `0.5.0`"
     end
 
     def assert_requires_gh(result)

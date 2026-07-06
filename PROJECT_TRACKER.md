@@ -80,24 +80,23 @@ burn a `1.0.0` signal on the first public push.
 ## Current Snapshot
 
 - Date: 2026-07-05.
-- Latest pushed baseline: `3fb5747 Guard baseline previews and pin analyzer
-  catalog`.
-- CI state: the three most recent `main` runs, including `28755426338` for
-  `3fb5747`, all succeeded.
+- Latest pushed baseline: `82bb331 Default scan to Metz cops and drop
+  shadowed Metrics cops`.
+- CI state: the three most recent `main` runs, including `28761458141` for
+  `82bb331`, all succeeded.
 - Release checklist issue: [#30](https://github.com/fuentesjr/metz-scan/issues/30),
   `Release v0.4.0`, is closed with the checklist complete.
 - Release state: `v0.4.0` is tagged at `937afd8`, the GitHub Release is
   published, both GitHub Packages gems are published, and
   `bin/check_published_gem 0.4.0` passed again during the 2026-07-04
   parked-queue follow-up sweep.
-- Local branch state: everything through `3fb5747` is pushed to
-  `origin/main`. Committed locally but unpushed: `599a935` (test-hardening
-  fixtures + #31/#32 triage) and `574afb7` (quality-gated rubygems.org
-  direction). The #31/#32 fix slice is uncommitted in the working tree
-  pending review sign-off and the next requested commit.
-- Latest checkpoint window: 2026-07-05 ~16:00-18:30 -0700: Codex-delegated
-  #31/#32 implementation (1h 51m task runtime), then independent diff review,
-  behavioral scratch-project verification, suite reruns, and tracker update.
+- Local branch state: everything through `82bb331` (the #31/#32 fixes) is
+  pushed to `origin/main` with green CI. The working tree holds the `0.5.0`
+  release-prep slice (version bumps, release notes, tracker update) pending
+  commit.
+- Latest checkpoint window: 2026-07-05: `0.5.0` release target prep for queue
+  task 1 — version surfaces, lockfile, README install example, release issue
+  expectations, and `docs/releases/v0.5.0.md`.
 - Working tree expectation: keep tracked work clean before starting another
   slice; keep ignored `logs/` notes out of commits unless explicitly requested.
 
@@ -164,26 +163,18 @@ burn a `1.0.0` signal on the first public push.
 
 ## Latest Slice Checkpoint
 
-Slice: 2026-07-05 fix #31 (Metz-only scan default) and #32 (Metrics
-shadowing), Codex-delegated (session `019f3482-9e80-7c01-abb2-a364d40bc546`,
-1h 51m, agenticons: helper workers plus required reviewer).
+Slice: 2026-07-05 `0.5.0` release target prep (queue task 1).
 
-What changed: `metz-scan scan` now defaults to `Metz/*` cops plus
-default-output project analyzers regardless of the scanned project's
-`.rubocop.yml` (`--force-default-config --enable-all-cops --only Metz`);
-`--all-cops` restores the full-suite behavior; auto-fix follows the same
-policy; `rubocop-metz/config/default.yml` disables the shadowed
-`Metrics/ClassLength`, `Metrics/MethodLength`, and `Metrics/ParameterLists`;
-README and scan help document the default. Note the tradeoff: in default mode
-a target project's own Metz threshold overrides are ignored — only
-`--all-cops` reads the project config.
+What changed: both gem version constants, the lockfile, the README install
+example, and the release issue dry-run expectations moved to `0.5.0`;
+`docs/releases/v0.5.0.md` drafts the release notes centered on the #31/#32
+fixes and the `--all-cops` migration note. `0.5.0` (not `0.4.1`) because #31
+changes default scan behavior. Tagging and publishing wait for explicit
+release authorization.
 
-Verified: Codex ran focused tests, fast (439) and slow (97) suites, rubocop,
-strategic validation, and design review, all clean. Independent review reran
-the focused tests and both suites, read the full diff, and exercised the
-change behaviorally on a scratch project without `.rubocop.yml`: default scan
-reported exactly two Metz findings (no Style/Metrics noise), and `--all-cops`
-restored stock cops without Metrics duplicates.
+Verified: full suite, rubocop, release metadata and release issue tests,
+`bin/create_release_issue --dry-run` rendering `Release v0.5.0`, and
+`bin/check_ci_parity` against a clean clone.
 
 ## Parked / Not Next
 
@@ -220,7 +211,8 @@ restored stock cops without Metrics duplicates.
 
 | Date | Commit | Summary |
 | --- | --- | --- |
-| 2026-07-05 | `this commit` | Fixed #31 (scan defaults to Metz/* cops with `--all-cops` opt-in) and #32 (default config disables shadowed Metrics cops), with README/help docs, test coverage, and tracker updates. |
+| 2026-07-05 | `this commit` | Prepared the `0.5.0` release target: version surfaces, lockfile, README install example, release issue expectations, and `docs/releases/v0.5.0.md`. |
+| 2026-07-05 | `82bb331` | Fixed #31 (scan defaults to Metz/* cops with `--all-cops` opt-in) and #32 (default config disables shadowed Metrics cops), with README/help docs, test coverage, and tracker updates. |
 | 2026-07-05 | `574afb7` | Set the quality-gated rubygems.org direction: four exit criteria, outward-facing queue, coverage sweeps parked as a class, process-overhead standing rules. |
 | 2026-07-05 | `599a935` | Added Codex-delegated queue tasks 1-4: exact render-summary help fixture, tracker-fixture decoupling for #25 exact output, default `$HOME/.gem/credentials` smoke coverage, parity `next action:` failure coverage, plus #31/#32 triage and tracker updates. |
 | 2026-07-05 | `3fb5747` | Added `--print-baseline` read-only guard coverage, baseline help examples, target/analyzer baseline mismatch tests, exact `metz-scan project-analyzers` text fixture coverage, and tracker updates. |
