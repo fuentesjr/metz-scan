@@ -1,6 +1,9 @@
 # frozen_string_literal: true
 
 require_relative "../test_helper"
+require "json"
+require "stringio"
+require "tmpdir"
 
 class ThresholdCopsIntegrationTest < Minitest::Test
   COP_CLASSES = [
@@ -73,5 +76,84 @@ class ThresholdCopsIntegrationTest < Minitest::Test
 
     team = RuboCop::Cop::Team.new(cops, config, raise_error: true)
     team.investigate(processed).offenses.reject(&:disabled?)
+  end
+end
+
+class DefaultConfigMetricsShadowingTest < Minitest::Test
+  SHADOWED_METRICS_COPS = %w[
+    Metrics/ClassLength
+    Metrics/MethodLength
+    Metrics/ParameterLists
+  ].freeze
+  METZ_THRESHOLD_COPS = %w[
+    Metz/ClassesTooLong
+    Metz/MethodsTooLong
+    Metz/MethodsTooManyParameters
+  ].freeze
+
+  def test_default_config_disables_metrics_cops_shadowed_by_metz_cops
+    parsed = run_rubocop_with_plugin(shadowed_metrics_source)
+    names = cop_names(parsed)
+
+    METZ_THRESHOLD_COPS.each { |cop_name| assert_includes names, cop_name }
+    SHADOWED_METRICS_COPS.each { |cop_name| refute_includes names, cop_name }
+  end
+
+  private
+
+  def shadowed_metrics_source
+    class_body = (1..103).map { |index| "  value_#{index} = #{index}" }
+
+    <<~RUBY
+      # frozen_string_literal: true
+
+      class ShadowedMetrics
+        def long_method(a, b, c, d, e, f)
+      #{method_body}
+        end
+
+      #{class_body.join("\n")}
+      end
+    RUBY
+  end
+
+  def method_body
+    (1..12).map { |index| "    step_#{index} = #{index}" }.join("\n")
+  end
+
+  def run_rubocop_with_plugin(source)
+    Dir.mktmpdir("rubocop-metz-default-config") do |dir|
+      path = File.join(dir, "shadowed_metrics.rb")
+      File.write(path, source)
+
+      raw = capture_stdout do
+        status = RuboCop::CLI.new.run([
+                                        "--plugin", "rubocop-metz",
+                                        "--cache", "false",
+                                        "--format", "json",
+                                        path
+                                      ])
+        refute_equal 2, status, "RuboCop internal error for #{path}"
+      end
+
+      JSON.parse(raw)
+    end
+  end
+
+  def cop_names(parsed)
+    offenses = parsed.fetch("files").flat_map { |file| file.fetch("offenses") }
+    offenses.map { |offense| offense.fetch("cop_name") }
+  end
+
+  def capture_stdout
+    original_stdout = $stdout
+    original_stderr = $stderr
+    $stdout = StringIO.new
+    $stderr = StringIO.new
+    yield
+    $stdout.string
+  ensure
+    $stdout = original_stdout
+    $stderr = original_stderr
   end
 end

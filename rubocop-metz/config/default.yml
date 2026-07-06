@@ -1,5 +1,14 @@
 # Default configuration for the rubocop-metz plugin.
 
+Metrics/ClassLength:
+  Enabled: false
+
+Metrics/MethodLength:
+  Enabled: false
+
+Metrics/ParameterLists:
+  Enabled: false
+
 Metz/ClassesTooLong:
   Description: 'Flags classes longer than the configured Max line count; the Metz default is stricter than core RuboCop.'
   Enabled: true

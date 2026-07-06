@@ -13,14 +13,85 @@ require_relative "scan/auto_fix"
 
 module MetzScan
   module Commands
-    class Scan
+    class ScanOptions
       USAGE = "Usage: metz-scan scan PATH... [--format text|json|sarif|gh-annotations] " \
-              "[--project-analyzers] [--auto-fix [--unsafe] [--dry-run]]"
+              "[--all-cops] [--project-analyzers] [--auto-fix [--unsafe] [--dry-run]]"
       VALID_FORMATS = %w[text json sarif gh-annotations].freeze
-      RENDERERS = { "sarif" => SarifRenderer, "gh-annotations" => GithubAnnotationsRenderer }.freeze
       DEFAULT_FORMAT = "text"
 
-      Options = Struct.new(:format, :paths, :project_analyzers, :auto_fix, :unsafe, :dry_run, keyword_init: true)
+      Options = Struct.new(:format, :paths, :all_cops, :project_analyzers, :auto_fix, :unsafe, :dry_run, :help,
+                           keyword_init: true)
+
+      def self.parse(argv)
+        new.parse(argv)
+      end
+
+      def self.help
+        new.help
+      end
+
+      def parse(argv)
+        flags = default_flags
+        paths = option_parser(flags).parse(argv)
+        Options.new(**flags, paths: paths)
+      end
+
+      def help
+        option_parser(default_flags).help
+      end
+
+      private
+
+      def default_flags
+        { format: DEFAULT_FORMAT, all_cops: false, project_analyzers: false, auto_fix: false, unsafe: false,
+          dry_run: false, help: false }
+      end
+
+      def option_parser(flags)
+        OptionParser.new(USAGE) { |opts| configure_parser(opts, flags) }
+      end
+
+      def configure_parser(opts, flags)
+        configure_format_parser(opts, flags)
+        configure_cop_selection_parser(opts, flags)
+        configure_project_analyzer_parser(opts, flags)
+        configure_auto_fix_parser(opts, flags)
+        configure_help_parser(opts, flags)
+      end
+
+      def configure_format_parser(opts, flags)
+        opts.on("--format FORMAT", "Output format: text (default), json, sarif, gh-annotations") do |format|
+          flags[:format] = format
+        end
+      end
+
+      def configure_cop_selection_parser(opts, flags)
+        opts.on("--all-cops", "Run the full RuboCop suite instead of Metz/* cops by default") do
+          flags[:all_cops] = true
+        end
+      end
+
+      def configure_project_analyzer_parser(opts, flags)
+        opts.on("--project-analyzers", "Include all opt-in project analyzer findings") do
+          flags[:project_analyzers] = true
+        end
+      end
+
+      def configure_auto_fix_parser(opts, flags)
+        opts.on("--auto-fix", "Apply RuboCop's safe fixes (delegates to rubocop -a)") { flags[:auto_fix] = true }
+        opts.on("--unsafe", "With --auto-fix, also apply unsafe fixes (rubocop -A)") { flags[:unsafe] = true }
+        opts.on("--dry-run", "With --auto-fix, print diff without modifying files") { flags[:dry_run] = true }
+      end
+
+      def configure_help_parser(opts, flags)
+        opts.on("-h", "--help", "Show this help message and exit") { flags[:help] = true }
+      end
+    end
+
+    class Scan
+      USAGE = ScanOptions::USAGE
+      VALID_FORMATS = ScanOptions::VALID_FORMATS
+      RENDERERS = { "sarif" => SarifRenderer, "gh-annotations" => GithubAnnotationsRenderer }.freeze
 
       def self.run(argv, stdout:, stderr:)
         new(stdout: stdout, stderr: stderr).run(argv)
@@ -44,38 +115,13 @@ module MetzScan
       attr_reader :stdout, :stderr
 
       def handle_options(options)
+        return print_help if options.help
+
         validate(options) || dispatch(options)
       end
 
       def parse_options(argv)
-        flags = { format: DEFAULT_FORMAT, project_analyzers: false, auto_fix: false, unsafe: false, dry_run: false }
-        paths = OptionParser.new { |opts| configure_parser(opts, flags) }.parse(argv)
-        Options.new(**flags, paths: paths)
-      end
-
-      def configure_parser(opts, flags)
-        opts.banner = USAGE
-        configure_format_parser(opts, flags)
-        configure_project_analyzer_parser(opts, flags)
-        configure_auto_fix_parser(opts, flags)
-      end
-
-      def configure_format_parser(opts, flags)
-        opts.on("--format FORMAT", "Output format: text (default), json, sarif, gh-annotations") do |format|
-          flags[:format] = format
-        end
-      end
-
-      def configure_project_analyzer_parser(opts, flags)
-        opts.on("--project-analyzers", "Include all opt-in project analyzer findings") do
-          flags[:project_analyzers] = true
-        end
-      end
-
-      def configure_auto_fix_parser(opts, flags)
-        opts.on("--auto-fix", "Apply RuboCop's safe fixes (delegates to rubocop -a)") { flags[:auto_fix] = true }
-        opts.on("--unsafe", "With --auto-fix, also apply unsafe fixes (rubocop -A)") { flags[:unsafe] = true }
-        opts.on("--dry-run", "With --auto-fix, print diff without modifying files") { flags[:dry_run] = true }
+        ScanOptions.parse(argv)
       end
 
       def validate(options)
@@ -93,10 +139,18 @@ module MetzScan
       end
 
       def scan(options)
-        parsed = Runner.invoke(options.paths)
-        ProjectAnalyzerRunner.merge!(parsed, options.paths, default_output: !options.project_analyzers)
+        parsed = Runner.invoke(options.paths, all_cops: options.all_cops)
+        merge_project_analyzers(parsed, options)
         render(parsed, options.format)
         Runner.exit_code_for(parsed)
+      end
+
+      def merge_project_analyzers(parsed, options)
+        ProjectAnalyzerRunner.merge!(parsed, options.paths, **project_analyzer_options(options))
+      end
+
+      def project_analyzer_options(options)
+        { default_output: !options.project_analyzers, force_default_config: !options.all_cops }
       end
 
       def render(parsed, format)
@@ -109,6 +163,11 @@ module MetzScan
         stderr.puts "metz-scan scan: #{err.message}"
         stderr.puts USAGE
         1
+      end
+
+      def print_help
+        stdout.puts ScanOptions.help
+        0
       end
 
       def missing_path_arg

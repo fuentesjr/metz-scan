@@ -197,6 +197,24 @@ module MetzScan
         assert_includes rubocop_cop_names, "MetzProject/RepeatedBranching"
       end
 
+      def test_default_scan_ignores_project_config_excludes_for_default_output_analyzers
+        write_project_config_excluding_repeated_branching_files
+        write_repeated_branching_files
+        code = scan_without_project_analyzers
+
+        refute_equal 0, code
+        assert_includes rubocop_cop_names, "MetzProject/RepeatedBranching"
+      end
+
+      def test_all_cops_respects_project_config_excludes_for_default_output_analyzers
+        write_project_config_excluding_repeated_branching_files
+        write_repeated_branching_files
+        code = scan_all_cops_without_project_analyzers
+
+        assert_equal 0, code
+        refute_includes rubocop_cop_names, "MetzProject/RepeatedBranching"
+      end
+
       def test_default_scan_excludes_low_confidence_project_analyzer_findings
         write_setup_service_soup_file
         code = scan_without_project_analyzers
@@ -212,6 +230,10 @@ module MetzScan
         Scan.run([relative_tmpdir, "--format", "json"], stdout: @stdout, stderr: @stderr)
       end
 
+      def scan_all_cops_without_project_analyzers
+        Scan.run([relative_tmpdir, "--all-cops", "--format", "json"], stdout: @stdout, stderr: @stderr)
+      end
+
       def relative_tmpdir
         @tmpdir.delete_prefix("#{Dir.pwd}/")
       end
@@ -220,6 +242,14 @@ module MetzScan
         2.times do |index|
           File.write(File.join(@tmpdir, "branching_#{index}.rb"), repeated_branching_source)
         end
+      end
+
+      def write_project_config_excluding_repeated_branching_files
+        File.write(File.join(@tmpdir, ".rubocop.yml"), <<~YAML)
+          AllCops:
+            Exclude:
+              - branching_*.rb
+        YAML
       end
 
       def write_setup_service_soup_file

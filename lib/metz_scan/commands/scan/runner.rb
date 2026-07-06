@@ -13,8 +13,8 @@ module MetzScan
 
         Result = Struct.new(:stdout, :stderr, :status, keyword_init: true)
 
-        def self.invoke(paths)
-          with_errors { parse_output(capture_output(rubocop_argv(paths))) }
+        def self.invoke(paths, all_cops: false)
+          with_errors { parse_output(capture_output(rubocop_argv(paths, all_cops: all_cops))) }
         end
 
         def self.with_errors
@@ -29,9 +29,13 @@ module MetzScan
           raise Error, "could not load rubocop-metz: #{err.message}"
         end
 
-        def self.rubocop_argv(paths)
+        def self.rubocop_argv(paths, all_cops:)
           require "rubocop-metz"
-          ["--plugin", "rubocop-metz", "--format", FORMATTER, *paths]
+          ["--plugin", "rubocop-metz", *cop_selection_argv(all_cops), "--format", FORMATTER, *paths]
+        end
+
+        def self.cop_selection_argv(all_cops)
+          all_cops ? [] : ["--force-default-config", "--enable-all-cops", "--only", "Metz"]
         end
 
         def self.capture_output(argv)

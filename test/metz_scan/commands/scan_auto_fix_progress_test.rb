@@ -55,7 +55,7 @@ module MetzScan
       private
 
       def run_auto_fix
-        MetzScan::CLI.start(["scan", @tmpdir, "--auto-fix"], stdout: $stdout, stderr: @stderr)
+        MetzScan::CLI.start(["scan", @tmpdir, "--auto-fix", "--all-cops"], stdout: $stdout, stderr: @stderr)
       end
 
       def capture_real_stdout(&)

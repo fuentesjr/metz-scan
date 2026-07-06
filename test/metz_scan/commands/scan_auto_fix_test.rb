@@ -11,6 +11,16 @@ require "metz_scan/commands/scan"
 module MetzScan
   module Commands
     module ScanAutoFixFixtures
+      SAFE_FIXTURE = <<~RUBY
+        # frozen_string_literal: true
+
+        def f
+          x = 1
+          y =  2
+          return x + y
+        end
+      RUBY
+
       PARTIAL_FIXTURE = <<~RUBY
         # frozen_string_literal: true
 
@@ -40,16 +50,6 @@ module MetzScan
     class ScanAutoFixTest < Minitest::Test
       include ScanAutoFixFixtures
 
-      SAFE_FIXTURE = <<~RUBY
-        # frozen_string_literal: true
-
-        def f
-          x = 1
-          y =  2
-          return x + y
-        end
-      RUBY
-
       UNSAFE_ONLY_FIXTURE = "1 + 1\n"
 
       def setup
@@ -62,9 +62,9 @@ module MetzScan
         FileUtils.remove_entry(@tmpdir) if @tmpdir
       end
 
-      def test_auto_fix_changes_sha_of_safe_correctable_file
+      def test_all_cops_auto_fix_changes_sha_of_safe_correctable_file
         path = write_fixture("bad.rb", SAFE_FIXTURE)
-        before, code, after = run_with_shas(path, ["scan", @tmpdir, "--auto-fix"])
+        before, code, after = run_with_shas(path, ["scan", @tmpdir, "--auto-fix", "--all-cops"])
         refute_equal before, after, "expected file to change after --auto-fix"
         assert_includes [0, 1], code
       end
@@ -84,8 +84,8 @@ module MetzScan
 
       def test_dry_run_leaves_files_byte_identical_and_prints_diff
         path = write_fixture("bad.rb", SAFE_FIXTURE)
-        before, code, after = run_with_shas(path, ["scan", @tmpdir, "--auto-fix", "--dry-run"])
-        assert_equal 0, code
+        before, code, after = run_with_shas(path, ["scan", @tmpdir, "--auto-fix", "--dry-run", "--all-cops"])
+        assert_includes [0, 1], code
         assert_equal before, after, "dry-run must not modify files"
         assert_match(/^[+-]/, @stdout.string)
       end
@@ -103,14 +103,14 @@ module MetzScan
       def test_dry_run_restores_files_when_offenses_are_corrected
         path = write_fixture("bad.rb", SAFE_FIXTURE)
         before = File.binread(path)
-        run_cli(["scan", @tmpdir, "--auto-fix", "--dry-run"])
+        run_cli(["scan", @tmpdir, "--auto-fix", "--dry-run", "--all-cops"])
         assert_equal before, File.binread(path)
       end
 
       def test_dry_run_prints_diff_when_corrected_file_still_has_offenses
         path = write_fixture("partial.rb", PARTIAL_FIXTURE)
         before = File.binread(path)
-        code = run_cli(["scan", @tmpdir, "--auto-fix", "--dry-run"])
+        code = run_cli(["scan", @tmpdir, "--auto-fix", "--dry-run", "--all-cops"])
 
         assert_partial_dry_run_result(code, path, before)
       end
@@ -153,10 +153,58 @@ module MetzScan
 
       def run_safe_then_unsafe(path)
         before = sha256(path)
-        run_cli(["scan", @tmpdir, "--auto-fix"])
+        run_cli(["scan", @tmpdir, "--auto-fix", "--all-cops"])
         after_safe = sha256(path)
-        run_cli(["scan", @tmpdir, "--auto-fix", "--unsafe"])
+        run_cli(["scan", @tmpdir, "--auto-fix", "--unsafe", "--all-cops"])
         [before, after_safe, sha256(path)]
+      end
+    end
+
+    class ScanAutoFixCopSelectionTest < Minitest::Test
+      include ScanAutoFixFixtures
+
+      def setup
+        @stdout = StringIO.new
+        @stderr = StringIO.new
+        @tmpdir = Dir.mktmpdir("metz-scan-autofix-cop-selection-test")
+      end
+
+      def teardown
+        FileUtils.remove_entry(@tmpdir) if @tmpdir
+      end
+
+      def test_auto_fix_default_ignores_stock_correctable_file
+        path = write_fixture("bad.rb")
+        before, code, after = run_with_contents(path, ["scan", @tmpdir, "--auto-fix"])
+        assert_equal before, after, "expected default auto-fix to ignore stock-only offenses"
+        assert_equal 0, code
+      end
+
+      def test_dry_run_default_ignores_stock_correctable_file
+        path = write_fixture("bad.rb")
+        before, code, after = run_with_contents(path, ["scan", @tmpdir, "--auto-fix", "--dry-run"])
+        assert_equal 0, code
+        assert_equal before, after, "dry-run must not modify files"
+        assert_empty @stdout.string
+      end
+
+      private
+
+      def write_fixture(name)
+        path = File.join(@tmpdir, name)
+        File.write(path, SAFE_FIXTURE)
+        path
+      end
+
+      def run_with_contents(path, argv)
+        before = File.binread(path)
+        code = run_cli(argv)
+        [before, code, File.binread(path)]
+      end
+
+      def run_cli(argv)
+        require "metz_scan/cli"
+        MetzScan::CLI.start(argv, stdout: @stdout, stderr: @stderr)
       end
     end
   end

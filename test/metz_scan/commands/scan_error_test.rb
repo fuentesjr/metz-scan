@@ -11,22 +11,31 @@ module MetzScan
     class ScanErrorTest < Minitest::Test
       def test_invalid_rubocop_config_exits_non_zero_with_friendly_message
         Dir.mktmpdir("metz-scan-error-test") do |dir|
-          assert_invalid_config_error(*invalid_config_scan(dir))
+          assert_invalid_config_error(*invalid_config_scan(dir, "--all-cops"))
+        end
+      end
+
+      def test_default_scan_ignores_invalid_project_config
+        Dir.mktmpdir("metz-scan-error-test") do |dir|
+          code, output = invalid_config_scan(dir)
+
+          assert_equal 0, code
+          assert_no_stack_trace(output)
         end
       end
 
       private
 
-      def invalid_config_scan(dir)
+      def invalid_config_scan(dir, *flags)
         stdout = StringIO.new
         stderr = StringIO.new
-        code = run_invalid_config_scan(dir, stdout, stderr)
+        code = run_invalid_config_scan(dir, stdout, stderr, flags)
         [code, stdout.string + stderr.string]
       end
 
-      def run_invalid_config_scan(dir, stdout, stderr)
+      def run_invalid_config_scan(dir, stdout, stderr, flags)
         write_invalid_config_fixture(dir)
-        Scan.run([dir], stdout: stdout, stderr: stderr)
+        Scan.run([dir, *flags], stdout: stdout, stderr: stderr)
       end
 
       def write_invalid_config_fixture(dir)

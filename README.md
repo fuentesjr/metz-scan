@@ -112,14 +112,16 @@ bundle exec metz-scan scan . --format sarif
 bundle exec metz-scan scan . --format gh-annotations
 ```
 
-By default, `scan` reports RuboCop-backed Metz findings plus project-analyzer
-findings that satisfy the default-output policy: the analyzer is explicitly
-default-output eligible, the analyzer is validated, and the individual finding
-is medium-confidence design pressure. Use `--project-analyzers` to include the
-full opt-in set, including validated opt-in-only analyzers, candidates, and
-lower-confidence findings:
+By default, `scan` runs the RuboCop-backed `Metz/*` cops only, plus
+project-analyzer findings that satisfy the default-output policy: the analyzer
+is explicitly default-output eligible, the analyzer is validated, and the
+individual finding is medium-confidence design pressure. Use `--all-cops` to
+run the full stock RuboCop suite as well. Use `--project-analyzers` to include
+the full opt-in project-analyzer set, including validated opt-in-only analyzers,
+candidates, and lower-confidence findings:
 
 ```bash
+bundle exec metz-scan scan . --all-cops
 bundle exec metz-scan scan . --project-analyzers
 bundle exec metz-scan scan . --project-analyzers --format json
 bundle exec metz-scan scan . --project-analyzers --format sarif

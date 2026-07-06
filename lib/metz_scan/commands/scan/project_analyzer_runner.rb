@@ -38,16 +38,16 @@ module MetzScan
 
         module_function
 
-        def merge!(parsed, paths, index: nil, default_output: false)
-          findings = project_findings_for(paths, index: index, default_output: default_output)
+        def merge!(parsed, paths, **)
+          findings = project_findings_for(paths, **)
           return parsed if findings.empty?
 
           merge_findings(parsed, findings)
           parsed
         end
 
-        def project_findings_for(paths, index: nil, default_output: false)
-          paths = analyzer_paths(paths, index: index)
+        def project_findings_for(paths, index: nil, default_output: false, force_default_config: false)
+          paths = analyzer_paths(paths, index: index, force_default_config: force_default_config)
           return [] if paths.empty? && !index
 
           findings = project_findings(paths, index: index, default_output: default_output)
@@ -92,14 +92,16 @@ module MetzScan
             finding.triage_severity == DEFAULT_OUTPUT_TRIAGE_SEVERITY
         end
 
-        def analyzer_paths(paths, index: nil)
+        def analyzer_paths(paths, index: nil, force_default_config: false)
           return Array(paths) if index
 
-          rubocop_target_files(paths)
+          rubocop_target_files(paths, force_default_config: force_default_config)
         end
 
-        def rubocop_target_files(paths)
-          RuboCop::TargetFinder.new(RuboCop::ConfigStore.new, {}).find(paths, :all_file_types)
+        def rubocop_target_files(paths, force_default_config: false)
+          store = RuboCop::ConfigStore.new
+          store.force_default_config! if force_default_config
+          RuboCop::TargetFinder.new(store, {}).find(paths, :all_file_types)
         end
 
         def merge_offenses(parsed, grouped_offenses)

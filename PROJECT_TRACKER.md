@@ -90,28 +90,14 @@ burn a `1.0.0` signal on the first public push.
   published, both GitHub Packages gems are published, and
   `bin/check_published_gem 0.4.0` passed again during the 2026-07-04
   parked-queue follow-up sweep.
-- Local branch state: release tag, release target, release completion,
-  package-monitor checkpoint, feedback-sweep checkpoint, Sorbet spike report,
-  issue-sync tracker checkpoint, handoff checkpoint, continuation sweep,
-  next-four evidence sweep, Dependabot PR #29, README cleanup, parked-queue
-  tracker checkpoints, README analyzer-details cleanup, Rubydex spike results,
-  the Rubydex 0.2.7 calibration drift checkpoint, the Rubydex release-response
-  playbook, the actionable tracker rewrite (`74f3d75`), workflow-hardening
-  slice (`8c740ee`), calibration-summary slice (`0d902f9`),
-  workflow-diagnostics slice (`8881795`), README/read-only/Rubydex drift guard
-  slice (`fd8a515`), LEAK-1 read-only command list fix (`bf7a113`), and
-  calibration baseline preview fixture slice (`86733e0`),
-  issue-summary/package/parity-docs slice (`a5df146`), in-repo skill slice
-  (`8f65252`), Rubydex drift and baseline fixture slice (`b5f053f`), and
-  read-only/help/scope/project-analyzers fixture slice (`3fb5747`) are pushed
-  to `origin/main`. The Codex-delegated queue tasks 1-4 slice
-  (render-summary help/tracker fixtures, default gem-credentials fallback
-  coverage, parity `next action:` coverage) is uncommitted in the working tree
+- Local branch state: everything through `3fb5747` is pushed to
+  `origin/main`. Committed locally but unpushed: `599a935` (test-hardening
+  fixtures + #31/#32 triage) and `574afb7` (quality-gated rubygems.org
+  direction). The #31/#32 fix slice is uncommitted in the working tree
   pending review sign-off and the next requested commit.
-- Latest checkpoint window: 2026-07-05 ~14:33-15:13 -0700, ~40m wall-clock:
-  Codex-delegated implementation (34m 12s task runtime with two
-  `helper_worker` agenticons and one required `reviewer`), then independent
-  diff review, focused-test rerun, and tracker update in this session.
+- Latest checkpoint window: 2026-07-05 ~16:00-18:30 -0700: Codex-delegated
+  #31/#32 implementation (1h 51m task runtime), then independent diff review,
+  behavioral scratch-project verification, suite reruns, and tracker update.
 - Working tree expectation: keep tracked work clean before starting another
   slice; keep ignored `logs/` notes out of commits unless explicitly requested.
 
@@ -119,47 +105,20 @@ burn a `1.0.0` signal on the first public push.
 
 | Workstream | Status | Current State | Next Move |
 | --- | --- | --- | --- |
-| Release readiness | Complete | `v0.4.0` is tagged, released on GitHub, published to GitHub Packages for both gems, verified with repeated post-publish smoke, issue #30 is closed, and post-release CI for `f9f5a10` is green. | Dogfooding defects #31/#32 are now queue tasks 1-2; once fixed, they justify the next release target (likely `0.4.1` or `0.5.0` depending on the default-behavior change in #31). |
+| Release readiness | Complete | `v0.4.0` is tagged, released on GitHub, published to GitHub Packages for both gems, verified with repeated post-publish smoke, issue #30 is closed, and post-release CI for `f9f5a10` is green. | The #31/#32 fixes are implemented and verified locally; queue task 1 releases them (likely `0.5.0` given the default-behavior change in #31). |
 | Calibration artifact pipeline | Healthy | Markdown output, artifact write path, sample-app calibration smoke, the tracked target manifest under `docs/calibration/`, baseline-delta Markdown fixtures, compact baseline preview structure, exact `--print-baseline` YAML output, baseline scope mismatch checks, and help examples for scope-matched baseline workflows are covered. | Maintain; change only when artifact, target-manifest, or baseline-document behavior changes. |
 | Analyzer behavior | Parked | Fresh #27/#28 Mastodon and Discourse reruns did not show enough misleading or underexplained findings to justify behavior, threshold, or output-policy changes. | Reopen only with new generic evidence, not app-specific suppressions. |
 | Calibration evidence | Guarded | Redmine, Rubygems.org, ManageIQ, and Foreman evidence has been consolidated; Rubydex `0.2.7` was rechecked against the active manifest. Full active-manifest output is 697 findings/806 offenses; the four Rubydex-index-backed analyzers account for 607 findings/607 offenses. A compact Rubydex drift check covers those four analyzers, now with ProjectIndex missing-Rubydex subprocess coverage, missing-Rubydex skip-path coverage, exact sample-app text/JSON fixtures, and deterministic non-Rubydex formatter fixtures; `docs/calibration/project_analyzer_baseline.yml` captures the full active-manifest baseline for delta reporting. | Recheck only Rubydex-index-backed analyzers after future Rubydex upgrades unless an AST-only analyzer changes; use `--baseline-file docs/calibration/project_analyzer_baseline.yml` for full-manifest drift. |
 | Workflow friction | Guarded | The lockfile rewrite came from a stale path dependency entry in `Gemfile.lock`; the lockfile now matches the gemspec's `rubocop-metz (~> 0.4.0)` constraint, read-only maintenance commands have a tracked-worktree mutation guard plus a public command-listing mode, `--print-baseline` is in the default read-only guard list, the read-only command contract is documented in contributor/calibration/release docs, and `bin/check_ci_parity` runs tracker hygiene before Bundler work while preserving failed clean clones and printing `next action:` commands for inspection. | Maintain the guard list and docs as new read-only commands are added; do not bypass `BUNDLE_FROZEN=1` for read-only calibration checks. |
 | Sorbet adoption spike | Complete | Issue #26 was evaluated in a disposable workspace, documented, synced back to GitHub, and closed. The report recommends not adopting now: a narrow static setup is possible, but generated RBI churn, command policy, fixture scope, and runtime signature implications outweigh observed value. | Do not add Sorbet unless a concrete type-related defect, contributor ergonomics need, or stable public API typing requirement appears. |
 | Docs/adoption | Stable | README points contributors and agents to this tracker; old implementation notes are archived, current notes are short, and the Sorbet spike report records the tooling decision. The README now splits RepeatedBranching generic-subject guidance into a short list, the analyzer behavior details into per-analyzer subsections, package install troubleshooting points at `bin/check_published_gem`, parity failure inspection points at preserved clone/`next action:` output, the analyzer status table has freshness coverage, `skills/metz-scan/SKILL.md` gives agents consumer-facing usage guidance, and calibration docs point future Rubydex upgrades, filtered baselines, compact baseline previews, and parked issue updates at repeatable local commands. | Keep docs changes minimal and evidence-led. |
-| Path to rubygems.org | Active | Direction set 2026-07-05: quality-gated public release with four concrete exit criteria (see Current Direction). Both gem names verified unclaimed on rubygems.org. | Work queue tasks 1-6 in order: fix #31/#32, release to GitHub Packages, dogfooding round, quickstart verification, release preflight. |
+| Path to rubygems.org | Active | Direction set 2026-07-05: quality-gated public release with four concrete exit criteria (see Current Direction). Both gem names verified unclaimed on rubygems.org. Exit criterion 1 (#31/#32 fixes) is implemented and verified locally, pending release. | Work queue tasks 1-4 in order: release to GitHub Packages, dogfooding round, quickstart verification, release preflight. |
 | Test hardening | Done | Fixture/guard surface through `599a935` covers CLI text/JSON/help contracts, read-only guards, drift checks, package smoke, and CI parity output. Suite: 438 fast + 88 slow runs, all green. | Maintain only; new tests accompany behavior changes or defects, not coverage sweeps. |
 | Handoff continuity | Active | Local ignored handoff `.handoffs/20260703173813_next_four_tasks_after_issue_sync.md` captures the pushed issue-sync summary, conversation-only requirements, and the next four evidence-gated tasks. | Use it as the first continuation surface if context resets in this workspace; do not commit handoff files. |
 
 ## Next Queue
 
-1. Fix issue #31: `scan` runs the full stock RuboCop suite by default.
-   - Why now: dogfooding on ctxpack showed a project without `.rubocop.yml`
-     gets hundreds of stock style findings that bury the 27 `Metz/*` findings,
-     contradicting the tool's headline positioning. This is the concrete
-     user-facing defect the package/release feedback watch was gated on.
-   - Definition of done: `metz-scan scan` defaults to `Metz/*` cops (plus
-     project analyzers passing the default-output policy) regardless of the
-     scanned project's config presence, an `--all-cops` flag restores the
-     current full-suite behavior, and help/README document the default.
-   - Files likely touched: `lib/metz_scan/commands/scan.rb`, related runner
-     wiring, `test/metz_scan/commands/`, and README.
-   - Not in scope: analyzer thresholds, default-output promotions, or
-     app-specific suppressions.
-
-2. Fix issue #32: Metz cops duplicate their `Metrics` ancestors.
-   - Why now: with both enabled, `Metz/ClassesTooLong`/`Metrics/ClassLength`
-     report identical findings twice, and `Metz/MethodsTooLong` re-reports
-     everything `Metrics/MethodLength` already flagged. Still bites deliberate
-     full-suite runs even after #31.
-   - Definition of done: rubocop-metz's default config disables the shadowed
-     stock cops (`Metrics/ClassLength`, `Metrics/MethodLength`,
-     `Metrics/ParameterLists`) so each design-pressure finding appears once,
-     with test coverage for the config.
-   - Files likely touched: `rubocop-metz/config/default.yml` and
-     `rubocop-metz/` tests.
-   - Not in scope: changing Metz cop thresholds or messages.
-
-3. Release the #31/#32 fixes to GitHub Packages.
+1. Release the #31/#32 fixes to GitHub Packages.
    - Why now: shipping the default-behavior fix quickly makes every subsequent
      dogfooding run reflect the real product, and it is rubygems.org exit
      criterion 1.
@@ -169,7 +128,7 @@ burn a `1.0.0` signal on the first public push.
    - Files likely touched: version constants, `docs/releases/`, README.
    - Not in scope: publishing to rubygems.org.
 
-4. Run a qualitative dogfooding round on 3-5 real codebases.
+2. Run a qualitative dogfooding round on 3-5 real codebases.
    - Why now: this is the direction engine and rubygems.org exit criterion 2.
      Calibration counted findings; nobody has judged whether findings are
      worth reading. #31/#32 both came from a single afternoon on ctxpack.
@@ -182,7 +141,7 @@ burn a `1.0.0` signal on the first public push.
    - Files likely touched: `docs/` dogfooding notes, GitHub issues.
    - Not in scope: fixing what the round finds (that becomes the next queue).
 
-5. Verify the README quickstart end-to-end against a clean install.
+3. Verify the README quickstart end-to-end against a clean install.
    - Why now: rubygems.org exit criterion 3; the quickstart is the first
      impression a public release trades on.
    - Definition of done: follow the README from a clean environment (fresh
@@ -192,7 +151,7 @@ burn a `1.0.0` signal on the first public push.
    - Not in scope: restructuring the README beyond what the walkthrough
      demands.
 
-6. Run the rubygems.org release preflight.
+4. Run the rubygems.org release preflight.
    - Why now: final exit criterion once 1-5 are done; both gem names were
      unclaimed as of 2026-07-05 and name availability should not be assumed
      indefinitely.
@@ -205,43 +164,26 @@ burn a `1.0.0` signal on the first public push.
 
 ## Latest Slice Checkpoint
 
-Slice: 2026-07-05 Codex-delegated queue tasks 1-4 (test-hardening fixtures).
+Slice: 2026-07-05 fix #31 (Metz-only scan default) and #32 (Metrics
+shadowing), Codex-delegated (session `019f3482-9e80-7c01-abb2-a364d40bc546`,
+1h 51m, agenticons: helper workers plus required reviewer).
 
-Window: 2026-07-05 ~14:33-15:13 -0700, ~40m wall-clock: Codex task runtime
-34m 12s (session `019f3434-3ed8-7ec3-8fb1-bf23ae145220`), then independent
-review and tracker update in the orchestrating Claude session.
+What changed: `metz-scan scan` now defaults to `Metz/*` cops plus
+default-output project analyzers regardless of the scanned project's
+`.rubocop.yml` (`--force-default-config --enable-all-cops --only Metz`);
+`--all-cops` restores the full-suite behavior; auto-fix follows the same
+policy; `rubocop-metz/config/default.yml` disables the shadowed
+`Metrics/ClassLength`, `Metrics/MethodLength`, and `Metrics/ParameterLists`;
+README and scan help document the default. Note the tradeoff: in default mode
+a target project's own Metz threshold overrides are ignored — only
+`--all-cops` reads the project config.
 
-1. Added exact help fixture coverage for `bin/render_issue_comment_summary`.
-   - `test/fixtures/render_issue_comment_summary/help.txt` pins the full help
-     text, replacing substring assertions.
-2. Decoupled the #25 summary exact-output tests from the live tracker body.
-   - A dedicated `issue_25_tracker.md` fixture drives the #25 and
-     `dogfood-ci` alias tests through `RENDER_ISSUE_COMMENT_TRACKER_PATH`, so
-     tracker edits no longer risk breaking exact-output tests.
-3. Added default `$HOME/.gem/credentials` fallback coverage for package smoke.
-   - A subprocess test writes the default credentials file, leaves credential
-     env vars unset, and asserts redacted successful install output.
-4. Added CI parity failure-output coverage for the `next action:` line.
-   - The failure-path test now asserts both `clean clone preserved at` and
-     `next action:` with the failed command.
-5. Verification.
-   - Codex ran the three focused test files, targeted `--name` runs,
-     `bundle exec rake test:fast` (438 runs), `bundle exec rake test:slow`
-     (88 runs), full `bundle exec rubocop` (218 files), and
-     `git diff --check`, all passing; strategic validation gates and the
-     required design review were clean.
-   - Independent review in the orchestrating session reran all three focused
-     test files (18 runs, 136 assertions, 0 failures) and inspected the full
-     diff: test files and two fixtures only, no production changes, all
-     tracker "not in scope" boundaries respected.
-
-Agenticons used (inside the Codex task): two `helper_worker` investigations
-and one required `reviewer`.
-
-Also this slice: issues [#31](https://github.com/fuentesjr/metz-scan/issues/31)
-and [#32](https://github.com/fuentesjr/metz-scan/issues/32) were filed from
-ctxpack dogfooding and triaged into queue positions 1 and 2 — they are the
-concrete-defect trigger the package/release feedback watch was gated on.
+Verified: Codex ran focused tests, fast (439) and slow (97) suites, rubocop,
+strategic validation, and design review, all clean. Independent review reran
+the focused tests and both suites, read the full diff, and exercised the
+change behaviorally on a scratch project without `.rubocop.yml`: default scan
+reported exactly two Metz findings (no Style/Metrics noise), and `--all-cops`
+restored stock cops without Metrics duplicates.
 
 ## Parked / Not Next
 
@@ -253,8 +195,9 @@ concrete-defect trigger the package/release feedback watch was gated on.
   when a defect shows that exact missing fixture would have caught it.
 - Package/release feedback watch trigger has FIRED: ctxpack dogfooding filed
   #31 (default scan buries Metz findings) and #32 (Metz/Metrics duplicate
-  findings). Both are now queue tasks 1 and 2; the watch returns to
-  trigger-gated once they are fixed and released.
+  findings). Both fixes are implemented and verified locally; the watch
+  returns to trigger-gated once queue task 1 releases them and the issues are
+  closed.
 - #25 dogfood CI enforcement is trigger-gated. Reopen only when collaboration
   expands beyond owner plus Dependabot, when PRs regularly come from multiple
   people, or when CI-enforced dogfood drift becomes a deliberate policy goal.
@@ -277,7 +220,9 @@ concrete-defect trigger the package/release feedback watch was gated on.
 
 | Date | Commit | Summary |
 | --- | --- | --- |
-| 2026-07-05 | `this commit` | Added Codex-delegated queue tasks 1-4: exact render-summary help fixture, tracker-fixture decoupling for #25 exact output, default `$HOME/.gem/credentials` smoke coverage, parity `next action:` failure coverage, plus #31/#32 triage and tracker updates. |
+| 2026-07-05 | `this commit` | Fixed #31 (scan defaults to Metz/* cops with `--all-cops` opt-in) and #32 (default config disables shadowed Metrics cops), with README/help docs, test coverage, and tracker updates. |
+| 2026-07-05 | `574afb7` | Set the quality-gated rubygems.org direction: four exit criteria, outward-facing queue, coverage sweeps parked as a class, process-overhead standing rules. |
+| 2026-07-05 | `599a935` | Added Codex-delegated queue tasks 1-4: exact render-summary help fixture, tracker-fixture decoupling for #25 exact output, default `$HOME/.gem/credentials` smoke coverage, parity `next action:` failure coverage, plus #31/#32 triage and tracker updates. |
 | 2026-07-05 | `3fb5747` | Added `--print-baseline` read-only guard coverage, baseline help examples, target/analyzer baseline mismatch tests, exact `metz-scan project-analyzers` text fixture coverage, and tracker updates. |
 | 2026-07-05 | `b5f053f` | Added ProjectIndex missing-Rubydex subprocess coverage, deterministic Rubydex drift formatter fixtures, sample-app JSON drift fixture coverage, exact `--print-baseline` YAML fixture coverage, and tracker updates. |
 | 2026-07-05 | `8f65252` | Added the in-repo `metz-scan` consumer agent skill, README discoverability, skill metadata, freshness coverage, and tracker updates. |

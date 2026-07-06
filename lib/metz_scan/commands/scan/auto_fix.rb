@@ -64,7 +64,7 @@ module MetzScan
 
         def rubocop_argv(options)
           flag = options.unsafe ? UNSAFE_FLAG : SAFE_FLAG
-          ["--plugin", "rubocop-metz", flag, *options.paths]
+          ["--plugin", "rubocop-metz", *Runner.cop_selection_argv(options.all_cops), flag, *options.paths]
         end
 
         def capture_rubocop(argv)

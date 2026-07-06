@@ -39,6 +39,14 @@ module MetzScan
         assert_equal 0, code, "expected exit 0 on empty project (stderr: #{@stderr.string.inspect})"
       end
 
+      def test_help_documents_metz_default_and_all_cops_escape_hatch
+        code = run_scan(["--help"])
+
+        assert_equal 0, code
+        assert_includes @stdout.string, "Metz/* cops by default"
+        assert_includes @stdout.string, "--all-cops"
+      end
+
       private
 
       def run_scan(argv)
