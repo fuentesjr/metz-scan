@@ -9,6 +9,24 @@ Use `PROJECT_TRACKER.md` for the current direction, next queue, parked work, and
 latest checkpoint. Add new notes here only when a slice needs more durable
 detail than the tracker should carry.
 
+## 2026-07-06: #33 default scan excludes
+
+Task: GitHub issue #33 / tracker Next Queue task 1 — default Metz-only scans
+must honor target project `AllCops: Exclude` while keeping Metz cop defaults.
+
+Decision:
+
+- Split file selection from cop configuration. Default scan now asks RuboCop for
+  target files using the project config first, then invokes RuboCop on that
+  explicit file list with `--force-default-config --enable-all-cops --only
+  Metz`. This keeps project-level excludes without letting project cop
+  thresholds/disables override stock Metz defaults.
+- Project analyzers use the same project-config target-file helper in default
+  mode so wrapper-level findings do not reintroduce files RuboCop excluded.
+- Invalid project config still falls back to forced-default target discovery,
+  preserving the previous default-mode behavior of not failing on unreadable
+  project config.
+
 ## 2026-07-05: Dogfooding round on released 0.5.0
 
 Task: tracker Next Queue task 1 — qualitative dogfooding round, rubygems.org

@@ -140,6 +140,7 @@ module MetzScan
           DisabledByDefault: true
         Metz/MethodsTooLong:
           Enabled: false
+          Max: 200
       YAML
       METZ_VIOLATING_FIXTURE = <<~RUBY
         # frozen_string_literal: true
@@ -204,7 +205,7 @@ module MetzScan
       end
 
       def write_metz_violating_fixture
-        File.write(File.join(@tmpdir, "metz_violating.rb"), METZ_VIOLATING_FIXTURE)
+        File.write(metz_violating_path, METZ_VIOLATING_FIXTURE)
       end
 
       def write_disabling_project_config
@@ -219,6 +220,121 @@ module MetzScan
         JSON.parse(@stdout.string).fetch("files")
             .flat_map { |file| file.fetch("offenses") }
             .map { |offense| offense.fetch("cop_name") }
+      end
+
+      def metz_violating_path
+        File.join(@tmpdir, "metz_violating.rb")
+      end
+
+      def tmp_root
+        File.expand_path("../../../scan-test-tmp", __dir__)
+      end
+
+      def configure_rubocop_cache_root
+        @original_rubocop_cache_root = ENV.fetch("RUBOCOP_CACHE_ROOT", nil)
+        ENV["RUBOCOP_CACHE_ROOT"] = File.expand_path("../../../tmp/rubocop_cache", __dir__)
+      end
+
+      def restore_rubocop_cache_root
+        return ENV.delete("RUBOCOP_CACHE_ROOT") unless @original_rubocop_cache_root
+
+        ENV["RUBOCOP_CACHE_ROOT"] = @original_rubocop_cache_root
+      end
+    end
+
+    class ScanProjectExcludeTest < Minitest::Test
+      EXCLUDING_PROJECT_CONFIG = <<~YAML
+        AllCops:
+          Exclude:
+            - "lib/templates/**/*"
+      YAML
+      TEMPLATE_FIXTURE = "class <%= @name %> < ActiveRecord::Migration\nend\n"
+
+      def setup
+        @stdout = StringIO.new
+        @stderr = StringIO.new
+        configure_rubocop_cache_root
+        FileUtils.mkdir_p(tmp_root)
+        @tmpdir = Dir.mktmpdir("metz-scan-project-exclude-test", tmp_root)
+      end
+
+      def teardown
+        FileUtils.remove_entry(@tmpdir) if @tmpdir
+        FileUtils.rmdir(tmp_root) if File.directory?(tmp_root) && Dir.empty?(tmp_root)
+        restore_rubocop_cache_root
+      end
+
+      def test_default_scan_honors_project_all_cops_excludes_for_syntax_files
+        write_excluding_project_config
+        write_template_fixture
+        assert_default_scan_has_no_template_syntax_offenses
+      end
+
+      def test_default_scan_matches_all_cops_project_file_set
+        write_excluding_project_config
+        write_metz_violating_fixture
+        write_template_fixture
+        assert_default_and_all_cops_file_paths_match
+      end
+
+      private
+
+      def assert_default_scan_has_no_template_syntax_offenses
+        code = run_scan([@tmpdir, "--format", "json"])
+        assert_equal 0, code
+        refute_includes cop_names, "Lint/Syntax"
+        refute_includes file_paths, template_path
+      end
+
+      def assert_default_and_all_cops_file_paths_match
+        default_paths = scan_file_paths([@tmpdir, "--format", "json"])
+        all_cops_paths = scan_file_paths([@tmpdir, "--all-cops", "--format", "json"])
+        assert_equal all_cops_paths, default_paths
+        assert_equal [metz_violating_path], default_paths
+      end
+
+      def write_excluding_project_config
+        File.write(File.join(@tmpdir, ".rubocop.yml"), EXCLUDING_PROJECT_CONFIG)
+      end
+
+      def write_metz_violating_fixture
+        File.write(metz_violating_path, ScanCopSelectionTest::METZ_VIOLATING_FIXTURE)
+      end
+
+      def write_template_fixture
+        FileUtils.mkdir_p(File.dirname(template_path))
+        File.write(template_path, TEMPLATE_FIXTURE)
+      end
+
+      def run_scan(argv)
+        Scan.run(argv, stdout: @stdout, stderr: @stderr)
+      end
+
+      def scan_file_paths(argv)
+        @stdout = StringIO.new
+        @stderr = StringIO.new
+        code = run_scan(argv)
+        refute_equal 2, code
+        file_paths
+      end
+
+      def cop_names
+        JSON.parse(@stdout.string).fetch("files")
+            .flat_map { |file| file.fetch("offenses") }
+            .map { |offense| offense.fetch("cop_name") }
+      end
+
+      def file_paths
+        JSON.parse(@stdout.string).fetch("files")
+            .map { |file| File.expand_path(file.fetch("path")) }
+      end
+
+      def metz_violating_path
+        File.join(@tmpdir, "metz_violating.rb")
+      end
+
+      def template_path
+        File.join(@tmpdir, "lib/templates/migration.rb")
       end
 
       def tmp_root

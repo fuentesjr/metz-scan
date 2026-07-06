@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "rubocop"
-
 require_relative "../../analyzers/repeated_branching"
 require_relative "../../analyzers/service_soup"
 require_relative "../../analyzers/inheritance_descendants"
@@ -11,6 +9,7 @@ require_relative "../../analyzers/implicit_context_pressure"
 require_relative "../../analyzers/repeated_query_criteria"
 require_relative "../../analyzers/subclass_override_pressure"
 require_relative "../../project_index"
+require_relative "runner"
 require_relative "project_analyzer_metadata"
 require_relative "project_analyzer_offenses"
 
@@ -99,9 +98,9 @@ module MetzScan
         end
 
         def rubocop_target_files(paths, force_default_config: false)
-          store = RuboCop::ConfigStore.new
-          store.force_default_config! if force_default_config
-          RuboCop::TargetFinder.new(store, {}).find(paths, :all_file_types)
+          return TargetFileDiscovery.with_forced_defaults(paths) if force_default_config
+
+          TargetFileDiscovery.for_project_config(paths)
         end
 
         def merge_offenses(parsed, grouped_offenses)

@@ -197,13 +197,13 @@ module MetzScan
         assert_includes rubocop_cop_names, "MetzProject/RepeatedBranching"
       end
 
-      def test_default_scan_ignores_project_config_excludes_for_default_output_analyzers
+      def test_default_scan_respects_project_config_excludes_for_default_output_analyzers
         write_project_config_excluding_repeated_branching_files
         write_repeated_branching_files
         code = scan_without_project_analyzers
 
-        refute_equal 0, code
-        assert_includes rubocop_cop_names, "MetzProject/RepeatedBranching"
+        assert_equal 0, code
+        refute_includes rubocop_cop_names, "MetzProject/RepeatedBranching"
       end
 
       def test_all_cops_respects_project_config_excludes_for_default_output_analyzers
