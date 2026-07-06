@@ -9,6 +9,22 @@ Use `PROJECT_TRACKER.md` for the current direction, next queue, parked work, and
 latest checkpoint. Add new notes here only when a slice needs more durable
 detail than the tracker should carry.
 
+## 2026-07-06: #34 controller collaborators false positives
+
+Task: GitHub issue #34 / tracker Next Queue task 1 — reduce false
+collaborators and misleading action wording in
+`Metz/ControllersTooManyDirectCollaborators`.
+
+Decisions:
+
+- Kept `MaxCollaborators` unchanged; the dogfooding evidence justified
+  collaborator classification fixes, not threshold movement.
+- Reworded offenses to `Controller method` for all instance methods instead of
+  trying to infer Rails public actions from callback/private visibility.
+- Filtered constants only where the AST gives local evidence: rescue class
+  positions, constants defined directly on the enclosing controller class, and
+  a small framework/stdlib allowlist.
+
 ## 2026-07-06: #33 default scan excludes
 
 Task: GitHub issue #33 / tracker Next Queue task 1 — default Metz-only scans

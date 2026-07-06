@@ -183,6 +183,142 @@ class CopMetzControllersTooManyDirectCollaboratorsTest < Minitest::Test
     refute_offense(source, file: "app/controllers/widgets_controller.rb")
   end
 
+  def test_ignores_rescue_exception_classes
+    source = <<~RUBY
+      class ChatsController < ApplicationController
+        def set_chat
+          @chat = Current.user.chats.find(params[:chat_id])
+        rescue ActiveRecord::RecordNotFound
+          redirect_to root_path
+        end
+      end
+    RUBY
+
+    refute_offense(source, file: "app/controllers/chats_controller.rb")
+  end
+
+  def test_rescue_body_collaborators_still_count
+    source = <<~RUBY
+      class ChatsController < ApplicationController
+        def set_chat
+          @chat = Current.user.chats.find(params[:chat_id])
+        rescue ActiveRecord::RecordNotFound
+          AuditLog.warn("missing chat")
+        end
+      end
+    RUBY
+
+    metz_inspect(source, "app/controllers/chats_controller.rb")
+
+    assert_equal 1, controller_offenses.size
+    assert_match(/\(Current, AuditLog\)/, controller_offenses.first.message)
+    refute_match(/ActiveRecord::RecordNotFound/, controller_offenses.first.message)
+  end
+
+  def test_bare_rescue_body_collaborators_still_count
+    source = <<~RUBY
+      class ChatsController < ApplicationController
+        def set_chat
+          @chat = Current.user.chats.find(params[:chat_id])
+        rescue
+          AuditLog.warn("missing chat")
+        end
+      end
+    RUBY
+
+    metz_inspect(source, "app/controllers/chats_controller.rb")
+
+    assert_equal 1, controller_offenses.size
+    assert_match(/\(Current, AuditLog\)/, controller_offenses.first.message)
+  end
+
+  def test_ignores_constants_defined_on_the_controller
+    source = <<~RUBY
+      class CookiesController < ApplicationController
+        TAG_FILTER_COOKIE = "tag_filter"
+        VALID_COOKIE_KEY = /\\A[a-z_]+\\z/
+
+        def remove_unknown_cookies
+          cookies.each_key do |key|
+            cookies.delete(key) unless key == TAG_FILTER_COOKIE ||
+                                       key.match?(VALID_COOKIE_KEY)
+          end
+        end
+      end
+    RUBY
+
+    refute_offense(source, file: "app/controllers/cookies_controller.rb")
+  end
+
+  def test_ignores_qualified_constants_defined_on_the_controller
+    source = <<~RUBY
+      class CookiesController < ApplicationController
+        VALID_COOKIE_KEY = /\\A[a-z_]+\\z/
+
+        def remove_unknown_cookies
+          CookieJar.clean
+          cookies.delete(:unknown) unless CookiesController::VALID_COOKIE_KEY.match?("key")
+        end
+      end
+    RUBY
+
+    refute_offense(source, file: "app/controllers/cookies_controller.rb")
+  end
+
+  def test_qualified_external_constant_assignments_do_not_define_controller_constants
+    source = <<~RUBY
+      class UsersController < ApplicationController
+        ::FEATURE_FLAG = true
+
+        def show
+          FEATURE_FLAG
+          User.find(params[:id])
+        end
+      end
+    RUBY
+
+    metz_inspect(source, CONTROLLER_PATH)
+
+    assert_equal 1, controller_offenses.size
+    assert_match(/\(FEATURE_FLAG, User\)/, controller_offenses.first.message)
+  end
+
+  def test_ignores_framework_and_stdlib_constants
+    source = <<~RUBY
+      class DownloadsController < ApplicationController
+        def show
+          Rails.logger.info(SecureRandom.uuid)
+          Time.zone.today
+          File.exist?(params[:path])
+          Hash[params[:filters]]
+          Report.find(params[:id])
+        end
+      end
+    RUBY
+
+    refute_offense(source, file: "app/controllers/downloads_controller.rb")
+  end
+
+  def test_private_helper_offense_is_not_labeled_action
+    source = <<~RUBY
+      class ChatsController < ApplicationController
+        private
+
+        def set_chat
+          Current.user
+          Chat.find(params[:chat_id])
+        end
+      end
+    RUBY
+
+    metz_inspect(source, "app/controllers/chats_controller.rb")
+
+    assert_equal 1, controller_offenses.size
+    assert_match(/Controller method `set_chat` reaches into 2 direct collaborators/,
+                 controller_offenses.first.message)
+    refute_match(/\AAction `set_chat`/, controller_offenses.first.message)
+  end
+
   private
 
   def controller_offenses
