@@ -9,6 +9,30 @@ Use `PROJECT_TRACKER.md` for the current direction, next queue, parked work, and
 latest checkpoint. Add new notes here only when a slice needs more durable
 detail than the tracker should carry.
 
+## 2026-07-06: v0.5.1 release target prep
+
+Task: tracker Next Queue task 1 — release the #33/#34 fixes to GitHub Packages.
+
+Scope boundaries:
+
+- No behavior changes beyond version surfaces; the analyzer fixes already
+  landed in `d041d51` (#33) and `16824db` (#34).
+- Tagging and publishing wait for explicit release authorization; the local
+  prep is committed and pushed first, CI watched, then publish.
+
+Decisions:
+
+- Chose `0.5.1` (patch), not `0.6.0`: both shipped changes are pure defect
+  fixes that reduce false positives and misleading output, with no new
+  features or default-behavior change from `0.5.0`.
+- Bumped both gem version constants and the lockfile to `0.5.1`. The
+  `metz-scan.gemspec` dependency pin is `"~> #{MetzScan::VERSION}"`, so the
+  lockfile PATH constraint moved to `rubocop-metz (~> 0.5.1)` automatically.
+- Left the README install example at `~> 0.5.0`: it already resolves to
+  `0.5.1` and stays valid for the whole `0.5.x` line.
+- Drafted `docs/releases/v0.5.1.md` centered on #33/#34 with no migration
+  note.
+
 ## 2026-07-06: #34 controller collaborators false positives
 
 Task: GitHub issue #34 / tracker Next Queue task 1 — reduce false

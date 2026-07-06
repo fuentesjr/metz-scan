@@ -80,14 +80,16 @@ burn a `1.0.0` signal on the first public push.
 ## Current Snapshot
 
 - Date: 2026-07-06.
-- Latest pushed baseline: `5179431 Record the 0.5.0 dogfooding round and queue
-  the two headline-UX defects`.
-- CI state: the three most recent `main` runs, including the run for
-  `5179431`, all succeeded.
-- Release state: `v0.5.0` is tagged at `fb41288`, the GitHub Release is
-  published, both GitHub Packages gems are published, and
-  `bin/check_published_gem 0.5.0` passed. Issues #31 and #32 are closed with
-  release links. rubygems.org exit criterion 1 is met.
+- Latest pushed baseline: `16824db Fix #34: collaborators cop counts real
+  collaborators only`.
+- CI state: the five most recent `main` runs, including the runs for `d041d51`
+  (#33) and `16824db` (#34), all succeeded.
+- Release state: `v0.5.0` is published (tagged at `fb41288`, both GitHub
+  Packages gems published, `bin/check_published_gem 0.5.0` passed, #31/#32
+  closed with release links). The `0.5.1` target carrying the #33/#34 fixes is
+  prepared in this slice (version surfaces, lockfile, release notes) and pends
+  push, green CI, then GitHub Packages publish. rubygems.org exit criterion 1
+  is met.
 - Local branch state: everything through `fb41288` is pushed to
   `origin/main` with green CI (`28766729872`).
 - Dogfooding state: the released `0.5.0` gems were exercised against five
@@ -97,9 +99,9 @@ burn a `1.0.0` signal on the first public push.
   in `d041d51`; #34 `ControllersTooManyDirectCollaborators`
   miscounting/mislabeling in this slice). Full notes:
   `docs/dogfooding/2026-07-05-round-0.5.0.md`.
-- Latest checkpoint window: 2026-07-06: #33 fix, #34 filing and fix. Both
-  headline-UX defects from the dogfooding round are resolved; the next
-  release target forms around them.
+- Latest checkpoint window: 2026-07-06: #33 fix, #34 filing and fix, and the
+  `0.5.1` release-target prep carrying both. The next step is to publish
+  `0.5.1` to GitHub Packages, then rerun the dogfooding criterion on it.
 - Working tree expectation: keep tracked work clean before starting another
   slice; keep ignored `logs/` notes out of commits unless explicitly requested.
 
@@ -107,14 +109,14 @@ burn a `1.0.0` signal on the first public push.
 
 | Workstream | Status | Current State | Next Move |
 | --- | --- | --- | --- |
-| Release readiness | Complete | `v0.5.0` (the #31/#32 fixes) is tagged at `fb41288`, released on GitHub, published to GitHub Packages for both gems, and verified with `bin/check_published_gem 0.5.0`; issues #31/#32 are closed with release links. | The dogfooding round ran against the released `0.5.0` gems; next release target forms around the #33-class fixes. |
+| Release readiness | Active | `v0.5.0` is published and verified. The `0.5.1` target (the #33/#34 fixes) is prepared in this slice: both gem versions, lockfile, release-issue expectations, and `docs/releases/v0.5.1.md`. | Push, watch CI, then tag + GitHub Release + publish both gems to GitHub Packages, run `bin/check_published_gem 0.5.1`, and link #33/#34. |
 | Calibration artifact pipeline | Healthy | Markdown output, artifact write path, sample-app calibration smoke, the tracked target manifest under `docs/calibration/`, baseline-delta Markdown fixtures, compact baseline preview structure, exact `--print-baseline` YAML output, baseline scope mismatch checks, and help examples for scope-matched baseline workflows are covered. | Maintain; change only when artifact, target-manifest, or baseline-document behavior changes. |
 | Analyzer behavior | Parked | Fresh #27/#28 Mastodon and Discourse reruns did not show enough misleading or underexplained findings to justify behavior, threshold, or output-policy changes. | Reopen only with new generic evidence, not app-specific suppressions. |
 | Calibration evidence | Guarded | Redmine, Rubygems.org, ManageIQ, and Foreman evidence has been consolidated; Rubydex `0.2.7` was rechecked against the active manifest. Full active-manifest output is 697 findings/806 offenses; the four Rubydex-index-backed analyzers account for 607 findings/607 offenses. A compact Rubydex drift check covers those four analyzers, now with ProjectIndex missing-Rubydex subprocess coverage, missing-Rubydex skip-path coverage, exact sample-app text/JSON fixtures, and deterministic non-Rubydex formatter fixtures; `docs/calibration/project_analyzer_baseline.yml` captures the full active-manifest baseline for delta reporting. | Recheck only Rubydex-index-backed analyzers after future Rubydex upgrades unless an AST-only analyzer changes; use `--baseline-file docs/calibration/project_analyzer_baseline.yml` for full-manifest drift. |
 | Workflow friction | Guarded | The lockfile rewrite came from a stale path dependency entry in `Gemfile.lock`; the lockfile now matches the gemspec's `rubocop-metz (~> 0.4.0)` constraint, read-only maintenance commands have a tracked-worktree mutation guard plus a public command-listing mode, `--print-baseline` is in the default read-only guard list, the read-only command contract is documented in contributor/calibration/release docs, and `bin/check_ci_parity` runs tracker hygiene before Bundler work while preserving failed clean clones and printing `next action:` commands for inspection. | Maintain the guard list and docs as new read-only commands are added; do not bypass `BUNDLE_FROZEN=1` for read-only calibration checks. |
 | Sorbet adoption spike | Complete | Issue #26 was evaluated in a disposable workspace, documented, synced back to GitHub, and closed. The report recommends not adopting now: a narrow static setup is possible, but generated RBI churn, command policy, fixture scope, and runtime signature implications outweigh observed value. | Do not add Sorbet unless a concrete type-related defect, contributor ergonomics need, or stable public API typing requirement appears. |
 | Docs/adoption | Stable | README points contributors and agents to this tracker; old implementation notes are archived, current notes are short, and the Sorbet spike report records the tooling decision. The README now splits RepeatedBranching generic-subject guidance into a short list, the analyzer behavior details into per-analyzer subsections, package install troubleshooting points at `bin/check_published_gem`, parity failure inspection points at preserved clone/`next action:` output, the analyzer status table has freshness coverage, `skills/metz-scan/SKILL.md` gives agents consumer-facing usage guidance, and calibration docs point future Rubydex upgrades, filtered baselines, compact baseline previews, and parked issue updates at repeatable local commands. | Keep docs changes minimal and evidence-led. |
-| Path to rubygems.org | Active | Exit criterion 1 is met (`v0.5.0` released). Exit criterion 2 ran on 2026-07-05 and did not pass: five-codebase dogfooding found two headline-UX-class defects. Both are now fixed on `main` (#33 in `d041d51`, #34 in this slice). Findings-quality notes (no cop-offense summary, no legacy adoption path, cryptic generic branch subjects) are queue candidates, not blockers. | Prepare the next release with the #33/#34 fixes, then rerun the dogfooding criterion on the released gems. |
+| Path to rubygems.org | Active | Exit criterion 1 is met (`v0.5.0` released). Exit criterion 2 ran on 2026-07-05 and did not pass: five-codebase dogfooding found two headline-UX-class defects, both now fixed on `main` (#33 in `d041d51`, #34 in `16824db`). The `0.5.1` release carrying them is prepped this slice and pending publish. Findings-quality notes (no cop-offense summary, no legacy adoption path, cryptic generic branch subjects) are queue candidates, not blockers. | Publish `0.5.1`, then rerun the dogfooding criterion on the released gems. |
 | Test hardening | Done | Fixture/guard surface through `599a935` covers CLI text/JSON/help contracts, read-only guards, drift checks, package smoke, and CI parity output. Suite: 438 fast + 88 slow runs, all green. | Maintain only; new tests accompany behavior changes or defects, not coverage sweeps. |
 
 ## Next Queue
@@ -160,24 +162,23 @@ burn a `1.0.0` signal on the first public push.
 
 ## Latest Slice Checkpoint
 
-Slice: 2026-07-06 fix for #34 (`ControllersTooManyDirectCollaborators`
-miscounting and mislabeling), the second of the two dogfooding-round defects.
+Slice: 2026-07-06 `0.5.1` release-target prep, carrying the #33 and #34
+dogfooding-round fixes to a publishable release.
 
-What changed: the cop now ignores rescue-clause exception classes (rescue
-*bodies* still count), constants owned by the enclosing controller class
-(including qualified and `self::` assignments), and a small root-name
-framework/stdlib allowlist; the offense message says "Controller method"
-instead of mislabeling every def "Action"; regression tests cover each
-dogfooding spot check (Codex-delegated implementation, independently
-reviewed; a reviewer-found qualified-`casgn` undercount edge was fixed
-in-flight).
+What changed: both gem version constants and the lockfile moved to `0.5.1`
+(the gemspec's `"~> #{MetzScan::VERSION}"` pin carried the lockfile PATH
+constraint to `~> 0.5.1` automatically); the release-issue dry-run
+expectations moved to `0.5.1`; `docs/releases/v0.5.1.md` drafted around the
+two bug fixes with no migration note. Chose patch (`0.5.1`) over minor: both
+changes are pure false-positive/mislabel fixes with no default-behavior
+change from `0.5.0`. README install example left at `~> 0.5.0` (already
+resolves to `0.5.1`).
 
-Verified: focused cop tests (20 runs), full fast suite, rubocop, and a live
-CLI spot check — the maybe-style `set_chat` (`Current` + `rescue
-ActiveRecord::RecordNotFound`) is now silent where 0.5.0 reported 2
-collaborators.
+Verified: (to record with the completion commit) full suite, rubocop, guard
+scripts, `gem build` for both gems, and `bin/check_ci_parity` against a clean
+clone.
 
-Surprising: nothing — the fix landed on the surface the issue predicted.
+Surprising: nothing.
 
 ## Parked / Not Next
 
@@ -212,7 +213,8 @@ Surprising: nothing — the fix landed on the surface the issue predicted.
 
 | Date | Commit | Summary |
 | --- | --- | --- |
-| 2026-07-06 | `this commit` | Fixed #34: the collaborators cop no longer counts rescue classes, own constants, or core stdlib names, and no longer labels every method "Action"; regression tests per dogfooding spot check. |
+| 2026-07-06 | `this commit` | Prepared the `0.5.1` release target carrying the #33/#34 fixes: bumped both gem versions and the lockfile, moved release-issue expectations to `0.5.1`, and drafted `docs/releases/v0.5.1.md`. |
+| 2026-07-06 | `16824db` | Fixed #34: the collaborators cop no longer counts rescue classes, own constants, or core stdlib names, and no longer labels every method "Action"; regression tests per dogfooding spot check. |
 | 2026-07-06 | `d041d51` | Fixed #33 (default scan honors project `AllCops: Exclude` while forcing Metz defaults) with regression tests, and filed #34 for the collaborators-cop miscounting. |
 | 2026-07-05 | `5179431` | Ran the first qualitative dogfooding round on released `0.5.0` across five codebases; filed #33, drafted the collaborators-cop issue, recorded rubric notes, and rebuilt the queue around the two headline-UX defects. |
 | 2026-07-05 | `46cc9b5` | Recorded `v0.5.0` release completion: tag, GitHub Release, GitHub Packages publish for both gems, post-publish smoke, and #31/#32 release links. |
