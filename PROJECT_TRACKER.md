@@ -108,7 +108,6 @@ burn a `1.0.0` signal on the first public push.
 | Docs/adoption | Stable | README points contributors and agents to this tracker; old implementation notes are archived, current notes are short, and the Sorbet spike report records the tooling decision. The README now splits RepeatedBranching generic-subject guidance into a short list, the analyzer behavior details into per-analyzer subsections, package install troubleshooting points at `bin/check_published_gem`, parity failure inspection points at preserved clone/`next action:` output, the analyzer status table has freshness coverage, `skills/metz-scan/SKILL.md` gives agents consumer-facing usage guidance, and calibration docs point future Rubydex upgrades, filtered baselines, compact baseline previews, and parked issue updates at repeatable local commands. | Keep docs changes minimal and evidence-led. |
 | Path to rubygems.org | Active | Direction set 2026-07-05: quality-gated public release with four concrete exit criteria (see Current Direction). Both gem names verified unclaimed on rubygems.org. Exit criterion 1 is met: the #31/#32 fixes are released as `v0.5.0` on GitHub Packages. | Work queue tasks 1-3 in order: dogfooding round, quickstart verification, release preflight. |
 | Test hardening | Done | Fixture/guard surface through `599a935` covers CLI text/JSON/help contracts, read-only guards, drift checks, package smoke, and CI parity output. Suite: 438 fast + 88 slow runs, all green. | Maintain only; new tests accompany behavior changes or defects, not coverage sweeps. |
-| Handoff continuity | Active | Local ignored handoff `.handoffs/20260703173813_next_four_tasks_after_issue_sync.md` captures the pushed issue-sync summary, conversation-only requirements, and the next four evidence-gated tasks. | Use it as the first continuation surface if context resets in this workspace; do not commit handoff files. |
 
 ## Next Queue
 
@@ -258,8 +257,6 @@ before tagging, and `bin/check_published_gem 0.5.0` post-publish.
 - Published `v0.5.0` release notes: `docs/releases/v0.5.0.md`.
 - Published `v0.4.0` release notes: `docs/releases/v0.4.0.md`.
 - Sorbet adoption spike: `docs/spikes/sorbet-issue-26.md`.
-- Local ignored handoff, not committed:
-  `.handoffs/20260703173813_next_four_tasks_after_issue_sync.md`.
 - Candidate analyzer summary: `docs/sandi-metz-project-analyzer-candidates.md`.
 - Release process: `RELEASE_CHECKLIST.md`.
 - Local ignored strategy scratchpad: `logs/repeated-query-criteria-strategy-review.md`.
