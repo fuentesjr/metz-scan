@@ -155,34 +155,33 @@ burn a `1.0.0` signal on the first public push.
 
 ## Latest Slice Checkpoint
 
-Slice: 2026-07-07 #37 default scans honor project per-cop Exclude (fixes
-`bin/check_dogfood` red on `main`, former Next Queue task 3).
+Slice: 2026-07-07 testing-discipline cop design spec (user-requested direction
+addition).
 
-What changed: default (Metz-only) mode now honors the project's per-cop file
-*scope* (`Metz/*: Exclude`) the same way #33 honors `AllCops: Exclude`, while
-still forcing Metz cop *tuning* (thresholds/enablement/severity) to stock
-defaults. New `ProjectCopScope.honor` in
-`lib/metz_scan/commands/scan/runner.rb` post-filters default-mode offenses by
-the project config's per-cop scope and recomputes `summary.offense_count`;
-`--all-cops` is untouched. Removed the inert `Metz/DemeterTrainWreck` test-tree
-exclude from `.rubocop.yml` (0 offenses there) so the config documents "only
-length cops are exempt on tests; coupling stays enforced." README documents the
-scope-vs-tuning contract. Filed #37.
+What changed: added `docs/design/testing-cops.md` — the specification for a
+`Metz/Test*` cop family so a Metz-branded linter encodes Sandi's *testing*
+rules, not only her design rules. Detectability-first (the governing
+constraint): most of her message-origin matrix is not statically detectable, so
+the catalog is the AST-detectable smell subset (Tier 1: `TestReachesPrivate`,
+`TestAssertsOnInternals`, `TestStubsSubject`, candidate `TestTooManyAssertions`)
+plus Rubydex-index-backed visibility rules (Tier 2: `TestCallsPrivateMethod`),
+with explicit non-goals for the undetectable rules. Both Minitest and RSpec via
+framework-neutral rules + pluggable matchers. Tracker records this as a
+deliberate direction addition; implementation is deferred to **after the first
+public release**, then cop-by-cop with per-cop dogfooding.
 
-Verified: red-green `ScanProjectPerCopExcludeTest` (scope honored + thresholds
-forced; granularity: a `DemeterTrainWreck` smell in a length-excluded spec
-still reports); `bin/check_dogfood` PASS on `scan .` unchanged; `bundle exec
-rubocop` clean (219 files); full `rake` + `bin/check_ci_parity` before push.
+Verified: spec/tracker/docs only, no code — fast suite + tracker hygiene +
+`bin/check_ci_parity` before push.
 
-Surprising: the fix flushed out three real Metz offenses in this slice's own
-new code (test methods >5 lines, the runner methods >5 lines, and the `Runner`
-module >100 lines) — `lib/` and `test/metz_scan/**` are held to Metz standards,
-so the dogfood forced the new code to comply (extract-a-module + ≤5-line
-methods). That is the discipline working, not a snag.
+Surprising: the "we missed this" framing didn't hold up — the six existing cops
+are design cops that apply to any file; testing cops are a distinct, harder
+category because the canonical Sandi rules need message-origin/visibility
+semantics a single-file AST lacks. The spec is built around that constraint
+rather than the book's taxonomy.
 
-Decision recorded (was the task-3 fork): per-cop `Exclude` is file *scope*, not
-*tuning*, so ignoring it was a #33-class defect, not intended behavior. Full
-rationale in `implementation-notes.md`.
+Prior slice (`847c478`): #37 — default scans honor project per-cop `Exclude`
+(file scope), fixing `bin/check_dogfood` red on `main`. Rationale in
+`implementation-notes.md`.
 
 ## Parked / Not Next
 
@@ -212,12 +211,21 @@ rationale in `implementation-notes.md`.
 - Do not implement generic classifier behavior until a design-only proposal
   proves generic, non-app-specific facts can separate useful design pressure
   from public extension surfaces.
+- Testing-discipline cops (`Metz/Test*`) are **spec'd and roadmapped, not
+  parked-forever**: `docs/design/testing-cops.md` is the specification. This is
+  a deliberate direction addition — a Metz-branded linter should encode Sandi's
+  testing rules, not only her design rules. Implementation is deferred to
+  **after the first public release** (to keep the v1 surface stable) and then
+  proceeds cop-by-cop, each earning default output only through per-cop
+  dogfooding. Do not start implementing before release; do not attempt the
+  documented non-goals (undetectable message-origin rules).
 
 ## Recently Completed
 
 | Date | Commit | Summary |
 | --- | --- | --- |
-| 2026-07-07 | `this commit` | Fixed #37: default (Metz-only) scans now honor the project's per-cop `Exclude` (file scope) like #33 honors `AllCops: Exclude`, while still forcing Metz tuning; extracted `ProjectCopScope`, removed an inert `DemeterTrainWreck` test exclude, documented the scope-vs-tuning contract, and resolved `bin/check_dogfood` red on `main` (former Next Queue task 3) with red-green tests. |
+| 2026-07-07 | `this commit` | Specced the testing-discipline cop family (`docs/design/testing-cops.md`): a deliberate direction addition so a Metz-branded linter encodes Sandi's testing rules, not only her design rules. Detectability-first catalog (AST-only Tier 1 + Rubydex-index Tier 2), both frameworks, explicit non-goals, calibration/dogfooding plan, and post-release cop-by-cop rollout. Spec only; no cop code. |
+| 2026-07-07 | `847c478` | Fixed #37: default (Metz-only) scans now honor the project's per-cop `Exclude` (file scope) like #33 honors `AllCops: Exclude`, while still forcing Metz tuning; extracted `ProjectCopScope`, removed an inert `DemeterTrainWreck` test exclude, documented the scope-vs-tuning contract, and resolved `bin/check_dogfood` red on `main` (former Next Queue task 3) with red-green tests. |
 | 2026-07-06 | `a4eb569` | Made the agent workspace dual-agent: canonical `CLAUDE.md` brief, four maintainer skills under `.claude/skills/`, `.agents/skills` symlink for Codex discovery, `AGENTS.md` router, operator playbook, goal backlog, and a routing freshness test. |
 | 2026-07-06 | `554b89b` | Recorded `v0.5.1` release completion: tag at `3ec8f29`, GitHub Release, GitHub Packages publish for both gems, `bin/check_published_gem 0.5.1` PASS, and #33/#34 release-link comments. |
 | 2026-07-06 | `3ec8f29` | Prepared the `0.5.1` release target carrying the #33/#34 fixes: bumped both gem versions and the lockfile, moved release-issue expectations to `0.5.1`, and drafted `docs/releases/v0.5.1.md`. |
@@ -291,5 +299,6 @@ rationale in `implementation-notes.md`.
 - Published `v0.4.0` release notes: `docs/releases/v0.4.0.md`.
 - Sorbet adoption spike: `docs/spikes/sorbet-issue-26.md`.
 - Candidate analyzer summary: `docs/sandi-metz-project-analyzer-candidates.md`.
+- Testing-discipline cop design spec: `docs/design/testing-cops.md`.
 - Release process: `RELEASE_CHECKLIST.md`.
 - Local ignored strategy scratchpad: `logs/repeated-query-criteria-strategy-review.md`.
