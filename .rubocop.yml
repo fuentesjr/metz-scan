@@ -66,10 +66,6 @@ Metz/ClassesTooLong:
   Exclude:
 <%= emit_test_excludes.call %>
 
-Metz/DemeterTrainWreck:
-  Exclude:
-<%= emit_test_excludes.call(extra: "test/fixtures/sample_app/**/*") %>
-
 Metrics/ModuleLength:
   Exclude:
 <%= emit_test_excludes.call %>

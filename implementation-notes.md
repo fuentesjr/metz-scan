@@ -9,47 +9,50 @@ Use `PROJECT_TRACKER.md` for the current direction, next queue, parked work, and
 latest checkpoint. Add new notes here only when a slice needs more durable
 detail than the tracker should carry.
 
-## 2026-07-06: FINDING — bin/check_dogfood red on main (unfixed, queued)
+## 2026-07-06: #37 default scans honor project per-cop Exclude (fixes check_dogfood red)
 
-Status: not fixed; tracker Next Queue task 3. Recorded for the next session.
+Task: tracker Next Queue task 3 — resolve `bin/check_dogfood` red on `main`,
+recording an explicit intended-vs-defect decision.
 
-Symptom: `bin/check_dogfood` exits 1 with "non-project-analyzer offenses
-found" — hundreds of `Metz/MethodsTooLong` and `Metz/ClassesTooLong` offenses,
-all in `rubocop-metz/test/**` and `test/metz_scan/**` files (e.g.
-`rubocop-metz/test/cop/metz/controllers_too_many_direct_collaborators_test.rb`
-at [266/100] class length). Repro: `bin/check_dogfood` on a clean checkout of
-`main` (requires the optional rubydex bundle group).
+Decision: **defect.** Per-cop `Metz/*: Exclude` is file *scope*, not cop
+*tuning*, so default mode should honor it the same way #33 honors
+`AllCops: Exclude`. The distinction that resolves the whole fork: default mode
+overrides *tuning* (Max/Enabled/Severity) but honors *scope* (Include/Exclude).
+#33 already committed to honoring scope at the AllCops level; per-cop `Exclude`
+is the same file-scoping mechanism at finer granularity, and it matches Sandi
+Metz's intent (the length rules target production code, not arrange-act-assert
+tests with embedded fixtures). Honoring it grants no new hiding power users did
+not already have via `AllCops: Exclude`. Filed as #37 (user-approved).
 
-Pre-existing, not introduced by the dual-agent slice: verified 2026-07-06 by
-stashing the working tree and rerunning on clean `554b89b` — identical
-failure. It went unnoticed because neither `.github/workflows/ci.yml` nor
-`bin/check_ci_parity` runs `check_dogfood`; only README "Contributing" and the
-land-slice skill gauntlet do.
+Root cause (was): default mode resolves target files with the project config
+(honoring `AllCops: Exclude`, per #33) but ran RuboCop with
+`--force-default-config --enable-all-cops --only Metz`, discarding *per-cop*
+config including `Exclude`. This repo excludes its test trees from
+`Metz/MethodsTooLong`/`Metz/ClassesTooLong` per-cop, so the dogfood scan
+reported 90 offenses, all in test files.
 
-Root cause: `bin/check_dogfood:8` runs `metz-scan scan . --project-analyzers`
-in default Metz-only mode. Since the #33 fix (`d041d51`), default mode selects
-target files with the project config (honoring `AllCops: Exclude`) but then
-invokes RuboCop with `--force-default-config --enable-all-cops --only Metz`
-(`lib/metz_scan/commands/scan/runner.rb`), which discards *per-cop* config —
-including per-cop `Exclude` lists. This repo's `.rubocop.yml` excludes its
-test trees from `Metz/MethodsTooLong`/`Metz/ClassesTooLong` per-cop (the ERB
-`test_excludes` block), not under `AllCops: Exclude`, so the dogfood scan now
-reports them.
+Fix: `lib/metz_scan/commands/scan/runner.rb` — in default mode only, post-filter
+offenses through a new `ProjectCopScope.honor`, dropping any `(cop, file)` pair
+the project config scopes off (RuboCop's own `Cop.new(project_config)
+.excluded_file?`), then recomputing `summary.offense_count`. Invalid project
+config → no filtering (matches the target-discovery fallback). `--all-cops` is
+unchanged (already honors the full project config). Extracted into its own
+module to keep `Runner` under `Metrics/ModuleLength`.
 
-Decision the fix must make (either way, record it):
+Granularity is the point and is test-locked: a coupling smell in a
+length-excluded spec still reports (`DemeterTrainWreck`), so we keep the Metz
+opinions Sandi holds about test code while dropping the length noise.
 
-- If ignoring per-cop `Exclude` is intended #33 behavior: fix the guard side —
-  e.g. point `check_dogfood` at the product surfaces (`lib`, `rubocop-metz/lib`,
-  `bin`) instead of `.`, or restructure the repo config. Do NOT move the test
-  trees under `AllCops: Exclude`; that would stop `bundle exec rubocop` from
-  linting them at all.
-- If it is a user-facing defect: per-cop `Exclude` is file selection, not a
-  threshold/disable — arguably it should be honored in default mode just like
-  `AllCops: Exclude`, while thresholds stay forced. Then this is a #33
-  follow-up: file an issue (needs user approval), red-green fix in
-  `runner.rb`'s target-file/config split, and judge the behavior against real
-  projects in the next dogfooding round (any target using per-cop excludes
-  hits this).
+Also cleaned an inert exclude: `.rubocop.yml` no longer lists
+`Metz/DemeterTrainWreck` in the test-tree exclude set (verified 0 offenses
+there), so the config documents "only the length cops are exempt on tests;
+coupling stays enforced."
+
+Verification: new red-green tests in
+`test/metz_scan/commands/scan_test.rb::ScanProjectPerCopExcludeTest`;
+`bin/check_dogfood` PASS on `scan .` unchanged; `bundle exec rubocop` clean
+(219 files). User-facing behavior change — release-worthy, noted for the next
+release; not bumped/tagged in this slice.
 
 ## 2026-07-06: Dual-agent workspace (Claude Code + OpenAI/Codex)
 

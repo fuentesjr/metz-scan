@@ -352,5 +352,124 @@ module MetzScan
         ENV["RUBOCOP_CACHE_ROOT"] = @original_rubocop_cache_root
       end
     end
+
+    # Default (Metz-only) mode honors the project's per-cop file *scope*
+    # (Include/Exclude) just as #33 made it honor AllCops: Exclude, while still
+    # forcing Metz cop *tuning* (Max/Enabled/Severity) to stock defaults. See #37.
+    class ScanProjectPerCopExcludeTest < Minitest::Test
+      # Loosens the threshold (must be ignored) and scopes the length cop off
+      # spec files (must be honored) in a single config.
+      EXCLUDE_AND_LOOSEN_CONFIG = <<~YAML
+        Metz/MethodsTooLong:
+          Max: 200
+          Exclude:
+            - "spec/**/*"
+      YAML
+      # Scopes only the length cop off spec files; the coupling cop stays on.
+      EXCLUDE_LENGTH_ONLY_CONFIG = <<~YAML
+        Metz/MethodsTooLong:
+          Exclude:
+            - "spec/**/*"
+      YAML
+      LONG_METHOD_FIXTURE = ScanCopSelectionTest::METZ_VIOLATING_FIXTURE
+      # Long (trips MethodsTooLong) AND reaches through an object graph (trips
+      # DemeterTrainWreck), proving per-cop exclusion is granular: excluding the
+      # length cop must not silence the coupling cop Sandi keeps on tests.
+      LONG_AND_COUPLED_SPEC_FIXTURE = <<~RUBY
+        # frozen_string_literal: true
+        class SampleSpec
+          def exercises_behavior
+            a = 1
+            b = 2
+            c = 3
+            d = 4
+            name = user.account.subscription.plan.name
+            [a, b, c, d, name]
+          end
+        end
+      RUBY
+
+      def setup
+        @stdout = StringIO.new
+        @stderr = StringIO.new
+        configure_rubocop_cache_root
+        FileUtils.mkdir_p(tmp_root)
+        @tmpdir = Dir.mktmpdir("metz-scan-per-cop-exclude-test", tmp_root)
+      end
+
+      def teardown
+        FileUtils.remove_entry(@tmpdir) if @tmpdir
+        FileUtils.rmdir(tmp_root) if File.directory?(tmp_root) && Dir.empty?(tmp_root)
+        restore_rubocop_cache_root
+      end
+
+      THRESHOLD_FORCED_MSG = "threshold must stay forced for non-excluded files"
+      SCOPE_HONORED_MSG = "per-cop Exclude must scope the length cop off spec files"
+      LENGTH_EXCLUDED_MSG = "the length cop is excluded on spec files"
+      COUPLING_KEPT_MSG = "a coupling smell in a length-excluded spec must still report"
+
+      def test_default_scan_honors_per_cop_exclude_while_forcing_thresholds
+        write_config(EXCLUDE_AND_LOOSEN_CONFIG)
+        write_fixture("app.rb", LONG_METHOD_FIXTURE)
+        write_fixture("spec/thing_spec.rb", LONG_METHOD_FIXTURE)
+        assert_scope_honored_and_thresholds_forced
+      end
+
+      def test_per_cop_exclude_is_granular_and_keeps_the_coupling_cop
+        write_config(EXCLUDE_LENGTH_ONLY_CONFIG)
+        write_fixture("spec/thing_spec.rb", LONG_AND_COUPLED_SPEC_FIXTURE)
+        assert_length_excluded_but_coupling_reported
+      end
+
+      private
+
+      def assert_scope_honored_and_thresholds_forced
+        run_scan([@tmpdir, "--format", "json"])
+        assert_includes cops_for("app.rb"), "Metz/MethodsTooLong", THRESHOLD_FORCED_MSG
+        refute_includes cops_for("spec/thing_spec.rb"), "Metz/MethodsTooLong", SCOPE_HONORED_MSG
+      end
+
+      def assert_length_excluded_but_coupling_reported
+        run_scan([@tmpdir, "--format", "json"])
+        cops = cops_for("spec/thing_spec.rb")
+        refute_includes cops, "Metz/MethodsTooLong", LENGTH_EXCLUDED_MSG
+        assert_includes cops, "Metz/DemeterTrainWreck", COUPLING_KEPT_MSG
+      end
+
+      def write_config(yaml)
+        File.write(File.join(@tmpdir, ".rubocop.yml"), yaml)
+      end
+
+      def write_fixture(relative_path, contents)
+        path = File.join(@tmpdir, relative_path)
+        FileUtils.mkdir_p(File.dirname(path))
+        File.write(path, contents)
+      end
+
+      def run_scan(argv)
+        Scan.run(argv, stdout: @stdout, stderr: @stderr)
+      end
+
+      def cops_for(path_suffix)
+        JSON.parse(@stdout.string).fetch("files")
+            .select { |file| file.fetch("path").end_with?(path_suffix) }
+            .flat_map { |file| file.fetch("offenses").map { |offense| offense.fetch("cop_name") } }
+      end
+
+      def tmp_root
+        File.expand_path("../../../scan-test-tmp", __dir__)
+      end
+
+      def configure_rubocop_cache_root
+        @original_rubocop_cache_root = ENV.fetch("RUBOCOP_CACHE_ROOT", nil)
+        ENV["RUBOCOP_CACHE_ROOT"] = File.expand_path("../../../tmp/rubocop_cache", __dir__)
+      end
+
+      def restore_rubocop_cache_root
+        return ENV.delete("RUBOCOP_CACHE_ROOT") unless @original_rubocop_cache_root
+
+        ENV["RUBOCOP_CACHE_ROOT"] = @original_rubocop_cache_root
+      end
+    end
   end
 end

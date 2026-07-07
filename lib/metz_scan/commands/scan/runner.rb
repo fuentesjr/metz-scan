@@ -20,8 +20,13 @@ module MetzScan
             paths = inspection_paths(paths, all_cops: all_cops)
             return empty_report if paths.empty?
 
-            parse_output(capture_output(rubocop_argv(paths, all_cops: all_cops)))
+            scan(paths, all_cops: all_cops)
           end
+        end
+
+        def self.scan(paths, all_cops:)
+          report = parse_output(capture_output(rubocop_argv(paths, all_cops: all_cops)))
+          all_cops ? report : ProjectCopScope.honor(report)
         end
 
         def self.with_errors
@@ -44,7 +49,7 @@ module MetzScan
         def self.inspection_paths(paths, all_cops:)
           return paths if all_cops
 
-          target_files_for_project_config(paths).map { |path| display_path(path) }
+          TargetFileDiscovery.for_project_config(paths).map { |path| display_path(path) }
         end
 
         def self.cop_selection_argv(all_cops)
@@ -129,9 +134,43 @@ module MetzScan
 
           expanded_path
         end
+      end
 
-        def self.target_files_for_project_config(paths)
-          TargetFileDiscovery.for_project_config(paths)
+      # Default mode forces stock Metz *tuning* (--force-default-config) but must
+      # still honor the project's per-cop file *scope* (Include/Exclude), the
+      # same way #33 honors AllCops: Exclude. RuboCop's own excluded_file?
+      # resolves the project config's scope per cop; offenses on files a cop is
+      # scoped off are dropped here. Invalid project config -> nothing to honor
+      # (matches the forced-default target-discovery fallback). See #37.
+      module ProjectCopScope
+        module_function
+
+        def honor(report)
+          store = RuboCop::ConfigStore.new
+          files = Array(report["files"]).map { |file| reject_scoped_off(store, file) }
+          recount(report.merge("files" => files))
+        rescue RuboCop::Error, Psych::Exception
+          report
+        end
+
+        def reject_scoped_off(store, file)
+          absolute = File.expand_path(file.fetch("path"))
+          kept = Array(file["offenses"]).reject { |o| scoped_off?(store, o.fetch("cop_name"), absolute) }
+          file.merge("offenses" => kept)
+        end
+
+        def scoped_off?(store, cop_name, absolute_path)
+          cop_class = RuboCop::Cop::Registry.global.find_by_cop_name(cop_name)
+          return false unless cop_class
+
+          cop_class.new(store.for_file(absolute_path)).excluded_file?(absolute_path)
+        end
+
+        def recount(report)
+          return report unless report["summary"]
+
+          count = Array(report["files"]).sum { |file| Array(file["offenses"]).size }
+          report.merge("summary" => report["summary"].merge("offense_count" => count))
         end
       end
 
