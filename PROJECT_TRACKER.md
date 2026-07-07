@@ -151,6 +151,8 @@ burn a `1.0.0` signal on the first public push.
      intended behavior (then the repo config or the check adapts) or a defect
      (then it gets an issue and a fix with regression tests).
    - Not in scope: changing analyzer thresholds or default-output policy.
+   - Full diagnostic record (symptom, repro, root cause, fix fork):
+     `implementation-notes.md` "2026-07-06: FINDING — bin/check_dogfood red".
 
 4. Run the rubygems.org release preflight.
    - Why now: final exit criterion once 1-2 are done; both gem names were
