@@ -80,16 +80,17 @@ burn a `1.0.0` signal on the first public push.
 ## Current Snapshot
 
 - Date: 2026-07-07.
-- Latest pushed baseline: `3ec8f29 Prepare 0.5.1 release target`.
-- CI state: the most recent `main` runs, including the run for `3ec8f29`
-  (`28820485515`), all succeeded.
+- Latest pushed baseline: `d9f92e4 Revise the testing-cops spec after review`.
+- CI state: the most recent `main` runs, including the run for `d9f92e4`
+  (`28904608653`), all succeeded.
 - Release state: `v0.5.1` is published — tagged at `3ec8f29`, GitHub Release
   cut, both GitHub Packages gems published (`rubocop-metz` before `metz-scan`),
   and `bin/check_published_gem 0.5.1` passed against a clean consumer install.
   Issues #33 and #34 are closed with release-link comments. `v0.5.0` remains
   published; rubygems.org exit criterion 1 stays met.
-- Local branch state: everything through `fb41288` is pushed to
-  `origin/main` with green CI (`28766729872`).
+- Local branch state: everything through `d9f92e4` is pushed to
+  `origin/main` with green CI (`28904608653`); the `0.5.2` release-target prep
+  slice is prepared locally and not yet committed.
 - Dogfooding state: the released `0.5.0` gems were exercised against five
   real codebases (lobsters, huginn, maybe, redmine, rubygems.org) on
   2026-07-05. Exit criterion 2 did not pass: two headline-UX-class defects
@@ -100,9 +101,10 @@ burn a `1.0.0` signal on the first public push.
 - Latest checkpoint window: 2026-07-06: #33 fix, #34 filing and fix, and the
   `0.5.1` release carrying both. 2026-07-07: #37 — default scans now honor
   project per-cop `Exclude` (file scope), which fixed `bin/check_dogfood` red on
-  `main` (former task 3). This is a user-facing behavior change carried into the
-  next release. The next step is to rerun the dogfooding criterion on the
-  released gems (with the #37 behavior in the release candidate).
+  `main` (former task 3); then the `0.5.2` release target was prepared to carry
+  #37 (both gems bumped 0.5.1 → 0.5.2, lockfile pin, release-issue expectations,
+  `docs/releases/v0.5.2.md`). The publish/tag/GitHub Release remain gated on user
+  authorization; once released, rerun the dogfooding criterion against those gems.
 - Working tree expectation: keep tracked work clean before starting another
   slice; keep ignored `logs/` notes out of commits unless explicitly requested.
 
@@ -110,19 +112,20 @@ burn a `1.0.0` signal on the first public push.
 
 | Workstream | Status | Current State | Next Move |
 | --- | --- | --- | --- |
-| Release readiness | Behavior change pending release | `v0.5.1` (the #33/#34 fixes) is published and verified. Since then, #37 (default scans honor project per-cop `Exclude`) landed on `main` unreleased — a user-facing behavior change the next release must carry. | Cut the next release target carrying #37 (own decision + authorization), then rerun the dogfooding criterion (exit criterion 2) against those gems. |
+| Release readiness | Release target prepared, publish gated | `v0.5.1` (the #33/#34 fixes) is published and verified. The `0.5.2` release target carrying #37 (default scans honor per-cop `Exclude`) is prepared on the working tree (versions, lockfile pin, release-issue expectations, `docs/releases/v0.5.2.md`); full suite + rubocop green. Not yet committed/tagged/published. | Commit the prep slice, run `bin/check_ci_parity`, then get user authorization to tag/publish `v0.5.2`; then rerun the dogfooding criterion (exit criterion 2) against those gems. |
 | Calibration artifact pipeline | Healthy | Markdown output, artifact write path, sample-app calibration smoke, the tracked target manifest under `docs/calibration/`, baseline-delta Markdown fixtures, compact baseline preview structure, exact `--print-baseline` YAML output, baseline scope mismatch checks, and help examples for scope-matched baseline workflows are covered. | Maintain; change only when artifact, target-manifest, or baseline-document behavior changes. |
 | Analyzer behavior | Parked | Fresh #27/#28 Mastodon and Discourse reruns did not show enough misleading or underexplained findings to justify behavior, threshold, or output-policy changes. | Reopen only with new generic evidence, not app-specific suppressions. |
 | Calibration evidence | Guarded | Redmine, Rubygems.org, ManageIQ, and Foreman evidence has been consolidated; Rubydex `0.2.7` was rechecked against the active manifest. Full active-manifest output is 697 findings/806 offenses; the four Rubydex-index-backed analyzers account for 607 findings/607 offenses. A compact Rubydex drift check covers those four analyzers, now with ProjectIndex missing-Rubydex subprocess coverage, missing-Rubydex skip-path coverage, exact sample-app text/JSON fixtures, and deterministic non-Rubydex formatter fixtures; `docs/calibration/project_analyzer_baseline.yml` captures the full active-manifest baseline for delta reporting. | Recheck only Rubydex-index-backed analyzers after future Rubydex upgrades unless an AST-only analyzer changes; use `--baseline-file docs/calibration/project_analyzer_baseline.yml` for full-manifest drift. |
 | Workflow friction | Guarded | The lockfile rewrite came from a stale path dependency entry in `Gemfile.lock`; the lockfile now matches the gemspec's `rubocop-metz (~> 0.4.0)` constraint, read-only maintenance commands have a tracked-worktree mutation guard plus a public command-listing mode, `--print-baseline` is in the default read-only guard list, the read-only command contract is documented in contributor/calibration/release docs, and `bin/check_ci_parity` runs tracker hygiene before Bundler work while preserving failed clean clones and printing `next action:` commands for inspection. | Maintain the guard list and docs as new read-only commands are added; do not bypass `BUNDLE_FROZEN=1` for read-only calibration checks. |
 | Sorbet adoption spike | Complete | Issue #26 was evaluated in a disposable workspace, documented, synced back to GitHub, and closed. The report recommends not adopting now: a narrow static setup is possible, but generated RBI churn, command policy, fixture scope, and runtime signature implications outweigh observed value. | Do not add Sorbet unless a concrete type-related defect, contributor ergonomics need, or stable public API typing requirement appears. |
 | Docs/adoption | Stable | README points contributors and agents to this tracker; old implementation notes are archived, current notes are short, and the Sorbet spike report records the tooling decision. The README now splits RepeatedBranching generic-subject guidance into a short list, the analyzer behavior details into per-analyzer subsections, package install troubleshooting points at `bin/check_published_gem`, parity failure inspection points at preserved clone/`next action:` output, the analyzer status table has freshness coverage, `skills/metz-scan/SKILL.md` gives agents consumer-facing usage guidance, and calibration docs point future Rubydex upgrades, filtered baselines, compact baseline previews, and parked issue updates at repeatable local commands. | Keep docs changes minimal and evidence-led. |
-| Path to rubygems.org | Active | Exit criterion 1 is met. Exit criterion 2 ran on 2026-07-05 and did not pass: five-codebase dogfooding found two headline-UX defects, both fixed and released in `v0.5.1`. Since then #37 (default scans honor per-cop `Exclude`) landed on `main`, so the release candidate for the criterion-2 rerun should carry it. Findings-quality notes remain queue candidates, not blockers. | Cut the release carrying #37, rerun exit criterion 2 against those gems, then verify the README quickstart (criterion 3) and run the release preflight (criterion 4). |
+| Path to rubygems.org | Active | Exit criterion 1 is met. Exit criterion 2 ran on 2026-07-05 and did not pass: five-codebase dogfooding found two headline-UX defects, both fixed and released in `v0.5.1`. Since then #37 (default scans honor per-cop `Exclude`) landed on `main`; the `0.5.2` release target carrying it is prepared (publish gated on user authorization). Findings-quality notes remain queue candidates, not blockers. | Publish `v0.5.2` (user-authorized), rerun exit criterion 2 against those gems, then verify the README quickstart (criterion 3) and run the release preflight (criterion 4). |
 | Test hardening | Done | Fixture/guard surface through `599a935` covers CLI text/JSON/help contracts, read-only guards, drift checks, package smoke, and CI parity output. Suite: 438 fast + 88 slow runs, all green. | Maintain only; new tests accompany behavior changes or defects, not coverage sweeps. |
 
 ## Next Queue
 
-1. Rerun the dogfooding criterion on the released `0.5.1` version, folding in
+1. Rerun the dogfooding criterion on the released `0.5.2` version (once
+   published; the target is prepared), folding in
    the round's findings-quality notes as candidates: per-cop offense counts /
    end-of-run summary in text output, a documented adoption path for legacy
    codebases (todo-style baseline or top-offender ranking), and clearer
@@ -155,37 +158,31 @@ burn a `1.0.0` signal on the first public push.
 
 ## Latest Slice Checkpoint
 
-Slice: 2026-07-07 testing-cops spec revision after review (same-day follow-up
-to the spec slice at `fb6156b`).
+Slice: 2026-07-07 prepare the `0.5.2` release target carrying #37.
 
-What changed: review of `docs/design/testing-cops.md` found two structural gaps
-and two correctness issues; all fixed in the doc. (1) **Tier 2 re-homed:** the
-index-backed rules contradicted the dependency direction (they cited the
-wrapper's `RubydexBackend`/`NullBackend` while requiring all code in
-`rubocop-metz/`) — resolved as **project analyzers** in
-`lib/metz_scan/analyzers/` (`test_calls_private_method`,
-`test_depends_on_unowned_return`), not cops; the rejected alternative (rubydex
-plumbing inside rubocop-metz) is recorded in the spec. (2) **Prior-art section
-added:** positions against `RSpec/SubjectStub`, `RSpec/MultipleExpectations`,
-`RSpec/InstanceVariable`, `Minitest/MultipleAssertions`; names what is novel
-(framework-neutral Minitest side, send-literal + index-confirmed privacy pair,
-Metz metadata) and leans toward dropping `TestTooManyAssertions`.
-(3) `TestAssertsOnInternals` narrowed: bare-`@ivar` assertions removed (test
-fixture state, FP flood); Rails `assigns(:ivar)` added as the high-signal
-detector. (4) Corrected the claim that design cops fire on tests —
-`DemeterTrainWreck` ships `Exclude: spec/**/*`. Plus Tier 1/Tier 2
-no-double-report rule and `TestFrameworks` scope trim.
+What changed: mechanical release-prep mirroring `3ec8f29` — bumped both gems
+0.5.1 → 0.5.2 (`lib/metz_scan/version.rb`, `rubocop-metz/lib/rubocop/metz/version.rb`),
+regenerated `Gemfile.lock` (the `rubocop-metz (~> 0.5.1)` pin → `~> 0.5.2`, 5
+lines, no stray churn), moved the release-issue dry-run expectations in
+`test/metz_scan/create_release_issue_test.rb` to 0.5.2, and added
+`docs/releases/v0.5.2.md` describing only #37 (default scans honor per-cop
+`Exclude` while still forcing Metz tuning). Version choice is patch, not minor:
+precedent-consistent with `0.5.1`, which carried the sibling #33 default-scan
+scope change as a patch.
 
-Verified: spec/tracker docs only, no code — same bar as the spec slice (fast
-suite + tracker hygiene + `bin/check_ci_parity` before push).
+Delegation: the mechanical prep was dispatched to an autobots `coding-worker`;
+the orchestrator independently reviewed the diff and owns the tracker/notes
+updates in this same commit.
 
-Surprising: the biggest spec bug was the spec violating the repo's own
-dependency-direction invariant in §5 while restating it in §3 — a reminder
-that design docs need the same review criteria as diffs.
+Verified: focused release-issue test 2 runs/18 assertions PASS; `bundle exec
+rake` 553 runs/2652 assertions/0F/0E/2 skips PASS; `bundle exec rubocop` clean
+(219 files); diff matches the `3ec8f29` shape. `bin/check_ci_parity` is the
+pre-push gate (run after commit). Publish/tag/GitHub Release remain gated on
+user authorization.
 
-Prior slices: `fb6156b` (the spec itself, user-requested direction addition);
-`847c478` (#37 — default scans honor project per-cop `Exclude`, fixing
-`bin/check_dogfood` red on `main`; rationale in `implementation-notes.md`).
+Prior slices: `d9f92e4` (testing-cops spec revision after review); `fb6156b`
+(the spec itself); `847c478` (#37 — default scans honor project per-cop
+`Exclude`, fixing `bin/check_dogfood` red on `main`).
 
 ## Parked / Not Next
 
@@ -229,7 +226,8 @@ Prior slices: `fb6156b` (the spec itself, user-requested direction addition);
 
 | Date | Commit | Summary |
 | --- | --- | --- |
-| 2026-07-07 | `this commit` | Revised the testing-cops spec after review: Tier 2 re-homed from cops to wrapper-side project analyzers (dependency-direction conflict), prior-art section added (rubocop-rspec / rubocop-minitest overlap and reusable heuristics), `TestAssertsOnInternals` narrowed to `instance_variable_get/_set` + `assigns` (bare-`@ivar` clause was a FP flood), and the design-cops-fire-on-tests claim corrected for `DemeterTrainWreck`'s `spec/**/*` exclude. Spec only; no cop code. |
+| 2026-07-07 | `this commit` | Prepared the `0.5.2` release target carrying #37: bumped both gems 0.5.1 → 0.5.2, regenerated the lockfile pin (`~> 0.5.2`), moved release-issue dry-run expectations, and added `docs/releases/v0.5.2.md` (describes only #37, default scans honor per-cop `Exclude`). Patch bump, precedent-consistent with `0.5.1`. Publish/tag/Release gated on user authorization. |
+| 2026-07-07 | `d9f92e4` | Revised the testing-cops spec after review: Tier 2 re-homed from cops to wrapper-side project analyzers (dependency-direction conflict), prior-art section added (rubocop-rspec / rubocop-minitest overlap and reusable heuristics), `TestAssertsOnInternals` narrowed to `instance_variable_get/_set` + `assigns` (bare-`@ivar` clause was a FP flood), and the design-cops-fire-on-tests claim corrected for `DemeterTrainWreck`'s `spec/**/*` exclude. Spec only; no cop code. |
 | 2026-07-07 | `fb6156b` | Specced the testing-discipline cop family (`docs/design/testing-cops.md`): a deliberate direction addition so a Metz-branded linter encodes Sandi's testing rules, not only her design rules. Detectability-first catalog (AST-only Tier 1 + Rubydex-index Tier 2), both frameworks, explicit non-goals, calibration/dogfooding plan, and post-release cop-by-cop rollout. Spec only; no cop code. |
 | 2026-07-07 | `847c478` | Fixed #37: default (Metz-only) scans now honor the project's per-cop `Exclude` (file scope) like #33 honors `AllCops: Exclude`, while still forcing Metz tuning; extracted `ProjectCopScope`, removed an inert `DemeterTrainWreck` test exclude, documented the scope-vs-tuning contract, and resolved `bin/check_dogfood` red on `main` (former Next Queue task 3) with red-green tests. |
 | 2026-07-06 | `a4eb569` | Made the agent workspace dual-agent: canonical `CLAUDE.md` brief, four maintainer skills under `.claude/skills/`, `.agents/skills` symlink for Codex discovery, `AGENTS.md` router, operator playbook, goal backlog, and a routing freshness test. |

@@ -9,6 +9,31 @@ Use `PROJECT_TRACKER.md` for the current direction, next queue, parked work, and
 latest checkpoint. Add new notes here only when a slice needs more durable
 detail than the tracker should carry.
 
+## 2026-07-07: Prepare 0.5.2 release target (carries #37)
+
+Task: Release readiness / Path-to-rubygems.org next move — cut the release
+carrying #37 so exit criterion 2 can rerun against released gems that include
+the per-cop `Exclude` behavior.
+
+Version choice: **0.5.2 patch.** Precedent-consistent — the sibling #33
+default-scan-`AllCops: Exclude` change shipped as the `0.5.1` patch, and #37 is
+the same class (default scans now honor the finer-grained per-cop `Exclude`
+scope while still forcing Metz tuning). No threshold/policy change, so patch,
+not minor.
+
+Shape: mirrors `3ec8f29` exactly — bump both `version.rb` to 0.5.2, regenerate
+`Gemfile.lock` (`~> 0.5.1` pin → `~> 0.5.2`, 5 lines), move the release-issue
+dry-run expectations, add `docs/releases/v0.5.2.md` (describes only #37).
+Delegated the mechanical prep to an autobots `coding-worker`; orchestrator
+reviewed the diff and owns the tracker/notes updates in the same commit.
+
+Verified (worker + independent review): focused release-issue test 2 runs/18
+assertions PASS; `bundle exec rake` 553 runs/2652 assertions/0F/0E/2 skips PASS;
+`bundle exec rubocop` clean (219 files); `git diff` matches the `3ec8f29` shape
+with no stray churn. `bin/check_ci_parity` is the pre-push gate — run it after
+commit, before push. Publish/tag/GitHub Release remain gated on user
+authorization.
+
 ## 2026-07-06: #37 default scans honor project per-cop Exclude (fixes check_dogfood red)
 
 Task: tracker Next Queue task 3 — resolve `bin/check_dogfood` red on `main`,
