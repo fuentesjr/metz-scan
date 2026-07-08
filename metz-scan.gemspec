@@ -23,9 +23,13 @@ Gem::Specification.new do |spec|
   spec.metadata["github_repo"] = "ssh://github.com/fuentesjr/metz-scan"
   spec.metadata["github_package_uri"] = "https://github.com/users/fuentesjr/packages/rubygems/package/metz-scan"
 
-  spec.files = Dir.glob("lib/**/*", File::FNM_DOTMATCH).reject { |f| File.directory?(f) } +
-               Dir.glob("bin/metz-scan").select { |f| File.file?(f) } +
-               ["LICENSE", "metz-scan.gemspec"].select { |f| File.exist?(f) }
+  gem_root = File.expand_path(__dir__)
+  Dir.chdir(gem_root) unless Dir.pwd == gem_root
+
+  spec.files = Dir.glob("lib/**/*", File::FNM_DOTMATCH, base: gem_root)
+                  .reject { |f| File.directory?(File.join(gem_root, f)) } +
+               Dir.glob("bin/metz-scan", base: gem_root).select { |f| File.file?(File.join(gem_root, f)) } +
+               ["LICENSE", "metz-scan.gemspec"].select { |f| File.exist?(File.join(gem_root, f)) }
   spec.bindir        = "bin"
   spec.executables   = ["metz-scan"]
   spec.require_paths = ["lib"]

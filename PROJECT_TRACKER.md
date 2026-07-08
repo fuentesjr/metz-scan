@@ -83,18 +83,21 @@ burn a `1.0.0` signal on the first public push.
 - Latest pushed baseline: `7b06793 Polish README for a rubygems.org first
   impression` (the tagged `v0.5.2` commit), plus this release-record commit.
 - CI state: the most recent `main` runs, including `7b06793`, all succeeded.
-- Release state: **`v0.5.2` is published to GitHub Packages** (annotated tag
-  `v0.5.2` → `7b06793`, GitHub Release, both gems live and independently
-  verified; `bin/check_published_gem 0.5.2` PASS with live `Summary` scorecard
-  and absent-external-gem crash-fix spot-checks). It supersedes `v0.5.1`, which
-  carried the absent-external-gem crash regression and should not be
-  recommended. **rubygems.org publish is still pending** — it needs the
-  maintainer's interactive `gem signin`/API key (no rubygems.org credential on
-  the release machine); until it lands, the README's `gem install metz-scan`
-  resolves only from GitHub Packages. All carried issues (#33/#34/#37) are
-  closed.
-- Local branch state: `main` HEAD (`7b06793`) is the published, tagged `v0.5.2`
-  commit; this release-record commit follows it. Tree clean.
+- Release state: `v0.5.2` is good on **GitHub Packages** (annotated tag
+  `v0.5.2` → `7b06793`, GitHub Release, `bin/check_published_gem 0.5.2` PASS) but
+  its **rubygems.org push is broken**: the `rubocop-metz 0.5.2` gem pushed to
+  rubygems.org was corrupt — it packaged the wrapper's `lib/metz_scan` instead of
+  its own cops because it was built from the repo root (CWD-relative
+  `Dir.glob`), so `gem install metz-scan` from rubygems.org fails at scan time
+  (`require "rubocop-metz"`). rubygems.org forbids overwriting a version, so the
+  fix is **`v0.5.3`** (this slice: both gemspecs hardened to build correctly from
+  any CWD, verified; version bump; no source/behavior change from 0.5.2) followed
+  by **yanking the corrupt `0.5.2`** from rubygems.org. GitHub Packages `0.5.2`
+  is unaffected (built correctly). `v0.5.2` still supersedes the crash-regressed
+  `v0.5.1`. All carried issues (#33/#34/#37) closed.
+- Local branch state: `main` HEAD is `ebd5a4e` (the `v0.5.2` record commit); this
+  slice is the uncommitted `v0.5.3` remediation prep. The `v0.5.2` tag stays as
+  historical; `v0.5.3` will be tagged on the prep commit.
 - Dogfooding state: **exit criterion 2 PASSED on 2026-07-08** on the re-verify
   round (`docs/dogfooding/2026-07-08-round-0.5.2-reverify.md`). The 2026-07-07
   round (`docs/dogfooding/2026-07-07-round-0.5.2.md`) found four headline-UX
@@ -120,27 +123,30 @@ burn a `1.0.0` signal on the first public push.
 
 | Workstream | Status | Current State | Next Move |
 | --- | --- | --- | --- |
-| Release readiness | Released to GitHub Packages | `v0.5.2` published to GitHub Packages: tag `v0.5.2` → `7b06793`, GitHub Release, both gems live (rubocop-metz before metz-scan), `bin/check_published_gem 0.5.2` PASS with live scorecard + crash-fix spot-checks; independently verified. | rubygems.org publish remains (needs maintainer `gem signin`/API key). |
+| Release readiness | v0.5.3 remediation in progress | `v0.5.2` good on GitHub Packages, but the rubygems.org `rubocop-metz 0.5.2` gem is corrupt (built from wrong CWD → packaged the wrapper's files). `v0.5.3` prep done: both gemspecs hardened to be CWD-independent (repo-root build now yields correct contents, independently verified) + version bump. Awaiting commit/publish. | Commit prep → parity → tag `v0.5.3` → publish (rubocop-metz first) to rubygems.org + GitHub Packages → verify a real scan from rubygems.org → yank corrupt `0.5.2`. |
 | Calibration artifact pipeline | Healthy | Markdown output, artifact write path, sample-app calibration smoke, the tracked target manifest under `docs/calibration/`, baseline-delta Markdown fixtures, compact baseline preview structure, exact `--print-baseline` YAML output, baseline scope mismatch checks, and help examples for scope-matched baseline workflows are covered. | Maintain; change only when artifact, target-manifest, or baseline-document behavior changes. |
 | Analyzer behavior | Parked | Fresh #27/#28 Mastodon and Discourse reruns did not show enough misleading or underexplained findings to justify behavior, threshold, or output-policy changes. | Reopen only with new generic evidence, not app-specific suppressions. |
 | Calibration evidence | Guarded | Redmine, Rubygems.org, ManageIQ, and Foreman evidence has been consolidated; Rubydex `0.2.7` was rechecked against the active manifest. Full active-manifest output is 697 findings/806 offenses; the four Rubydex-index-backed analyzers account for 607 findings/607 offenses. A compact Rubydex drift check covers those four analyzers, now with ProjectIndex missing-Rubydex subprocess coverage, missing-Rubydex skip-path coverage, exact sample-app text/JSON fixtures, and deterministic non-Rubydex formatter fixtures; `docs/calibration/project_analyzer_baseline.yml` captures the full active-manifest baseline for delta reporting. | Recheck only Rubydex-index-backed analyzers after future Rubydex upgrades unless an AST-only analyzer changes; use `--baseline-file docs/calibration/project_analyzer_baseline.yml` for full-manifest drift. |
 | Workflow friction | Guarded | The lockfile rewrite came from a stale path dependency entry in `Gemfile.lock`; the lockfile now matches the gemspec's `rubocop-metz (~> 0.4.0)` constraint, read-only maintenance commands have a tracked-worktree mutation guard plus a public command-listing mode, `--print-baseline` is in the default read-only guard list, the read-only command contract is documented in contributor/calibration/release docs, and `bin/check_ci_parity` runs tracker hygiene before Bundler work while preserving failed clean clones and printing `next action:` commands for inspection. | Maintain the guard list and docs as new read-only commands are added; do not bypass `BUNDLE_FROZEN=1` for read-only calibration checks. |
 | Sorbet adoption spike | Complete | Issue #26 was evaluated in a disposable workspace, documented, synced back to GitHub, and closed. The report recommends not adopting now: a narrow static setup is possible, but generated RBI churn, command policy, fixture scope, and runtime signature implications outweigh observed value. | Do not add Sorbet unless a concrete type-related defect, contributor ergonomics need, or stable public API typing requirement appears. |
 | Docs/adoption | Stable | README points contributors and agents to this tracker; old implementation notes are archived, current notes are short, and the Sorbet spike report records the tooling decision. The README now splits RepeatedBranching generic-subject guidance into a short list, the analyzer behavior details into per-analyzer subsections, package install troubleshooting points at `bin/check_published_gem`, parity failure inspection points at preserved clone/`next action:` output, the analyzer status table has freshness coverage, `skills/metz-scan/SKILL.md` gives agents consumer-facing usage guidance, and calibration docs point future Rubydex upgrades, filtered baselines, compact baseline previews, and parked issue updates at repeatable local commands. | Keep docs changes minimal and evidence-led. |
-| Path to rubygems.org | GitHub Packages done; rubygems.org publish pending | All four exit criteria met and the pre-publish gate closed; `v0.5.2` shipped to GitHub Packages. rubygems.org (both names unclaimed as of 2026-07-05) still needs the maintainer's interactive `gem signin`/API key — the release machine has no rubygems.org credential. | Publish `v0.5.2` to rubygems.org (rubocop-metz before metz-scan) once authenticated; the `1.0.0` signal is still reserved. |
+| Path to rubygems.org | Fixing a corrupt first push via v0.5.3 | The first rubygems.org push (`0.5.2`) shipped a corrupt `rubocop-metz`; being remediated by `v0.5.3` (CWD-independent gemspecs) + yanking `0.5.2`. Both names are now claimed on rubygems.org. | Publish `v0.5.3` (rubocop-metz before metz-scan), verify `gem install metz-scan` runs a real scan from rubygems.org, yank `0.5.2`; `1.0.0` still reserved. |
 | Test hardening | Done | Fixture/guard surface through `599a935` covers CLI text/JSON/help contracts, read-only guards, drift checks, package smoke, and CI parity output. Suite: 438 fast + 88 slow runs, all green. | Maintain only; new tests accompany behavior changes or defects, not coverage sweeps. |
 
 ## Next Queue
 
-1. Publish `v0.5.2` to rubygems.org (blocked on maintainer auth).
-   - Why now: `v0.5.2` is live on GitHub Packages; rubygems.org is the public
-     distribution the README's `gem install metz-scan` promises, and both names
-     were unclaimed as of 2026-07-05. The release machine has no rubygems.org
-     credential, so this needs the maintainer to `gem signin` (account + OTP) or
-     drop an API key into `~/.gem/credentials`.
-   - Definition of done: publish `rubocop-metz` then `metz-scan` `0.5.2` to
-     rubygems.org, confirm `gem install metz-scan` resolves from rubygems.org in
-     a clean env, and record completion. The `1.0.0` signal is still reserved.
+1. Ship `v0.5.3` to fix the corrupt rubygems.org `0.5.2` push (in progress).
+   - Why now: the first rubygems.org push shipped a corrupt `rubocop-metz 0.5.2`
+     (built from the wrong CWD), so `gem install metz-scan` from rubygems.org is
+     broken; rubygems.org won't let a version be overwritten, so a clean `0.5.3`
+     with hardened gemspecs is the fix. Maintainer is now authenticated to
+     rubygems.org.
+   - Definition of done: commit the prep, `check_ci_parity`, push; tag `v0.5.3`
+     + GitHub Release; build with the corrected gemspecs and content-verify;
+     publish `rubocop-metz` then `metz-scan` `0.5.3` to rubygems.org AND GitHub
+     Packages; confirm a clean `bundle exec metz-scan scan` from rubygems.org
+     runs a real scan (not just `--version`); yank the corrupt `0.5.2` from
+     rubygems.org; record completion. The `1.0.0` signal is still reserved.
 
 2. Begin the testing-discipline cops rollout (`docs/design/testing-cops.md`),
    now that the first public release has shipped — Tier 1 as cops, Tier 2 as
@@ -151,23 +157,33 @@ burn a `1.0.0` signal on the first public push.
 
 ## Latest Slice Checkpoint
 
-Slice: 2026-07-08 v0.5.2 release completion (GitHub Packages).
+Slice: 2026-07-08 v0.5.3 prep — gemspec hardening + republish of the corrupt
+`0.5.2` rubygems.org publish.
 
-What changed: published `v0.5.2` to GitHub Packages under explicit user
-authorization. Annotated tag `v0.5.2` → `7b06793`, GitHub Release from
-`docs/releases/v0.5.2.md`, and both gems pushed in dependency order
-(`rubocop-metz` then `metz-scan`). The publish execution was autobots-delegated
-(sonnet `coding-worker`, SHA-pinned, stop-on-anomaly) for token efficiency; the
-orchestrator independently verified the outcome: remote tag → correct SHA,
-GitHub Release live (not draft), both packages show `0.5.2`, and
-`bin/check_published_gem 0.5.2` PASS with live `Summary` scorecard and
-absent-external-gem crash-fix spot-checks. No product code changed; this is the
-Phase-4 completion record. **rubygems.org publish is still pending** on maintainer
-auth (no rubygems.org credential on the release machine).
+What changed: the `rubocop-metz 0.5.2` gem published to rubygems.org was
+corrupt — `gem build rubocop-metz/rubocop-metz.gemspec` had been run from the
+repo root instead of `rubocop-metz/`, so the gemspec's CWD-relative
+`Dir.glob` packaged the wrapper's `lib/metz_scan` files instead of
+`rubocop-metz`'s own `lib/`, breaking `require "rubocop-metz"` for consumers.
+rubygems.org versions cannot be overwritten, so this prep republishes as a
+clean `0.5.3` and hardens both gemspecs (`rubocop-metz/rubocop-metz.gemspec`,
+`metz-scan.gemspec`) to resolve their file lists from the gemspec's own
+directory (`File.expand_path(__dir__)`, with a matching `Dir.chdir` before
+globbing) instead of the process's current working directory, so `gem build
+<path>` produces correct contents regardless of invocation directory. Verified
+by building both gems from the repo root and confirming file lists are
+byte-identical to a correct `cd`-first build, with no cross-contamination
+(`rubocop-metz`'s gem carries only its own cops; `metz-scan`'s gem carries
+only its own wrapper code). Version bumped 0.5.2 → 0.5.3 in both
+`version.rb` files, lockfile refreshed, release-issue dry-run expectations
+updated, `docs/releases/v0.5.3.md` added, and README install pins bumped to
+`~> 0.5.3`. Prepared uncommitted for orchestrator review, verification, and
+commit/release.
 
-Release status carried in: `v0.5.2` live on GitHub Packages and verified; the
-pre-publish competitive gate is closed. Remaining: the rubygems.org publish
-(Next Queue 1), then the post-release testing-cops rollout (Next Queue 2).
+Prior committed slice — 2026-07-08 v0.5.2 release completion (GitHub Packages,
+`ebd5a4e`): published `v0.5.2` to GitHub Packages (tag, GitHub Release, both
+gems in dependency order), independently verified. Superseded by this `0.5.3`
+prep — the `rubocop-metz 0.5.2` build was corrupt (see above).
 
 Prior committed slice — 2026-07-08 README rubygems polish (`7b06793`, the tagged
 release commit): Install now leads with `gem install metz-scan`, a real `scan`
@@ -216,7 +232,8 @@ calibration internals moved to `docs/project-analyzer-calibration.md`.
 
 | Date | Commit | Summary |
 | --- | --- | --- |
-| 2026-07-08 | `this commit` | **`v0.5.2` released to GitHub Packages.** Annotated tag `v0.5.2` → `7b06793`, GitHub Release, both gems published in order (`rubocop-metz` then `metz-scan`); `bin/check_published_gem 0.5.2` PASS with live `Summary` scorecard + absent-external-gem crash-fix spot-checks. Publish autobots-delegated (sonnet, SHA-pinned); orchestrator independently verified tag/release/package versions. rubygems.org publish still pending maintainer auth. Phase-4 completion record; no product code. |
+| 2026-07-08 | `this commit` | **`v0.5.3` prep: gemspec hardening + republish of the corrupt `0.5.2` rubygems.org build.** The published `rubocop-metz 0.5.2` gem was corrupt (built from the repo root instead of `rubocop-metz/`, so its CWD-relative `Dir.glob` packaged the wrapper's `lib/metz_scan` files instead of its own `lib/`); rubygems.org versions can't be overwritten, so this republishes as `0.5.3`. Hardened both `rubocop-metz/rubocop-metz.gemspec` and `metz-scan.gemspec` to resolve file lists from the gemspec's own directory instead of the CWD, verified `gem build` from the repo root now produces byte-identical, uncontaminated file lists for both gems. Version bump, lockfile, release-issue test expectations, `docs/releases/v0.5.3.md`, README install pins. Prepared uncommitted for orchestrator review. |
+| 2026-07-08 | `ebd5a4e` | **`v0.5.2` released to GitHub Packages.** Annotated tag `v0.5.2` → `7b06793`, GitHub Release, both gems published in order (`rubocop-metz` then `metz-scan`); `bin/check_published_gem 0.5.2` PASS with live `Summary` scorecard + absent-external-gem crash-fix spot-checks. Publish autobots-delegated (sonnet, SHA-pinned); orchestrator independently verified tag/release/package versions. rubygems.org publish still pending maintainer auth. Phase-4 completion record; no product code. |
 | 2026-07-08 | `7b06793` | README rubygems first-impression polish (docs only): Install now leads with `gem install metz-scan` (GitHub Packages auth flow demoted to its own section near Requirements; maintainer commands moved to Contributing); a real `scan` hero example ending in the compliance `Summary` scorecard leads the README; ~135 lines of per-analyzer calibration internals moved from Usage to a new "Analyzer behavior reference" section in `docs/project-analyzer-calibration.md` (status table + summary + link kept); JSON `summary` scorecard fields surfaced in Usage. Docs-freshness 18/0F. |
 | 2026-07-08 | `0339bfb` | Closed the `sandi_meter` pre-publish gate. Added the compliance scorecard: `scan`/`report` text output ends with Metz compliance, total offenses across cops, per-cop counts, and top offending files; JSON summaries add `clean_file_count`, `files_with_offenses`, and `offenses_by_cop`. Added a README "How metz-scan compares" section crediting `sandi_meter` as prior art. Red-green command tests, exact scorecard fixtures, README/skill docs, tracker updates. Scorecard Codex-delegated and recovered from a mid-verification worker reap (verified on disk, stale record cleared). |
 | 2026-07-08 | `f801b94` | Session handoff: recorded the `sandi_meter` competitive analysis and a user-added pre-publish gate. metz-scan already beats it on coverage, modern-Ruby accuracy, project analyzers, CI/SARIF, integration, and maintenance; its one edge was a compliance-% scorecard. Queued two pre-publish items (a `scan` compliance scorecard + a README "how it compares" section) with the exact scorecard spec and README draft in `implementation-notes.md`, then publish. Docs/tracker/notes only; no code. |
