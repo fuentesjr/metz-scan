@@ -23,12 +23,17 @@ Gem::Specification.new do |spec|
   spec.metadata["github_package_uri"] = "https://github.com/users/fuentesjr/packages/rubygems/package/rubocop-metz"
   spec.metadata["default_lint_roller_plugin"] = "RuboCop::Metz::Plugin"
 
-  gem_root = File.expand_path(__dir__)
-  Dir.chdir(gem_root) unless Dir.pwd == gem_root
-
-  spec.files = Dir.glob("{lib,config}/**/*", File::FNM_DOTMATCH, base: gem_root)
-                  .reject { |f| File.directory?(File.join(gem_root, f)) } +
-               ["LICENSE", "rubocop-metz.gemspec"].select { |f| File.exist?(File.join(gem_root, f)) }
+  spec.files = Dir.glob("{lib,config}/**/*", File::FNM_DOTMATCH).reject { |f| File.directory?(f) } +
+               ["LICENSE", "rubocop-metz.gemspec"].select { |f| File.exist?(f) }
+  # This gemspec's Dir.glob is relative to the build CWD, so building from the
+  # repo root (`gem build rubocop-metz/rubocop-metz.gemspec`) would silently
+  # package the wrapper's lib/metz_scan files instead of these cops. Fail loudly
+  # instead of shipping a corrupt gem. Build from this directory:
+  #   cd rubocop-metz && gem build rubocop-metz.gemspec
+  unless spec.files.include?("lib/rubocop-metz.rb")
+    raise "rubocop-metz.gemspec: lib/rubocop-metz.rb missing from packaged files; " \
+          "build from rubocop-metz/ (cd rubocop-metz && gem build rubocop-metz.gemspec)."
+  end
   spec.require_paths = ["lib"]
 
   spec.add_dependency "lint_roller", "~> 1.1"
