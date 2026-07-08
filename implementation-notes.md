@@ -9,6 +9,32 @@ Use `PROJECT_TRACKER.md` for the current direction, next queue, parked work, and
 latest checkpoint. Add new notes here only when a slice needs more durable
 detail than the tracker should carry.
 
+## 2026-07-08: v0.5.2 release completion (GitHub Packages)
+
+`v0.5.2` published to GitHub Packages under explicit user authorization. Tag
+`v0.5.2` (annotated `b38a3ba`) → commit `7b06793`; GitHub Release from
+`docs/releases/v0.5.2.md`; both gems pushed in dependency order (`rubocop-metz`
+then `metz-scan`).
+
+Delegation: the publish execution was autobots-delegated to a sonnet
+`coding-worker` (SHA-pinned to `7b06793`, ordered pushes, explicit
+stop-on-anomaly conditions, scoped to GitHub Packages only — no rubygems.org, no
+issue writes, no commits). The orchestrator ran a read-only pre-flight first
+(tag absent, `gh` `write:packages` present, CI green on `7b06793`, rubygems.org
+credential absent) and independently verified the outcome after: remote tag →
+correct SHA, GitHub Release live (not draft), both packages report `0.5.2`, and
+`bin/check_published_gem 0.5.2` PASS with the live `Summary` scorecard and the
+absent-external-gem crash-fix confirmed in a clean consumer project. Shape of the
+"2026-07-06: v0.5.1 release completion" record.
+
+**rubygems.org still pending.** The release machine has no rubygems.org
+credential, and `gem push` to rubygems.org needs interactive `gem signin`
+(account + OTP) or an API key — neither the orchestrator nor a subagent can do
+that headlessly. Until the maintainer authenticates and pushes `rubocop-metz`
+then `metz-scan` to rubygems.org, the README's `gem install metz-scan` resolves
+only from GitHub Packages. All carried issues (#33/#34/#37) were already closed,
+so no issue writes were needed.
+
 ## 2026-07-08: sandi_meter pre-publish gate CLOSED (scorecard + README) + Codex reap recovery
 
 Status: **both pre-publish items landed** and verified. The compliance scorecard
