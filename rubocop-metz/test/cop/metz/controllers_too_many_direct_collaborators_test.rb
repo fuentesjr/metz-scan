@@ -299,6 +299,45 @@ class CopMetzControllersTooManyDirectCollaboratorsTest < Minitest::Test
     refute_offense(source, file: "app/controllers/downloads_controller.rb")
   end
 
+  def test_ignores_raised_exception_classes_even_without_a_local_rescue
+    source = <<~RUBY
+      class LoginController < ApplicationController
+        def login
+          Current.user
+          raise LoginBannedError, "banned" if banned?
+          raise LoginFailedError, "failed" unless authenticated?
+        end
+      end
+    RUBY
+
+    refute_offense(source, file: "app/controllers/login_controller.rb")
+  end
+
+  def test_raised_exception_class_via_new_is_not_counted
+    source = <<~RUBY
+      class LoginController < ApplicationController
+        def login
+          Current.user
+          raise LoginBannedError.new("banned") if banned?
+        end
+      end
+    RUBY
+
+    refute_offense(source, file: "app/controllers/login_controller.rb")
+  end
+
+  def test_ignores_arel_sql_helper_constant
+    source = <<~RUBY
+      class JobsController < ApplicationController
+        def index
+          @jobs = Delayed::Job.order(Arel.sql("priority DESC"))
+        end
+      end
+    RUBY
+
+    refute_offense(source, file: "app/controllers/jobs_controller.rb")
+  end
+
   def test_private_helper_offense_is_not_labeled_action
     source = <<~RUBY
       class ChatsController < ApplicationController

@@ -9,6 +9,33 @@ Use `PROJECT_TRACKER.md` for the current direction, next queue, parked work, and
 latest checkpoint. Add new notes here only when a slice needs more durable
 detail than the tracker should carry.
 
+## 2026-07-08: ControllersTooManyDirectCollaborators stops over-counting (dogfood defect D)
+
+Task: dogfood defect D from `docs/dogfooding/2026-07-07-round-0.5.2.md` §4 — the
+cop counted non-collaborators, the same class as the already-fixed #34 (whose
+fix excluded exception constants at `rescue` sites but did not carry to this
+sibling cop). Two verified facets: raise-site exception classes (lobsters
+`login_controller` reported `login` as 8 collaborators, 5 of them file-local
+`*Error` classes raised/rescued in the method) and framework query helpers
+(huginn `jobs_controller` counted `Arel` in `Delayed::Job.order(Arel.sql(...))`).
+
+Fix (`rubocop-metz/lib/rubocop/cop/metz/controllers_too_many_direct_collaborators.rb`):
+add `raise_exception_class?` to the `ignored?` chain, mirroring the existing
+`rescue_exception_class?` — a const that is the first argument of a receiverless
+`raise`/`fail` (covering `raise Klass, "msg"` and `raise Klass.new(...)`) is not
+a collaborator; and add `Arel` to the existing `CORE_COLLABORATOR_ALLOWLIST`
+(which already held `Rails Time Date DateTime` etc.), the minimal consistent
+change (no new configurable surface, matching the sibling `DemeterTrainWreck`
+intent). The cop is `on_def`, so no `OnSendCsendBridge` is involved.
+
+Delegation/verification: implemented via an autobots `coding-worker` in an
+isolated git worktree (parallel with defect C in the main tree, no collision);
+the orchestrator applied the two-file diff to `main` and independently verified.
+Real repros: lobsters `login` 8→3 collaborators; huginn `jobs_controller#index`
+no longer flags (Arel allowlisted → 1 = Max). Red-green tests in the cop's test
+file. `bundle exec rake` 561 runs/0F/0E; `bundle exec rubocop` clean; dependency
+direction ok; `bin/check_dogfood` PASS.
+
 ## 2026-07-08: Default scans honor the target's Ruby version (dogfood defect C)
 
 Task: dogfood defect C from `docs/dogfooding/2026-07-07-round-0.5.2.md` §3 —

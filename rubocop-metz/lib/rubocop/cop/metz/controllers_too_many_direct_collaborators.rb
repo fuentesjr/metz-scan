@@ -95,7 +95,7 @@ module RuboCop
 
       class ControllerCollaboratorCollector
         CORE_COLLABORATOR_ALLOWLIST = %w[
-          Rails Time Date DateTime File FileUtils Pathname Hash Array String Integer Float
+          Rails Arel Time Date DateTime File FileUtils Pathname Hash Array String Integer Float
           Symbol Set SecureRandom JSON YAML URI CGI ERB
         ].freeze
 
@@ -124,6 +124,7 @@ module RuboCop
         def ignored?(const_node, name)
           nested_inside_const?(const_node) ||
             rescue_exception_class?(const_node) ||
+            raise_exception_class?(const_node) ||
             allowed_core_constant?(name) ||
             same_class_constants.include?(name)
         end
@@ -138,6 +139,17 @@ module RuboCop
           return false unless resbody_node
 
           descendant_of?(const_node, resbody_node.children.first)
+        end
+
+        def raise_exception_class?(const_node)
+          send_node = const_node.each_ancestor(:send).find { |ancestor| raise_or_fail?(ancestor) }
+          return false unless send_node
+
+          descendant_of?(const_node, send_node.arguments.first)
+        end
+
+        def raise_or_fail?(send_node)
+          send_node.receiver.nil? && %i[raise fail].include?(send_node.method_name)
         end
 
         def descendant_of?(node, ancestor)
@@ -160,8 +172,9 @@ module RuboCop
       # collaborator" is an application constant referenced inside a method
       # body -- whether bare (`User`), as the receiver of `.new` (`User.new`),
       # or as the receiver of another message (`Mailer.confirmation(...)`).
-      # Rescue exception classes, constants owned by the controller class,
-      # and core framework/stdlib constants do not count. Multiple references
+      # Exception classes at `rescue`/`raise`/`fail` sites, constants owned by
+      # the controller class, and core framework/stdlib constants do not
+      # count. Multiple references
       # to the same constant count once. The cop is path-classified through
       # `Metz::FileClassifier.controller?` and is silent on any file that is
       # not under `app/controllers/`.
