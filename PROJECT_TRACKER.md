@@ -80,10 +80,12 @@ burn a `1.0.0` signal on the first public push.
 ## Current Snapshot
 
 - Date: 2026-07-08.
-- Latest pushed baseline: `9b1c0fd Guard gemspec build location instead of
-  chdir'ing` (the tagged `v0.5.3` commit), plus this release-record commit.
-- CI state: the most recent `main` runs, including `9b1c0fd` (CI workflow), all
-  succeeded.
+- Latest pushed baseline: `1397a2c Bump rubocop 1.88.2, rubocop-ast 1.50.0,
+  rubydex 0.2.8`. Post-`v0.5.3` slices on `main`: `2edc63a` (check_ci_parity
+  speedup) and `1397a2c` (dependency bumps); `9b1c0fd` is the tagged `v0.5.3`
+  release commit.
+- CI state: the most recent `main` CI-workflow runs, including `1397a2c`,
+  `2edc63a`, and `9b1c0fd`, all succeeded.
 - Release state: **`v0.5.3` is published and verified on both rubygems.org and
   GitHub Packages** (tag `v0.5.3` → `9b1c0fd`, GitHub Release, both gems live,
   `rubocop-metz` before `metz-scan`). Verified end-to-end: a clean
@@ -97,9 +99,9 @@ burn a `1.0.0` signal on the first public push.
   `0.5.2` has been **yanked** from rubygems.org (the versions API now lists only
   `0.5.3` for both gems); GitHub Packages `0.5.2` is fine and stays. The release
   is fully complete. All carried issues (#33/#34/#37) closed.
-- Local branch state: `main` HEAD is `9b1c0fd`, tagged `v0.5.3`; this
-  release-record commit follows it. Tree clean. The `v0.5.2` tag/GitHub Release
-  stay as historical.
+- Local branch state: `main` HEAD is `1397a2c`; the tagged `v0.5.3` commit is
+  `9b1c0fd`. Tree clean, in sync with `origin/main`. The `v0.5.2` tag/GitHub
+  Release stay as historical.
 - Dogfooding state: **exit criterion 2 PASSED on 2026-07-08** on the re-verify
   round (`docs/dogfooding/2026-07-08-round-0.5.2-reverify.md`). The 2026-07-07
   round (`docs/dogfooding/2026-07-07-round-0.5.2.md`) found four headline-UX
