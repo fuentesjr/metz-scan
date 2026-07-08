@@ -9,6 +9,56 @@ Use `PROJECT_TRACKER.md` for the current direction, next queue, parked work, and
 latest checkpoint. Add new notes here only when a slice needs more durable
 detail than the tracker should carry.
 
+## 2026-07-08: v0.5.3 — corrupt rubygems.org publish, recovery, and gemspec guard
+
+Incident: the first rubygems.org push (`0.5.2`) shipped a **corrupt
+`rubocop-metz`**. It was built with `gem build rubocop-metz/rubocop-metz.gemspec`
+**from the repo root**, and the gemspec's `spec.files` used a CWD-relative
+`Dir.glob("{lib,config}/**/*")`, so it packaged the wrapper's `lib/metz_scan`
+files instead of `rubocop-metz`'s own cops. `require "rubocop-metz"` then failed
+for anyone who installed from rubygems.org — the documented `bundle exec
+metz-scan scan` path was broken (a bare `--version` check would NOT have caught
+it; only running a real scan did). The `RELEASE_CHECKLIST.md` command is
+`cd rubocop-metz && gem build` precisely to avoid this; the orchestrator
+deviated. GitHub Packages `0.5.2` was fine (built via `cd rubocop-metz`).
+
+Constraint: rubygems.org forbids overwriting a version and forbids re-pushing a
+yanked one, so `0.5.2` can't be fixed in place — the fix is a clean `0.5.3`.
+
+Fix, second attempt (the first was wrong): the initial hardening made the
+gemspec compute `gem_root = File.expand_path(__dir__)` and `Dir.chdir` there.
+`__dir__` is unreliable when a gemspec is **eval'd** (Bundler/Dependabot eval it
+with a relative `__FILE__` after chdir'ing into the gem dir, so
+`File.expand_path(__dir__)` produced a doubled path), and the side-effecting
+`Dir.chdir` then crashed gemspec evaluation. The CI **test** workflow stayed
+green (it builds/tests from the repo root where it happened to resolve) but the
+**Dependabot** job went red loading the gemspec — that's what surfaced it. The
+shipped fix (`9b1c0fd`) is side-effect-free: keep the original CWD-relative
+`Dir.glob` and, right after building `spec.files`, `raise` a clear "build from
+the gem's own directory" error if the entrypoint (`lib/rubocop-metz.rb` /
+`lib/metz_scan.rb`) is missing. This converts a wrong-directory build into an
+immediate, self-explaining failure instead of a silently corrupt gem, and leaves
+gemspec eval clean in every context (Bundler, Dependabot, `gem build`).
+
+Lessons (durable):
+- Release verification for a wrapper+plugin gem pair MUST run a real `scan` from
+  a clean install of each registry, not just `--version` — a broken transitive
+  dependency only shows up when the plugin is actually required.
+- Always build `rubocop-metz` from its own directory; the gemspec now enforces
+  this. Content-verify each built gem (`gem spec <gem> files`) BEFORE `gem push`.
+- Don't put side effects (`Dir.chdir`) or `__dir__`-dependent absolute-path
+  logic in a gemspec — it's eval'd in several contexts (gem build, Bundler,
+  Dependabot) with different CWD/`__FILE__` semantics. Prefer a loud guard.
+- `check_ci_parity` and the CI **test** workflow do not exercise the Dependabot
+  gemspec-eval path; a green test suite is not proof the gemspec loads cleanly
+  everywhere.
+
+Delegation: version-bump/first-hardening prep was sonnet-delegated; the
+orchestrator caught the Dependabot regression, replaced the fragile fix with the
+guard, and ran all irreversible build/publish/verify/yank steps directly.
+Pending: `gem yank rubocop-metz -v 0.5.2` / `metz-scan -v 0.5.2` need a key with
+the `yank_rubygem` scope (the maintainer's key only has `push_rubygem`).
+
 ## 2026-07-08: v0.5.2 release completion (GitHub Packages)
 
 `v0.5.2` published to GitHub Packages under explicit user authorization. Tag
