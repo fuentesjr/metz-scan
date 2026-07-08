@@ -85,6 +85,34 @@ module MetzScan
       git(repo, "-c", "user.name=Test", "-c", "user.email=test@example.com", "commit", "-m", "initial")
     end
 
+    def configure_fake_upstream(repo)
+      branch = current_branch(repo)
+      configure_fake_remote(repo, branch)
+      configure_upstream_tracking(repo, branch)
+    end
+
+    def configure_fake_remote(repo, branch)
+      git(repo, "config", "remote.origin.url", "file:///dev/null")
+      git(repo, "config", "remote.origin.fetch", "+refs/heads/*:refs/remotes/origin/*")
+      git(repo, "update-ref", "refs/remotes/origin/#{branch}", "HEAD")
+    end
+
+    def configure_upstream_tracking(repo, branch)
+      git(repo, "config", "branch.#{branch}.remote", "origin")
+      git(repo, "config", "branch.#{branch}.merge", "refs/heads/#{branch}")
+    end
+
+    def current_branch(repo)
+      stdout, = Open3.capture2("git", "branch", "--show-current", chdir: repo)
+      stdout.strip
+    end
+
+    def commit_docs_only_change(repo)
+      File.write(File.join(repo, "NOTES.md"), "docs change\n")
+      git(repo, "add", "NOTES.md")
+      git(repo, "-c", "user.name=Test", "-c", "user.email=test@example.com", "commit", "-m", "docs change")
+    end
+
     def git(repo, *args)
       system("git", *args, chdir: repo, out: File::NULL, err: File::NULL) || flunk("git #{args.join(' ')} failed")
     end
@@ -146,6 +174,10 @@ module MetzScan
       Result.new(stdout: stdout, stderr: stderr, status: status)
     end
 
+    def bundle_log(paths)
+      File.read(paths.bundle_log)
+    end
+
     def ci_env(paths)
       { "PATH" => "#{paths.fake_bin}:#{ENV.fetch('PATH')}", "CI_PARITY_TMPDIR" => paths.tmp_base,
         "FAKE_BUNDLE_LOG" => paths.bundle_log }
@@ -153,6 +185,24 @@ module MetzScan
 
     def preserved_clone_path(stderr)
       stderr[/clean clone preserved at (.+)$/, 1].to_s.strip
+    end
+
+    def assert_docs_only_mode(paths)
+      configure_fake_upstream(paths.repo)
+      commit_docs_only_change(paths.repo)
+      result = run_ci_parity(paths)
+      assert_docs_only_result(result)
+      assert_docs_only_bundle_log(paths)
+    end
+
+    def assert_docs_only_result(result)
+      assert_predicate result.status, :success?, result.stderr
+      assert_includes result.stdout, "check_ci_parity: mode=docs-only (1 changed files, all docs)"
+    end
+
+    def assert_docs_only_bundle_log(paths)
+      assert_includes bundle_log(paths), "agent_workspace_docs"
+      refute_match(/^exec rake$/, bundle_log(paths))
     end
   end
 
@@ -175,6 +225,10 @@ module MetzScan
       script = File.read(File.join(CheckCiParityRepoFixture::REPO_ROOT, "bin/check_ci_parity"))
 
       assert_operator script.index("bin/check_tracker_queue"), :<, script.index("bundle install")
+    end
+
+    def test_docs_only_commit_runs_docs_freshness_tests_instead_of_full_suite
+      with_ci_parity_repo(tracker: actionable_tracker) { |paths| assert_docs_only_mode(paths) }
     end
   end
 end

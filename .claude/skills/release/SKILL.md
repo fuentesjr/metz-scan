@@ -42,9 +42,10 @@ Touch exactly these surfaces:
    `0.5.1`).
 6. `PROJECT_TRACKER.md` checkpoint row for the prep.
 
-Then run the full gauntlet from the `land-slice` skill, including `bin/check_ci_parity`
-on the committed prep, push, and wait for green CI on the prep commit before
-asking to tag. Verify with
+Then run the full gauntlet from the `land-slice` skill, including
+`CI_PARITY_FULL=1 bin/check_ci_parity` (parity now runs a reduced subset by
+default; force the full suite for a release prep) on the committed prep, push,
+and wait for green CI on the prep commit before asking to tag. Verify with
 `gh run list --repo fuentesjr/metz-scan --branch main --limit 3`.
 
 ## Phase 3 — tag, GitHub Release, publish (authorization required)

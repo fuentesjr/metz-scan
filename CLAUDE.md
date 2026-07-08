@@ -55,7 +55,9 @@ bundle exec rake              # full suite (~546 runs as of 0.5.1)
 bundle exec rake test:fast    # groups defined in test/support/test_file_groups.rb
 bundle exec rake test:slow    # subprocess/integration tests
 bundle exec rubocop           # repo lints itself with its own plugin
-bin/check_ci_parity           # pre-push gate: reruns CI steps in a clean clone of committed HEAD
+bin/check_ci_parity           # pre-push gate: runs a deliberate CI subset in a clean clone of the
+                               # committed HEAD (docs-freshness tests for docs-only commits, `rake
+                               # test:fast` for code commits); CI_PARITY_FULL=1 forces the full suite
 bin/check_dependency_direction
 bin/check_sample_app_frozen   # SHA-256 freeze gate on test/fixtures/sample_app
 bin/check_read_only_commands  # runs read-only maintenance cmds under BUNDLE_FROZEN=1, fails on dirty tree
@@ -70,7 +72,10 @@ bundle exec ruby -Ilib -Itest -Irubocop-metz/lib -Irubocop-metz/test path/to_tes
 ```
 
 Ruby >= 3.3, Bundler 4.0.8. CI is `.github/workflows/ci.yml`; `check_ci_parity`
-replicates every single-command step plus tracker hygiene.
+replicates every single-command step plus tracker hygiene, but scales the
+"tests" step to the commits being pushed (docs-only vs code) rather than
+always running the full suite — remote CI stays the full-suite backstop; set
+`CI_PARITY_FULL=1` to force the full local suite (do this before a release).
 
 ## Invariants and conventions (violating these fails a check or a review)
 

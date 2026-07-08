@@ -74,10 +74,14 @@ grep -q '^::warning file=.*MetzProject/ServiceSoup' /tmp/metz-gh-annotations.out
   also runs tracker hygiene before Bundler work and preserves the clean clone
   path when a phase fails. On failure, use the printed
   `clean clone preserved at` path and `next action:` command to reproduce the
-  failed phase in that clone.
+  failed phase in that clone. Parity normally scales its "tests" step to the
+  commits being pushed (docs-freshness tests for docs-only commits, `rake
+  test:fast` for code commits) and skips the full suite. Release commits should
+  run it with `CI_PARITY_FULL=1` so it exercises the full local suite instead
+  (or otherwise confirm remote CI is green on the full suite before tagging).
 
 ```bash
-bin/check_ci_parity
+CI_PARITY_FULL=1 bin/check_ci_parity
 ```
 
 - [ ] Inspect recent CI runs on GitHub.

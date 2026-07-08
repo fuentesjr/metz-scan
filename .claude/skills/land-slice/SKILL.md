@@ -45,10 +45,15 @@ git push
 ```
 
 `bin/check_ci_parity` clones the *committed HEAD* into a temp dir — it does not
-see uncommitted changes. Commit first, parity-check, push. If a phase fails it
-prints `clean clone preserved at <dir>` and a `next action:` command;
-reproduce there, not in your checkout (the failure is usually a local-only
-environment assumption such as the rubydex group or an untracked file).
+see uncommitted changes. Commit first, parity-check, push. Parity now runs a
+deliberate CI subset by default: docs-freshness tests for docs-only commits,
+`rake test:fast` for code commits — a real subset of CI, not a full mirror.
+Remote CI stays the full-suite backstop; set `CI_PARITY_FULL=1` to force the
+full local suite (do this before a release prep, per the `release` skill). If
+a phase fails it prints `clean clone preserved at <dir>` and a `next action:`
+command; reproduce there, not in your checkout (the failure is usually a
+local-only environment assumption such as the rubydex group or an untracked
+file).
 
 ## Gates that break in clusters (know these before editing)
 

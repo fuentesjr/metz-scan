@@ -9,13 +9,44 @@
 # multi-line GitHub annotations smoke is not replicated; it stays covered by
 # CI and RELEASE_CHECKLIST.md. Uncommitted changes are not checked — commit
 # the slice, run this, then push.
+#
+# Parity is a deliberate SUBSET of CI, not a mirror of it: the "tests" step is
+# scaled to the commits about to be pushed instead of always running the full
+# suite. Docs-only commits (every changed path matches *.md, docs/, skills/,
+# or LICENSE) run the docs-freshness test group; code commits run
+# `rake test:fast`; remote CI (.github/workflows/ci.yml) remains the full-suite
+# backstop for both. Set CI_PARITY_FULL=1 to force the full local suite (do
+# this before a release). Mode falls back to full whenever it cannot be
+# determined (no upstream configured, or the diff command errors) so an
+# ambiguous range never silently reduces coverage.
 
 require "fileutils"
+require "open3"
 require "tmpdir"
 
 ROOT = File.expand_path("..", __dir__)
 CALIBRATION_SMOKE = "bundle exec ruby bin/check_project_analyzer_calibration --text --no-write " \
                     "test/fixtures/sample_app"
+DOCS_FRESHNESS_TESTS = "bundle exec ruby -Ilib -Itest -Irubocop-metz/lib -Irubocop-metz/test " \
+                       "-e 'Dir[\"test/metz_scan/{readme_*,*skill*,read_only_command_docs," \
+                       "project_analyzer_calibration_docs,agent_workspace_docs}*_test.rb\"]" \
+                       ".each { |f| require File.expand_path(f) }'"
+FAST_TESTS = "bundle exec rake test:fast"
+FULL_TESTS = "bundle exec rake"
+TESTS_BY_MODE = { docs_only: DOCS_FRESHNESS_TESTS, code: FAST_TESTS }.freeze
+DOCS_PATH_PREFIXES = %w[docs/ skills/].freeze
+UNDETERMINED_REASON = "no upstream configured or diff range undeterminable"
+
+STEP_TEMPLATE = [
+  ["tracker hygiene", "bin/check_tracker_queue"],
+  ["bundle install", "bundle install"],
+  ["tests", :tests],
+  ["rubocop", "bundle exec rubocop"],
+  ["calibration smoke", CALIBRATION_SMOKE],
+  ["read-only command guard", "bin/check_read_only_commands"],
+  ["dependency direction", "bin/check_dependency_direction"],
+  ["sample app frozen", "bin/check_sample_app_frozen"]
+].freeze
 
 # Scrub the invoking checkout's bundler state so the clone resolves its own.
 CLEAN_BUNDLER_ENV = {
@@ -27,16 +58,74 @@ CLEAN_BUNDLER_ENV = {
   "RUBYLIB" => nil
 }.freeze
 
-STEPS = [
-  ["tracker hygiene", "bin/check_tracker_queue"],
-  ["bundle install", "bundle install"],
-  ["tests", "bundle exec rake"],
-  ["rubocop", "bundle exec rubocop"],
-  ["calibration smoke", CALIBRATION_SMOKE],
-  ["read-only command guard", "bin/check_read_only_commands"],
-  ["dependency direction", "bin/check_dependency_direction"],
-  ["sample app frozen", "bin/check_sample_app_frozen"]
-].freeze
+Mode = Struct.new(:name, :changed_files, :reason, keyword_init: true)
+
+def docs_path?(path)
+  return true if path.end_with?(".md") || path == "LICENSE"
+
+  DOCS_PATH_PREFIXES.any? { |prefix| path.start_with?(prefix) }
+end
+
+def full_override?
+  value = ENV.fetch("CI_PARITY_FULL", nil)
+  !value.nil? && !value.empty?
+end
+
+def changed_files_since_upstream
+  stdout, _stderr, status = Open3.capture3("git", "-C", ROOT, "diff", "--name-only", "@{upstream}", "HEAD")
+  return nil unless status.success?
+
+  stdout.split("\n")
+end
+
+def classify(changed_files)
+  return :code if changed_files.empty?
+
+  changed_files.all? { |path| docs_path?(path) } ? :docs_only : :code
+end
+
+def undetermined_mode
+  Mode.new(name: :full, changed_files: nil, reason: UNDETERMINED_REASON)
+end
+
+def resolve_mode
+  return Mode.new(name: :full, changed_files: nil, reason: "CI_PARITY_FULL is set") if full_override?
+
+  changed_files = changed_files_since_upstream
+  return undetermined_mode if changed_files.nil?
+
+  Mode.new(name: classify(changed_files), changed_files: changed_files, reason: nil)
+end
+
+def tests_command(mode)
+  TESTS_BY_MODE.fetch(mode.name, FULL_TESTS)
+end
+
+def docs_only_message(mode)
+  "check_ci_parity: mode=docs-only (#{mode.changed_files.size} changed files, all docs) — running " \
+    "docs-freshness tests + guards, skipping the full suite (remote CI runs it; set CI_PARITY_FULL=1 to force it)"
+end
+
+def code_message(mode)
+  "check_ci_parity: mode=code (#{mode.changed_files.size} changed files) — running the fast test group, " \
+    "skipping the full suite (remote CI runs it; set CI_PARITY_FULL=1 to force it)"
+end
+
+def full_message(mode)
+  "check_ci_parity: mode=full (#{mode.reason}) — running the full test suite"
+end
+
+def mode_message(mode)
+  case mode.name
+  when :docs_only then docs_only_message(mode)
+  when :code then code_message(mode)
+  else full_message(mode)
+  end
+end
+
+def steps_for(mode)
+  STEP_TEMPLATE.map { |phase, command| [phase, command == :tests ? tests_command(mode) : command] }
+end
 
 def run_step(step, dir)
   phase, command = step
@@ -72,6 +161,10 @@ end
 
 puts "check_ci_parity: ruby #{RUBY_VERSION} (CI pins its version in .github/workflows/ci.yml)"
 
+mode = resolve_mode
+puts mode_message(mode)
+steps = steps_for(mode)
+
 tmp = parity_tmpdir
 success = false
 clone = File.join(tmp, "metz-scan")
@@ -83,7 +176,7 @@ begin
     exit 1
   end
 
-  STEPS.each { |step| run_step(step, clone) }
+  steps.each { |step| run_step(step, clone) }
   success = true
 ensure
   FileUtils.remove_entry(tmp) if success && File.exist?(tmp)
