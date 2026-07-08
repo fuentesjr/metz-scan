@@ -148,31 +148,31 @@ burn a `1.0.0` signal on the first public push.
 
 ## Latest Slice Checkpoint
 
-Slice: 2026-07-08 sandi_meter pre-publish gate — compliance scorecard + README
-comparison (closes the gate).
+Slice: 2026-07-08 README rubygems polish (pre-publish first-impression pass).
 
-What changed: `scan` and `report` text output now end with a `Summary`
-scorecard: Metz compliance, total offenses across cops, per-cop counts, and the
-top five files by offense count. `scan --format json` and `report --format json`
-add `summary.clean_file_count`, `summary.files_with_offenses`, and
-`summary.offenses_by_cop` without changing existing fields. Exact scorecard
-fixtures cover clean, no-files, sorted, and limited-output cases. Added a README
-"How metz-scan compares" section crediting `sandi_meter` as prior art. README and
-the consumer skill document the new behavior. The scorecard was Codex-delegated;
-its worker was reaped mid-verification (companion orphaned to PPID 1, its rake
-subprocess dead, log 30+ min stale), so the deliverable was verified on disk and
-the stale record cleared — see `implementation-notes.md`. Verified independently
-on the settled tree: `bundle exec rake` 569 runs/0F/0E, `bundle exec rubocop`
-clean, `bin/check_dogfood` PASS, and all docs-freshness tests green.
+What changed (docs only): rewrote the README Install section to lead with the
+standard rubygems install (`gem install metz-scan` / `gem "metz-scan"`, pin
+`~> 0.5.2`), demoting the GitHub Packages auth flow to its own section near
+Requirements and relocating maintainer commands (`check_ci_parity`,
+`check_published_gem`, dev clone) to Contributing. Led the README with a real
+`scan` hero example ending in the compliance `Summary` scorecard (all six Metz
+cops, internally consistent totals). Trimmed ~135 lines of per-analyzer
+calibration internals out of Usage into a new "Analyzer behavior reference"
+section in `docs/project-analyzer-calibration.md`, keeping the status table plus
+a short summary and link, and surfaced the JSON `summary` scorecard fields in
+Usage. Verified: docs-freshness group 18 runs/0F/0E; full `rake` +
+`check_ci_parity` via the pre-push gate.
 
-Release status carried in: all four exit criteria met (GO) and the pre-publish
-competitive gate is closed; `main` HEAD after this slice is the publishable
-`v0.5.2` candidate, gated only on explicit user publish authorization.
+Release status carried in: unchanged — all four exit criteria met (GO), the
+pre-publish competitive gate is closed, and `main` HEAD is the publishable
+`v0.5.2` candidate gated only on explicit user publish authorization.
 
-Prior committed slice — 2026-07-08 session handoff (`f801b94`): recorded the
-`sandi_meter` competitive analysis and the user-added pre-publish gate, queued
-the compliance scorecard plus README comparison section, and saved the exact
-scorecard spec and README draft in `implementation-notes.md`.
+Prior committed slice — 2026-07-08 compliance scorecard + README comparison
+(`0339bfb`): `scan`/`report` text output ends with a compliance `Summary`
+scorecard and JSON gains `clean_file_count`/`files_with_offenses`/
+`offenses_by_cop`; added the README "How metz-scan compares" section. The
+scorecard was Codex-delegated and recovered from a mid-verification worker reap
+(verified on disk, stale record cleared) — see `implementation-notes.md`.
 
 ## Parked / Not Next
 
@@ -216,7 +216,8 @@ scorecard spec and README draft in `implementation-notes.md`.
 
 | Date | Commit | Summary |
 | --- | --- | --- |
-| 2026-07-08 | `this commit` | Closed the `sandi_meter` pre-publish gate. Added the compliance scorecard: `scan`/`report` text output ends with Metz compliance, total offenses across cops, per-cop counts, and top offending files; JSON summaries add `clean_file_count`, `files_with_offenses`, and `offenses_by_cop`. Added a README "How metz-scan compares" section crediting `sandi_meter` as prior art. Red-green command tests, exact scorecard fixtures, README/skill docs, tracker updates. Scorecard Codex-delegated and recovered from a mid-verification worker reap (verified on disk, stale record cleared). |
+| 2026-07-08 | `this commit` | README rubygems first-impression polish (docs only): Install now leads with `gem install metz-scan` (GitHub Packages auth flow demoted to its own section near Requirements; maintainer commands moved to Contributing); a real `scan` hero example ending in the compliance `Summary` scorecard leads the README; ~135 lines of per-analyzer calibration internals moved from Usage to a new "Analyzer behavior reference" section in `docs/project-analyzer-calibration.md` (status table + summary + link kept); JSON `summary` scorecard fields surfaced in Usage. Docs-freshness 18/0F. |
+| 2026-07-08 | `0339bfb` | Closed the `sandi_meter` pre-publish gate. Added the compliance scorecard: `scan`/`report` text output ends with Metz compliance, total offenses across cops, per-cop counts, and top offending files; JSON summaries add `clean_file_count`, `files_with_offenses`, and `offenses_by_cop`. Added a README "How metz-scan compares" section crediting `sandi_meter` as prior art. Red-green command tests, exact scorecard fixtures, README/skill docs, tracker updates. Scorecard Codex-delegated and recovered from a mid-verification worker reap (verified on disk, stale record cleared). |
 | 2026-07-08 | `f801b94` | Session handoff: recorded the `sandi_meter` competitive analysis and a user-added pre-publish gate. metz-scan already beats it on coverage, modern-Ruby accuracy, project analyzers, CI/SARIF, integration, and maintenance; its one edge was a compliance-% scorecard. Queued two pre-publish items (a `scan` compliance scorecard + a README "how it compares" section) with the exact scorecard spec and README draft in `implementation-notes.md`, then publish. Docs/tracker/notes only; no code. |
 | 2026-07-08 | `e78c5af` | Release readiness — exit criteria 3 and 4. Criterion 3: verified the quickstart against a clean install of the locally-built `0.5.2` candidate (crash-fix ships in the built gem) and fixed the README Quick Start's repo-relative fixture step (consumer first-scan + scoped demo). Criterion 4: gem metadata reads correctly; added `changelog_uri`/`bug_tracker_uri` to both gemspecs, `rubocop-metz` now ships `LICENSE`, revised `docs/releases/v0.5.2.md` for all fixes, pinned new metadata in `release_metadata_test`. **All four exit criteria met; go/no-go: GO.** |
 | 2026-07-08 | `d57d2e7` | Closed the accepted `inherit_gem`-exclude limitation: default mode now emits a one-line stderr warning naming an unresolvable `inherit_gem` gem ("... not applied; install the gem or use --all-cops") instead of silently dropping its `Exclude` — stdout report stays clean, `--all-cops` unchanged. `ProjectConfigScope` collects unresolved gems, `Runner` warns once per gem. README/skill note + red-green test. |

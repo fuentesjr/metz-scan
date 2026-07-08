@@ -9,10 +9,37 @@ RuboCop is excellent at enforcing local style and correctness, but design smells
 Example output:
 
 ```text
-Metz/ViewsDeepNavigation
-  Why it matters: Deep object-graph chains in views couple templates to the internal structure of every collaborator they touch, making refactors and test setup painful.
-  Run `metz-scan explain Metz/ViewsDeepNavigation` for details.
+$ metz-scan scan app lib
+
+Metz/MethodsTooLong
+  Why it matters: Long methods hide multiple responsibilities and resist understanding at a glance.
+  Run `metz-scan explain Metz/MethodsTooLong` for details.
+  app/models/order.rb:12:3 Metz/MethodsTooLong: Method has too many lines. [7/5]
+
+Summary
+-------
+Metz compliance: 62% (312/500 files clean)
+435 offenses across 6 cops
+
+By cop:
+  Metz/MethodsTooLong                         333
+  Metz/ControllersTooManyDirectCollaborators  58
+  Metz/ClassesTooLong                         21
+  Metz/DemeterTrainWreck                      13
+  Metz/MethodsTooManyParameters               6
+  Metz/ViewsDeepNavigation                    4
+
+Most offenses:
+  app/models/order.rb                   31
+  app/models/account.rb                 24
+  app/controllers/orders_controller.rb  19
+  app/services/checkout.rb              15
+  app/models/user.rb                    12
 ```
+
+The compliance percentage is the share of inspected files with no `Metz/*`
+rule offenses; advisory `MetzProject/*` project-analyzer findings never count
+against it.
 
 The repo contains two gems:
 
@@ -44,24 +71,14 @@ scorecard — forward with a wider, more current toolset:
 
 ## Install
 
-`metz-scan` is currently published to GitHub Packages. Configure Bundler with a
-GitHub token that can read packages, then add the GitHub Packages source to your
-Gemfile:
-
 ```bash
-gh auth refresh -h github.com -s read:packages
-GITHUB_PACKAGES_TOKEN="$(gh auth token)"
-bundle config set --global https://rubygems.pkg.github.com/fuentesjr \
-  "fuentesjr:${GITHUB_PACKAGES_TOKEN}"
-unset GITHUB_PACKAGES_TOKEN
+gem install metz-scan
 ```
 
-```ruby
-source "https://rubygems.org"
+Or add it to your Gemfile:
 
-source "https://rubygems.pkg.github.com/fuentesjr" do
-  gem "metz-scan", "~> 0.5.0"
-end
+```ruby
+gem "metz-scan", "~> 0.5.2"
 ```
 
 ```bash
@@ -69,25 +86,12 @@ bundle install
 bundle exec metz-scan --version
 ```
 
-From this repository, `bin/check_published_gem VERSION` creates a clean
-temporary consumer project and verifies a GitHub Packages install. Use it when
-debugging package credentials, source configuration, or packaged runtime
-behavior; failures include redacted Bundler output and credential hints.
+`metz-scan` depends on `rubocop-metz` (the RuboCop plugin providing the
+`Metz/*` cops); Bundler resolves a compatible version automatically.
 
-Use `bin/check_ci_parity` before pushing release or workflow changes. It clones
-the committed HEAD into a temp dir and runs the single-command CI phases
-without local Bundler config or untracked files. If a phase fails, use the
-printed `clean clone preserved at` path plus the `next action:` command to
-reproduce that failed phase inside the preserved clone.
-
-For local development:
-
-```bash
-git clone https://github.com/fuentesjr/metz-scan.git
-cd metz-scan
-gem install bundler -v 4.0.8
-bundle install
-```
+Also available on GitHub Packages if you need package-registry provenance
+alongside rubygems.org — see [GitHub Packages install](#github-packages-install)
+below for the auth setup.
 
 ## Quick Start
 
@@ -154,6 +158,11 @@ bundle exec metz-scan scan . --format sarif
 bundle exec metz-scan scan . --format gh-annotations
 ```
 
+`--format json` adds an additive `summary` object to the report —
+`clean_file_count`, `files_with_offenses`, and `offenses_by_cop` (a cop → count
+map) alongside the existing fields — so tools can consume the compliance
+scorecard without parsing the text output.
+
 By default, `scan` runs the RuboCop-backed `Metz/*` cops only, plus
 project-analyzer findings that satisfy the default-output policy: the analyzer
 is explicitly default-output eligible, the analyzer is validated, and the
@@ -204,142 +213,14 @@ Current project analyzer status:
 | `MetzProject/RepeatedQueryCriteria` | Candidate | No | Repeated constant-receiver or constant-root scope-chain hash criteria in `where`, `where.not`, or finder calls across files and coarse packages. Current fixture evidence is `where` plus `find_by`; `where.not` is supported and test-covered but not yet active-fixture evidenced. |
 | `MetzProject/SubclassOverridePressure` | Candidate | No | Indexed base classes whose descendants repeatedly override the same method. |
 
-Project analyzers parse Ruby files only. They do not inspect ERB/HAML/SLIM
-templates, and they avoid semantic claims that require resolving runtime types.
-For example, `ServiceSoup` counts distinct constant-backed `.call` and
-`.perform` service-call shapes but does not prove that a constant is truly a
-service object. Seed and setup orchestrators are reported with lower confidence
-and setup-specific triage language. See
-[docs/project-analyzer-calibration.md](docs/project-analyzer-calibration.md) for
-current calibration notes.
-
-`RepeatedBranching` reports generic branch subjects such as `action`, `type`,
-`value`, and `key.to_s` with lower confidence and `context required` triage.
-
-- Use `--project-analyzers` to review those context-dependent findings.
-- Default scan output keeps medium-confidence design-pressure findings.
-
-### Analyzer Behavior Details
-
-#### `MetzProject/DeepInheritanceTree`
-
-- **Index:** Uses the optional Rubydex-backed project index. If that optional
-  bundle group is unavailable, `--project-analyzers` still runs and this
-  analyzer simply contributes no findings.
-- **Triage:** Broad framework, Rails application, controller, job, service,
-  serializer, policy, worker, exception, CLI, and abstract bases remain visible
-  with lower confidence and `broad base` triage.
-
-#### `MetzProject/PackageDependencyPressure`
-
-- **Index:** Requires the optional project index and contributes no findings
-  when the index is unavailable.
-- **Scope:** Counts declarations under `app/` and `lib/` packages.
-- **Ignored references:** Skips `spec/`, `test/`, `lib/tasks/`,
-  `lib/seeders/`, `lib/seed_data/`, `lib/test_data/`, `lib/generators/`,
-  nested seed paths, and nested `testing_support` paths.
-- **Threshold:** Reports at least 12 referring files across at least
-  5 packages.
-- **Triage:** Broad shared dependencies such as configuration, settings, event
-  registries, exception families, infrastructure hubs, conventional domain model
-  surfaces, value objects, and protocol-manager surfaces are lower-confidence
-  shared-dependency findings.
-- **Metadata:** Includes a shared `reference_shape` summary so package- and
-  namespace-pressure calibration can compare referring file counts, package
-  counts, package roots, and package leafs consistently.
-
-#### `MetzProject/NamespaceLeakPressure`
-
-- **Index:** Requires the optional project index and contributes no findings
-  when the index is unavailable.
-- **Scope:** Reports deeply nested declarations such as
-  `Billing::Ledger::PrivateFormatter` when references spread outside the home
-  namespace into at least three files across three coarse packages.
-- **Ignored references:** Skips references from the same namespace path, test
-  roots, and setup/support paths such as nested seed and `testing_support`
-  paths.
-- **Triage:** Public constants, nested exception families, and framework or
-  extension namespaces are lower-confidence shared-namespace findings.
-- **Metadata:** Includes the same shared `reference_shape` summary used by
-  `PackageDependencyPressure`.
-
-#### `MetzProject/ImplicitContextPressure`
-
-- **Runtime needs:** AST-only and candidate opt-in.
-- **Scope:** Reports repeated Rails `CurrentAttributes`-style access such as
-  `Current.account` or `Spree::Current.store`, plus literal
-  `Thread.current[...]` key access such as `Thread.current[:redis]`.
-- **Threshold:** Requires the same ambient context in at least three files
-  across at least two coarse packages.
-- **Ignored calls:** Skips lifecycle calls such as `Current.reset`,
-  `Spree::Current.reset`, and `Current.set(...)`; dynamic `Thread.current` keys
-  stay out of scope.
-- **Metadata:** Distinguishes root vs namespaced `Current` receivers,
-  thread-local keys, and whether the repeated access includes writes.
-
-#### `MetzProject/RepeatedQueryCriteria`
-
-- **Runtime needs:** AST-only and candidate opt-in.
-- **Scope:** Reports simple constant-receiver or constant-root scope-chain hash
-  criteria with at least two literal keys.
-- **Included query shapes:** Positive `where` filters, negative `where.not`
-  filters, and finder lookups such as `find_by`, `find_or_initialize_by`, or
-  `find_or_create_by`.
-- **Examples:** `Order.where(account_id: ..., status: ...)`,
-  `Order.active.where.not(account_id: ..., status: ...)`, and
-  `Post.find_by(topic_id: ..., post_number: ...)`.
-- **Threshold:** Requires the same receiver, query method, and key set in at
-  least three files across at least two coarse packages.
-- **Out of scope:** Dynamic SQL strings, single-key lookups, dynamic scope
-  chains, non-constant receivers, dynamic hashes, bang finders, and broader
-  relation APIs.
-- **Metadata:** Distinguishes polymorphic, compound-association,
-  association-scoped, and generic hash-criteria repeats; records query method,
-  query operation, and whether the receiver is a constant or scope chain.
-- **Current calibration:** Active fixtures contain 15 findings: 6 positive
-  `where` filters and 9 `find_by` lookups. No repeated `where.not` finding
-  appears in active fixtures at the current threshold.
-- **Quality read:** 12 useful manual-review prompts and 3 mechanical or
-  expected lookups, so the analyzer stays candidate-only while
-  membership-table lookups and business-named lookup concepts remain separate
-  in calibration.
-
-#### `MetzProject/SubclassOverridePressure`
-
-- **Index:** Requires the optional project index and remains candidate opt-in.
-- **Scope:** Reports base classes whose known descendants override the same
-  base-declared method in at least six subclasses.
-- **Triage:** Framework, Rails application, controller, job, service,
-  serializer, policy, worker, exception, CLI, and abstract bases use the same
-  broad-root vocabulary as `DeepInheritanceTree` and are lower-confidence
-  `broad base` findings.
-- **Metadata:** Records whether the base method is abstract, empty,
-  default-valued, or concrete, and whether descendant overrides call `super`.
-  Repeated override families are triaged as broad-root, abstract-hook,
-  cooperative, replacement, or unclassified override pressure with
-  category-specific report language and next steps.
-
-Project analyzer output includes status, confidence, triage severity, and triage
-summary metadata. Default output includes only explicitly eligible, validated,
-medium-confidence design-pressure findings; `--project-analyzers` includes
-candidates, validated opt-in-only analyzers, and lower-confidence findings too.
-Text output shows a project-analyzer summary before rule blocks, including
-aggregate analyzer, confidence, severity, and category counts for opt-in
-high-volume runs; JSON and SARIF output include machine-readable
-project-analyzer metadata, and GitHub annotations append the same triage context
-to the annotation message. Text `scan` and `report` output ends with the same
-human scorecard summary; JSON `summary` includes `clean_file_count`,
-`files_with_offenses`, and `offenses_by_cop` for tools that need the rollup.
-Calibration evidence summaries from
-`bin/check_project_analyzer_calibration` also include a readiness/backlog section
-that records the current analyzer disposition, evidence boundary, next useful
-task, and explicit not-next boundary without changing scan output. Pass
-`--baseline-file docs/calibration/project_analyzer_baseline.yml` to compare a
-full active-manifest calibration run with the last checked-in active-manifest
-baseline. Filtered `--analyzer` reruns need a matching filtered baseline; see
-[docs/project-analyzer-calibration.md](docs/project-analyzer-calibration.md) for
-examples. Use `--print-baseline` to preview a compact refreshed baseline on
-standard output without writing calibration artifacts.
+Project analyzers parse Ruby files only and avoid semantic claims that require
+resolving runtime types (they do not inspect ERB/HAML/SLIM templates). Default
+scan output includes only findings from analyzers that are default-output
+eligible, validated, and medium-confidence; pass `--project-analyzers` for the
+complete opt-in set, including candidate analyzers and lower-confidence
+findings. See
+[docs/project-analyzer-calibration.md](docs/project-analyzer-calibration.md)
+for per-analyzer scope, thresholds, triage rules, and calibration evidence.
 
 Run safe auto-correction or preview it first:
 
@@ -418,6 +299,34 @@ Metz/DemeterTrainWreck:
 | Auto-fix safety | `--auto-fix`, `--unsafe`, `--dry-run` | Safe fixes use RuboCop `-a`; unsafe fixes use RuboCop `-A`. |
 | Environment variables | N/A | `metz-scan` does not require environment variables. |
 
+## GitHub Packages install
+
+`metz-scan` is also published to GitHub Packages, for consumers who want a
+package-registry install alongside rubygems.org. Configure Bundler with a
+GitHub token that can read packages, then add the GitHub Packages source to your
+Gemfile:
+
+```bash
+gh auth refresh -h github.com -s read:packages
+GITHUB_PACKAGES_TOKEN="$(gh auth token)"
+bundle config set --global https://rubygems.pkg.github.com/fuentesjr \
+  "fuentesjr:${GITHUB_PACKAGES_TOKEN}"
+unset GITHUB_PACKAGES_TOKEN
+```
+
+```ruby
+source "https://rubygems.org"
+
+source "https://rubygems.pkg.github.com/fuentesjr" do
+  gem "metz-scan", "~> 0.5.2"
+end
+```
+
+```bash
+bundle install
+bundle exec metz-scan --version
+```
+
 ## Requirements
 
 - Ruby `>= 3.3`
@@ -437,6 +346,15 @@ For durable code-level design exceptions, write a lightweight Design Decision
 Record before finalizing the exception. See
 [docs/design-decision-records.md](docs/design-decision-records.md).
 
+Clone the repo and install dependencies:
+
+```bash
+git clone https://github.com/fuentesjr/metz-scan.git
+cd metz-scan
+gem install bundler -v 4.0.8
+bundle install
+```
+
 Run the local checks:
 
 ```bash
@@ -445,12 +363,24 @@ bundle exec rake
 bundle exec rubocop
 bin/check_dependency_direction
 bin/check_sample_app_frozen
+bin/check_ci_parity
 ```
 
 `bin/check_dogfood` runs `metz-scan` against this repository with
 `--project-analyzers` enabled and requires the optional `rubydex` bundle group.
 It accepts zero project-analyzer findings. It fails if any
 non-project-analyzer offense appears or if a project-analyzer finding appears.
+
+Use `bin/check_ci_parity` before pushing release or workflow changes. It clones
+the committed HEAD into a temp dir and runs the single-command CI phases
+without local Bundler config or untracked files. If a phase fails, use the
+printed `clean clone preserved at` path plus the `next action:` command to
+reproduce that failed phase inside the preserved clone.
+
+From this repository, `bin/check_published_gem VERSION` creates a clean
+temporary consumer project and verifies a GitHub Packages install. Use it when
+debugging package credentials, source configuration, or packaged runtime
+behavior; failures include redacted Bundler output and credential hints.
 
 Use `bin/check_read_only_commands` for maintenance commands that must leave
 tracked files unchanged. The guard runs each command with `BUNDLE_FROZEN=1`,
