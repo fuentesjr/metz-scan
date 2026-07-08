@@ -128,7 +128,7 @@ burn a `1.0.0` signal on the first public push.
 | Release readiness | v0.5.3 released; complete | `v0.5.3` published and verified on rubygems.org and GitHub Packages (tag `v0.5.3` → `9b1c0fd`, GitHub Release, rubocop-metz before metz-scan; real-scan verified from rubygems.org, `check_published_gem 0.5.3` PASS). Fixed the corrupt `0.5.2` rubygems push, gemspecs guard against wrong-directory builds, and the corrupt `0.5.2` is yanked. | Done. Next release only when there's shippable work (e.g. testing-cops). |
 | Calibration artifact pipeline | Healthy | Markdown output, artifact write path, sample-app calibration smoke, the tracked target manifest under `docs/calibration/`, baseline-delta Markdown fixtures, compact baseline preview structure, exact `--print-baseline` YAML output, baseline scope mismatch checks, and help examples for scope-matched baseline workflows are covered. | Maintain; change only when artifact, target-manifest, or baseline-document behavior changes. |
 | Analyzer behavior | Parked | Fresh #27/#28 Mastodon and Discourse reruns did not show enough misleading or underexplained findings to justify behavior, threshold, or output-policy changes. | Reopen only with new generic evidence, not app-specific suppressions. |
-| Calibration evidence | Guarded | Redmine, Rubygems.org, ManageIQ, and Foreman evidence has been consolidated; Rubydex `0.2.7` was rechecked against the active manifest. Full active-manifest output is 697 findings/806 offenses; the four Rubydex-index-backed analyzers account for 607 findings/607 offenses. A compact Rubydex drift check covers those four analyzers, now with ProjectIndex missing-Rubydex subprocess coverage, missing-Rubydex skip-path coverage, exact sample-app text/JSON fixtures, and deterministic non-Rubydex formatter fixtures; `docs/calibration/project_analyzer_baseline.yml` captures the full active-manifest baseline for delta reporting. | Recheck only Rubydex-index-backed analyzers after future Rubydex upgrades unless an AST-only analyzer changes; use `--baseline-file docs/calibration/project_analyzer_baseline.yml` for full-manifest drift. |
+| Calibration evidence | Guarded | Redmine, Rubygems.org, ManageIQ, and Foreman evidence has been consolidated; Rubydex `0.2.8` was rechecked (`check_dogfood` PASS / 0 findings and `bin/check_rubydex_drift` on sample_app unchanged at 1 DeepInheritanceTree finding — no drift from the 0.2.7→0.2.8 bump). Full active-manifest output is 697 findings/806 offenses; the four Rubydex-index-backed analyzers account for 607 findings/607 offenses. A compact Rubydex drift check covers those four analyzers, now with ProjectIndex missing-Rubydex subprocess coverage, missing-Rubydex skip-path coverage, exact sample-app text/JSON fixtures, and deterministic non-Rubydex formatter fixtures; `docs/calibration/project_analyzer_baseline.yml` captures the full active-manifest baseline for delta reporting. | Recheck only Rubydex-index-backed analyzers after future Rubydex upgrades unless an AST-only analyzer changes; use `--baseline-file docs/calibration/project_analyzer_baseline.yml` for full-manifest drift. |
 | Workflow friction | Guarded | The lockfile rewrite came from a stale path dependency entry in `Gemfile.lock`; the lockfile now matches the gemspec's `rubocop-metz (~> 0.4.0)` constraint, read-only maintenance commands have a tracked-worktree mutation guard plus a public command-listing mode, `--print-baseline` is in the default read-only guard list, the read-only command contract is documented in contributor/calibration/release docs, and `bin/check_ci_parity` runs tracker hygiene before Bundler work while preserving failed clean clones and printing `next action:` commands for inspection. Parity now runs a deliberate CI subset (docs-freshness tests for docs-only commits, `rake test:fast` for code commits) instead of the full suite on every commit; `CI_PARITY_FULL=1` forces the full local suite, and remote CI stays the full-suite backstop either way. | Maintain the guard list and docs as new read-only commands are added; do not bypass `BUNDLE_FROZEN=1` for read-only calibration checks; use `CI_PARITY_FULL=1` before release prep. |
 | Sorbet adoption spike | Complete | Issue #26 was evaluated in a disposable workspace, documented, synced back to GitHub, and closed. The report recommends not adopting now: a narrow static setup is possible, but generated RBI churn, command policy, fixture scope, and runtime signature implications outweigh observed value. | Do not add Sorbet unless a concrete type-related defect, contributor ergonomics need, or stable public API typing requirement appears. |
 | Docs/adoption | Stable | README points contributors and agents to this tracker; old implementation notes are archived, current notes are short, and the Sorbet spike report records the tooling decision. The README now splits RepeatedBranching generic-subject guidance into a short list, the analyzer behavior details into per-analyzer subsections, package install troubleshooting points at `bin/check_published_gem`, parity failure inspection points at preserved clone/`next action:` output, the analyzer status table has freshness coverage, `skills/metz-scan/SKILL.md` gives agents consumer-facing usage guidance, and calibration docs point future Rubydex upgrades, filtered baselines, compact baseline previews, and parked issue updates at repeatable local commands. | Keep docs changes minimal and evidence-led. |
@@ -146,39 +146,30 @@ burn a `1.0.0` signal on the first public push.
 
 ## Latest Slice Checkpoint
 
-Slice: 2026-07-08 `bin/check_ci_parity` speedup — docs-only fast path + fast
-test group for code commits.
+Slice: 2026-07-08 dependency bumps — rubocop 1.88.2, rubocop-ast 1.50.0,
+rubydex 0.2.8 (supersedes Dependabot PRs) + GitHub housekeeping.
 
-What changed: parity's dominant cost was always running `bundle exec rake`
-(the full suite, including ~88 slow subprocess tests) even for docs-only
-commits where no test outcome can change. `bin/check_ci_parity` now resolves a
-mode from `git diff --name-only @{upstream} HEAD` before running its steps:
-**docs-only** (every changed path matches `*.md`, `docs/`, `skills/`, or
-`LICENSE`, and at least one path changed) runs a scoped docs-freshness test
-group instead of the "tests" step; **code** (any non-docs path changed) runs
-`rake test:fast`; **full** (no upstream configured, the diff command errors,
-or `CI_PARITY_FULL` is set) keeps `bundle exec rake` — the fallback is
-fail-safe so an undeterminable range never silently reduces coverage. All
-other steps (tracker hygiene, bundle install, rubocop, calibration smoke,
-read-only guard, dependency direction, sample app frozen) are unchanged and in
-the same order. This makes parity a deliberate SUBSET of CI, not a mirror:
-remote CI (`.github/workflows/ci.yml`) stays the full-suite backstop, and
-`CI_PARITY_FULL=1` forces the full local suite (use before a release prep, per
-the `release` skill). Docs updated: `RELEASE_CHECKLIST.md` and
-`.github/ISSUE_TEMPLATE/release_checklist.md` now run parity with
-`CI_PARITY_FULL=1`; `CLAUDE.md`'s Commands section and the `land-slice`/
-`release` skills describe the new subset behavior.
+What changed: `bundle update rubocop rubocop-ast rubydex` bumped rubocop
+1.88.0→1.88.2, rubocop-ast 1.49.1→1.50.0, and rubydex 0.2.7→0.2.8 (Gemfile pin
+`~> 0.2.8`), plus transitive json/language_server-protocol. The rubocop bump
+added two `Style/ArrayIntersect` offenses (`.any? { include? }` → `.intersect?`
+in `package_map.rb` and `project_analyzer_runner.rb`), autocorrected —
+equivalent, and `Array#intersect?` is Ruby 3.1+ (repo requires 3.3). This
+supersedes the conflicting Dependabot PRs #35 (rubocop-ast) and #36 (rubocop),
+which auto-close once the versions land on `main`. GitHub housekeeping: open
+issues #27/#28 (parked, no new evidence) and #25 (dogfood-CI, trigger-gated) are
+accurately captured already and need no update.
 
-How verified: added an end-to-end fixture test
-(`test_docs_only_commit_runs_docs_freshness_tests_instead_of_full_suite`) that
-wires a fake `origin` remote-tracking ref into the git fixture, commits a
-docs-only change, and asserts the fake-bundle log shows the docs-freshness
-command (not `bundle exec rake`) plus `mode=docs-only` in stdout. Existing
-`check_ci_parity_test.rb` behavioral tests build a fresh single-commit repo
-with no upstream, so they exercise the fail-safe full-mode fallback and stay
-green unchanged (5 runs, 0F/0E). `bundle exec rubocop` clean on both touched
-files. Docs-freshness test group 18/0F. `release_checklist_test.rb` 10/0F
-(issue-template body still matches `RELEASE_CHECKLIST.md` byte-for-byte).
+How verified: `bundle exec rubocop` clean (223 files, 0 offenses) after the
+autocorrect; rubydex 0.2.8 rechecked — `bin/check_dogfood` PASS (0 findings) and
+`bin/check_rubydex_drift` on sample_app unchanged (1 DeepInheritanceTree
+finding) → no analyzer drift from the bump; parity (code mode → `rake test:fast`)
+green before push.
+
+Prior committed slice — 2026-07-08 `check_ci_parity` speedup (`2edc63a`): parity
+now scales its tests step to the commits being pushed (docs-freshness for
+docs-only, `rake test:fast` for code, `CI_PARITY_FULL=1` for the full suite),
+making it a deliberate CI subset with remote CI as the full backstop.
 
 Prior committed slice — 2026-07-08 v0.5.3 release — fix and republish the
 corrupt rubygems.org `0.5.2`.
@@ -261,7 +252,9 @@ calibration internals moved to `docs/project-analyzer-calibration.md`.
 | Date | Commit | Summary |
 | --- | --- | --- |
 | 2026-07-08 | `this commit` | Made `bin/check_ci_parity` fast: a mode resolved from `git diff --name-only @{upstream} HEAD` runs docs-freshness tests for docs-only commits, `rake test:fast` for code commits, and falls back to the full `bundle exec rake` whenever the range can't be determined or `CI_PARITY_FULL` is set. Parity is now a deliberate subset of CI, not a mirror; remote CI stays the full-suite backstop. New end-to-end fixture test proves docs-only detection; existing tests (no-upstream fallback) stay green. Docs updated: `RELEASE_CHECKLIST.md`/issue template run parity with `CI_PARITY_FULL=1`, `CLAUDE.md` and the `land-slice`/`release` skills describe the subset behavior. |
-| 2026-07-08 | `this commit` | Yanked the corrupt `rubocop-metz`/`metz-scan` `0.5.2` from rubygems.org (maintainer added the `yank_rubygem` scope); the versions API now lists only `0.5.3`. Marks the `v0.5.3` release fully complete. Tracker/memory only. |
+| 2026-07-08 | `this commit` | Bumped `rubocop` 1.88.0→1.88.2, `rubocop-ast` 1.49.1→1.50.0, `rubydex` 0.2.7→0.2.8 (`bundle update`; Gemfile pin `~> 0.2.8`), superseding conflicting Dependabot PRs #35/#36. Autocorrected two new `Style/ArrayIntersect` offenses to `.intersect?`. Rubydex rechecked: `check_dogfood` PASS + `check_rubydex_drift` unchanged (no drift). Open issues #27/#28/#25 assessed — accurately captured, no update needed. |
+| 2026-07-08 | `2edc63a` | Made `bin/check_ci_parity` fast: the tests step now scales to the commits being pushed — docs-freshness for docs-only commits, `rake test:fast` for code commits, `CI_PARITY_FULL=1` forces the full suite. Fail-safe (unknown→code; undeterminable range→full). Parity is now a deliberate CI subset with remote CI as the full backstop. Added an end-to-end docs-only mode test; updated CLAUDE.md/RELEASE_CHECKLIST/skills/issue-template. |
+| 2026-07-08 | `4e0401f` | Yanked the corrupt `rubocop-metz`/`metz-scan` `0.5.2` from rubygems.org (maintainer added the `yank_rubygem` scope); the versions API now lists only `0.5.3`. Marks the `v0.5.3` release fully complete. Tracker/memory only. |
 | 2026-07-08 | `b42be0c` | **`v0.5.3` released to rubygems.org + GitHub Packages** (completion record). Tag `v0.5.3` → `9b1c0fd`, GitHub Release, both gems in dependency order, each built with the correct command and content-verified before push. Verified: clean `bundle exec metz-scan scan` from rubygems.org runs a real scan with the `Summary` scorecard; `check_published_gem 0.5.3` PASS on GitHub Packages. Fixed the corrupt rubygems.org `0.5.2`. No product code. |
 | 2026-07-08 | `9b1c0fd` | Replaced the fragile v0.5.3 gemspec fix (a side-effecting `Dir.chdir` that crashed gemspec eval under Bundler/Dependabot — CI green but the Dependabot job red) with a side-effect-free guard: keep the CWD-relative `Dir.glob` and raise a clear "build from the gem's own directory" error if `lib/rubocop-metz.rb`/`lib/metz_scan.rb` is missing from the packaged files. Prevents wrong-directory build corruption while leaving gemspec eval clean everywhere. |
 | 2026-07-08 | `c9fa339` | `v0.5.3` prep: version bump 0.5.2 → 0.5.3 (both `version.rb`, lockfile, release-issue test expectations, README install pins), `docs/releases/v0.5.3.md`, and a first (later replaced) gemspec-hardening attempt. Cut to republish the corrupt rubygems.org `rubocop-metz 0.5.2`. |

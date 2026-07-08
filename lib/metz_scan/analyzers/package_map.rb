@@ -58,7 +58,7 @@ module MetzScan
         index = app_index(parts) || lib_index(parts)
         return false unless index
 
-        parts[(index + 1)..].any? { |part| IGNORED_SUPPORT_SEGMENTS.include?(part) }
+        parts[(index + 1)..].intersect?(IGNORED_SUPPORT_SEGMENTS)
       end
 
       def app_index(parts)

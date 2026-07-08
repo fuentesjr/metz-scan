@@ -80,7 +80,7 @@ module MetzScan
 
         def project_index_for(paths, index, analyzers)
           return index if index
-          return nil unless analyzers.any? { |analyzer| INDEX_BACKED_ANALYZERS.include?(analyzer) }
+          return nil unless analyzers.intersect?(INDEX_BACKED_ANALYZERS)
 
           ProjectIndex.build(paths)
         end
