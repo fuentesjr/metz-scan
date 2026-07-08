@@ -3,6 +3,8 @@
 require "fileutils"
 require "json"
 require "minitest/autorun"
+require "open3"
+require "rbconfig"
 require "stringio"
 require "tmpdir"
 
@@ -568,6 +570,73 @@ module MetzScan
         return ENV.delete("RUBOCOP_CACHE_ROOT") unless @original_rubocop_cache_root
 
         ENV["RUBOCOP_CACHE_ROOT"] = @original_rubocop_cache_root
+      end
+    end
+
+    class ScanTargetRubyVersionTest < Minitest::Test
+      TARGET_RUBY_CONFIG = <<~YAML
+        AllCops:
+          TargetRubyVersion: 3.2
+      YAML
+      RUBY_31_BLOCK_FORWARDING_FIXTURE = <<~RUBY
+        # frozen_string_literal: true
+        module Sample
+          def wrapper(a, b = {}, &)
+            other(a, b, &)
+          end
+        end
+      RUBY
+
+      def test_default_scan_uses_project_target_ruby_version_for_syntax
+        Dir.mktmpdir("metz-scan-target-ruby-version-test") do |dir|
+          write_target_ruby_fixture(dir)
+
+          assert_no_syntax_offense(scan_subprocess(dir))
+          assert_no_syntax_offense(scan_subprocess(dir, "--all-cops"))
+        end
+      end
+
+      private
+
+      def write_target_ruby_fixture(dir)
+        File.write(File.join(dir, ".rubocop.yml"), TARGET_RUBY_CONFIG)
+        File.write(File.join(dir, "sample.rb"), RUBY_31_BLOCK_FORWARDING_FIXTURE)
+      end
+
+      def assert_no_syntax_offense(result)
+        stdout, stderr, status = result
+        assert_operator status.exitstatus, :<, 2, stdout + stderr
+        refute_includes cop_names(stdout), "Lint/Syntax"
+      end
+
+      def cop_names(stdout)
+        JSON.parse(stdout).fetch("files")
+            .flat_map { |file| file.fetch("offenses") }
+            .map { |offense| offense.fetch("cop_name") }
+      end
+
+      def scan_subprocess(dir, *flags)
+        Open3.capture3(
+          subprocess_env,
+          "bundle", "exec", RbConfig.ruby, bin_path, "scan", ".", *flags, "--format", "json",
+          chdir: dir
+        )
+      end
+
+      def subprocess_env
+        {
+          "BUNDLE_GEMFILE" => File.join(repo_root, "Gemfile"),
+          "RUBOCOP_CACHE_ROOT" => File.join(repo_root, "tmp/rubocop_cache"),
+          "RUBOCOP_TARGET_RUBY_VERSION" => nil
+        }
+      end
+
+      def bin_path
+        File.join(repo_root, "bin/metz-scan")
+      end
+
+      def repo_root
+        File.expand_path("../../..", __dir__)
       end
     end
   end

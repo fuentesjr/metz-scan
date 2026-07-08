@@ -9,13 +9,51 @@ module MetzScan
       # DDR: docs/ddrs/2026-07-08-rubocop-scope-only-config.md explains why default mode bypasses ConfigStore here.
       module ProjectConfigScope
         SCOPE_KEYS = %w[Include Exclude Includes Excludes].freeze
-        ALL_COPS_SCOPE_KEYS = (SCOPE_KEYS + %w[RubyInterpreters]).freeze
+        ALL_COPS_PROJECT_KEYS = (SCOPE_KEYS + %w[RubyInterpreters TargetRubyVersion]).freeze
         DEFAULT_FILE = RuboCop::ConfigLoader::DEFAULT_FILE
 
         module_function
 
         def store
           ConfigStore.new
+        end
+
+        def target_ruby_version(paths)
+          TargetRubyVersion.new(paths).version
+        end
+
+        class TargetRubyVersion
+          def initialize(paths, store: ConfigStore.new, loader: ConfigLoader.new)
+            @paths = paths
+            @store = store
+            @loader = loader
+          end
+
+          def version
+            config.target_ruby_version
+          rescue RuboCop::Error, Psych::Exception
+            nil
+          end
+
+          private
+
+          attr_reader :paths, :store, :loader
+
+          def config
+            loaded = store.for(target_path)
+            return loaded unless loaded.loaded_path == DEFAULT_FILE
+
+            loader.default_for(target_dir)
+          end
+
+          def target_path
+            Array(paths).first || RuboCop::PathUtil.pwd
+          end
+
+          def target_dir
+            expanded = File.expand_path(target_path)
+            File.directory?(expanded) ? expanded : File.dirname(expanded)
+          end
         end
 
         class ConfigStore
@@ -44,6 +82,12 @@ module MetzScan
         end
 
         class ConfigLoader
+          def default_for(dir)
+            path = File.join(File.expand_path(dir), ".rubocop.yml")
+            config = RuboCop::Config.new({}, path)
+            RuboCop::ConfigLoader.merge_with_default(config, path)
+          end
+
           def load(path)
             return RuboCop::ConfigLoader.default_configuration if path == DEFAULT_FILE
 
@@ -126,7 +170,7 @@ module MetzScan
           end
 
           def scoped_settings(key, value)
-            keys = key == "AllCops" ? ALL_COPS_SCOPE_KEYS : SCOPE_KEYS
+            keys = key == "AllCops" ? ALL_COPS_PROJECT_KEYS : SCOPE_KEYS
             value.each_with_object({}) do |(setting, setting_value), scope|
               scope[setting] = copy_value(setting_value) if keys.include?(setting)
             end

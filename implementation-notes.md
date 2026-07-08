@@ -9,6 +9,31 @@ Use `PROJECT_TRACKER.md` for the current direction, next queue, parked work, and
 latest checkpoint. Add new notes here only when a slice needs more durable
 detail than the tracker should carry.
 
+## 2026-07-08: Default scans honor the target's Ruby version (dogfood defect C)
+
+Task: dogfood defect C from `docs/dogfooding/2026-07-07-round-0.5.2.md` §3 —
+default mode ran RuboCop with `--force-default-config`, discarding the target's
+`TargetRubyVersion`, so RuboCop fell back to its 2.7 floor parser and emitted
+false `Lint/Syntax` on Ruby 3.1+ syntax (194 bogus offenses on redmine).
+
+Fix: extend the scope-only `ProjectConfigScope` (from the crash-fix slice) to
+also read the target's effective Ruby version — declared `AllCops:
+TargetRubyVersion` or, when absent, RuboCop's own detection from
+`.ruby-version`/Gemfile via `RuboCop::Config#target_ruby_version` (not the 2.7
+floor). `TargetRubyVersion.with_project_config` wraps the default-mode RuboCop
+run and sets `RUBOCOP_TARGET_RUBY_VERSION` (a first-class RuboCop `TargetRuby`
+source in 1.88.0 — a supported mechanism, not an internal hack), restoring the
+prior ENV after. Still no plugin loading; `--all-cops` unchanged; Metz tuning
+still forced (only the parser Ruby version is honored).
+
+Delegation/verification: implemented via Codex, which stopped at its two-strikes
+rule with only mechanical `Metrics/ModuleLength`/style offenses left; the
+orchestrator finished the polish (inlined the single-use `offenses?` predicate,
+autocorrected the helper) and independently verified. End-to-end repro: default
+mode emits no `Lint/Syntax` on anonymous-block-forwarding. `bundle exec rake`
+558 runs/0F/0E; `bundle exec rubocop` clean (221 files); `bin/check_dogfood`
+PASS. Red-green test in `test/metz_scan/commands/scan_test.rb`.
+
 ## 2026-07-08: Default scans avoid target RuboCop extension loads
 
 Task: dogfood defects A + B from

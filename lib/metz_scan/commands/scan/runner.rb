@@ -6,6 +6,7 @@ require "rubocop"
 require "stringio"
 
 require "metz_scan/commands/scan/project_config_scope"
+require "metz_scan/commands/scan/target_ruby_version"
 
 module MetzScan
   module Commands
@@ -27,7 +28,9 @@ module MetzScan
         end
 
         def self.scan(paths, all_cops:)
-          report = parse_output(capture_output(rubocop_argv(paths, all_cops: all_cops)))
+          report = TargetRubyVersion.with_project_config(paths, all_cops: all_cops) do
+            parse_output(capture_output(rubocop_argv(paths, all_cops: all_cops)))
+          end
           all_cops ? report : ProjectCopScope.honor(report)
         end
 
@@ -111,11 +114,7 @@ module MetzScan
         end
 
         def self.exit_code_for(parsed)
-          offenses?(parsed) ? 1 : 0
-        end
-
-        def self.offenses?(parsed)
-          Array(parsed["files"]).any? { |f| Array(f["offenses"]).any? }
+          Array(parsed["files"]).any? { |f| Array(f["offenses"]).any? } ? 1 : 0
         end
 
         def self.empty_report
