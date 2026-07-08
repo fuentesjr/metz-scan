@@ -9,6 +9,93 @@ Use `PROJECT_TRACKER.md` for the current direction, next queue, parked work, and
 latest checkpoint. Add new notes here only when a slice needs more durable
 detail than the tracker should carry.
 
+## 2026-07-08: SESSION HANDOFF — beat sandi_meter before publishing (scorecard + README)
+
+State at handoff: all four rubygems.org exit criteria are met (go/no-go: GO) and
+`main` HEAD (`e78c5af`) is a publishable release candidate. Before authorizing
+the publish, the user added a **pre-publish gate**: make sure `metz-scan` clearly
+beats the prior-art gem `sandi_meter` (makaroni4/sandi_meter). Two pre-publish
+work items remain, then the publish (explicit user decision). No code is in
+flight — a Codex scorecard task was cancelled with a clean tree; re-dispatch it
+from the spec below.
+
+### sandi_meter competitive analysis (research done this session)
+
+sandi_meter facts: classic four rules only (classes ≤100, methods ≤5, ≤4 args,
+controllers ≤1 ivar/action) + misindent warnings; Ripper-based with **open bugs
+on modern/concise Ruby** (one-line/endless/private methods — issues #60/#66/#68);
+output = compliance %, details tables, JSON, HTML pie charts (auto-opens
+browser); **CI exit codes broken (#69)**; not a RuboCop plugin; **dormant — last
+release v1.2.0 May 2015**; 769★, ~305k downloads. metz-scan already beats it on:
+rule coverage (6 cops incl Demeter + views), **modern-Ruby accuracy** (we just
+fixed exactly its weakness), 8 project-level analyzers, SARIF/gh-annotations,
+reliable exit codes, RuboCop-native integration, active maintenance, and
+`explain`/`rules`. sandi_meter's ONE real edge: its headline **compliance-%
+scorecard** — which is also the "no rollup/total line" nit our dogfooding rounds
+flagged. The two pre-publish items below close that and stake the positioning.
+
+### Item 1 (in queue): compliance scorecard in `scan` text output
+
+User chose "% headline + per-cop rollup + worst offenders." Metric = **Metz
+compliance = % of scanned files with zero `Metz/*` rule-cop offenses** (project
+analyzers are advisory, kept out of the %). Re-dispatch to Codex (heavy: touches
+text_renderer + many exact-output fixtures + JSON summary + tests + usage docs).
+Exact spec to hand Codex verbatim:
+
+- Append a Summary block at the END of `scan` **text** output (after findings and
+  the project-analyzers block), one blank line before it. Also in the `report`
+  re-render. Not in sarif/gh-annotations.
+- Format (align counts, 2-space gutter):
+  ```
+
+  Summary
+  -------
+  Metz compliance: 62% (312/500 files clean)
+  435 offenses across 6 cops
+
+  By cop:
+    Metz/MethodsTooLong                          333
+    Metz/ControllersTooManyDirectCollaborators    58
+    ...
+
+  Most offenses:
+    app/models/story.rb                           31
+    ...
+  ```
+- Metric defs: compliance % = round((inspected_file_count − files_with_Metz/*_offenses)/inspected_file_count×100);
+  "files clean" uses the same numerator. inspected==0 → "Metz compliance: n/a (no files scanned)".
+  "<N> offenses across <K> cops": N=offense_count, K=distinct cops with ≥1 offense (Metz/* and MetzProject/*); singular "1 offense across 1 cop".
+  "By cop": every cop with ≥1 offense, count DESC then name ASC.
+  "Most offenses": top 5 files by total offense count, DESC then path ASC; list all if <5.
+  Clean scan (0 offenses): `Metz compliance: 100% (N/N files clean)` + `No offenses found.`, omit By cop/Most offenses.
+- JSON summary additive (non-breaking): add `clean_file_count`, `files_with_offenses`, `offenses_by_cop` (cop→count). Do NOT print the text block into JSON.
+- Red-green tests; regenerate ALL affected exact-output fixtures under test/fixtures/ + README/skill freshness DELIBERATELY (never loosen). Don't modify test/fixtures/sample_app/ files themselves. Fix lives in lib/metz_scan. Summary must not change exit codes.
+
+### Item 2 (in queue): README "How metz-scan compares" section
+
+Do this AFTER the scorecard lands (avoid README edit conflict). Orchestrator
+writes it (positioning narrative). Draft to adapt (factual, credits sandi_meter
+as prior art, not disparaging):
+
+> ## Why metz-scan?
+> metz-scan is a modern, actively maintained take on the question `sandi_meter`
+> popularized — how well does this code follow Sandi Metz's rules?
+> - All four classic rules, plus Law-of-Demeter chains and deep view navigation.
+> - Correct on modern Ruby: analyzes at your project's `TargetRubyVersion`, so
+>   Ruby 3.x syntax (endless methods, anonymous forwarding, pattern matching)
+>   isn't misparsed.
+> - Project-level design pressure (8 analyzers), not just per-file rules.
+> - CI-native: JSON, SARIF (code scanning), GitHub annotations, reliable exit codes.
+> - RuboCop-native: honors your `Exclude` scope; slots into existing pipelines.
+> - Explains itself: `metz-scan explain <cop>` / `metz-scan rules`.
+
+### Then: publish (explicit user authorization)
+
+`release` skill runbook: tag `main` HEAD `v0.5.2` → GitHub Release → publish both
+GitHub Packages gems (`rubocop-metz` before `metz-scan`) → `bin/check_published_gem 0.5.2`.
+Whether to also push to rubygems.org (both names unclaimed as of 2026-07-05) is
+part of the go decision.
+
 ## 2026-07-08: Release readiness — criteria 3 (quickstart) and 4 (preflight)
 
 Task: rubygems.org exit criteria 3 and 4 against the fixed HEAD.
