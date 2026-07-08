@@ -22,6 +22,31 @@ module MetzScan
           TargetRubyVersion.new(paths).version
         end
 
+        # Accumulates [config_path, gem_name] pairs whenever an `inherit_gem`
+        # reference can't be resolved during scope-only config loading, so
+        # Runner can warn once per gem after a scan (see Next Queue item 1).
+        def unresolved_inherit_gems
+          @unresolved_inherit_gems ||= []
+        end
+
+        def reset_unresolved_inherit_gems!
+          @unresolved_inherit_gems = []
+        end
+
+        # Default mode drops file-scope Exclude from an inherit_gem whose gem
+        # isn't installed (docs/ddrs/2026-07-08-rubocop-scope-only-config.md);
+        # this turns that silent degrade into a one-line stderr note per gem.
+        def warn_unresolved_inherit_gems(stderr)
+          unresolved_inherit_gems.uniq { |(_path, gem_name)| gem_name }.each do |(path, gem_name)|
+            stderr.puts(unresolved_inherit_gem_message(path, gem_name))
+          end
+        end
+
+        def unresolved_inherit_gem_message(path, gem_name)
+          "metz-scan: note: #{path} inherits from gem `#{gem_name}` which is not installed; " \
+            "its file-scope Exclude is not applied — install the gem or use --all-cops"
+        end
+
         class TargetRubyVersion
           def initialize(paths, store: ConfigStore.new, loader: ConfigLoader.new)
             @paths = paths
@@ -115,7 +140,7 @@ module MetzScan
           end
 
           def inherited_paths(raw_hash, path)
-            gem_inherited_paths(raw_hash["inherit_gem"]) + local_inherited_paths(raw_hash["inherit_from"], path)
+            gem_inherited_paths(raw_hash["inherit_gem"], path) + local_inherited_paths(raw_hash["inherit_from"], path)
           end
 
           def local_inherited_paths(inherit_from, path)
@@ -127,25 +152,30 @@ module MetzScan
             end
           end
 
-          def gem_inherited_paths(inherit_gem)
+          def gem_inherited_paths(inherit_gem, path)
             return [] unless inherit_gem.is_a?(Hash)
 
-            inherit_gem.flat_map { |gem_name, config_paths| paths_for_gem(gem_name, config_paths) }
+            inherit_gem.flat_map { |gem_name, config_paths| paths_for_gem(gem_name, config_paths, path) }
           end
 
-          def paths_for_gem(gem_name, config_paths)
-            gem_dir = gem_dir_for(gem_name)
+          def paths_for_gem(gem_name, config_paths, path)
+            gem_dir = gem_dir_for(gem_name, path)
             return [] unless gem_dir
 
             Array(config_paths).map { |config_path| File.join(gem_dir, config_path) }
           end
 
-          def gem_dir_for(gem_name)
+          def gem_dir_for(gem_name, path)
             bundled_spec = bundled_specs[gem_name].first if defined?(Bundler)
             return bundled_spec.full_gem_path if bundled_spec
 
             Gem::Specification.find_by_name(gem_name).gem_dir
           rescue Gem::LoadError
+            record_unresolved_gem(gem_name, path)
+          end
+
+          def record_unresolved_gem(gem_name, path)
+            ProjectConfigScope.unresolved_inherit_gems << [path, gem_name]
             nil
           end
 

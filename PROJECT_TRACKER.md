@@ -127,20 +127,7 @@ burn a `1.0.0` signal on the first public push.
 
 ## Next Queue
 
-1. Warn (don't silently degrade) when default mode can't resolve a target's
-   `inherit_gem`/`plugins:`/`require:` reference. Surfaced by the 2026-07-08
-   re-verify round: an absent `inherit_gem` (e.g. Rails 8 omakase) means its
-   `Exclude` scope is silently dropped (`docs/dogfooding/2026-07-08-round-0.5.2-reverify.md`).
-   - Why now: closes the one accepted limitation from the passing round; omakase
-     is the Rails 8 default. Not release-blocking (user-accepted), but the
-     highest-value quality follow-up.
-   - Definition of done: default mode emits a one-line stderr warning naming the
-     unresolvable gem ("excludes from `<gem>` not applied; install it or use
-     `--all-cops`") instead of silently skipping; README note; red-green test.
-   - Not in scope: trying to honor an absent gem's excludes (impossible without
-     the gem); changing the scope-only-loader design (see the DDR).
-
-2. Verify the README quickstart end-to-end against a clean install.
+1. Verify the README quickstart end-to-end against a clean install.
    - Why now: rubygems.org exit criterion 3; the quickstart is the first
      impression a public release trades on.
    - Definition of done: follow the README from a clean environment (fresh
@@ -150,8 +137,9 @@ burn a `1.0.0` signal on the first public push.
    - Not in scope: restructuring the README beyond what the walkthrough
      demands.
 
-3. Run the rubygems.org release preflight.
-   - Why now: final exit criterion once 1-2 are done; both gem names were
+2. Run the rubygems.org release preflight (and revise `docs/releases/v0.5.2.md`
+   to cover all four fixes A–D, not only A/B).
+   - Why now: final exit criterion once 1 is done; both gem names were
      unclaimed as of 2026-07-05 and name availability should not be assumed
      indefinitely.
    - Definition of done: gem metadata (changelog, license, description,
@@ -163,33 +151,27 @@ burn a `1.0.0` signal on the first public push.
 
 ## Latest Slice Checkpoint
 
-Slice: 2026-07-08 dogfood re-verify — exit criterion 2 re-run, PASSED.
+Slice: 2026-07-08 warn on unresolvable inherit_gem excludes (no silent degrade).
 
-What changed: re-ran the criterion-2 rubric across all five codebases on the
-fixed HEAD and wrote `docs/dogfooding/2026-07-08-round-0.5.2-reverify.md`.
-**Verdict: PASSED** — all four 2026-07-07 defects re-verified against the exact
-cases that produced them (redmine/maybe/rubygems.org no longer crash under the
-standard recipe; redmine's `Lint/Syntax` count 194→0; lobsters `login` 8→3;
-huginn `jobs_controller` no longer flags), and no new headline defect on any
-target.
+What changed: closed the one accepted limitation from the passing re-verify
+round. `ProjectConfigScope` now accumulates unresolvable `inherit_gem` refs
+(reset per scan) and `Runner.perform` warns once per gem to stderr after
+default-mode scope resolution — a one-liner naming the gem ("... not applied;
+install the gem or use --all-cops"). Stderr-only (stdout report/JSON stays
+clean); `--all-cops` unchanged. README + skill note added. Turns the silent
+degrade loud, per the DDR's "no silent degrade" principle.
 
-One known limitation surfaced and was accepted (user decision): when a target's
-`Exclude` lives only in an absent `inherit_gem`'d config (e.g. Rails 8 omakase),
-that exclude is silently dropped in default mode — the documented A-fix trade-off,
-zero observed effect on the five real targets, strictly better than the prior
-crash. Queued a loud-warning follow-up (Next Queue item 1) rather than a silent
-degrade; not release-blocking.
+Delegation: implemented via an autobots `coding-worker`; the orchestrator
+reviewed the diff and independently verified — focused `scan_test` 14 runs/0F
+(new `ScanUnresolvedInheritGemWarningTest` + deliberately-updated external-config
+test), `bundle exec rubocop` clean (221 files), and reproduced the warning
+(stderr one-liner naming the gem, stdout clean, exit 0). Full suite verified via
+`bin/check_ci_parity` (clean clone, no rubydex).
 
-Delegation: five per-target QA passes ran as parallel autobots `qa-engineer`
-subagents; the orchestrator independently reproduced the `inherit_gem` exclude
-gap (and its local-exclude control) before recording the verdict.
-
-Verified: all five workers reported exit 1 / no stderr / no new headline defect;
-orchestrator reproduced the `inherit_gem`-absent exclude gap via fixtures.
-
-This closes the fix-and-re-dogfood arc. Prior slices this session: `cd6f18c`
+This completes Next Queue item 1 and the fix-and-re-dogfood arc; exit criteria
+1-2 are met. Prior slices this session: `3e7dbe9` (re-verify PASSED), `cd6f18c`
 (defect D), `4b64a93` (defect C), `8b246ba` (defects A/B), `1f34145` (round doc
-+ reframe), `a06b28c` (0.5.2 prep). Next: README quickstart (criterion 3) and
++ reframe), `a06b28c` (0.5.2 prep). Next: README quickstart (criterion 3), then
 preflight (criterion 4), then release.
 
 Prior slices: 2026-07-07 dogfooding round on HEAD 0.5.2 (criterion 2 not
@@ -239,7 +221,8 @@ the version bump the next release will carry once the dogfood fixes land);
 
 | Date | Commit | Summary |
 | --- | --- | --- |
-| 2026-07-08 | `this commit` | Re-ran exit criterion 2 (dogfooding) on the fixed HEAD across five codebases — **PASSED** (`docs/dogfooding/2026-07-08-round-0.5.2-reverify.md`): all four 2026-07-07 defects re-verified (no crashes, 0 false `Lint/Syntax`, corrected collaborator counts), no new headline defect. Recorded one accepted `inherit_gem`-absent exclude limitation with a queued loud-warning follow-up. Round doc + tracker only; no code change. |
+| 2026-07-08 | `this commit` | Closed the accepted `inherit_gem`-exclude limitation (Next Queue item 1): default mode now emits a one-line stderr warning naming an unresolvable `inherit_gem` gem ("... not applied; install the gem or use --all-cops") instead of silently dropping its `Exclude` — stdout report stays clean, `--all-cops` unchanged. `ProjectConfigScope` collects unresolved gems, `Runner` warns once per gem. README/skill note + red-green test. |
+| 2026-07-08 | `3e7dbe9` | Re-ran exit criterion 2 (dogfooding) on the fixed HEAD across five codebases — **PASSED** (`docs/dogfooding/2026-07-08-round-0.5.2-reverify.md`): all four 2026-07-07 defects re-verified (no crashes, 0 false `Lint/Syntax`, corrected collaborator counts), no new headline defect. Recorded one accepted `inherit_gem`-absent exclude limitation with a queued loud-warning follow-up. Round doc + tracker only; no code change. |
 | 2026-07-08 | `cd6f18c` | Fixed dogfood defect D: `Metz/ControllersTooManyDirectCollaborators` no longer counts raise-site exception classes (added `raise_exception_class?` mirroring the `rescue`-site exclusion) or the `Arel` SQL helper (added to `CORE_COLLABORATOR_ALLOWLIST`) — the #34 sibling gap. Verified on real code (lobsters `login` 8→3; huginn `jobs_controller` no longer flags); red-green cop tests. Completes all four round-2 defects. |
 | 2026-07-08 | `4b64a93` | Fixed dogfood defect C: default scans now honor the target's `TargetRubyVersion` (declared or detected) by carrying it through the scope-only loader and `RUBOCOP_TARGET_RUBY_VERSION`, so `--force-default-config` no longer parses with the 2.7 floor and emits false `Lint/Syntax` on Ruby 3.1+ syntax. Still no plugin loading; `--all-cops` and forced Metz tuning unchanged. Codex-implemented, orchestrator-polished (`Metrics/ModuleLength`) and independently verified (repro clean, rake 558/0F, rubocop clean, dogfood PASS); red-green test in `scan_test.rb`. |
 | 2026-07-08 | `8b246ba` | Fixed dogfood defects A/B: default mode now honors local target file scope without loading absent target RuboCop extensions (`plugins:`, `require:`, `inherit_gem:`), so external-gem configs no longer crash Metz-only scans; load-error text now distinguishes missing target extensions from missing `rubocop-metz` and strips extensionless `bin/metz-scan` stack frames. Added red-green default-scope and subprocess error tests, documented the RuboCop scope-only internal-API decision in a DDR/notes, and revised README/skill/release notes. |

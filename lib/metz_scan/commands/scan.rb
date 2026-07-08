@@ -139,7 +139,7 @@ module MetzScan
       end
 
       def scan(options)
-        parsed = Runner.invoke(options.paths, all_cops: options.all_cops)
+        parsed = Runner.invoke(options.paths, all_cops: options.all_cops, stderr: stderr)
         merge_project_analyzers(parsed, options)
         render(parsed, options.format)
         Runner.exit_code_for(parsed)

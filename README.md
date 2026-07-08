@@ -142,6 +142,13 @@ it does not require external RuboCop extensions declared with `plugins:`,
 configuration; if a target extension gem is missing, install that gem in the
 bundle you use to run `metz-scan` or run the default Metz-only scan.
 
+If an `inherit_gem:` entry names a gem that isn't installed in the bundle
+running `metz-scan`, that gem's file-scope `Exclude` cannot be read, so it is
+not applied — default mode prints a one-line `metz-scan: note:` warning to
+stderr naming the gem instead of silently dropping the exclude. Install the
+gem (or run `--all-cops`, which uses your complete project configuration) to
+have that scope honored.
+
 Current project analyzer status:
 
 | Analyzer | Status | Default scan | Expected findings |

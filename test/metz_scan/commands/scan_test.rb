@@ -529,7 +529,16 @@ module MetzScan
 
       def assert_scan_completed_with_findings(code)
         assert_equal 1, code, "findings should report as exit 1, not crash as exit 2"
-        assert_empty @stderr.string
+        assert_unresolved_inherit_gem_warning_once
+      end
+
+      # rubocop-rails-omakase isn't in this repo's bundle, so its inherit_gem
+      # exclude can't be resolved; the scan now warns once instead of silently
+      # dropping that scope (Next Queue item 1).
+      def assert_unresolved_inherit_gem_warning_once
+        matches = @stderr.string.lines.grep(/rubocop-rails-omakase/)
+        assert_equal 1, matches.size, @stderr.string
+        assert_match(/not installed/, matches.first)
       end
 
       def write_config
@@ -619,6 +628,65 @@ module MetzScan
         Open3.capture3(
           subprocess_env,
           "bundle", "exec", RbConfig.ruby, bin_path, "scan", ".", *flags, "--format", "json",
+          chdir: dir
+        )
+      end
+
+      def subprocess_env
+        {
+          "BUNDLE_GEMFILE" => File.join(repo_root, "Gemfile"),
+          "RUBOCOP_CACHE_ROOT" => File.join(repo_root, "tmp/rubocop_cache"),
+          "RUBOCOP_TARGET_RUBY_VERSION" => nil
+        }
+      end
+
+      def bin_path
+        File.join(repo_root, "bin/metz-scan")
+      end
+
+      def repo_root
+        File.expand_path("../../..", __dir__)
+      end
+    end
+
+    class ScanUnresolvedInheritGemWarningTest < Minitest::Test
+      ABSENT_GEM_CONFIG = <<~YAML
+        inherit_gem:
+          rubocop-rails-omakase: rubocop.yml
+      YAML
+
+      def test_default_scan_warns_once_on_stderr_for_unresolvable_inherit_gem
+        Dir.mktmpdir("metz-scan-unresolved-inherit-gem-test") do |dir|
+          write_fixture(dir)
+          assert_warns_once_without_crashing(scan_subprocess(dir))
+        end
+      end
+
+      private
+
+      def write_fixture(dir)
+        File.write(File.join(dir, ".rubocop.yml"), ABSENT_GEM_CONFIG)
+        FileUtils.mkdir_p(File.join(dir, "data"))
+        File.write(File.join(dir, "data/x.rb"), "# frozen_string_literal: true\n")
+      end
+
+      def assert_warns_once_without_crashing(result)
+        stdout, stderr, status = result
+        assert_operator status.exitstatus, :<, 2, stdout + stderr
+        assert_warning_once(stderr)
+        assert JSON.parse(stdout)
+      end
+
+      def assert_warning_once(stderr)
+        matches = stderr.lines.grep(/rubocop-rails-omakase/)
+        assert_equal 1, matches.size, stderr
+        assert_match(/not installed/, matches.first)
+      end
+
+      def scan_subprocess(dir)
+        Open3.capture3(
+          subprocess_env,
+          "bundle", "exec", RbConfig.ruby, bin_path, "scan", ".", "--format", "json",
           chdir: dir
         )
       end

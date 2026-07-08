@@ -18,13 +18,15 @@ module MetzScan
 
         Result = Struct.new(:stdout, :stderr, :status, keyword_init: true)
 
-        def self.invoke(paths, all_cops: false)
-          with_errors do
-            paths = inspection_paths(paths, all_cops: all_cops)
-            return empty_report if paths.empty?
+        def self.invoke(paths, all_cops: false, stderr: $stderr)
+          with_errors { perform(paths, all_cops: all_cops, stderr: stderr) }
+        end
 
-            scan(paths, all_cops: all_cops)
-          end
+        def self.perform(paths, all_cops:, stderr:)
+          ProjectConfigScope.reset_unresolved_inherit_gems! unless all_cops
+          paths = inspection_paths(paths, all_cops: all_cops)
+          report = paths.empty? ? empty_report : scan(paths, all_cops: all_cops)
+          report.tap { ProjectConfigScope.warn_unresolved_inherit_gems(stderr) unless all_cops }
         end
 
         def self.scan(paths, all_cops:)

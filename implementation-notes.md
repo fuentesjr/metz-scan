@@ -9,6 +9,30 @@ Use `PROJECT_TRACKER.md` for the current direction, next queue, parked work, and
 latest checkpoint. Add new notes here only when a slice needs more durable
 detail than the tracker should carry.
 
+## 2026-07-08: Warn on unresolvable inherit_gem excludes (no silent degrade)
+
+Task: Next Queue item 1 — the 2026-07-08 re-dogfood round accepted one
+limitation (`docs/dogfooding/2026-07-08-round-0.5.2-reverify.md`): when a
+target's `Exclude` lives only in an absent `inherit_gem`'d config (Rails 8
+omakase), default mode silently dropped it. This turns the silent degrade loud,
+honoring the DDR's "no silent degrade" principle.
+
+Change: `ProjectConfigScope` accumulates `[config_path, gem_name]` whenever an
+`inherit_gem` can't be resolved (the rescued `Gem::LoadError` in `gem_dir_for`),
+reset per scan; `Runner.perform` warns once per gem to stderr after default-mode
+scope resolution (guarded `unless all_cops`), threading the CLI's injected
+`stderr` through `Runner.invoke`/`Scan#scan`. Warning is stderr-only (stdout
+report/JSON stays byte-clean) and deduped by gem name. `--all-cops` unchanged
+(it already errors loudly on missing gems). README + skill note added.
+
+Delegation/verification: implemented via an autobots `coding-worker`; the
+orchestrator reviewed the diff and independently verified — focused `scan_test`
+14 runs/0F (new `ScanUnresolvedInheritGemWarningTest` + a deliberately-updated
+external-config test), `bundle exec rubocop` clean, and reproduced the warning
+(stderr one-liner naming the gem, stdout clean, exit 0). Full suite is verified
+via `bin/check_ci_parity` (clean clone, no rubydex — the worker's local
+`.bundle/config with rubydex` slows local `bundle exec` but does not affect CI).
+
 ## 2026-07-08: ControllersTooManyDirectCollaborators stops over-counting (dogfood defect D)
 
 Task: dogfood defect D from `docs/dogfooding/2026-07-07-round-0.5.2.md` §4 — the
