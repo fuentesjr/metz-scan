@@ -9,6 +9,40 @@ Use `PROJECT_TRACKER.md` for the current direction, next queue, parked work, and
 latest checkpoint. Add new notes here only when a slice needs more durable
 detail than the tracker should carry.
 
+## 2026-07-08: Release readiness — criteria 3 (quickstart) and 4 (preflight)
+
+Task: rubygems.org exit criteria 3 and 4 against the fixed HEAD.
+
+Criterion 3 (README quickstart vs a clean install): built the candidate gems
+locally (`gem build` both) and installed them into an isolated `GEM_HOME`
+(real deps from rubygems.org) — this is the faithful "release candidate" target
+since the published `0.5.1` still has the crash. Verified `metz-scan --version`
+(0.5.2), `rules`, `explain`, and `scan` of the service-soup fixture all work,
+and that the crash-fix ships in the *built gem* (scanning redmine's external
+`plugins:` returns exit 1, not the old exit-2 crash). Found + fixed one README
+gap: the Quick Start's `cp -R test/fixtures/service_soup_app` is repo-relative
+(a fresh consumer doesn't have it), so it now leads with a consumer first-scan
+(`scan app lib`), explains that exit 1 means findings, and scopes the fixture
+demo to "from a checkout of this repository."
+
+Criterion 4 (gem metadata / preflight): `gem specification` on both built gems.
+Description, homepage, MIT license, `source_code_uri`, `github_package_uri`,
+and the `~> 0.5.2` pin all read correctly. Fixed gaps: added `changelog_uri`
+(→ releases page) and `bug_tracker_uri` (→ issues) to both gemspecs, and made
+`rubocop-metz` ship its `LICENSE` (it declared MIT but didn't package the file;
+copied the root LICENSE). New assertions in `release_metadata_test.rb` pin these.
+Left `github_repo` (`ssh://…`, a non-standard key with an unclear consumer)
+alone to avoid breaking it. Revised `docs/releases/v0.5.2.md` to cover all four
+fixes plus the warning and the metadata additions.
+
+Go/no-go: **GO.** All four exit criteria met (1 names/released, 2 dogfood-clean,
+3 quickstart verified, 4 metadata reads correctly). The candidate is the current
+`main` HEAD carrying the `0.5.2` bump; publish is the user's explicit decision.
+
+Verified: `release_metadata_test` + `release_checklist_test` green; rebuilt gems
+show the new metadata and shipped LICENSE; no stray `.gem` in the repo. Docs
+freshness unaffected (Quick Start isn't pinned).
+
 ## 2026-07-08: Warn on unresolvable inherit_gem excludes (no silent degrade)
 
 Task: Next Queue item 1 — the 2026-07-08 re-dogfood round accepted one

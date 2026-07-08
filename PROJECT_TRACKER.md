@@ -83,19 +83,18 @@ burn a `1.0.0` signal on the first public push.
 - Latest pushed baseline: `d9f92e4 Revise the testing-cops spec after review`.
 - CI state: the most recent `main` runs, including the run for `d9f92e4`
   (`28904608653`), all succeeded.
-- Release state: `v0.5.1` is published, but the 2026-07-07 dogfooding round
-  found it carries a **crash regression** (default mode crashes on targets
-  whose `.rubocop.yml` references absent external RuboCop gems). The 2026-07-08
-  local slice fixes that crash/error path for the next release, pending commit,
-  remaining dogfood fixes, re-dogfood, and release authorization. `v0.5.1`
-  should not be recommended. Issues #33 and #34 are closed with release-link
-  comments.
-- Local branch state: everything through `a06b28c` (Prepare 0.5.2 release
-  target) is pushed to `origin/main` with green CI (`28906854409`). `a06b28c`
-  bumps both gems to `0.5.2`, but **0.5.2 must not ship as-is** — the dogfooding
-  round found it still carries the crash regression. The version bump sits on
-  `main` as the eventual carrier once the A/B/C fixes land; `docs/releases/v0.5.2.md`
-  will be revised to describe the fixes, not only #37.
+- Release state: `v0.5.1` is published but carries the crash regression the
+  2026-07-07 round found (default mode crashes on targets referencing absent
+  external RuboCop gems); it should not be recommended. The `v0.5.2` candidate on
+  `main` fixes it (and three more defects) and has passed all four exit criteria
+  — ready to publish on user authorization. Issues #33 and #34 are closed with
+  release-link comments.
+- Local branch state: `main` HEAD carries the `0.5.2` bump (`a06b28c`) plus all
+  four defect fixes (`8b246ba`, `4b64a93`, `cd6f18c`), the inherit_gem warning
+  (`d57d2e7`), and the criteria 3-4 release-readiness slice (this commit). All
+  pushed. `docs/releases/v0.5.2.md` now describes every fix. This HEAD is the
+  release candidate — dogfooding-clean and preflight-clean, awaiting publish
+  authorization.
 - Dogfooding state: **exit criterion 2 PASSED on 2026-07-08** on the re-verify
   round (`docs/dogfooding/2026-07-08-round-0.5.2-reverify.md`). The 2026-07-07
   round (`docs/dogfooding/2026-07-07-round-0.5.2.md`) found four headline-UX
@@ -105,9 +104,11 @@ burn a `1.0.0` signal on the first public push.
   dropped; documented trade-off, zero observed effect on the five targets) has a
   queued loud-warning follow-up, not a blocker.
 - Latest checkpoint window: 2026-07-08: fixed all four round-2 defects (`8b246ba`,
-  `4b64a93`, `cd6f18c`), then re-ran exit criterion 2 — PASSED. Next: verify the
-  README quickstart (criterion 3) and run the preflight (criterion 4) against the
-  fixed HEAD, then cut a single release carrying #37 + the four fixes.
+  `4b64a93`, `cd6f18c`), re-ran exit criterion 2 (PASSED), added the inherit_gem
+  warning (`d57d2e7`), and completed criteria 3-4 (quickstart verified vs a clean
+  candidate install; preflight — metadata reads correctly, links/LICENSE added).
+  **All four exit criteria met; go/no-go: GO.** Next: publish `v0.5.2` on user
+  authorization.
 - Working tree expectation: keep tracked work clean before starting another
   slice; keep ignored `logs/` notes out of commits unless explicitly requested.
 
@@ -115,64 +116,58 @@ burn a `1.0.0` signal on the first public push.
 
 | Workstream | Status | Current State | Next Move |
 | --- | --- | --- | --- |
-| Release readiness | Criteria 1-2 met; 3-4 remain | `0.5.2` bump is pushed (`a06b28c`); all four round-2 defects are fixed, pushed, and re-verified (A/B `8b246ba`, C `4b64a93`, D `cd6f18c`); exit criterion 2 PASSED (`docs/dogfooding/2026-07-08-round-0.5.2-reverify.md`). | Verify the README quickstart (criterion 3) and run the preflight (criterion 4) against the fixed HEAD; revise `docs/releases/v0.5.2.md` to cover all four fixes; then cut a single release carrying #37 + the fixes (own decision + authorization). |
+| Release readiness | GO — all four criteria met | `0.5.2` bump (`a06b28c`) + all four defect fixes + the inherit_gem warning are pushed and re-verified. Criterion 3 (README quickstart) verified against a clean candidate install (README gap fixed); criterion 4 (preflight) done — gem metadata reads correctly, added `changelog_uri`/`bug_tracker_uri`, `rubocop-metz` now ships LICENSE, `docs/releases/v0.5.2.md` covers all fixes. **Go/no-go: GO.** | Cut the `v0.5.2` release — tag current `main` HEAD, GitHub Release, publish both GitHub Packages gems (`rubocop-metz` before `metz-scan`), `bin/check_published_gem 0.5.2`. Publish is the user's explicit decision. |
 | Calibration artifact pipeline | Healthy | Markdown output, artifact write path, sample-app calibration smoke, the tracked target manifest under `docs/calibration/`, baseline-delta Markdown fixtures, compact baseline preview structure, exact `--print-baseline` YAML output, baseline scope mismatch checks, and help examples for scope-matched baseline workflows are covered. | Maintain; change only when artifact, target-manifest, or baseline-document behavior changes. |
 | Analyzer behavior | Parked | Fresh #27/#28 Mastodon and Discourse reruns did not show enough misleading or underexplained findings to justify behavior, threshold, or output-policy changes. | Reopen only with new generic evidence, not app-specific suppressions. |
 | Calibration evidence | Guarded | Redmine, Rubygems.org, ManageIQ, and Foreman evidence has been consolidated; Rubydex `0.2.7` was rechecked against the active manifest. Full active-manifest output is 697 findings/806 offenses; the four Rubydex-index-backed analyzers account for 607 findings/607 offenses. A compact Rubydex drift check covers those four analyzers, now with ProjectIndex missing-Rubydex subprocess coverage, missing-Rubydex skip-path coverage, exact sample-app text/JSON fixtures, and deterministic non-Rubydex formatter fixtures; `docs/calibration/project_analyzer_baseline.yml` captures the full active-manifest baseline for delta reporting. | Recheck only Rubydex-index-backed analyzers after future Rubydex upgrades unless an AST-only analyzer changes; use `--baseline-file docs/calibration/project_analyzer_baseline.yml` for full-manifest drift. |
 | Workflow friction | Guarded | The lockfile rewrite came from a stale path dependency entry in `Gemfile.lock`; the lockfile now matches the gemspec's `rubocop-metz (~> 0.4.0)` constraint, read-only maintenance commands have a tracked-worktree mutation guard plus a public command-listing mode, `--print-baseline` is in the default read-only guard list, the read-only command contract is documented in contributor/calibration/release docs, and `bin/check_ci_parity` runs tracker hygiene before Bundler work while preserving failed clean clones and printing `next action:` commands for inspection. | Maintain the guard list and docs as new read-only commands are added; do not bypass `BUNDLE_FROZEN=1` for read-only calibration checks. |
 | Sorbet adoption spike | Complete | Issue #26 was evaluated in a disposable workspace, documented, synced back to GitHub, and closed. The report recommends not adopting now: a narrow static setup is possible, but generated RBI churn, command policy, fixture scope, and runtime signature implications outweigh observed value. | Do not add Sorbet unless a concrete type-related defect, contributor ergonomics need, or stable public API typing requirement appears. |
 | Docs/adoption | Stable | README points contributors and agents to this tracker; old implementation notes are archived, current notes are short, and the Sorbet spike report records the tooling decision. The README now splits RepeatedBranching generic-subject guidance into a short list, the analyzer behavior details into per-analyzer subsections, package install troubleshooting points at `bin/check_published_gem`, parity failure inspection points at preserved clone/`next action:` output, the analyzer status table has freshness coverage, `skills/metz-scan/SKILL.md` gives agents consumer-facing usage guidance, and calibration docs point future Rubydex upgrades, filtered baselines, compact baseline previews, and parked issue updates at repeatable local commands. | Keep docs changes minimal and evidence-led. |
-| Path to rubygems.org | Criteria 1-2 met | Exit criterion 1 met. Exit criterion 2 failed on 2026-07-07 (four defects) then **PASSED on 2026-07-08** after the four fixes, re-verified across five codebases (`docs/dogfooding/2026-07-08-round-0.5.2-reverify.md`); one accepted `inherit_gem`-exclude limitation with a queued follow-up. | Criteria 3 (README quickstart end-to-end) and 4 (preflight / gem metadata) against the fixed HEAD, then a single release carries #37 + the four fixes. |
+| Path to rubygems.org | All four criteria met — GO | Criterion 1 met; criterion 2 PASSED on the 2026-07-08 re-verify round; criterion 3 (quickstart) verified against a clean candidate install with the README gap fixed; criterion 4 (preflight) done — metadata reads correctly, links/LICENSE added. Go/no-go: **GO**. | Publish `v0.5.2` when the user authorizes (rubocop-metz before metz-scan), then verify the published install; the `1.0.0` signal is still reserved. |
 | Test hardening | Done | Fixture/guard surface through `599a935` covers CLI text/JSON/help contracts, read-only guards, drift checks, package smoke, and CI parity output. Suite: 438 fast + 88 slow runs, all green. | Maintain only; new tests accompany behavior changes or defects, not coverage sweeps. |
 
 ## Next Queue
 
-1. Verify the README quickstart end-to-end against a clean install.
-   - Why now: rubygems.org exit criterion 3; the quickstart is the first
-     impression a public release trades on.
-   - Definition of done: follow the README from a clean environment (fresh
-     gem install through first scan) exactly as written; fix any step that
-     does not work or under-explains.
-   - Files likely touched: README, possibly install tooling.
-   - Not in scope: restructuring the README beyond what the walkthrough
-     demands.
-
-2. Run the rubygems.org release preflight (and revise `docs/releases/v0.5.2.md`
-   to cover all four fixes A–D, not only A/B).
-   - Why now: final exit criterion once 1 is done; both gem names were
-     unclaimed as of 2026-07-05 and name availability should not be assumed
-     indefinitely.
-   - Definition of done: gem metadata (changelog, license, description,
-     homepage, links) reads correctly on `gem build` inspection for both gems,
-     and a go/no-go decision is recorded against the Path to rubygems.org
-     criteria.
-   - Files likely touched: gemspecs, `CHANGELOG`, README.
-   - Not in scope: the publish itself, which is an explicit user decision.
+1. Publish the `v0.5.2` release (explicit user authorization required).
+   - Why now: all four exit criteria are met (go/no-go: GO); `main` HEAD is the
+     candidate. The published `v0.5.1` carries the crash regression, so shipping
+     `v0.5.2` is what makes the fix reach users.
+   - Definition of done: tag `main` HEAD as `v0.5.2`, cut the GitHub Release,
+     publish both GitHub Packages gems (`rubocop-metz` before `metz-scan`), and
+     `bin/check_published_gem 0.5.2` passes against a clean consumer install.
+   - Not in scope until authorized: the publish is an explicit user decision.
+   - Follow the `release` skill runbook; whether to also publish to rubygems.org
+     (both names were unclaimed as of 2026-07-05) is part of the go decision.
 
 ## Latest Slice Checkpoint
 
-Slice: 2026-07-08 warn on unresolvable inherit_gem excludes (no silent degrade).
+Slice: 2026-07-08 release readiness — criteria 3 (quickstart) and 4 (preflight).
 
-What changed: closed the one accepted limitation from the passing re-verify
-round. `ProjectConfigScope` now accumulates unresolvable `inherit_gem` refs
-(reset per scan) and `Runner.perform` warns once per gem to stderr after
-default-mode scope resolution — a one-liner naming the gem ("... not applied;
-install the gem or use --all-cops"). Stderr-only (stdout report/JSON stays
-clean); `--all-cops` unchanged. README + skill note added. Turns the silent
-degrade loud, per the DDR's "no silent degrade" principle.
+What changed: verified the release candidate end-to-end and cleared the last two
+exit criteria. Criterion 3: built the `0.5.2` gems locally and installed them
+into an isolated `GEM_HOME` (the faithful "release candidate" target — published
+`0.5.1` still has the crash); confirmed `--version`/`rules`/`explain`/`scan` and
+that the crash-fix ships in the *built* gem (redmine exit 1, not 2). Fixed the
+one README gap: the Quick Start's `cp -R test/fixtures/...` is repo-relative, so
+it now leads with a consumer first-scan and scopes the fixture demo to a repo
+checkout. Criterion 4: `gem specification` on both built gems — metadata reads
+correctly; added `changelog_uri`/`bug_tracker_uri` to both gemspecs, made
+`rubocop-metz` ship its `LICENSE` (declared MIT but didn't package it), pinned
+the new metadata in `release_metadata_test.rb`, and revised `docs/releases/v0.5.2.md`
+to cover all four fixes + the warning + metadata.
 
-Delegation: implemented via an autobots `coding-worker`; the orchestrator
-reviewed the diff and independently verified — focused `scan_test` 14 runs/0F
-(new `ScanUnresolvedInheritGemWarningTest` + deliberately-updated external-config
-test), `bundle exec rubocop` clean (221 files), and reproduced the warning
-(stderr one-liner naming the gem, stdout clean, exit 0). Full suite verified via
-`bin/check_ci_parity` (clean clone, no rubydex).
+Go/no-go: **GO** — all four exit criteria met. The candidate is `main` HEAD;
+publish is the user's explicit decision.
 
-This completes Next Queue item 1 and the fix-and-re-dogfood arc; exit criteria
-1-2 are met. Prior slices this session: `3e7dbe9` (re-verify PASSED), `cd6f18c`
-(defect D), `4b64a93` (defect C), `8b246ba` (defects A/B), `1f34145` (round doc
-+ reframe), `a06b28c` (0.5.2 prep). Next: README quickstart (criterion 3), then
-preflight (criterion 4), then release.
+Verified: `release_metadata_test` + `release_checklist_test` green; rebuilt gems
+show the new metadata and shipped LICENSE; docs freshness unaffected (Quick Start
+isn't pinned); full suite via `bin/check_ci_parity`.
+
+This closes the path-to-release work short of the publish. Prior slices this
+session: `d57d2e7` (inherit_gem warning), `3e7dbe9` (re-verify PASSED),
+`cd6f18c` (defect D), `4b64a93` (defect C), `8b246ba` (defects A/B), `1f34145`
+(round doc + reframe), `a06b28c` (0.5.2 prep). Next: publish `v0.5.2` on user
+authorization.
 
 Prior slices: 2026-07-07 dogfooding round on HEAD 0.5.2 (criterion 2 not
 passed, defects A/B/C/D recorded); `a06b28c` (prepare 0.5.2 release target —
@@ -221,7 +216,8 @@ the version bump the next release will carry once the dogfood fixes land);
 
 | Date | Commit | Summary |
 | --- | --- | --- |
-| 2026-07-08 | `this commit` | Closed the accepted `inherit_gem`-exclude limitation (Next Queue item 1): default mode now emits a one-line stderr warning naming an unresolvable `inherit_gem` gem ("... not applied; install the gem or use --all-cops") instead of silently dropping its `Exclude` — stdout report stays clean, `--all-cops` unchanged. `ProjectConfigScope` collects unresolved gems, `Runner` warns once per gem. README/skill note + red-green test. |
+| 2026-07-08 | `this commit` | Release readiness — exit criteria 3 and 4. Criterion 3: verified the quickstart against a clean install of the locally-built `0.5.2` candidate (crash-fix ships in the built gem) and fixed the README Quick Start's repo-relative fixture step (consumer first-scan + scoped demo). Criterion 4: gem metadata reads correctly; added `changelog_uri`/`bug_tracker_uri` to both gemspecs, `rubocop-metz` now ships `LICENSE`, revised `docs/releases/v0.5.2.md` for all fixes, pinned new metadata in `release_metadata_test`. **All four exit criteria met; go/no-go: GO.** |
+| 2026-07-08 | `d57d2e7` | Closed the accepted `inherit_gem`-exclude limitation: default mode now emits a one-line stderr warning naming an unresolvable `inherit_gem` gem ("... not applied; install the gem or use --all-cops") instead of silently dropping its `Exclude` — stdout report stays clean, `--all-cops` unchanged. `ProjectConfigScope` collects unresolved gems, `Runner` warns once per gem. README/skill note + red-green test. |
 | 2026-07-08 | `3e7dbe9` | Re-ran exit criterion 2 (dogfooding) on the fixed HEAD across five codebases — **PASSED** (`docs/dogfooding/2026-07-08-round-0.5.2-reverify.md`): all four 2026-07-07 defects re-verified (no crashes, 0 false `Lint/Syntax`, corrected collaborator counts), no new headline defect. Recorded one accepted `inherit_gem`-absent exclude limitation with a queued loud-warning follow-up. Round doc + tracker only; no code change. |
 | 2026-07-08 | `cd6f18c` | Fixed dogfood defect D: `Metz/ControllersTooManyDirectCollaborators` no longer counts raise-site exception classes (added `raise_exception_class?` mirroring the `rescue`-site exclusion) or the `Arel` SQL helper (added to `CORE_COLLABORATOR_ALLOWLIST`) — the #34 sibling gap. Verified on real code (lobsters `login` 8→3; huginn `jobs_controller` no longer flags); red-green cop tests. Completes all four round-2 defects. |
 | 2026-07-08 | `4b64a93` | Fixed dogfood defect C: default scans now honor the target's `TargetRubyVersion` (declared or detected) by carrying it through the scope-only loader and `RUBOCOP_TARGET_RUBY_VERSION`, so `--force-default-config` no longer parses with the 2.7 floor and emits false `Lint/Syntax` on Ruby 3.1+ syntax. Still no plugin loading; `--all-cops` and forced Metz tuning unchanged. Codex-implemented, orchestrator-polished (`Metrics/ModuleLength`) and independently verified (repro clean, rake 558/0F, rubocop clean, dogfood PASS); red-green test in `scan_test.rb`. |

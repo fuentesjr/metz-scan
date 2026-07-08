@@ -68,9 +68,22 @@ bundle install
 
 ## Quick Start
 
+From the project you added `metz-scan` to, list the rules, explain a cop, and
+scan your code:
+
 ```bash
 bundle exec metz-scan rules
 bundle exec metz-scan explain Metz/DemeterTrainWreck
+bundle exec metz-scan scan app lib
+```
+
+`scan` exits `1` when it reports findings — that is the tool working, not a
+crash (higher exit codes are real failures).
+
+To see a guaranteed finding on a bundled fixture, run this from a checkout of
+this repository (the `test/fixtures` path exists only in the repo):
+
+```bash
 fixture_dir="$(mktemp -d)"
 cp -R test/fixtures/service_soup_app "$fixture_dir/service_soup_app"
 bundle exec metz-scan scan "$fixture_dir/service_soup_app" --project-analyzers --format text || true

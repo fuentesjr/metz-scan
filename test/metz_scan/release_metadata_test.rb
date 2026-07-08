@@ -30,11 +30,22 @@ module MetzScan
     private
 
     def assert_release_metadata(spec, package:)
+      assert_gem_identity(spec)
+      assert_gem_links(spec, package: package)
+    end
+
+    def assert_gem_identity(spec)
       assert_equal ">= 3.3", spec.required_ruby_version.to_s
       assert_equal ["fuentesjr@duck.com"], spec.email
       assert_equal "https://github.com/fuentesjr/metz-scan", spec.homepage
+      assert_includes spec.files, "LICENSE"
+    end
+
+    def assert_gem_links(spec, package:)
       assert_equal "https://github.com/users/fuentesjr/packages/rubygems/package/#{package}",
                    spec.metadata.fetch("github_package_uri")
+      assert_equal "#{spec.homepage}/releases", spec.metadata.fetch("changelog_uri")
+      assert_equal "#{spec.homepage}/issues", spec.metadata.fetch("bug_tracker_uri")
     end
 
     def assert_runtime_file_list(spec, expected:)

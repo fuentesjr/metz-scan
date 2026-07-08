@@ -17,12 +17,14 @@ Gem::Specification.new do |spec|
   spec.required_ruby_version = ">= 3.3"
 
   spec.metadata["source_code_uri"] = spec.homepage
+  spec.metadata["changelog_uri"] = "#{spec.homepage}/releases"
+  spec.metadata["bug_tracker_uri"] = "#{spec.homepage}/issues"
   spec.metadata["github_repo"] = "ssh://github.com/fuentesjr/metz-scan"
   spec.metadata["github_package_uri"] = "https://github.com/users/fuentesjr/packages/rubygems/package/rubocop-metz"
   spec.metadata["default_lint_roller_plugin"] = "RuboCop::Metz::Plugin"
 
   spec.files = Dir.glob("{lib,config}/**/*", File::FNM_DOTMATCH).reject { |f| File.directory?(f) } +
-               ["rubocop-metz.gemspec"]
+               ["LICENSE", "rubocop-metz.gemspec"].select { |f| File.exist?(f) }
   spec.require_paths = ["lib"]
 
   spec.add_dependency "lint_roller", "~> 1.1"
