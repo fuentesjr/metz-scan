@@ -9,15 +9,35 @@ Use `PROJECT_TRACKER.md` for the current direction, next queue, parked work, and
 latest checkpoint. Add new notes here only when a slice needs more durable
 detail than the tracker should carry.
 
-## 2026-07-08: SESSION HANDOFF — beat sandi_meter before publishing (scorecard + README)
+## 2026-07-08: sandi_meter pre-publish gate CLOSED (scorecard + README) + Codex reap recovery
 
-State at handoff: all four rubygems.org exit criteria are met (go/no-go: GO) and
-`main` HEAD (`e78c5af`) is a publishable release candidate. Before authorizing
-the publish, the user added a **pre-publish gate**: make sure `metz-scan` clearly
-beats the prior-art gem `sandi_meter` (makaroni4/sandi_meter). Two pre-publish
-work items remain, then the publish (explicit user decision). No code is in
-flight — a Codex scorecard task was cancelled with a clean tree; re-dispatch it
-from the spec below.
+Status: **both pre-publish items landed** and verified. The compliance scorecard
+(item 1) and the README "How metz-scan compares" section (item 2) are on `main`'s
+working tree, verified on the settled tree (`rake` 569/0F/0E, `rubocop` clean,
+`check_dogfood` PASS, docs-freshness green). Only publish (explicit user
+authorization) remains. The sandi_meter analysis and the item specs below are
+kept as the record.
+
+Codex delegation + reap recovery (durable, matches the CLAUDE.md delegation
+protocol and the #432 root-cause class): the scorecard was implemented by a
+foreground-forwarded Codex task (`task-mrbo8b3m-rcqu7z`). Its companion worker
+was reaped mid-verification — the node companion orphaned to PPID 1 with its
+`bundle exec rake` subprocess already dead and the job log 30+ min stale, while
+`status` still read `running` (the status Progress snapshot lagged badly and was
+misleading twice; the log mtime + a live-process check were the reliable
+signals). The deliverable was complete on disk, so per protocol it was verified
+directly (full suite + rubocop + dogfood), the stale record cleared with
+`codex-companion.mjs cancel`, and the work taken over. Note the environment ran
+`bundle exec rake` at ~84 min vs a normal ~8 min (load/flakiness), which made the
+"is it hung or slow" call harder — a live ruby/rake process check disambiguated
+it (none existed → dead, not slow). Lesson: trust log mtime + `ps`/`kill -0` over
+the `status` Progress block, and confirm no subprocess before concluding a slow
+run is wedged.
+
+Original state at handoff: all four rubygems.org exit criteria were met
+(go/no-go: GO) and `main` HEAD was a publishable release candidate. The user
+added a **pre-publish gate**: make sure `metz-scan` clearly beats the prior-art
+gem `sandi_meter` (makaroni4/sandi_meter). The two items below are now done.
 
 ### sandi_meter competitive analysis (research done this session)
 
@@ -34,7 +54,7 @@ reliable exit codes, RuboCop-native integration, active maintenance, and
 scorecard** — which is also the "no rollup/total line" nit our dogfooding rounds
 flagged. The two pre-publish items below close that and stake the positioning.
 
-### Item 1 (in queue): compliance scorecard in `scan` text output
+### Item 1 (DONE): compliance scorecard in `scan` text output
 
 User chose "% headline + per-cop rollup + worst offenders." Metric = **Metz
 compliance = % of scanned files with zero `Metz/*` rule-cop offenses** (project
@@ -71,7 +91,7 @@ Exact spec to hand Codex verbatim:
 - JSON summary additive (non-breaking): add `clean_file_count`, `files_with_offenses`, `offenses_by_cop` (cop→count). Do NOT print the text block into JSON.
 - Red-green tests; regenerate ALL affected exact-output fixtures under test/fixtures/ + README/skill freshness DELIBERATELY (never loosen). Don't modify test/fixtures/sample_app/ files themselves. Fix lives in lib/metz_scan. Summary must not change exit codes.
 
-### Item 2 (in queue): README "How metz-scan compares" section
+### Item 2 (DONE): README "How metz-scan compares" section
 
 Do this AFTER the scorecard lands (avoid README edit conflict). Orchestrator
 writes it (positioning narrative). Draft to adapt (factual, credits sandi_meter

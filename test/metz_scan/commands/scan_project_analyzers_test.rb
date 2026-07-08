@@ -123,7 +123,12 @@ module MetzScan
         assert_mixed_offenses
         assert_unique_file_paths
         assert_summary_count_matches
+        assert_summary_fields
+      end
+
+      def assert_summary_fields
         assert_project_analyzer_summary
+        assert_compliance_summary_fields
       end
 
       def rubocop_cop_names
@@ -143,6 +148,14 @@ module MetzScan
         assert_equal "medium", summary.dig("rules", 0, "confidence")
       end
 
+      def assert_compliance_summary_fields
+        summary = parsed_json.fetch("summary")
+
+        assert_equal 1, summary.fetch("files_with_offenses")
+        assert_equal summary.fetch("inspected_file_count") - 1, summary.fetch("clean_file_count")
+        assert_equal expected_offenses_by_cop, summary.fetch("offenses_by_cop")
+      end
+
       def assert_unique_file_paths
         paths = parsed_json.fetch("files").map { |file| File.expand_path(file.fetch("path")) }
         assert_equal paths.uniq, paths
@@ -150,6 +163,10 @@ module MetzScan
 
       def json_offenses
         parsed_json.fetch("files").flat_map { |file| file.fetch("offenses") }
+      end
+
+      def expected_offenses_by_cop
+        json_offenses.each_with_object(Hash.new(0)) { |offense, counts| counts[offense.fetch("cop_name")] += 1 }
       end
 
       def parsed_json

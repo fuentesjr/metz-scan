@@ -19,6 +19,29 @@ The repo contains two gems:
 - `metz-scan`: the user-facing CLI.
 - `rubocop-metz`: the RuboCop plugin that provides the `Metz/*` cops.
 
+## How metz-scan compares
+
+`metz-scan` is a modern take on the question [`sandi_meter`](https://github.com/makaroni4/sandi_meter)
+popularized: how well does this code follow Sandi Metz's rules? `sandi_meter` was
+the prior art here, and metz-scan carries the same headline idea — a compliance
+scorecard — forward with a wider, more current toolset:
+
+- **All four classic rules, plus more.** Class and method size, parameter count,
+  and controller collaborators, plus Law-of-Demeter chains (`DemeterTrainWreck`)
+  and deep view navigation (`ViewsDeepNavigation`).
+- **Correct on modern Ruby.** Default scans analyze at your project's
+  `TargetRubyVersion`, so Ruby 3.x syntax (endless methods, anonymous argument
+  forwarding, pattern matching) is parsed, not flagged as a syntax error.
+- **Project-level design pressure, not just per-file rules.** Eight opt-in
+  project analyzers surface service soup, repeated branching, deep inheritance,
+  and other cross-file smells.
+- **CI-native.** Text, JSON, SARIF (GitHub code scanning), and GitHub
+  annotations, with an exit code of `1` reserved for "findings reported."
+- **RuboCop-native.** Built as a RuboCop plugin that honors your project's
+  `Include`/`Exclude` scope, so it slots into an existing pipeline.
+- **Self-explaining.** `metz-scan explain <cop>` and `metz-scan rules` describe
+  each rule and why it matters.
+
 ## Install
 
 `metz-scan` is currently published to GitHub Packages. Configure Bundler with a
@@ -79,6 +102,12 @@ bundle exec metz-scan scan app lib
 
 `scan` exits `1` when it reports findings — that is the tool working, not a
 crash (higher exit codes are real failures).
+
+Text `scan` output ends with a `Summary` scorecard. The compliance percentage
+is the share of inspected files with no `Metz/*` rule offenses; advisory
+`MetzProject/*` project-analyzer findings do not make a file unclean. The same
+summary also reports total offenses across cops, per-cop counts, and the five
+files with the most reported offenses. Clean scans print `No offenses found.`
 
 To see a guaranteed finding on a bundled fixture, run this from a checkout of
 this repository (the `test/fixtures` path exists only in the repo):
@@ -298,7 +327,10 @@ Text output shows a project-analyzer summary before rule blocks, including
 aggregate analyzer, confidence, severity, and category counts for opt-in
 high-volume runs; JSON and SARIF output include machine-readable
 project-analyzer metadata, and GitHub annotations append the same triage context
-to the annotation message. Calibration evidence summaries from
+to the annotation message. Text `scan` and `report` output ends with the same
+human scorecard summary; JSON `summary` includes `clean_file_count`,
+`files_with_offenses`, and `offenses_by_cop` for tools that need the rollup.
+Calibration evidence summaries from
 `bin/check_project_analyzer_calibration` also include a readiness/backlog section
 that records the current analyzer disposition, evidence boundary, next useful
 task, and explicit not-next boundary without changing scan output. Pass

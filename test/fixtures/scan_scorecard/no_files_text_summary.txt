@@ -1,0 +1,4 @@
+Summary
+-------
+Metz compliance: n/a (no files scanned)
+No offenses found.

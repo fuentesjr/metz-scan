@@ -47,6 +47,13 @@ bundle exec metz-scan scan . --format sarif
 bundle exec metz-scan scan . --format gh-annotations
 ```
 
+Text `scan` and `report` outputs end with a `Summary` scorecard: Metz compliance
+is the share of inspected files with no `Metz/*` rule offenses, and advisory
+`MetzProject/*` findings do not make a file unclean. The scorecard also rolls up
+total offenses, per-cop counts, and the files with the most offenses. JSON
+summary data includes `clean_file_count`, `files_with_offenses`, and
+`offenses_by_cop`.
+
 Include the full opt-in project-analyzer set:
 
 ```bash

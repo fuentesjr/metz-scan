@@ -4,6 +4,7 @@ require "json"
 require "optparse"
 
 require_relative "../version"
+require_relative "scan/compliance_scorecard"
 require_relative "scan/runner"
 require_relative "scan/project_analyzer_runner"
 require_relative "scan/text_renderer"
@@ -141,8 +142,13 @@ module MetzScan
       def scan(options)
         parsed = Runner.invoke(options.paths, all_cops: options.all_cops, stderr: stderr)
         merge_project_analyzers(parsed, options)
+        add_compliance_summary(parsed)
         render(parsed, options.format)
         Runner.exit_code_for(parsed)
+      end
+
+      def add_compliance_summary(parsed)
+        ComplianceScorecard.add_to_summary!(parsed)
       end
 
       def merge_project_analyzers(parsed, options)

@@ -1,0 +1,18 @@
+Summary
+-------
+Metz compliance: 63% (5/8 files clean)
+11 offenses across 5 cops
+
+By cop:
+  Metz/MethodsTooLong                         4
+  MetzProject/ServiceSoup                     3
+  MetzProject/RepeatedBranching               2
+  Layout/LineLength                           1
+  Metz/ControllersTooManyDirectCollaborators  1
+
+Most offenses:
+  app/models/order.rb                  3
+  app/controllers/users_controller.rb  2
+  app/services/archive.rb              2
+  app/jobs/sync_job.rb                 1
+  app/models/account.rb                1

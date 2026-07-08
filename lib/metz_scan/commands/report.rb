@@ -4,6 +4,7 @@ require "json"
 require "optparse"
 
 require_relative "scan/runner"
+require_relative "scan/compliance_scorecard"
 require_relative "scan/text_renderer"
 require_relative "scan/sarif_renderer"
 require_relative "scan/github_annotations_renderer"
@@ -73,9 +74,14 @@ module MetzScan
       end
 
       def render(parsed, format)
-        return stdout.puts JSON.generate(parsed) if format == "json"
+        return render_json(parsed) if format == "json"
 
         RENDERERS.fetch(format, Scan::TextRenderer).new(stdout, parsed).render
+      end
+
+      def render_json(parsed)
+        Scan::ComplianceScorecard.add_to_summary!(parsed)
+        stdout.puts JSON.generate(parsed)
       end
 
       def parser_error(err)

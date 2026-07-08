@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "offense_extractor"
+require_relative "compliance_scorecard"
 require_relative "project_analyzer_summary_aggregate_formatter"
 require_relative "project_analyzer_summary_breakdown_formatter"
 require_relative "project_analyzer_triage_formatter"
@@ -24,6 +25,7 @@ module MetzScan
           sorted_offense_blocks.each do |cop_name, list|
             render_block(cop_name, list)
           end
+          ComplianceScorecard.new(parsed).lines.each { |line| stdout.puts line }
         end
 
         private

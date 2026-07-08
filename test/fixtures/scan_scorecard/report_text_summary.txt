@@ -1,0 +1,11 @@
+Summary
+-------
+Metz compliance: 0% (0/1 files clean)
+2 offenses across 2 cops
+
+By cop:
+  Metz/ControllersTooManyDirectCollaborators  1
+  Metz/MethodsTooLong                         1
+
+Most offenses:
+  app/controllers/users_controller.rb  2
