@@ -136,6 +136,12 @@ rosier report. This is why the length cops (`Metz/MethodsTooLong`,
 while still applying to production code. `--all-cops` runs the full stock
 RuboCop suite under your complete project configuration instead.
 
+Default mode reads only file-scope settings from the target `.rubocop.yml`, so
+it does not require external RuboCop extensions declared with `plugins:`,
+`require:`, or `inherit_gem:`. `--all-cops` uses RuboCop's complete project
+configuration; if a target extension gem is missing, install that gem in the
+bundle you use to run `metz-scan` or run the default Metz-only scan.
+
 Current project analyzer status:
 
 | Analyzer | Status | Default scan | Expected findings |

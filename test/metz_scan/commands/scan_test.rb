@@ -471,5 +471,104 @@ module MetzScan
         ENV["RUBOCOP_CACHE_ROOT"] = @original_rubocop_cache_root
       end
     end
+
+    class ScanProjectExternalConfigScopeTest < Minitest::Test
+      EXTERNAL_CONFIG_WITH_SCOPE = <<~YAML
+        plugins:
+          - rubocop-performance
+        require:
+          - rubocop-rails
+        inherit_gem:
+          rubocop-rails-omakase: rubocop.yml
+
+        AllCops:
+          Exclude:
+            - "excluded/**/*"
+
+        Metz/MethodsTooLong:
+          Exclude:
+            - "spec/**/*"
+      YAML
+
+      def setup
+        @stdout = StringIO.new
+        @stderr = StringIO.new
+        configure_rubocop_cache_root
+        FileUtils.mkdir_p(tmp_root)
+        @tmpdir = Dir.mktmpdir("metz-scan-external-config-test", tmp_root)
+      end
+
+      def teardown
+        FileUtils.remove_entry(@tmpdir) if @tmpdir
+        FileUtils.rmdir(tmp_root) if File.directory?(tmp_root) && Dir.empty?(tmp_root)
+        restore_rubocop_cache_root
+      end
+
+      def test_default_scan_honors_project_scope_without_loading_external_config_gems
+        write_external_config_scope_project
+        assert_default_scan_honors_external_config_scope(run_scan([@tmpdir, "--format", "json"]))
+      end
+
+      private
+
+      def write_external_config_scope_project
+        write_config
+        write_fixture("app.rb", ScanCopSelectionTest::METZ_VIOLATING_FIXTURE)
+        write_fixture("spec/thing_spec.rb", ScanCopSelectionTest::METZ_VIOLATING_FIXTURE)
+        write_fixture("excluded/generated.rb", "class <%= @name %>\nend\n")
+      end
+
+      def assert_default_scan_honors_external_config_scope(code)
+        assert_scan_completed_with_findings(code)
+        assert_includes cops_for("app.rb"), "Metz/MethodsTooLong"
+        refute_includes cops_for("spec/thing_spec.rb"), "Metz/MethodsTooLong"
+        refute_includes file_paths, File.join(@tmpdir, "excluded/generated.rb")
+      end
+
+      def assert_scan_completed_with_findings(code)
+        assert_equal 1, code, "findings should report as exit 1, not crash as exit 2"
+        assert_empty @stderr.string
+      end
+
+      def write_config
+        File.write(File.join(@tmpdir, ".rubocop.yml"), EXTERNAL_CONFIG_WITH_SCOPE)
+      end
+
+      def write_fixture(relative_path, contents)
+        path = File.join(@tmpdir, relative_path)
+        FileUtils.mkdir_p(File.dirname(path))
+        File.write(path, contents)
+      end
+
+      def run_scan(argv)
+        Scan.run(argv, stdout: @stdout, stderr: @stderr)
+      end
+
+      def cops_for(path_suffix)
+        JSON.parse(@stdout.string).fetch("files")
+            .select { |file| file.fetch("path").end_with?(path_suffix) }
+            .flat_map { |file| file.fetch("offenses").map { |offense| offense.fetch("cop_name") } }
+      end
+
+      def file_paths
+        JSON.parse(@stdout.string).fetch("files")
+            .map { |file| File.expand_path(file.fetch("path")) }
+      end
+
+      def tmp_root
+        File.expand_path("../../../scan-test-tmp", __dir__)
+      end
+
+      def configure_rubocop_cache_root
+        @original_rubocop_cache_root = ENV.fetch("RUBOCOP_CACHE_ROOT", nil)
+        ENV["RUBOCOP_CACHE_ROOT"] = File.expand_path("../../../tmp/rubocop_cache", __dir__)
+      end
+
+      def restore_rubocop_cache_root
+        return ENV.delete("RUBOCOP_CACHE_ROOT") unless @original_rubocop_cache_root
+
+        ENV["RUBOCOP_CACHE_ROOT"] = @original_rubocop_cache_root
+      end
+    end
   end
 end

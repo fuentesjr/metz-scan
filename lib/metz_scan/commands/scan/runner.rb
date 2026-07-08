@@ -5,6 +5,8 @@ require "psych"
 require "rubocop"
 require "stringio"
 
+require "metz_scan/commands/scan/project_config_scope"
+
 module MetzScan
   module Commands
     class Scan
@@ -31,19 +33,19 @@ module MetzScan
 
         def self.with_errors
           yield
-        rescue LoadError => e
-          raise_load_error(e)
-        rescue StandardError => e
+        rescue LoadError, StandardError => e
           raise Error, concise_message(e.message)
         end
 
-        def self.raise_load_error(err)
-          raise Error, "could not load rubocop-metz: #{err.message}"
+        def self.rubocop_argv(paths, all_cops:)
+          require_metz_plugin
+          ["--plugin", "rubocop-metz", *cop_selection_argv(all_cops), "--format", FORMATTER, *paths]
         end
 
-        def self.rubocop_argv(paths, all_cops:)
+        def self.require_metz_plugin
           require "rubocop-metz"
-          ["--plugin", "rubocop-metz", *cop_selection_argv(all_cops), "--format", FORMATTER, *paths]
+        rescue LoadError => e
+          raise Error, "could not load rubocop-metz: #{e.message}"
         end
 
         def self.inspection_paths(paths, all_cops:)
@@ -105,7 +107,7 @@ module MetzScan
         end
 
         def self.stack_trace_line?(line)
-          line == "Traceback (most recent call last):" || line.match?(/\.rb:\d+:in /)
+          line == "Traceback (most recent call last):" || line.match?(/:\d+:in [`']/)
         end
 
         def self.exit_code_for(parsed)
@@ -146,7 +148,7 @@ module MetzScan
         module_function
 
         def honor(report)
-          store = RuboCop::ConfigStore.new
+          store = ProjectConfigScope.store
           files = Array(report["files"]).map { |file| reject_scoped_off(store, file) }
           recount(report.merge("files" => files))
         rescue RuboCop::Error, Psych::Exception
@@ -178,7 +180,7 @@ module MetzScan
         module_function
 
         def for_project_config(paths)
-          find(paths, RuboCop::ConfigStore.new)
+          find(paths, ProjectConfigScope.store)
         rescue RuboCop::Error, Psych::Exception
           with_forced_defaults(paths)
         end

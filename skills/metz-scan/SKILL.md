@@ -84,6 +84,13 @@ findings when the optional bundle group is unavailable. Do not install optional
 Rubydex dependencies unless the user explicitly wants fuller project-index
 coverage.
 
+Default scan mode reads only file-scope settings from the target `.rubocop.yml`.
+It can run even when the target declares external RuboCop extensions through
+`plugins:`, `require:`, or `inherit_gem:` that are not installed in the current
+bundle. `--all-cops` delegates to RuboCop's complete project configuration, so
+missing target extension gems are environment/setup errors: install the gem in
+the bundle used to run `metz-scan`, or use the default Metz-only scan.
+
 ## Output Selection
 
 - Use `--format text` for human review in chat or terminal.

@@ -9,6 +9,39 @@ Use `PROJECT_TRACKER.md` for the current direction, next queue, parked work, and
 latest checkpoint. Add new notes here only when a slice needs more durable
 detail than the tracker should carry.
 
+## 2026-07-08: Default scans avoid target RuboCop extension loads
+
+Task: dogfood defects A + B from
+`docs/dogfooding/2026-07-07-round-0.5.2.md` — default mode crashed on targets
+whose `.rubocop.yml` referenced absent RuboCop extension gems, and the error
+path blamed `rubocop-metz` or leaked a `bin/metz-scan` stack frame.
+
+Decision: **option 1, honor scope without loading plugin gems.** RuboCop 1.88.0
+does not expose a supported "scope only, no extensions" config API; normal
+`RuboCop::ConfigStore` eagerly resolves `plugins:`, `require:`, and inherited
+gem configs. The fix adds a wrapper-local `ProjectConfigScope` loader that
+parses RuboCop YAML, preserves only file-scope data (`AllCops` Include/Exclude,
+Metz per-cop Include/Exclude, and Ruby interpreters for target discovery), and
+feeds that into `RuboCop::TargetFinder` / `excluded_file?`. This keeps the
+#33/#37 scope contract for local target config without requiring target
+extension gems in the `metz-scan` bundle. An absent `inherit_gem` cannot
+contribute scope because its config file is unavailable; installed inherited
+configs are parsed through the same scope-only path. Durable internal-API
+exception recorded in
+`docs/ddrs/2026-07-08-rubocop-scope-only-config.md`.
+
+Error handling: only the wrapper's own `require "rubocop-metz"` failure is
+reported as `could not load rubocop-metz`. Later `LoadError`s from a target
+config now surface as RuboCop config load failures, and `concise_message`
+filters extensionless entrypoint stack frames such as `bin/metz-scan:10:in`.
+
+Red-green: added a default-mode fixture whose `.rubocop.yml` declares
+`plugins:`, `require:`, and `inherit_gem:` entries for absent extension gems
+while also scoping off `excluded/**/*` and `spec/**/*`; it failed with exit 2
+before the fix and now exits 1 with the local scopes honored. Added subprocess
+coverage for `--all-cops` missing target plugin errors and a shimmed missing
+`rubocop-metz` case so the two messages stay distinct.
+
 ## 2026-07-07: Prepare 0.5.2 release target (carries #37)
 
 Task: Release readiness / Path-to-rubygems.org next move — cut the release
