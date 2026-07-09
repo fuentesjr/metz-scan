@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "../demeter_train_wreck" unless defined?(RuboCop::Cop::Metz::DemeterTrainWreck)
+require_relative "../operator_methods"
 
 module RuboCop
   module Cop
@@ -17,12 +18,6 @@ module RuboCop
           # the cop stays quiet when certainty is incomplete.
 
           PASS_THROUGH = %i[tap then yield_self itself dup clone freeze].to_set.freeze
-
-          OPERATOR_METHODS = (
-            %i[+ - * / % **] +
-              %i[== != < > <= >= <=> === =~ !~] +
-              %i[& | ^ << >>]
-          ).to_set.freeze
 
           # rubocop:disable Lint/BooleanSymbol
           LITERAL_MAP = {
@@ -225,7 +220,7 @@ module RuboCop
           end
 
           def self.operator?(method)
-            OPERATOR_METHODS.include?(method)
+            RuboCop::Cop::Metz::OperatorMethods.operator?(method)
           end
         end
       end

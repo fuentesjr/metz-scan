@@ -3,7 +3,7 @@
 require "rubocop"
 require_relative "../../../metz/cop_metadata"
 require_relative "on_send_csend_bridge"
-require_relative "demeter_train_wreck/type_inference"
+require_relative "operator_methods"
 
 module RuboCop
   module Cop
@@ -61,7 +61,7 @@ module RuboCop
         end
 
         def operator_method?(name)
-          DemeterTrainWreck::TypeInference.operator?(name.to_sym)
+          OperatorMethods.operator?(name.to_sym)
         end
 
         def allowed_receiver?(node)
