@@ -1,36 +1,34 @@
 # Design: Metz testing-discipline cops
 
-Status: **design proposal, not yet implemented.** Post-release roadmap
-(see `PROJECT_TRACKER.md` "Path to rubygems.org"). This document is the
-specification and evidence bar; implementation is deliberately deferred until
-after the first public release so it does not expand the surface being
-stabilized for v1.
+Status: **roadmap with rollout in progress.** This document is the specification
+and evidence bar for testing-discipline cops; implementation proceeds one
+opt-in slice at a time.
 
-Last updated: 2026-07-08.
+Last updated: 2026-07-09.
 
 Implementation status (2026-07-09): rollout in progress. `Metz/TestReachesPrivate`
-(§9 step 2) and `Metz/TestAssertsOnInternals` (§5) are implemented and shipped
-opt-in (`Enabled: false`). `TestReachesPrivate` was dogfooded (accurate but too
-dense → stays opt-in, `docs/dogfooding/2026-07-08-test-reaches-private.md`).
-Deliberate deviations from this spec, decided during implementation:
+(§9 step 2), `Metz/TestAssertsOnInternals` (§5), and `Metz/TestStubsSubject`
+(§5) are implemented and shipped opt-in (`Enabled: false`). `TestStubsSubject`
+is RSpec-only: RSpec has an explicit subject token, while general Minitest
+subject inference would flood false positives. `TestReachesPrivate` was
+dogfooded (accurate but too dense → stays opt-in,
+`docs/dogfooding/2026-07-08-test-reaches-private.md`). Deliberate deviations
+from this spec, decided during implementation:
 
 - **`public_send` is NOT flagged** (spec §5 listed it). It can only invoke
   public methods, so flagging it contradicts the cop's principle and is a
   guaranteed false positive; core `Style/SendWithLiteralMethodName` already owns
   the pointless-indirection angle. Detection is `send`/`__send__` only.
 - **The `TestFrameworks` support module is deferred** (spec §4 and the §1
-  day-one lock assumed it). Both shipped cops scope by file-glob `Include` and
-  key off specific method sends, so they need no per-framework matchers; both
-  frameworks are covered by fixtures. The module is now targeted at
-  `TestStubsSubject` — the first cop that genuinely needs subject-identification
-  and double/stub-send detection. The DEP-1 decouple of the operator check from
-  `DemeterTrainWreck::TypeInference` (only `TestReachesPrivate` uses it) is a
-  separate queued item, to fold in around that same slice.
+  day-one lock assumed it). The shipped cops either scope by file-glob `Include`
+  and key off specific method sends, or are RSpec-shaped enough to keep subject
+  tracking inline. There is still no real both-framework consumer for a shared
+  module.
 
 Decisions locked by the requesting session:
 
-- **Frameworks:** Minitest **and** RSpec from day one, via framework-neutral
-  rule definitions with per-framework matchers.
+- **Frameworks:** Minitest **and** RSpec where a rule has a low-noise signal in
+  both frameworks; `TestStubsSubject` is the documented RSpec-only exception.
 - **Scope:** the statically-detectable smell subset (AST-only) **plus**
   Rubydex-index-backed visibility rules (the latter delivered as project
   analyzers in the wrapper, not cops — see §5 Tier 2).
@@ -39,7 +37,7 @@ Decisions locked by the requesting session:
 
 ## 1. Motivation: an identity gap
 
-`rubocop-metz` ships six cops — `ClassesTooLong`, `MethodsTooLong`,
+`rubocop-metz` originally shipped six design cops — `ClassesTooLong`, `MethodsTooLong`,
 `DemeterTrainWreck`, `MethodsTooManyParameters`,
 `ControllersTooManyDirectCollaborators`, `ViewsDeepNavigation`. Every one
 targets a **design** smell (size, coupling, fan-out). None encodes Sandi
@@ -158,15 +156,14 @@ position against them rather than silently re-implement:
 | `TestAssertsOnInternals` | `RSpec/InstanceVariable` (partial, RSpec only, different rule shape) |
 | `TestReachesPrivate` / `test_calls_private_method` | none in either plugin |
 
-What is genuinely novel here: (1) **framework-neutral** delivery — rubocop-minitest
-has no subject-stub or send-literal cop, so the Minitest side of this catalog
-is new; (2) the literal-`send` + **index-confirmed privacy** pair, which
-neither plugin attempts; (3) Metz metadata (`why_it_matters` etc.) driving
-`explain` and enriched output. Where an existing cop has solved a heuristic we
-need (notably `RSpec/SubjectStub`'s subject detection, see §10), reuse its
-approach — do not re-derive it. Where a rule is already well-served in both
-ecosystems (`TestTooManyAssertions`), the bar for a Metz-branded duplicate is
-correspondingly higher.
+What is genuinely novel here: (1) Metz-branded delivery of testing discipline
+alongside the design cops; (2) the literal-`send` + **index-confirmed privacy**
+pair, which neither plugin attempts; (3) Metz metadata (`why_it_matters` etc.)
+driving `explain` and enriched output. Where an existing cop has solved a
+heuristic we need (notably `RSpec/SubjectStub`'s subject detection, see §10),
+reuse its approach — do not re-derive it. Where a rule is already well-served
+in both ecosystems (`TestTooManyAssertions`), the bar for a Metz-branded
+duplicate is correspondingly higher.
 
 ### Tier 1 — AST-only (no index required)
 
@@ -199,16 +196,15 @@ correspondingly higher.
 
 #### `Metz/TestStubsSubject`
 - **Principle:** don't mock the object you are testing; minimize doubles.
-- **Detects (high signal):** stubbing/mocking the subject under test —
-  `allow(subject).to receive`, `expect(sut).to receive`, or Minitest `sut.stub`
-  where the receiver is the case's subject. Optionally a companion
-  `Metz/TestTooManyDoubles` counts doubles per case above a `Max` (noisier,
-  candidate-only).
-- **FP risk:** identifying "the subject" heuristically (named `subject`, the
-  `described_class` instance, or the receiver most-asserted-on). Ship
-  conservative: only flag the unambiguous cases. For the RSpec side, start
-  from `RSpec/SubjectStub`'s proven subject-detection heuristic rather than
-  re-deriving one (see Prior art); the Minitest side is the novel work.
+- **Detects (high signal, RSpec-only):** stubbing/mocking the subject under
+  test via `expect(subject).to receive`, `allow(subject).to receive`,
+  `is_expected.to receive`, named `subject(:name)` / `subject!(:name)`, inherited
+  subject names, negated runners, spies, and nested stub matchers. `let`/`let!`
+  with the same symbol subtracts that name from the subject set so collaborators
+  can be safely overridden.
+- **FP risk:** low for RSpec's explicit subject token. Minitest remains deferred:
+  no equivalent subject token exists, and inferring from arbitrary locals or
+  `described_class` instances floods false positives.
 
 #### `Metz/TestTooManyAssertions`  *(candidate — weakest Sandi tie, weakest novelty)*
 - **Principle:** sparse, focused tests ("test one thing"). Closer to
@@ -316,8 +312,8 @@ Reuse the existing calibration/dogfooding machinery:
 ## 9. Rollout sequencing (post-release)
 
 1. Land this spec (this slice) + roadmap entry. No cop code.
-2. After v1 ships, implement **`Metz/TestReachesPrivate`** end-to-end as the
-   template (cop + metadata + both-framework fixtures + docs), opt-in.
+2. Implement **`Metz/TestReachesPrivate`** end-to-end as the template (cop +
+   metadata + both-framework fixtures + docs), opt-in.
 3. Dogfood it; fix FP patterns; decide default-output eligibility.
 4. Repeat for `TestAssertsOnInternals`, `TestStubsSubject`, then the
    index-backed `test_calls_private_method` analyzer (wrapper-side slice,
@@ -327,11 +323,10 @@ Reuse the existing calibration/dogfooding machinery:
 
 ## 10. Open questions
 
-- **"Subject under test" heuristic** for `TestStubsSubject` — named `subject`,
-  `described_class`, most-asserted receiver? For RSpec, start from
-  `RSpec/SubjectStub`'s existing heuristic (see §5 Prior art); the open
-  question is really the Minitest side, where no prior art exists. Needs a
-  small spike on real suites.
+- **Minitest subject inference for `TestStubsSubject`** — deferred. RSpec's
+  explicit `subject` / `is_expected` token is implemented; `described_class`,
+  arbitrary locals, and Minitest `sut.stub` are intentionally not inferred
+  without stronger evidence.
 - **ActiveSupport `test "..."` blocks** and `let`/`subject` DSLs — how much of
   the RSpec/Rails DSL surface to cover in the first `TestFrameworks` cut.
 - **Default severity** — `refactor` (matching current cops) vs. a softer

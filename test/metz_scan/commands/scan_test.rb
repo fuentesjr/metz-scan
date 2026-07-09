@@ -261,17 +261,19 @@ module MetzScan
         restore_rubocop_cache_root
       end
 
-      def test_default_scan_hides_opt_in_test_reaches_private
+      def test_default_scan_hides_opt_in_testing_cops
         run_scan([@tmpdir, "--format", "json"])
 
         refute_includes cop_names, "Metz/TestReachesPrivate"
+        refute_includes cop_names, "Metz/TestStubsSubject"
         assert_includes cop_names, "Metz/MethodsTooLong"
       end
 
-      def test_all_cops_with_project_enablement_reports_test_reaches_private
+      def test_all_cops_with_project_enablement_reports_opt_in_testing_cops
         run_scan([@tmpdir, "--all-cops", "--format", "json"])
 
         assert_includes cop_names, "Metz/TestReachesPrivate"
+        assert_includes cop_names, "Metz/TestStubsSubject"
       end
 
       private

@@ -86,6 +86,14 @@ Metz/TestAssertsOnInternals:
   AllowedReceivers: []
   VersionAdded: '0.6'
 
+Metz/TestStubsSubject:
+  Description: 'Flags RSpec tests that stub or mock the subject under test instead of its collaborators.'
+  Enabled: false
+  Severity: refactor
+  Include:
+    - '**/*_spec.rb'
+  VersionAdded: '0.6'
+
 Metz/ControllersTooManyDirectCollaborators:
   Description: 'Flags Rails controller actions that reach into more than MaxCollaborators distinct collaborator constants.'
   Enabled: true

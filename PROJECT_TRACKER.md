@@ -136,35 +136,66 @@ burn a `1.0.0` signal on the first public push.
 | Docs/adoption | Stable | README points contributors and agents to this tracker; old implementation notes are archived, current notes are short, and the Sorbet spike report records the tooling decision. The README now splits RepeatedBranching generic-subject guidance into a short list, the analyzer behavior details into per-analyzer subsections, package install troubleshooting points at `bin/check_published_gem`, parity failure inspection points at preserved clone/`next action:` output, the analyzer status table has freshness coverage, `skills/metz-scan/SKILL.md` gives agents consumer-facing usage guidance, and calibration docs point future Rubydex upgrades, filtered baselines, compact baseline previews, and parked issue updates at repeatable local commands. | Keep docs changes minimal and evidence-led. |
 | Path to rubygems.org | Live on rubygems.org (v0.5.3) | `metz-scan`/`rubocop-metz` `0.5.3` are the public rubygems.org release, verified with a real scan from a clean install; the corrupt `0.5.2` is yanked (only `0.5.3` installable). | Done. `1.0.0` still reserved for a later, deliberate signal. |
 | Test hardening | Done | Fixture/guard surface through `599a935` covers CLI text/JSON/help contracts, read-only guards, drift checks, package smoke, and CI parity output. Suite: 438 fast + 88 slow runs, all green. | Maintain only; new tests accompany behavior changes or defects, not coverage sweeps. |
-| Testing-discipline cops | Active | Rollout 2026-07-08/09: `Metz/TestReachesPrivate` and `Metz/TestAssertsOnInternals` landed — both Tier-1, opt-in behind the reusable `Enabled: false` gate, and **both dogfooded → stay opt-in** (accurate but too dense: ~22 and ~32 findings/100 test files on Rails). **DEP-1 decouple landed** (2026-07-09): extracted a neutral `RuboCop::Cop::Metz::OperatorMethods` predicate so `TestReachesPrivate` no longer reaches into `DemeterTrainWreck::TypeInference`. `TestStubsSubject` scoped **RSpec-only** (recon proved only RSpec has a detectable subject token; Minitest deferred) and `TestFrameworks` **deferred again** (rule is RSpec-shaped, no real both-framework consumer yet). Spec deviations recorded (`public_send` dropped). | Implement `Metz/TestStubsSubject` (RSpec-only, opt-in), porting `RSpec/SubjectStub` detection. Dogfood each before promotion; follow `docs/design/testing-cops.md`. |
+| Testing-discipline cops | Active | Rollout 2026-07-08/09: three Tier-1 cops landed opt-in behind the reusable `Enabled: false` gate. `Metz/TestReachesPrivate` and `Metz/TestAssertsOnInternals` are **dogfooded → stay opt-in** (accurate but too dense: ~22 and ~32 findings/100 test files on Rails). **`Metz/TestStubsSubject` landed 2026-07-09** — **RSpec-only** (recon proved only RSpec has a detectable subject token; Minitest deferred), an inline port of `RSpec/SubjectStub` (subject-name fold across nested groups, `let`/`let!` overrides, `expect`/`allow(subject).to receive*`, `is_expected`, negated runners; `receive`/`receive_messages`/`receive_message_chain`/`have_received`), 24 fixtures; **not yet dogfooded**. **DEP-1 landed**: neutral `RuboCop::Cop::Metz::OperatorMethods` predicate. `TestFrameworks` **deferred again** (rule is RSpec-shaped, no both-framework consumer yet). | Dogfood `TestStubsSubject`; then continue rollout (Tier-2 `test_calls_private_method` analyzer). Follow `docs/design/testing-cops.md`. |
 
 ## Next Queue
 
-1. Next testing cop: `Metz/TestStubsSubject` — **RSpec-only, opt-in**, porting
-   `RSpec/SubjectStub`'s detection (subject tracking across nested `describe`/
-   `context`, `let` overrides, `expect`/`allow(subject).to receive*`,
-   `is_expected`, negated runners; `receive`/`receive_messages`/
-   `receive_message_chain`/`have_received`). Decision (2026-07-09): Minitest is
-   deferred — recon proved only RSpec has a detectable subject token, so general
-   Minitest detection would flood false positives; `TestFrameworks` is deferred
-   again for the same reason (no real both-framework consumer yet). DEP-1 is
-   **done** (neutral `OperatorMethods` predicate landed).
+1. Dogfood `Metz/TestStubsSubject` (now landed, opt-in) against real RSpec suites
+   (Mastodon, Discourse) per `docs/design/testing-cops.md` §8 — judge-only round,
+   record false-positive rate and default-output eligibility. Expected verdict
+   shape: stays opt-in unless the signal is sparse and clean. No Minitest run
+   (cop is RSpec-only by design).
 2. Continue the testing-discipline rollout (`docs/design/testing-cops.md`) slice
-   by slice — Tier 1 as cops, Tier 2 as wrapper-side analyzers, each earning
-   default output only through per-cop dogfooding. Do not start a cop before its
-   dogfooding evidence; do not attempt the documented non-goals.
+   by slice — Tier 1 as cops, Tier 2 (`test_calls_private_method`) as a
+   wrapper-side index-backed analyzer, each earning default output only through
+   per-cop dogfooding. Do not start a cop before its dogfooding evidence; do not
+   attempt the documented non-goals.
 
-(Both shipped testing cops are calibrated and **stay opt-in** — accurate but too
+(Two shipped testing cops are calibrated and **stay opt-in** — accurate but too
 dense for default output: `Metz/TestReachesPrivate`
 (`docs/dogfooding/2026-07-08-test-reaches-private.md`, 21.7 findings/100 test
 files on Rails) and `Metz/TestAssertsOnInternals`
 (`docs/dogfooding/2026-07-09-test-asserts-on-internals.md`, ~32/100 on Rails).
-`remove_method` remains a minor `AllowedMethods` candidate for
-`TestReachesPrivate`, parked.)
+`Metz/TestStubsSubject` (RSpec-only) just landed opt-in and is **not yet
+dogfooded** — Next Queue #1. `remove_method` remains a minor `AllowedMethods`
+candidate for `TestReachesPrivate`, parked.)
 
 ## Latest Slice Checkpoint
 
-Slice: 2026-07-09 DEP-1 decouple — neutral operator predicate.
+Slice: 2026-07-09 third testing-discipline cop — `Metz/TestStubsSubject`
+(Tier 1, RSpec-only, AST), opt-in.
+
+What changed: new cop flagging RSpec tests that stub/mock the subject under test
+— `expect`/`allow(subject).to receive*`, `is_expected.to receive*`, and named
+subjects (`subject(:x)`) — an inline port of `RSpec/SubjectStub`. Subject names
+are folded through ancestor example groups (root→node): `subject`/`subject!` add
+names, `let`/`let!` subtract, the set always includes `:subject`; sibling groups
+stay isolated and the stub matcher (`receive`/`receive_messages`/
+`receive_message_chain`/`have_received`) is found recursively (so
+`all(receive(...))` matches). **RSpec-only by design** — Minitest deferred
+(only RSpec has a detectable subject token; general Minitest inference floods
+FPs). Ships `Enabled: false` with an RSpec-only `Include` (`**/*_spec.rb`);
+reuses the slice-1 opt-in gate (no runner/wrapper changes). `TestFrameworks`
+deferred again (built inline; no both-framework consumer yet). `on_send` cop →
+includes `OnSendCsendBridge`.
+
+How verified: Codex-implemented (`task-mrdnzm3c-ilww8x`, ~25m) with red-green +
+its own reviewer; **orchestrator independently reviewed the full diff** (traced
+the fold and every FP-guard fixture — collaborator, sibling, `let`/`let!`
+override, `described_class`, message-result receiver, non-stub matcher — plus
+the tricky positives inherited-named-subject and outer-`let`-then-inner-subject)
+and **reran full verification**: `bundle exec rake` 637/0F/0E (2 expected
+missing-rubydex skips), `bundle exec rubocop` clean (231 files),
+`check_dependency_direction` / `check_sample_app_frozen` / `check_dogfood`
+(0 findings) all PASS. 28 cop tests over 24 both-branch fixtures; opt-in gate
+extended in `scan_test.rb` (`ScanOptInCopSelectionTest` now proves both
+`TestReachesPrivate` and `TestStubsSubject` are hidden by default and surface
+under `--all-cops` + project enablement). Note: Codex's sandbox blocked GitHub,
+so it built from the brief without the live `RSpec/SubjectStub` oracle — the
+orchestrator's diff/fixture trace is the cross-check. Dogfooding of the cop is
+the next slice (Next Queue #1). DEP-1 (`23aaf37`) preceded this slice.
+
+Prior committed slice — 2026-07-09 DEP-1 decouple — neutral operator predicate.
 
 What changed: extracted `RuboCop::Cop::Metz::OperatorMethods` (new
 `operator_methods.rb`) holding the canonical operator-symbol set + `operator?`
@@ -376,7 +407,8 @@ calibration internals moved to `docs/project-analyzer-calibration.md`.
 
 | Date | Commit | Summary |
 | --- | --- | --- |
-| 2026-07-09 | `this commit` | DEP-1 decouple: extracted neutral `RuboCop::Cop::Metz::OperatorMethods` (operator-symbol set + `operator?`) so `Metz/TestReachesPrivate` no longer reaches into `DemeterTrainWreck::TypeInference`; `TypeInference.operator?` delegates to it (behavior unchanged). Also locked `TestStubsSubject` as RSpec-only with `TestFrameworks` deferred again. Behavior-preserving; new `operator_methods_test`, existing tests green, dogfood 0 findings. |
+| 2026-07-09 | `this commit` | Third testing-discipline cop: `Metz/TestStubsSubject` (Tier 1, **RSpec-only**, AST), opt-in (`Enabled: false`). Flags RSpec tests that stub/mock the subject under test (`expect`/`allow(subject).to receive*`, `is_expected`, named subjects) — an inline port of `RSpec/SubjectStub` with an ancestor-group subject-name fold (`subject`/`subject!` add, `let`/`let!` subtract, always include `:subject`, siblings isolated, recursive stub-matcher search). Minitest deferred (no detectable subject token); `TestFrameworks` deferred again. RSpec-only `Include`; reuses the slice-1 opt-in gate. Codex-implemented, orchestrator-reviewed (traced fold + all FP-guard fixtures) and re-verified: rake 637/0F/0E, rubocop clean, dogfood 0 findings. 28 cop tests / 24 fixtures; opt-in gate coverage extended. |
+| 2026-07-09 | `23aaf37` | DEP-1 decouple: extracted neutral `RuboCop::Cop::Metz::OperatorMethods` (operator-symbol set + `operator?`) so `Metz/TestReachesPrivate` no longer reaches into `DemeterTrainWreck::TypeInference`; `TypeInference.operator?` delegates to it (behavior unchanged). Also locked `TestStubsSubject` as RSpec-only with `TestFrameworks` deferred again. Behavior-preserving; new `operator_methods_test`, existing tests green, dogfood 0 findings. |
 | 2026-07-09 | `this commit` | Per-cop calibration round for `Metz/TestAssertsOnInternals` (`docs/dogfooding/2026-07-09-test-asserts-on-internals.md`). Dogfooded against Rails (Minitest), Mastodon + Discourse (RSpec): accurate (low FP — `instance_variable_get`/`_set` are unambiguous internal-state reaches) but too dense for default output (~32 findings/100 test files on Rails, 364 offenses; Discourse ~3.3, Mastodon ~0.4) → **stays opt-in**. No `assigns` offenses in modern suites. Judge-only; docs + tracker, no code. |
 | 2026-07-09 | `this commit` | Second testing-discipline cop: `Metz/TestAssertsOnInternals` (Tier 1, AST-only), opt-in (`Enabled: false`). Flags `instance_variable_get`/`_set` and receiverless literal `assigns(:x)` in test files (Minitest + RSpec); bare `@ivar` not flagged. Reuses the slice-1 opt-in gate (no runner changes). `TestFrameworks` deferred again; no DemeterTrainWreck coupling. Codex-implemented, orchestrator-reviewed; rake 603/0F/0E, rubocop clean, dogfood 0 findings. 17 both-framework cop tests. |
 | 2026-07-08 | `this commit` | Per-cop calibration round for `Metz/TestReachesPrivate` (`docs/dogfooding/2026-07-08-test-reaches-private.md`). Dogfooded the opt-in cop against Rails (Minitest), Mastodon + Discourse (RSpec): accurate (low FP — ~all offenses are genuine tests-of-private-methods) but too dense for default output (Rails 21.7 findings/100 test files, Discourse 8.8, Mastodon 4.2) → **stays opt-in**, validating the slice-1 ship-opt-in decision. `remove_method` noted as a minor AllowedMethods candidate (parked). Judge-only; docs + tracker, no code. |

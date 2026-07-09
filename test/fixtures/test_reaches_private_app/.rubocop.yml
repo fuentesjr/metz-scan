@@ -1,2 +1,5 @@
 Metz/TestReachesPrivate:
   Enabled: true
+
+Metz/TestStubsSubject:
+  Enabled: true

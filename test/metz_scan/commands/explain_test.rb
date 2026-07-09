@@ -17,6 +17,7 @@ module MetzScan
         Metz/MethodsTooManyParameters
         Metz/TestAssertsOnInternals
         Metz/TestReachesPrivate
+        Metz/TestStubsSubject
         Metz/ViewsDeepNavigation
       ].freeze
 
