@@ -244,6 +244,73 @@ module MetzScan
       end
     end
 
+    class ScanOptInCopSelectionTest < Minitest::Test
+      FIXTURE_APP = File.expand_path("../../fixtures/test_reaches_private_app", __dir__)
+
+      def setup
+        @stdout = StringIO.new
+        @stderr = StringIO.new
+        configure_rubocop_cache_root
+        create_tmpdir
+        copy_fixture_app
+      end
+
+      def teardown
+        FileUtils.remove_entry(@tmpdir) if @tmpdir
+        FileUtils.rmdir(tmp_root) if File.directory?(tmp_root) && Dir.empty?(tmp_root)
+        restore_rubocop_cache_root
+      end
+
+      def test_default_scan_hides_opt_in_test_reaches_private
+        run_scan([@tmpdir, "--format", "json"])
+
+        refute_includes cop_names, "Metz/TestReachesPrivate"
+        assert_includes cop_names, "Metz/MethodsTooLong"
+      end
+
+      def test_all_cops_with_project_enablement_reports_test_reaches_private
+        run_scan([@tmpdir, "--all-cops", "--format", "json"])
+
+        assert_includes cop_names, "Metz/TestReachesPrivate"
+      end
+
+      private
+
+      def run_scan(argv)
+        Scan.run(argv, stdout: @stdout, stderr: @stderr)
+      end
+
+      def create_tmpdir
+        FileUtils.mkdir_p(tmp_root)
+        @tmpdir = Dir.mktmpdir("metz-scan-opt-in-cop-test", tmp_root)
+      end
+
+      def copy_fixture_app
+        FileUtils.cp_r("#{FIXTURE_APP}/.", @tmpdir)
+      end
+
+      def cop_names
+        JSON.parse(@stdout.string).fetch("files")
+            .flat_map { |file| file.fetch("offenses") }
+            .map { |offense| offense.fetch("cop_name") }
+      end
+
+      def tmp_root
+        File.expand_path("../../../scan-test-tmp", __dir__)
+      end
+
+      def configure_rubocop_cache_root
+        @original_rubocop_cache_root = ENV.fetch("RUBOCOP_CACHE_ROOT", nil)
+        ENV["RUBOCOP_CACHE_ROOT"] = File.expand_path("../../../tmp/rubocop_cache", __dir__)
+      end
+
+      def restore_rubocop_cache_root
+        return ENV.delete("RUBOCOP_CACHE_ROOT") unless @original_rubocop_cache_root
+
+        ENV["RUBOCOP_CACHE_ROOT"] = @original_rubocop_cache_root
+      end
+    end
+
     class ScanProjectExcludeTest < Minitest::Test
       EXCLUDING_PROJECT_CONFIG = <<~YAML
         AllCops:

@@ -8,8 +8,6 @@ module MetzScan
   module Commands
     class Scan
       class AutoFix
-        SAFE_FLAG = "-a"
-        UNSAFE_FLAG = "-A"
         CommandResult = Struct.new(:status, :stdout, :stderr, keyword_init: true)
 
         def initialize(stdout:, stderr:)
@@ -63,8 +61,10 @@ module MetzScan
         end
 
         def rubocop_argv(options)
-          flag = options.unsafe ? UNSAFE_FLAG : SAFE_FLAG
-          ["--plugin", "rubocop-metz", *Runner.cop_selection_argv(options.all_cops), flag, *options.paths]
+          flag = options.unsafe ? "-A" : "-a"
+          selection = Runner.cop_selection_argv(options.all_cops)
+          selection += ["--disable-pending-cops"] unless options.all_cops
+          ["--plugin", "rubocop-metz", *selection, flag, *options.paths]
         end
 
         def capture_rubocop(argv)

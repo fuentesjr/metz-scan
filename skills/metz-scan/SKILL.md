@@ -98,6 +98,11 @@ bundle. `--all-cops` delegates to RuboCop's complete project configuration, so
 missing target extension gems are environment/setup errors: install the gem in
 the bundle used to run `metz-scan`, or use the default Metz-only scan.
 
+`Metz/TestReachesPrivate` is an opt-in testing-discipline cop. It is listed by
+`rules` and `explain`, but default `scan` output does not include it unless the
+project explicitly enables it and runs through an opt-in path such as
+`--all-cops`.
+
 If an `inherit_gem:` target isn't installed, its file-scope `Exclude` can't be
 read, so default mode prints a one-line `metz-scan: note:` warning to stderr
 naming the gem instead of silently skipping that exclude.

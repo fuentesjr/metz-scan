@@ -136,19 +136,64 @@ burn a `1.0.0` signal on the first public push.
 | Docs/adoption | Stable | README points contributors and agents to this tracker; old implementation notes are archived, current notes are short, and the Sorbet spike report records the tooling decision. The README now splits RepeatedBranching generic-subject guidance into a short list, the analyzer behavior details into per-analyzer subsections, package install troubleshooting points at `bin/check_published_gem`, parity failure inspection points at preserved clone/`next action:` output, the analyzer status table has freshness coverage, `skills/metz-scan/SKILL.md` gives agents consumer-facing usage guidance, and calibration docs point future Rubydex upgrades, filtered baselines, compact baseline previews, and parked issue updates at repeatable local commands. | Keep docs changes minimal and evidence-led. |
 | Path to rubygems.org | Live on rubygems.org (v0.5.3) | `metz-scan`/`rubocop-metz` `0.5.3` are the public rubygems.org release, verified with a real scan from a clean install; the corrupt `0.5.2` is yanked (only `0.5.3` installable). | Done. `1.0.0` still reserved for a later, deliberate signal. |
 | Test hardening | Done | Fixture/guard surface through `599a935` covers CLI text/JSON/help contracts, read-only guards, drift checks, package smoke, and CI parity output. Suite: 438 fast + 88 slow runs, all green. | Maintain only; new tests accompany behavior changes or defects, not coverage sweeps. |
+| Testing-discipline cops | Active | Rollout started 2026-07-08. `Metz/TestReachesPrivate` (Tier 1, opt-in / `Enabled: false`) landed with the reusable opt-in gate (`Enabled: false` gates via dropped `--enable-all-cops`). Spec deviations recorded: `public_send` dropped, `TestFrameworks` module deferred. DEP-1 decouple pending. | Dogfood `TestReachesPrivate` for promotion; then `TestAssertsOnInternals` + build `TestFrameworks` + fold in DEP-1. Follow `docs/design/testing-cops.md`. |
 
 ## Next Queue
 
-1. Begin the testing-discipline cops rollout (`docs/design/testing-cops.md`),
-   now that the first public release has fully shipped (v0.5.3 live on
-   rubygems.org + GitHub Packages) — Tier 1 as cops, Tier 2 as wrapper-side
-   analyzers, slice-by-slice, each earning default output only through per-cop
-   dogfooding. Do not start a cop before its dogfooding evidence; do not attempt
-   the documented non-goals.
+1. Dogfood `Metz/TestReachesPrivate` (just landed, opt-in / `Enabled: false`)
+   against real Minitest + RSpec suites to decide default-output eligibility.
+   Per-cop promotion is a separate calibrated flip of `Enabled: false → true`;
+   do not promote without sparse-signal evidence.
+2. Next testing cop: `Metz/TestAssertsOnInternals`. Build the shared
+   `TestFrameworks` support module *with* it (deferred from slice 1 as YAGNI),
+   and fold in the **DEP-1** decouple: extract a neutral operator predicate so
+   `TestReachesPrivate` no longer reaches into
+   `DemeterTrainWreck::TypeInference`.
+3. Continue the testing-discipline rollout (`docs/design/testing-cops.md`) slice
+   by slice — Tier 1 as cops, Tier 2 as wrapper-side analyzers, each earning
+   default output only through per-cop dogfooding. Do not start a cop before its
+   dogfooding evidence; do not attempt the documented non-goals.
 
 ## Latest Slice Checkpoint
 
-Slice: 2026-07-08 dependency bumps — rubocop 1.88.2, rubocop-ast 1.50.0,
+Slice: 2026-07-08 first testing-discipline cop — `Metz/TestReachesPrivate`
+(Tier 1, AST-only), opt-in.
+
+What changed: new cop in `rubocop-metz` flagging `send`/`__send__` with a bare
+symbol/string literal method name inside test files (Include globs
+`**/*_test.rb`, `**/test_*.rb`, `**/*_spec.rb`; both Minitest and RSpec).
+Escape hatches: `AllowedMethods`
+(default define_method/remove_const/include/extend/prepend/alias_method),
+`AllowedReceivers`, operator-symbol skip. Ships `Enabled: false`; message is
+mechanism-only (AST cannot prove privacy). Established the **reusable opt-in
+gate for the whole `Metz/Test*` family**: dropped `--enable-all-cops` from the
+default-mode scan argv so `--force-default-config --only Metz` respects the
+plugin `default.yml` `Enabled` flag (empirically verified) — `Enabled: false`
+now genuinely gates a cop out of default output, and promotion is a later
+`Enabled: true` flip. Companion fix: the `scan --fix` path (`auto_fix.rb`
+`run_in_place`) pipes stderr to the user, so removing `--enable-all-cops`
+re-surfaced RuboCop's pending-cops banner there; added `--disable-pending-cops`
+to the fix path only (the scan path swallows stderr into a StringIO).
+
+Deliberate spec deviations (recorded in `docs/design/testing-cops.md`):
+`public_send` dropped from detection (it can only call public methods →
+guaranteed FP; core `Style/SendWithLiteralMethodName` owns the indirection
+angle); the `TestFrameworks` support module deferred (YAGNI — this cop is
+file-scoped and framework-agnostic; the module lands with the first cop that
+needs test-case-boundary detection). Known follow-up **DEP-1**: the cop reaches
+into `DemeterTrainWreck::TypeInference.operator?` (a testing cop coupled to a
+Demeter-specific module, and this is the template) — accepted as low-risk for
+this slice, decouple folded into the next testing-cops slice.
+
+How verified: Codex-implemented (`task-mrcs1x1q-mzdk93`, ~20m) with its own
+red-green + reviewer; orchestrator independently reviewed the full diff and
+reran verification — `bundle exec rake` 586/0F/0E, `bundle exec rubocop` clean
+(225 files), `check_dependency_direction` / `check_sample_app_frozen` /
+`check_dogfood` (0 findings) all PASS. New both-framework cop tests (14 runs) +
+a wrapper gate test (`ScanOptInCopSelectionTest`) proving default mode hides the
+cop while `--all-cops` + project enablement surfaces it.
+
+Prior committed slice — 2026-07-08 dependency bumps — rubocop 1.88.2, rubocop-ast 1.50.0,
 rubydex 0.2.8 (supersedes Dependabot PRs) + GitHub housekeeping.
 
 What changed: `bundle update rubocop rubocop-ast rubydex` bumped rubocop
@@ -248,11 +293,20 @@ calibration internals moved to `docs/project-analyzer-calibration.md`.
   analyzers per the spec's architecture decision), each earning default output
   only through per-cop dogfooding. Do not start implementing before release;
   do not attempt the documented non-goals (undetectable message-origin rules).
+  Rollout started 2026-07-08 with `Metz/TestReachesPrivate` (opt-in).
+- `test-prof` (github.com/test-prof/test-prof) evaluated 2026-07-08, **not
+  adopted**: no ActiveRecord/FactoryBot/Rails/DB, so its headline features
+  (`let_it_be`/`before_all`/FactoryProf) don't apply; the suite's slow tests are
+  subprocess-bound (they spawn RuboCop), which test-prof can't speed up; adding
+  it cuts against the 2026-07-05 "test-hardening done / inward-drift" direction.
+  Reopen only if a demonstrated test-perf problem appears that its
+  Minitest-applicable profilers (EventProf/StackProf/sampling) would address.
 
 ## Recently Completed
 
 | Date | Commit | Summary |
 | --- | --- | --- |
+| 2026-07-08 | `this commit` | First testing-discipline cop: `Metz/TestReachesPrivate` (Tier 1, AST-only), opt-in (`Enabled: false`). Flags `send`/`__send__` + literal method name in test files (Minitest + RSpec). Established the reusable opt-in gate — dropped `--enable-all-cops` from default-mode argv so `Enabled: false` gates a cop out of default output (+ `--disable-pending-cops` on `scan --fix` to suppress the now-surfaced pending-cops banner). Deliberate spec deviations: `public_send` dropped (can't reach privates); `TestFrameworks` module deferred (YAGNI). Follow-up DEP-1 (decouple from `DemeterTrainWreck::TypeInference`) tracked. Codex-implemented, orchestrator-reviewed; rake 586/0F/0E, rubocop clean, dogfood 0 findings. Also records test-prof as evaluated-not-adopted. |
 | 2026-07-08 | `this commit` | Made `bin/check_ci_parity` fast: a mode resolved from `git diff --name-only @{upstream} HEAD` runs docs-freshness tests for docs-only commits, `rake test:fast` for code commits, and falls back to the full `bundle exec rake` whenever the range can't be determined or `CI_PARITY_FULL` is set. Parity is now a deliberate subset of CI, not a mirror; remote CI stays the full-suite backstop. New end-to-end fixture test proves docs-only detection; existing tests (no-upstream fallback) stay green. Docs updated: `RELEASE_CHECKLIST.md`/issue template run parity with `CI_PARITY_FULL=1`, `CLAUDE.md` and the `land-slice`/`release` skills describe the subset behavior. |
 | 2026-07-08 | `this commit` | Bumped `rubocop` 1.88.0→1.88.2, `rubocop-ast` 1.49.1→1.50.0, `rubydex` 0.2.7→0.2.8 (`bundle update`; Gemfile pin `~> 0.2.8`), superseding conflicting Dependabot PRs #35/#36. Autocorrected two new `Style/ArrayIntersect` offenses to `.intersect?`. Rubydex rechecked: `check_dogfood` PASS + `check_rubydex_drift` unchanged (no drift). Open issues #27/#28/#25 assessed — accurately captured, no update needed. |
 | 2026-07-08 | `2edc63a` | Made `bin/check_ci_parity` fast: the tests step now scales to the commits being pushed — docs-freshness for docs-only commits, `rake test:fast` for code commits, `CI_PARITY_FULL=1` forces the full suite. Fail-safe (unknown→code; undeterminable range→full). Parity is now a deliberate CI subset with remote CI as the full backstop. Added an end-to-end docs-only mode test; updated CLAUDE.md/RELEASE_CHECKLIST/skills/issue-template. |

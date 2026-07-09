@@ -60,7 +60,7 @@ module MetzScan
         end
 
         def self.cop_selection_argv(all_cops)
-          all_cops ? [] : ["--force-default-config", "--enable-all-cops", "--only", "Metz"]
+          all_cops ? [] : ["--force-default-config", "--only", "Metz"]
         end
 
         def self.capture_output(argv)
@@ -139,7 +139,7 @@ module MetzScan
         end
       end
 
-      # Default mode forces stock Metz *tuning* (--force-default-config) but must
+      # Default mode uses stock Metz config (--force-default-config) but must
       # still honor the project's per-cop file *scope* (Include/Exclude), the
       # same way #33 honors AllCops: Exclude. RuboCop's own excluded_file?
       # resolves the project config's scope per cop; offenses on files a cop is

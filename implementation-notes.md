@@ -9,6 +9,61 @@ Use `PROJECT_TRACKER.md` for the current direction, next queue, parked work, and
 latest checkpoint. Add new notes here only when a slice needs more durable
 detail than the tracker should carry.
 
+## 2026-07-08: First testing-discipline cop — Metz/TestReachesPrivate (opt-in)
+
+Task: Next Queue item 1 — begin the testing-cops rollout
+(`docs/design/testing-cops.md` §9 step 2) with the template cop, opt-in.
+
+Cop: `RuboCop::Cop::Metz::TestReachesPrivate` (rubocop-metz, Tier 1, AST-only).
+Flags `send`/`__send__` with a bare symbol/string literal method name inside
+test files (Include globs `**/*_test.rb`, `**/test_*.rb`, `**/*_spec.rb`).
+Escape hatches: `AllowedMethods` (default
+define_method/remove_const/include/extend/prepend/alias_method),
+`AllowedReceivers`, operator-symbol skip. Ships `Enabled: false`. Message is
+mechanism-only ("reaches past the public interface via `send`") — AST cannot
+prove privacy, and receiverless `send(:foo)` may call the test's own method.
+
+Deliberate deviations from the spec (also recorded in
+`docs/design/testing-cops.md`):
+- **`public_send` DROPPED** from detection (spec §5 listed it). It can only
+  invoke public methods, so flagging it contradicts the cop's principle and is a
+  guaranteed FP; core `Style/SendWithLiteralMethodName` already owns the
+  pointless-indirection angle. (Fable design review + verified.)
+- **`TestFrameworks` support module DEFERRED** (YAGNI). This cop scopes by
+  file-glob and is framework-agnostic, so it needs no per-framework matchers;
+  both Minitest and RSpec are covered by fixtures. The module earns its place
+  with the first cop that needs test-case-boundary/assertion detection
+  (`TestAssertsOnInternals`), which will also carry the DEP-1 decouple.
+
+Opt-in gate (reusable for the whole `Metz/Test*` family): default-mode scan ran
+`--force-default-config --enable-all-cops --only Metz`; `--enable-all-cops`
+force-enables every Metz cop regardless of `Enabled`. Dropped it →
+`--force-default-config --only Metz` respects the plugin `default.yml` `Enabled`
+flag (empirically verified: a cop set `Enabled: false` in the gem default.yml
+does not run under this argv, but does with `--enable-all-cops`), so
+`Enabled: false` genuinely gates a cop out of default output; promotion = flip
+to `Enabled: true`. Companion fix: `scan --fix` (`auto_fix.rb` `run_in_place`)
+pipes stderr to the user, so removing `--enable-all-cops` re-surfaced RuboCop's
+pending-cops banner there; added `--disable-pending-cops` to the fix path only
+(the scan path swallows stderr into a StringIO, so it doesn't need it).
+
+Known follow-up (**DEP-1**, tracked in Next Queue): the cop reaches into
+`DemeterTrainWreck::TypeInference.operator?` — a testing cop coupled to a
+Demeter-specific module, and this is the template. Accepted for this slice
+(low-risk, same gem, dependency-direction clean, fully tested); extract a
+neutral operator predicate as its own change folded into the
+`TestAssertsOnInternals`/`TestFrameworks` slice rather than bundling a cross-cop
+refactor here.
+
+Delegation/verification: Codex-implemented (`task-mrcs1x1q-mzdk93`, ~20m) with
+its own red-green + reviewer; the orchestrator independently reviewed the full
+diff and reran verification — `bundle exec rake` 586/0F/0E, `bundle exec
+rubocop` clean (225 files), `check_dependency_direction` /
+`check_sample_app_frozen` / `check_dogfood` (0 findings) all PASS. New
+both-framework cop tests (14 runs) + a wrapper gate test
+(`ScanOptInCopSelectionTest`) proving default mode hides the cop while
+`--all-cops` + project enablement surfaces it.
+
 ## 2026-07-08: v0.5.3 — corrupt rubygems.org publish, recovery, and gemspec guard
 
 Incident: the first rubygems.org push (`0.5.2`) shipped a **corrupt

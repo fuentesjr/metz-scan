@@ -6,7 +6,23 @@ specification and evidence bar; implementation is deliberately deferred until
 after the first public release so it does not expand the surface being
 stabilized for v1.
 
-Last updated: 2026-07-07.
+Last updated: 2026-07-08.
+
+Implementation status (2026-07-08): rollout started. `Metz/TestReachesPrivate`
+(§9 step 2) is implemented and shipped opt-in (`Enabled: false`). Two deliberate
+deviations from this spec, decided during implementation:
+
+- **`public_send` is NOT flagged** (spec §5 listed it). It can only invoke
+  public methods, so flagging it contradicts the cop's principle and is a
+  guaranteed false positive; core `Style/SendWithLiteralMethodName` already owns
+  the pointless-indirection angle. Detection is `send`/`__send__` only.
+- **The `TestFrameworks` support module is deferred** (spec §4 and the §1
+  day-one lock assumed it). `TestReachesPrivate` scopes by file-glob `Include`
+  and is framework-agnostic, so it needs no per-framework matchers; both
+  frameworks are covered by fixtures. Build the module with the first cop that
+  needs test-case-boundary/assertion detection (`TestAssertsOnInternals`), which
+  will also decouple the operator check from `DemeterTrainWreck::TypeInference`
+  (DEP-1).
 
 Decisions locked by the requesting session:
 

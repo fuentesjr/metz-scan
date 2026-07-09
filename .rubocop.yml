@@ -40,6 +40,8 @@ AllCops:
     # Deliberate setup-orchestration Rails fixture for low-confidence
     # MetzProject/ServiceSoup triage.
     - test/fixtures/service_soup_setup_app/**/*
+    # Deliberate opt-in cop fixture used by scan integration tests.
+    - test/fixtures/test_reaches_private_app/**/*
 
 Style/StringLiterals:
   EnforcedStyle: double_quotes

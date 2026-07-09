@@ -180,12 +180,16 @@ bundle exec metz-scan scan . --project-analyzers --format sarif
 
 In default mode, `scan` reports stock Metz opinion on your project: it honors
 your project's file *scope* — both `AllCops: Exclude` and per-cop
-`Metz/*: Exclude` lists — but forces Metz cop *tuning* (thresholds, enablement,
-severity) to stock defaults, so a project cannot weaken a Metz cop and get a
+`Metz/*: Exclude` lists — but uses stock Metz cop configuration for thresholds,
+severity, and opt-in status, so a project cannot weaken a Metz cop and get a
 rosier report. This is why the length cops (`Metz/MethodsTooLong`,
 `Metz/ClassesTooLong`) can be scoped off test trees with a per-cop `Exclude`
 while still applying to production code. `--all-cops` runs the full stock
 RuboCop suite under your complete project configuration instead.
+
+`Metz/TestReachesPrivate` is an opt-in testing-discipline cop. It flags tests
+that use `send` or `__send__` with a literal method name, but it is not included
+in default scan output until separate dogfooding earns that promotion.
 
 Default mode reads only file-scope settings from the target `.rubocop.yml`, so
 it does not require external RuboCop extensions declared with `plugins:`,
