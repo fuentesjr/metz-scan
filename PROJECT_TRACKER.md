@@ -136,33 +136,57 @@ burn a `1.0.0` signal on the first public push.
 | Docs/adoption | Stable | README points contributors and agents to this tracker; old implementation notes are archived, current notes are short, and the Sorbet spike report records the tooling decision. The README now splits RepeatedBranching generic-subject guidance into a short list, the analyzer behavior details into per-analyzer subsections, package install troubleshooting points at `bin/check_published_gem`, parity failure inspection points at preserved clone/`next action:` output, the analyzer status table has freshness coverage, `skills/metz-scan/SKILL.md` gives agents consumer-facing usage guidance, and calibration docs point future Rubydex upgrades, filtered baselines, compact baseline previews, and parked issue updates at repeatable local commands. | Keep docs changes minimal and evidence-led. |
 | Path to rubygems.org | Live on rubygems.org (v0.5.3) | `metz-scan`/`rubocop-metz` `0.5.3` are the public rubygems.org release, verified with a real scan from a clean install; the corrupt `0.5.2` is yanked (only `0.5.3` installable). | Done. `1.0.0` still reserved for a later, deliberate signal. |
 | Test hardening | Done | Fixture/guard surface through `599a935` covers CLI text/JSON/help contracts, read-only guards, drift checks, package smoke, and CI parity output. Suite: 438 fast + 88 slow runs, all green. | Maintain only; new tests accompany behavior changes or defects, not coverage sweeps. |
-| Testing-discipline cops | Active | Rollout 2026-07-08/09: three Tier-1 cops landed opt-in behind the reusable `Enabled: false` gate. `Metz/TestReachesPrivate` and `Metz/TestAssertsOnInternals` are **dogfooded → stay opt-in** (accurate but too dense: ~22 and ~32 findings/100 test files on Rails). **`Metz/TestStubsSubject` landed 2026-07-09** — **RSpec-only** (recon proved only RSpec has a detectable subject token; Minitest deferred), an inline port of `RSpec/SubjectStub` (subject-name fold across nested groups, `let`/`let!` overrides, `expect`/`allow(subject).to receive*`, `is_expected`, negated runners; `receive`/`receive_messages`/`receive_message_chain`/`have_received`), 24 fixtures; **not yet dogfooded**. **DEP-1 landed**: neutral `RuboCop::Cop::Metz::OperatorMethods` predicate. `TestFrameworks` **deferred again** (rule is RSpec-shaped, no both-framework consumer yet). | Dogfood `TestStubsSubject`; then continue rollout (Tier-2 `test_calls_private_method` analyzer). Follow `docs/design/testing-cops.md`. |
+| Testing-discipline cops | Active | Rollout 2026-07-08/09: three Tier-1 cops landed opt-in behind the reusable `Enabled: false` gate, and **all three are now dogfooded → stay opt-in**. `Metz/TestReachesPrivate` (~22/100 on Rails) and `Metz/TestAssertsOnInternals` (~32/100) are accurate but too dense. **`Metz/TestStubsSubject` dogfooded 2026-07-09** across four RSpec suites (`docs/dogfooding/2026-07-09-test-stubs-subject.md`): accurate (0 FP, reproduces `RSpec/SubjectStub`) but density is **suite-dependent** — near-zero on Mastodon/Discourse/Forem (0.0–0.33/100) yet **~11.9/100 on OpenFoodNetwork** (legacy report-heavy suite). The initial sparse read (n=3) did not generalize; a 4th target flipped it → **stays opt-in**, no promotion. **DEP-1 landed**: neutral `RuboCop::Cop::Metz::OperatorMethods` predicate. `TestFrameworks` **deferred** (no both-framework consumer yet). | Continue rollout: Tier-2 `test_calls_private_method` wrapper-side index-backed analyzer. Follow `docs/design/testing-cops.md`. |
 
 ## Next Queue
 
-1. Dogfood `Metz/TestStubsSubject` (now landed, opt-in) against real RSpec suites
-   (Mastodon, Discourse) per `docs/design/testing-cops.md` §8 — judge-only round,
-   record false-positive rate and default-output eligibility. Expected verdict
-   shape: stays opt-in unless the signal is sparse and clean. No Minitest run
-   (cop is RSpec-only by design).
-2. Continue the testing-discipline rollout (`docs/design/testing-cops.md`) slice
+1. Continue the testing-discipline rollout (`docs/design/testing-cops.md`) slice
    by slice — Tier 1 as cops, Tier 2 (`test_calls_private_method`) as a
    wrapper-side index-backed analyzer, each earning default output only through
    per-cop dogfooding. Do not start a cop before its dogfooding evidence; do not
-   attempt the documented non-goals.
+   attempt the documented non-goals. Next up: Tier-2 `test_calls_private_method`.
 
-(Two shipped testing cops are calibrated and **stay opt-in** — accurate but too
-dense for default output: `Metz/TestReachesPrivate`
-(`docs/dogfooding/2026-07-08-test-reaches-private.md`, 21.7 findings/100 test
-files on Rails) and `Metz/TestAssertsOnInternals`
-(`docs/dogfooding/2026-07-09-test-asserts-on-internals.md`, ~32/100 on Rails).
-`Metz/TestStubsSubject` (RSpec-only) just landed opt-in and is **not yet
-dogfooded** — Next Queue #1. `remove_method` remains a minor `AllowedMethods`
-candidate for `TestReachesPrivate`, parked.)
+(All three shipped testing cops are calibrated and **stay opt-in** — accurate but
+not reliably sparse enough for default output: `Metz/TestReachesPrivate`
+(`docs/dogfooding/2026-07-08-test-reaches-private.md`, 21.7/100 on Rails),
+`Metz/TestAssertsOnInternals`
+(`docs/dogfooding/2026-07-09-test-asserts-on-internals.md`, ~32/100 on Rails),
+and `Metz/TestStubsSubject`
+(`docs/dogfooding/2026-07-09-test-stubs-subject.md`, RSpec-only: 0 FP but
+suite-dependent density, ~11.9/100 on OpenFoodNetwork despite near-zero on three
+other suites). `remove_method` remains a minor `AllowedMethods` candidate for
+`TestReachesPrivate`, parked.)
 
 ## Latest Slice Checkpoint
 
-Slice: 2026-07-09 third testing-discipline cop — `Metz/TestStubsSubject`
+Slice: 2026-07-09 `Metz/TestStubsSubject` calibration round (judge-only, docs).
+
+What changed: dogfooded the third opt-in cop against **four** real RSpec suites
+(Mastodon, Discourse, Forem, OpenFoodNetwork) per `docs/design/testing-cops.md`
+§8. Verdict: **accurate (0 false positives, reproduces `RSpec/SubjectStub` —
+several offenses carry hand-written `# rubocop:disable RSpec/SubjectStub`) but
+stays opt-in** because density is **suite-dependent**: 0.0/0.28/0.33 per 100 spec
+files on Discourse/Mastodon/Forem but **~11.9/100 on OpenFoodNetwork** (a legacy
+report-heavy suite that stubs the subject-under-test pervasively). The initial
+Mastodon+Discourse read (n=3) looked sparse-and-clean — a promotion candidate —
+but the two added targets showed the sparse signal does not generalize, so the
+cop is not default-output eligible. `Enabled: false` stands, aligning all three
+testing cops (accurate, opt-in). Round doc:
+`docs/dogfooding/2026-07-09-test-stubs-subject.md`. No code changed.
+
+Two reusable method corrections recorded in the doc: never scan a checkout under
+the repo's `tmp/` (RuboCop default `Exclude: tmp/**/*` silently drops all files),
+and never use `--force-default-config` for these rounds (it parses at Ruby 2.7,
+raising `Lint/Syntax` that silently skips ~12% of files — the defect-C class); pin
+`TargetRubyVersion: 3.4` via an explicit config instead.
+
+How verified: offense counts from raw JSON per target (mastodon 3 / discourse 0 /
+forem 4 / ofn 76), zero `Lint/Syntax` after the target-ruby fix (full coverage);
+offenses spot-checked against source on all four targets — every sampled offense
+stubs the object-under-test, collaborators correctly not flagged. Judge-only — no
+fixes (dogfood rubric).
+
+Prior committed slice — 2026-07-09 third testing-discipline cop — `Metz/TestStubsSubject`
 (Tier 1, RSpec-only, AST), opt-in.
 
 What changed: new cop flagging RSpec tests that stub/mock the subject under test
@@ -407,6 +431,7 @@ calibration internals moved to `docs/project-analyzer-calibration.md`.
 
 | Date | Commit | Summary |
 | --- | --- | --- |
+| 2026-07-09 | `this commit` | Per-cop calibration round for `Metz/TestStubsSubject` (`docs/dogfooding/2026-07-09-test-stubs-subject.md`). Dogfooded against **four** RSpec suites (Mastodon, Discourse, Forem, OpenFoodNetwork): accurate (0 FP, reproduces `RSpec/SubjectStub`) but **stays opt-in** — density is suite-dependent (0.0–0.33/100 on three suites, **~11.9/100 on OpenFoodNetwork**), so not reliably sparse for default output. The initial n=3 (Mastodon+Discourse) sparse read did not generalize; a 4th target flipped the verdict. Judge-only; docs + tracker, no code. Also records two reusable round-method fixes (avoid repo `tmp/`; pin `TargetRubyVersion`, not `--force-default-config`). |
 | 2026-07-09 | `this commit` | Third testing-discipline cop: `Metz/TestStubsSubject` (Tier 1, **RSpec-only**, AST), opt-in (`Enabled: false`). Flags RSpec tests that stub/mock the subject under test (`expect`/`allow(subject).to receive*`, `is_expected`, named subjects) — an inline port of `RSpec/SubjectStub` with an ancestor-group subject-name fold (`subject`/`subject!` add, `let`/`let!` subtract, always include `:subject`, siblings isolated, recursive stub-matcher search). Minitest deferred (no detectable subject token); `TestFrameworks` deferred again. RSpec-only `Include`; reuses the slice-1 opt-in gate. Codex-implemented, orchestrator-reviewed (traced fold + all FP-guard fixtures) and re-verified: rake 637/0F/0E, rubocop clean, dogfood 0 findings. 28 cop tests / 24 fixtures; opt-in gate coverage extended. |
 | 2026-07-09 | `23aaf37` | DEP-1 decouple: extracted neutral `RuboCop::Cop::Metz::OperatorMethods` (operator-symbol set + `operator?`) so `Metz/TestReachesPrivate` no longer reaches into `DemeterTrainWreck::TypeInference`; `TypeInference.operator?` delegates to it (behavior unchanged). Also locked `TestStubsSubject` as RSpec-only with `TestFrameworks` deferred again. Behavior-preserving; new `operator_methods_test`, existing tests green, dogfood 0 findings. |
 | 2026-07-09 | `this commit` | Per-cop calibration round for `Metz/TestAssertsOnInternals` (`docs/dogfooding/2026-07-09-test-asserts-on-internals.md`). Dogfooded against Rails (Minitest), Mastodon + Discourse (RSpec): accurate (low FP — `instance_variable_get`/`_set` are unambiguous internal-state reaches) but too dense for default output (~32 findings/100 test files on Rails, 364 offenses; Discourse ~3.3, Mastodon ~0.4) → **stays opt-in**. No `assigns` offenses in modern suites. Judge-only; docs + tracker, no code. |
