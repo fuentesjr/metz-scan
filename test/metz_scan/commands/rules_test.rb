@@ -16,6 +16,7 @@ module MetzScan
         Metz/DemeterTrainWreck
         Metz/MethodsTooLong
         Metz/MethodsTooManyParameters
+        Metz/TestAssertsOnInternals
         Metz/TestReachesPrivate
         Metz/ViewsDeepNavigation
       ].freeze

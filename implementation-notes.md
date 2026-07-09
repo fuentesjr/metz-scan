@@ -9,6 +9,40 @@ Use `PROJECT_TRACKER.md` for the current direction, next queue, parked work, and
 latest checkpoint. Add new notes here only when a slice needs more durable
 detail than the tracker should carry.
 
+## 2026-07-09: Second testing-discipline cop — Metz/TestAssertsOnInternals (opt-in)
+
+Task: Next Queue item 1 — `Metz/TestAssertsOnInternals` (`docs/design/testing-cops.md`
+§5), the second testing cop, copying the `TestReachesPrivate` template.
+
+Cop: `RuboCop::Cop::Metz::TestAssertsOnInternals` (rubocop-metz, Tier 1, AST-only,
+`on_send` + `OnSendCsendBridge`). Flags, in test files (Include globs
+`*_test.rb`/`test_*.rb`/`*_spec.rb`):
+- `instance_variable_get` / `instance_variable_set` on any receiver (arg literal or
+  dynamic — the method is the signal);
+- receiverless `assigns(:name)` with a bare symbol/string literal arg (Rails
+  controller-test reading a controller-assigned ivar).
+Does NOT flag bare `@ivar` reads/writes (the test's own fixture state — FP-flood
+avoidance per spec §5), or `assigns` with a receiver / dynamic arg / no arg. Escape
+hatch: `AllowedReceivers`. Ships `Enabled: false`. Message is mechanism-based.
+
+`TestFrameworks` module DEFERRED AGAIN (re-evaluated): like `TestReachesPrivate`, this
+cop is file-glob scoped and keys off specific method sends, so it needs no
+test-case-boundary or assertion detection. The module earns its place at
+`TestStubsSubject` (identifying the subject + double/stub sends genuinely needs it).
+No `DemeterTrainWreck`/`TypeInference` coupling (no operator logic) — kept the template
+clean; DEP-1 remains a separate queued decouple.
+
+No wrapper changes: the family opt-in gate (dropped `--enable-all-cops`) and the
+fixture-app exclusion already exist from slice 1. Only `ALL_METZ_COPS` (rules/explain)
+and the README/SKILL opt-in note needed updating.
+
+Delegation/verification: Codex-implemented (`task-mrcz5vis-1ndds2`; the recorded
+~10h49m duration is wall-clock across an overnight machine sleep, not work time) with
+red-green + reviewer; the orchestrator independently reviewed the full diff and reran
+verification — `bundle exec rake` 603/0F/0E, `bundle exec rubocop` clean (227 files),
+`check_dependency_direction` / `check_sample_app_frozen` / `check_dogfood` (0 findings)
+all PASS. 17 both-framework cop tests.
+
 ## 2026-07-08: First testing-discipline cop — Metz/TestReachesPrivate (opt-in)
 
 Task: Next Queue item 1 — begin the testing-cops rollout

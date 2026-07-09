@@ -75,6 +75,17 @@ Metz/TestReachesPrivate:
   AllowedReceivers: []
   VersionAdded: '0.6'
 
+Metz/TestAssertsOnInternals:
+  Description: 'Flags tests that assert on internal state via instance_variable_get/_set or Rails controller-test assigns.'
+  Enabled: false
+  Severity: refactor
+  Include:
+    - '**/*_test.rb'
+    - '**/test_*.rb'
+    - '**/*_spec.rb'
+  AllowedReceivers: []
+  VersionAdded: '0.6'
+
 Metz/ControllersTooManyDirectCollaborators:
   Description: 'Flags Rails controller actions that reach into more than MaxCollaborators distinct collaborator constants.'
   Enabled: true

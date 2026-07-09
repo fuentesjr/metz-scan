@@ -8,21 +8,24 @@ stabilized for v1.
 
 Last updated: 2026-07-08.
 
-Implementation status (2026-07-08): rollout started. `Metz/TestReachesPrivate`
-(§9 step 2) is implemented and shipped opt-in (`Enabled: false`). Two deliberate
-deviations from this spec, decided during implementation:
+Implementation status (2026-07-09): rollout in progress. `Metz/TestReachesPrivate`
+(§9 step 2) and `Metz/TestAssertsOnInternals` (§5) are implemented and shipped
+opt-in (`Enabled: false`). `TestReachesPrivate` was dogfooded (accurate but too
+dense → stays opt-in, `docs/dogfooding/2026-07-08-test-reaches-private.md`).
+Deliberate deviations from this spec, decided during implementation:
 
 - **`public_send` is NOT flagged** (spec §5 listed it). It can only invoke
   public methods, so flagging it contradicts the cop's principle and is a
   guaranteed false positive; core `Style/SendWithLiteralMethodName` already owns
   the pointless-indirection angle. Detection is `send`/`__send__` only.
 - **The `TestFrameworks` support module is deferred** (spec §4 and the §1
-  day-one lock assumed it). `TestReachesPrivate` scopes by file-glob `Include`
-  and is framework-agnostic, so it needs no per-framework matchers; both
-  frameworks are covered by fixtures. Build the module with the first cop that
-  needs test-case-boundary/assertion detection (`TestAssertsOnInternals`), which
-  will also decouple the operator check from `DemeterTrainWreck::TypeInference`
-  (DEP-1).
+  day-one lock assumed it). Both shipped cops scope by file-glob `Include` and
+  key off specific method sends, so they need no per-framework matchers; both
+  frameworks are covered by fixtures. The module is now targeted at
+  `TestStubsSubject` — the first cop that genuinely needs subject-identification
+  and double/stub-send detection. The DEP-1 decouple of the operator check from
+  `DemeterTrainWreck::TypeInference` (only `TestReachesPrivate` uses it) is a
+  separate queued item, to fold in around that same slice.
 
 Decisions locked by the requesting session:
 
