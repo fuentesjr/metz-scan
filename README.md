@@ -217,13 +217,16 @@ Current project analyzer status:
 | `MetzProject/ImplicitContextPressure` | Candidate | No | Repeated `Current.*`, namespaced `Current`, or literal `Thread.current[...]` ambient context access across files and coarse packages. |
 | `MetzProject/RepeatedQueryCriteria` | Candidate | No | Repeated constant-receiver or constant-root scope-chain hash criteria in `where`, `where.not`, or finder calls across files and coarse packages. Current fixture evidence is `where` plus `find_by`; `where.not` is supported and test-covered but not yet active-fixture evidenced. |
 | `MetzProject/SubclassOverridePressure` | Candidate | No | Indexed base classes whose descendants repeatedly override the same method. |
+| `MetzProject/TestCallsPrivateMethod` | Candidate | No | Test calls to private or protected methods confirmed by the optional Rubydex-backed project index; this is the index-confirmed form of `Metz/TestReachesPrivate`. |
 
 Project analyzers parse Ruby files only and avoid semantic claims that require
 resolving runtime types (they do not inspect ERB/HAML/SLIM templates). Default
 scan output includes only findings from analyzers that are default-output
 eligible, validated, and medium-confidence; pass `--project-analyzers` for the
 complete opt-in set, including candidate analyzers and lower-confidence
-findings. See
+findings. `MetzProject/TestCallsPrivateMethod` needs a scan path set that
+includes tests, such as `metz-scan scan . --project-analyzers`; scanning only
+`app lib` yields zero findings for that analyzer by design. See
 [docs/project-analyzer-calibration.md](docs/project-analyzer-calibration.md)
 for per-analyzer scope, thresholds, triage rules, and calibration evidence.
 

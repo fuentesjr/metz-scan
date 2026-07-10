@@ -6,7 +6,8 @@
     "MetzProject/DeepInheritanceTree",
     "MetzProject/PackageDependencyPressure",
     "MetzProject/NamespaceLeakPressure",
-    "MetzProject/SubclassOverridePressure"
+    "MetzProject/SubclassOverridePressure",
+    "MetzProject/TestCallsPrivateMethod"
   ],
   "finding_count": 1,
   "offense_count": 1,

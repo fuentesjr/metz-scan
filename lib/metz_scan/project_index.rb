@@ -8,7 +8,7 @@ module MetzScan
   class ProjectIndex
     Declaration = Struct.new(:name, :path, :kind, keyword_init: true)
     MethodDeclaration = Struct.new(:name, :owner_name, :method_name, :signature, :path, :line, :column,
-                                   :receiver_kind, :method_identity, keyword_init: true)
+                                   :receiver_kind, :method_identity, :visibility, keyword_init: true)
     Reference = Struct.new(:name, :path, :line, :column, keyword_init: true)
 
     class UnknownBackendError < StandardError; end

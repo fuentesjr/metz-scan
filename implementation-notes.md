@@ -9,6 +9,30 @@ Use `PROJECT_TRACKER.md` for the current direction, next queue, parked work, and
 latest checkpoint. Add new notes here only when a slice needs more durable
 detail than the tracker should carry.
 
+## 2026-07-09: Tier-2 TestCallsPrivateMethod analyzer
+
+Task: implement wrapper-side `MetzProject/TestCallsPrivateMethod`, the
+Rubydex-index-confirmed form of opt-in Tier-1 `Metz/TestReachesPrivate`.
+
+Scope boundaries: wrapper/project-analyzer only; no RuboCop cop changes, no
+runtime double-report coordination, no default-output promotion, and no commit
+or push. The analyzer bails when the project index is unavailable and only
+considers test files in the Tier-1 include globs.
+
+Decisions: added `visibility` to `ProjectIndex::MethodDeclaration` from
+`Rubydex::Method#visibility`; added an AST-backed `module_function` visibility
+seam because Rubydex 0.2.8 aborts on that visibility form; kept lookup
+own-declaration-only and conservative for SUT resolution; requires test paths
+in the scan set (`scan . --project-analyzers`, not only `app lib`). Tier-2
+supersession of `Metz/TestReachesPrivate` is documented, not runtime-enforced,
+because the cop cannot depend on the wrapper index.
+
+Verification: red-green started with failing analyzer/index tests. Final gates:
+`bundle exec rake` passed with 664 runs, 3151 assertions, 0 failures, 0 errors,
+2 skips; `bundle exec rubocop` passed with 242 files inspected and no offenses;
+`bin/check_dependency_direction`, `bin/check_sample_app_frozen`,
+`bin/check_rubydex_drift`, and early/final `bin/check_dogfood` all passed.
+
 ## 2026-07-09: Second testing-discipline cop — Metz/TestAssertsOnInternals (opt-in)
 
 Task: Next Queue item 1 — `Metz/TestAssertsOnInternals` (`docs/design/testing-cops.md`

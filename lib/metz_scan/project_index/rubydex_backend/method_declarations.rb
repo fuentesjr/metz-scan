@@ -1,9 +1,13 @@
 # frozen_string_literal: true
 
+require_relative "method_visibility"
+
 module MetzScan
   class ProjectIndex
     class RubydexBackend
       module MethodDeclarations
+        include MethodVisibility
+
         def method_declarations
           method_declaration_entries.sort_by do |declaration|
             [declaration.owner_name.to_s, declaration.method_identity.to_s, declaration.path.to_s,
@@ -31,14 +35,13 @@ module MetzScan
           owner_attributes = method_owner_attributes(declaration)
           return unless owner_attributes
 
-          method_name = method_name_for(owner_attributes.fetch(:signature))
-          identity_attributes(declaration, owner_attributes, method_name)
-            .merge(location_attributes(declaration))
+          method_declaration_identity(declaration, owner_attributes)
         end
 
-        def method_owner_and_signature(declaration)
-          owner_attributes = method_owner_attributes(declaration)
-          [owner_attributes[:owner_name], owner_attributes[:signature]] if owner_attributes
+        def method_declaration_identity(declaration, owner_attributes)
+          location = location_attributes(declaration)
+          method_name = method_name_for(owner_attributes.fetch(:signature))
+          identity_attributes(declaration, owner_attributes, method_name, location).merge(location)
         end
 
         def method_owner_attributes(declaration)
@@ -50,11 +53,28 @@ module MetzScan
             receiver_kind: receiver_kind_for(raw_owner_name) }
         end
 
-        def identity_attributes(declaration, owner_attributes, method_name)
+        def identity_attributes(declaration, owner_attributes, method_name, location_attributes)
+          # For supported Ruby visibility forms, Rubydex::Method#visibility is this analyzer's one index assumption.
+          method_identity_attributes(declaration, owner_attributes, method_name, location_attributes)
+        end
+
+        def method_identity_attributes(declaration, owner_attributes, method_name, location_attributes)
           receiver_kind = owner_attributes.fetch(:receiver_kind)
-          { name: declaration.name, owner_name: owner_attributes.fetch(:owner_name), method_name: method_name,
-            signature: owner_attributes.fetch(:signature), receiver_kind: receiver_kind,
-            method_identity: method_identity_for(receiver_kind, method_name) }
+          core_identity_attributes(declaration, owner_attributes, method_name, receiver_kind)
+            .merge(visibility: visibility_for(declaration,
+                                              visibility_attributes(owner_attributes, method_name, receiver_kind,
+                                                                    location_attributes)))
+        end
+
+        def core_identity_attributes(declaration, owner_attributes, method_name, receiver_kind)
+          { name: declaration.name, owner_name: owner_attributes.fetch(:owner_name),
+            method_name: method_name, signature: owner_attributes.fetch(:signature),
+            receiver_kind: receiver_kind, method_identity: method_identity_for(receiver_kind, method_name) }
+        end
+
+        def visibility_attributes(owner_attributes, method_name, receiver_kind, location_attributes)
+          { owner_name: owner_attributes.fetch(:owner_name), method_name: method_name,
+            receiver_kind: receiver_kind, path: location_attributes.fetch(:path) }
         end
 
         def location_attributes(declaration)
@@ -91,7 +111,8 @@ module MetzScan
 
         def singleton_owner_name(raw_owner_name)
           owner_name, singleton_tail = raw_owner_name.to_s.split("::<", 2)
-          return unless singleton_tail&.delete_suffix(">") == owner_name
+          tail_name = singleton_tail&.delete_suffix(">")
+          return unless tail_name == owner_name || tail_name == owner_name.split("::").last
 
           owner_name
         end

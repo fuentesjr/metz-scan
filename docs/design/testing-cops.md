@@ -24,6 +24,12 @@ from this spec, decided during implementation:
   and key off specific method sends, or are RSpec-shaped enough to keep subject
   tracking inline. There is still no real both-framework consumer for a shared
   module.
+- **Tier 2 supersession is documentation-only, not runtime coordination.** The
+  Tier 2 `test_calls_private_method` analyzer is the index-confirmed form of
+  `Metz/TestReachesPrivate`, and users should prefer the Tier 2 signal when
+  both are enabled. The old "only Tier-2 finding surfaces" wording is not
+  runtime-enforced because dependency direction forbids the RuboCop cop from
+  seeing the wrapper-side Rubydex index.
 
 Decisions locked by the requesting session:
 

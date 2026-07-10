@@ -1,7 +1,7 @@
 rubydex drift check
 targets file: /tmp/project_analyzer_targets.yml
 targets: sample, empty
-analyzers: MetzProject/DeepInheritanceTree, MetzProject/PackageDependencyPressure, MetzProject/NamespaceLeakPressure, MetzProject/SubclassOverridePressure
+analyzers: MetzProject/DeepInheritanceTree, MetzProject/PackageDependencyPressure, MetzProject/NamespaceLeakPressure, MetzProject/SubclassOverridePressure, MetzProject/TestCallsPrivateMethod
 findings: 3 (offenses: 4)
 rules:
   - MetzProject/DeepInheritanceTree: 1 finding(s), 1 offense(s), status=validated, confidence=low, severity=broad base

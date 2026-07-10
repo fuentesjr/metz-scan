@@ -8,6 +8,7 @@ require_relative "../../analyzers/namespace_leak_pressure"
 require_relative "../../analyzers/implicit_context_pressure"
 require_relative "../../analyzers/repeated_query_criteria"
 require_relative "../../analyzers/subclass_override_pressure"
+require_relative "../../analyzers/test_calls_private_method"
 require_relative "../../project_index"
 require_relative "runner"
 require_relative "project_analyzer_metadata"
@@ -27,10 +28,12 @@ module MetzScan
           Analyzers::NamespaceLeakPressure,
           Analyzers::ImplicitContextPressure,
           Analyzers::RepeatedQueryCriteria,
-          Analyzers::SubclassOverridePressure
+          Analyzers::SubclassOverridePressure,
+          Analyzers::TestCallsPrivateMethod
         ].freeze
         INDEX_BACKED_ANALYZERS = [Analyzers::InheritanceDescendants, Analyzers::PackageDependencyPressure,
-                                  Analyzers::NamespaceLeakPressure, Analyzers::SubclassOverridePressure].freeze
+                                  Analyzers::NamespaceLeakPressure, Analyzers::SubclassOverridePressure,
+                                  Analyzers::TestCallsPrivateMethod].freeze
         DEFAULT_OUTPUT_STATUS = "validated"
         DEFAULT_OUTPUT_CONFIDENCE = "medium"
         DEFAULT_OUTPUT_TRIAGE_SEVERITY = "design pressure"

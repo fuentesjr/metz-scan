@@ -206,6 +206,19 @@ module MetzScan
         class Parent
           def perform; end
           def self.perform; end
+          def macro_hidden; end
+
+          private def hidden; end
+
+          private
+
+          def keyword_hidden; end
+
+          protected
+
+          def guarded; end
+
+          private :macro_hidden
         end
 
         class Child < Parent
@@ -216,18 +229,48 @@ module MetzScan
     end
 
     def assert_method_declarations(index)
-      assert_method_declaration(index, method_expectation("Parent", "perform", "instance", 2))
-      assert_method_declaration(index, method_expectation("Parent", "perform", "singleton", 3))
-      assert_method_declaration(index, method_expectation("Child", "perform", "instance", 7))
-      assert_method_declaration(index, method_expectation("Child", "perform", "singleton", 8))
+      method_expectations.each { |expected| assert_method_declaration(index, expected) }
+    end
+
+    def method_expectations
+      parent_method_expectations + child_method_expectations
+    end
+
+    def parent_method_expectations
+      parent_public_method_expectations + parent_private_method_expectations + parent_protected_method_expectations
+    end
+
+    def parent_public_method_expectations
+      [method_expectation("Parent", "perform", "instance", line: 2),
+       method_expectation("Parent", "perform", "singleton", line: 3)]
+    end
+
+    def parent_private_method_expectations
+      [method_expectation("Parent", "macro_hidden", "instance", line: 4, visibility: "private"),
+       method_expectation("Parent", "hidden", "instance", line: 6, visibility: "private"),
+       method_expectation("Parent", "keyword_hidden", "instance", line: 10, visibility: "private")]
+    end
+
+    def parent_protected_method_expectations
+      [method_expectation("Parent", "guarded", "instance", line: 14, visibility: "protected")]
+    end
+
+    def child_method_expectations
+      [method_expectation("Child", "perform", "instance", line: 20),
+       method_expectation("Child", "perform", "singleton", line: 21)]
     end
 
     def assert_method_declaration(index, expected)
       declaration = method_declaration(index, expected)
       assert declaration
+      assert_method_declaration_shape(declaration, expected)
+    end
+
+    def assert_method_declaration_shape(declaration, expected)
       assert_method_identity(declaration, expected)
       assert_equal "#{expected.fetch(:method_name)}()", declaration.signature
       assert_equal expected.fetch(:line), declaration.line
+      assert_equal expected.fetch(:visibility, "public"), declaration.visibility
     end
 
     def assert_method_identity(declaration, expected)
@@ -235,9 +278,10 @@ module MetzScan
       assert_equal expected.fetch(:method_identity), declaration.method_identity
     end
 
-    def method_expectation(owner_name, method_name, receiver_kind, line)
-      { owner_name: owner_name, method_name: method_name, receiver_kind: receiver_kind, line: line,
-        method_identity: "#{receiver_kind}:#{method_name}" }
+    def method_expectation(owner_name, method_name, receiver_kind, details)
+      { owner_name: owner_name, method_name: method_name, receiver_kind: receiver_kind,
+        line: details.fetch(:line), method_identity: "#{receiver_kind}:#{method_name}",
+        visibility: details.fetch(:visibility, "public") }
     end
 
     def method_declaration(index, expected)
@@ -246,6 +290,86 @@ module MetzScan
           declaration.method_name == expected.fetch(:method_name) &&
           declaration.receiver_kind == expected.fetch(:receiver_kind)
       end
+    end
+  end
+
+  class ProjectIndexModuleFunctionMethodDeclarationsTest < Minitest::Test
+    def test_rubydex_backend_handles_module_function_method_declarations
+      skip "rubydex is not installed" unless ProjectIndex::RubydexBackend.available?
+
+      Dir.mktmpdir { |dir| assert_module_function_method_declaration(index_module_function_fixture(dir)) }
+    end
+
+    private
+
+    def index_module_function_fixture(dir)
+      write_module_function_fixture(dir)
+      ProjectIndex.build([dir], backend: :rubydex)
+    end
+
+    def write_module_function_fixture(dir)
+      File.write(File.join(dir, "module_function.rb"), module_function_fixture_source)
+    end
+
+    def module_function_fixture_source
+      <<~RUBY
+        module UtilityMethods
+          module_function
+
+          def helper; end
+
+          module Nested
+            module_function
+
+            def nested_helper; end
+          end
+
+          class Widget
+            private def secret; end
+          end
+        end
+
+        module Wrapper
+          module FunctionScope
+            def wrapped_helper; end
+            module_function :wrapped_helper
+          end
+        end
+      RUBY
+    end
+
+    def assert_module_function_method_declaration(index)
+      assert_root_module_function_method_declaration(index)
+      assert_nested_module_function_method_declaration(index)
+      assert_explicit_module_function_method_declaration(index)
+    end
+
+    def assert_root_module_function_method_declaration(index)
+      assert_equal "private", method_visibility(index, "UtilityMethods", "helper", "instance")
+      assert_equal "public", method_visibility(index, "UtilityMethods", "helper", "singleton")
+      assert_equal "private", method_visibility(index, "UtilityMethods::Widget", "secret", "instance")
+    end
+
+    def assert_nested_module_function_method_declaration(index)
+      assert_equal "private", method_visibility(index, "UtilityMethods::Nested", "nested_helper", "instance")
+      assert_equal "public", method_visibility(index, "UtilityMethods::Nested", "nested_helper", "singleton")
+    end
+
+    def assert_explicit_module_function_method_declaration(index)
+      assert_equal "private", method_visibility(index, "Wrapper::FunctionScope", "wrapped_helper", "instance")
+    end
+
+    def method_visibility(index, owner_name, method_name, receiver_kind)
+      declaration = index.method_declarations.find do |method|
+        matching_method?(method, owner_name, method_name, receiver_kind)
+      end
+      declaration&.visibility
+    end
+
+    def matching_method?(method, owner_name, method_name, receiver_kind)
+      method.owner_name == owner_name &&
+        method.method_name == method_name &&
+        method.receiver_kind == receiver_kind
     end
   end
 

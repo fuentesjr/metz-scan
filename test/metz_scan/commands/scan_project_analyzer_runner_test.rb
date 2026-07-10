@@ -94,7 +94,8 @@ module MetzScan
         [Analyzers::RepeatedBranching, Analyzers::ServiceSoup,
          Analyzers::InheritanceDescendants, Analyzers::PackageDependencyPressure,
          Analyzers::NamespaceLeakPressure, Analyzers::ImplicitContextPressure,
-         Analyzers::RepeatedQueryCriteria, Analyzers::SubclassOverridePressure]
+         Analyzers::RepeatedQueryCriteria, Analyzers::SubclassOverridePressure,
+         Analyzers::TestCallsPrivateMethod]
       end
 
       def merge_project_analyzers
@@ -216,7 +217,8 @@ module MetzScan
 
       def opt_in_analyzers
         [Analyzers::InheritanceDescendants, Analyzers::ImplicitContextPressure,
-         Analyzers::RepeatedQueryCriteria, Analyzers::SubclassOverridePressure]
+         Analyzers::RepeatedQueryCriteria, Analyzers::SubclassOverridePressure,
+         Analyzers::TestCallsPrivateMethod]
       end
 
       def merge_default_project_analyzers

@@ -55,13 +55,17 @@ module MetzScan
                           "joins, merges, Arel, single-key finders, bang finders, exists?, or take."
           },
           "MetzProject/SubclassOverridePressure" => {
-            "evidence" => "Expanded active fixtures show 148 findings: 93 low broad-root and " \
-                          "55 medium manual-review findings across abstract hook, cooperative, and " \
-                          "replacement override families.",
+            "evidence" => "Expanded active fixtures show 148 findings across broad-root, abstract hook, " \
+                          "cooperative, and replacement override families.",
             "next" => "Keep parked unless future generic work separates design-pressure hook contracts " \
                       "from deliberate extension protocols and setup conventions.",
             "not_next" => "Do not implement classifier behavior, promote, make default-output eligible, " \
                           "suppress medium categories, or retune thresholds."
+          },
+          "MetzProject/TestCallsPrivateMethod" => {
+            "evidence" => "Index-confirmed testing analyzer; dogfood before any promotion.",
+            "next" => "Dogfood on test-heavy RSpec and Minitest codebases with Rubydex available.",
+            "not_next" => "Do not promote or add runtime double-report coordination with Metz/TestReachesPrivate."
           }
         }.freeze
 

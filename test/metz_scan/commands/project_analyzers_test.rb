@@ -37,11 +37,20 @@ module MetzScan
       end
 
       def assert_json_default_output_flags(parsed)
+        assert_default_output_validated_analyzers(parsed)
+        assert_default_output_candidate_analyzers(parsed)
+      end
+
+      def assert_default_output_validated_analyzers(parsed)
         assert_default_output(parsed, "MetzProject/ServiceSoup", true)
         assert_default_output(parsed, "MetzProject/DeepInheritanceTree", false)
+      end
+
+      def assert_default_output_candidate_analyzers(parsed)
         assert_default_output(parsed, "MetzProject/ImplicitContextPressure", false)
         assert_default_output(parsed, "MetzProject/RepeatedQueryCriteria", false)
         assert_default_output(parsed, "MetzProject/SubclassOverridePressure", false)
+        assert_default_output(parsed, "MetzProject/TestCallsPrivateMethod", false)
       end
 
       def assert_json_statuses(parsed)
@@ -49,6 +58,7 @@ module MetzScan
         assert_status(parsed, "MetzProject/ImplicitContextPressure", "candidate")
         assert_status(parsed, "MetzProject/RepeatedQueryCriteria", "candidate")
         assert_status(parsed, "MetzProject/SubclassOverridePressure", "candidate")
+        assert_status(parsed, "MetzProject/TestCallsPrivateMethod", "candidate")
       end
 
       def test_unknown_option_exits_nonzero_with_usage

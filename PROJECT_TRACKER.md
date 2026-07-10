@@ -136,15 +136,21 @@ burn a `1.0.0` signal on the first public push.
 | Docs/adoption | Stable | README points contributors and agents to this tracker; old implementation notes are archived, current notes are short, and the Sorbet spike report records the tooling decision. The README now splits RepeatedBranching generic-subject guidance into a short list, the analyzer behavior details into per-analyzer subsections, package install troubleshooting points at `bin/check_published_gem`, parity failure inspection points at preserved clone/`next action:` output, the analyzer status table has freshness coverage, `skills/metz-scan/SKILL.md` gives agents consumer-facing usage guidance, and calibration docs point future Rubydex upgrades, filtered baselines, compact baseline previews, and parked issue updates at repeatable local commands. | Keep docs changes minimal and evidence-led. |
 | Path to rubygems.org | Live on rubygems.org (v0.5.3) | `metz-scan`/`rubocop-metz` `0.5.3` are the public rubygems.org release, verified with a real scan from a clean install; the corrupt `0.5.2` is yanked (only `0.5.3` installable). | Done. `1.0.0` still reserved for a later, deliberate signal. |
 | Test hardening | Done | Fixture/guard surface through `599a935` covers CLI text/JSON/help contracts, read-only guards, drift checks, package smoke, and CI parity output. Suite: 438 fast + 88 slow runs, all green. | Maintain only; new tests accompany behavior changes or defects, not coverage sweeps. |
-| Testing-discipline cops | Active | Rollout 2026-07-08/09: three Tier-1 cops landed opt-in behind the reusable `Enabled: false` gate, and **all three are now dogfooded → stay opt-in**. `Metz/TestReachesPrivate` (~22/100 on Rails) and `Metz/TestAssertsOnInternals` (~32/100) are accurate but too dense. **`Metz/TestStubsSubject` dogfooded 2026-07-09** across four RSpec suites (`docs/dogfooding/2026-07-09-test-stubs-subject.md`): accurate (0 FP, reproduces `RSpec/SubjectStub`) but density is **suite-dependent** — near-zero on Mastodon/Discourse/Forem (0.0–0.33/100) yet **~11.9/100 on OpenFoodNetwork** (legacy report-heavy suite). The initial sparse read (n=3) did not generalize; a 4th target flipped it → **stays opt-in**, no promotion. **DEP-1 landed**: neutral `RuboCop::Cop::Metz::OperatorMethods` predicate. `TestFrameworks` **deferred** (no both-framework consumer yet). | Continue rollout: Tier-2 `test_calls_private_method` wrapper-side index-backed analyzer. Follow `docs/design/testing-cops.md`. |
+| Testing-discipline cops | Active | Tier 1 complete: three cops landed opt-in and **all three dogfooded → stay opt-in** (`TestReachesPrivate` ~22/100, `TestAssertsOnInternals` ~32/100, `TestStubsSubject` 0 FP but suite-dependent ~11.9/100 on OpenFoodNetwork — `docs/dogfooding/2026-07-09-test-stubs-subject.md`). **Tier 2 landed 2026-07-09**: `MetzProject/TestCallsPrivateMethod` — wrapper-side index-backed project analyzer (candidate, opt-in), the Rubydex-confirmed form of `Metz/TestReachesPrivate`. SUT-scoped conservative (describe/described_class/`FooTest`→`Foo` unique-match; receivers = `subject`/`described_class.new`/`Const.new`/single-assign ivar; own-declarations-only; method_identity match). Added `visibility` to `ProjectIndex::MethodDeclaration` + an AST `module_function` seam (Rubydex 0.2.8 `#visibility` panics unrescuably on `module_function` — upstream bug, local workaround). Supersession of Tier-1 is documentation-only (dependency direction forbids the cop seeing the index). Codex-implemented, orchestrator-reviewed (verified the panic empirically + e2e smoke). | Dogfood `TestCallsPrivateMethod` on test-heavy RSpec/Minitest suites with Rubydex. Then assess remaining rollout (`TestTooManyAssertions` candidate — likely drop per spec §10). |
 
 ## Next Queue
 
-1. Continue the testing-discipline rollout (`docs/design/testing-cops.md`) slice
-   by slice — Tier 1 as cops, Tier 2 (`test_calls_private_method`) as a
-   wrapper-side index-backed analyzer, each earning default output only through
-   per-cop dogfooding. Do not start a cop before its dogfooding evidence; do not
-   attempt the documented non-goals. Next up: Tier-2 `test_calls_private_method`.
+1. Dogfood `MetzProject/TestCallsPrivateMethod` (now landed, candidate/opt-in)
+   on test-heavy RSpec + Minitest suites with Rubydex installed, per
+   `docs/design/testing-cops.md` §8 — judge-only round, record false-positive
+   rate and default-output eligibility (same bar as the other testing analyzers;
+   promotion stays escalation-gated). Use the per-cop round method fixes recorded
+   in `docs/dogfooding/2026-07-09-test-stubs-subject.md` (scan outside repo `tmp/`,
+   pin `TargetRubyVersion`), and include test paths in the scan set (`scan .`).
+2. After that, assess the remaining testing-cops rollout
+   (`docs/design/testing-cops.md`): `TestTooManyAssertions` is a weak candidate
+   (§10 — likely drop; both ecosystems already ship it). Do not start a cop
+   before its dogfooding evidence; do not attempt the documented non-goals.
 
 (All three shipped testing cops are calibrated and **stay opt-in** — accurate but
 not reliably sparse enough for default output: `Metz/TestReachesPrivate`
@@ -159,7 +165,45 @@ other suites). `remove_method` remains a minor `AllowedMethods` candidate for
 
 ## Latest Slice Checkpoint
 
-Slice: 2026-07-09 `Metz/TestStubsSubject` calibration round (judge-only, docs).
+Slice: 2026-07-09 Tier-2 testing analyzer — `MetzProject/TestCallsPrivateMethod`
+(wrapper-side, Rubydex-index-backed, candidate/opt-in).
+
+What changed: new project analyzer flagging tests that call an index-confirmed
+private/protected method on the subject-under-test — the Rubydex-confirmed form
+of the opt-in Tier-1 cop `Metz/TestReachesPrivate`. SUT-scoped conservative
+(near-zero FP by design): infers the SUT from `describe`/`described_class` (RSpec)
+or `FooTest`→`Foo` with a required unique index match (Minitest); only flags
+sends whose receiver is provably the SUT (`subject` — dropped if redefined to a
+non-SUT; `described_class.new`; `Const.new`; a single-assignment ivar/local from
+`Const.new`); own-declarations-only visibility, `method_identity` (instance vs
+singleton) match, and the confirming declaration must not itself be a test file.
+Extended `ProjectIndex::MethodDeclaration` with a `visibility` field. Registered
+in `ANALYZERS` + `INDEX_BACKED_ANALYZERS` (auto-enrolled in `check_rubydex_drift`,
+0 findings on sample_app). Ships `PROJECT_ANALYZER_STATUS = "candidate"`, no
+`DEFAULT_OUTPUT_ELIGIBLE` — promotion escalation-gated. Tier-1 supersession is
+documentation-only (dependency direction forbids the cop seeing the index).
+
+Surprise: Rubydex 0.2.8 `#visibility` **panics unrescuably** (SIGABRT,
+"module_function visibility translation is not implemented") on `module_function`
+methods — and it runs for every method at index build, so it would abort
+`check_rubydex_drift` on real targets. Worked around with an AST-based
+`module_function` visibility seam (singleton copy → public, instance copy →
+private). Upstream Rubydex bug drafted for filing; delete the workaround once
+upstream fixes it.
+
+How verified: Codex-implemented (`task-mre3lvsp-lp3np0`, ~50m, after a first
+dispatch hit the #432 foreground-reap wedge — cleared, redispatched with
+`--background`), then **orchestrator independently reviewed the full diff**
+(traced the SUT/receiver/scope resolution and all FP guards), **verified the
+Rubydex panic and the workaround empirically**, **re-ran the focused tests**
+(analyzer 26/141/0F, index 11/94/0F) and drove a **real end-to-end scan**
+(flags a private `subject.send`, ignores public + collaborator sends). Codex
+gates: `bundle exec rake` 664/0F/0E (2 skips), `rubocop` clean (242 files),
+`check_dogfood` 0 findings (early + final), dependency-direction / sample-frozen
+/ rubydex-drift all PASS. Both-paths `missing_rubydex` coverage; fixtures
+additive; `readiness_catalog` records "do not promote / dogfood first".
+
+Prior committed slice — 2026-07-09 `Metz/TestStubsSubject` calibration round (judge-only, docs).
 
 What changed: dogfooded the third opt-in cop against **four** real RSpec suites
 (Mastodon, Discourse, Forem, OpenFoodNetwork) per `docs/design/testing-cops.md`
@@ -431,6 +475,7 @@ calibration internals moved to `docs/project-analyzer-calibration.md`.
 
 | Date | Commit | Summary |
 | --- | --- | --- |
+| 2026-07-09 | `this commit` | Tier-2 testing analyzer: `MetzProject/TestCallsPrivateMethod` (wrapper-side, Rubydex-index-backed, candidate/opt-in). Flags tests calling an index-confirmed private/protected SUT method — the confirmed form of `Metz/TestReachesPrivate`. SUT-scoped conservative (describe/described_class/`FooTest`→`Foo` unique-match; SUT-only receivers; own-declarations-only; method_identity match). Added `visibility` to `ProjectIndex::MethodDeclaration` + an AST `module_function` seam (Rubydex `#visibility` panics unrescuably on `module_function` — upstream bug, local workaround verified). Registered in `INDEX_BACKED_ANALYZERS` (drift-covered, 0 sample_app findings). Codex-implemented (redispatched past a #432 wedge), orchestrator-reviewed + panic-verified empirically + e2e smoke. rake 664/0F, rubocop clean, dogfood 0 findings. Both-paths missing_rubydex; docs/spec/notes updated. |
 | 2026-07-09 | `this commit` | Per-cop calibration round for `Metz/TestStubsSubject` (`docs/dogfooding/2026-07-09-test-stubs-subject.md`). Dogfooded against **four** RSpec suites (Mastodon, Discourse, Forem, OpenFoodNetwork): accurate (0 FP, reproduces `RSpec/SubjectStub`) but **stays opt-in** — density is suite-dependent (0.0–0.33/100 on three suites, **~11.9/100 on OpenFoodNetwork**), so not reliably sparse for default output. The initial n=3 (Mastodon+Discourse) sparse read did not generalize; a 4th target flipped the verdict. Judge-only; docs + tracker, no code. Also records two reusable round-method fixes (avoid repo `tmp/`; pin `TargetRubyVersion`, not `--force-default-config`). |
 | 2026-07-09 | `this commit` | Third testing-discipline cop: `Metz/TestStubsSubject` (Tier 1, **RSpec-only**, AST), opt-in (`Enabled: false`). Flags RSpec tests that stub/mock the subject under test (`expect`/`allow(subject).to receive*`, `is_expected`, named subjects) — an inline port of `RSpec/SubjectStub` with an ancestor-group subject-name fold (`subject`/`subject!` add, `let`/`let!` subtract, always include `:subject`, siblings isolated, recursive stub-matcher search). Minitest deferred (no detectable subject token); `TestFrameworks` deferred again. RSpec-only `Include`; reuses the slice-1 opt-in gate. Codex-implemented, orchestrator-reviewed (traced fold + all FP-guard fixtures) and re-verified: rake 637/0F/0E, rubocop clean, dogfood 0 findings. 28 cop tests / 24 fixtures; opt-in gate coverage extended. |
 | 2026-07-09 | `23aaf37` | DEP-1 decouple: extracted neutral `RuboCop::Cop::Metz::OperatorMethods` (operator-symbol set + `operator?`) so `Metz/TestReachesPrivate` no longer reaches into `DemeterTrainWreck::TypeInference`; `TypeInference.operator?` delegates to it (behavior unchanged). Also locked `TestStubsSubject` as RSpec-only with `TestFrameworks` deferred again. Behavior-preserving; new `operator_methods_test`, existing tests green, dogfood 0 findings. |

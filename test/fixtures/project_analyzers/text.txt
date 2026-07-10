@@ -8,3 +8,4 @@ MetzProject/NamespaceLeakPressure      candidate  no       medium      manual re
 MetzProject/ImplicitContextPressure    candidate  no       medium      manual review
 MetzProject/RepeatedQueryCriteria      candidate  no       medium      manual review
 MetzProject/SubclassOverridePressure   candidate  no       medium      manual review
+MetzProject/TestCallsPrivateMethod     candidate  no       high        manual review
