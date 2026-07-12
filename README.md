@@ -69,6 +69,9 @@ scorecard — forward with a wider, more current toolset:
 - **Self-explaining.** `metz-scan explain <cop>` and `metz-scan rules` describe
   each rule and why it matters.
 
+`metz-scan` measures design pressure only. It is not a security or correctness
+auditor — pair it with brakeman or a full audit pipeline for those concerns.
+
 ## Install
 
 ```bash

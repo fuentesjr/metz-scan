@@ -165,8 +165,21 @@ other suites). `remove_method` remains a minor `AllowedMethods` candidate for
 
 ## Latest Slice Checkpoint
 
-Slice: 2026-07-09 Tier-2 testing analyzer — `MetzProject/TestCallsPrivateMethod`
-(wrapper-side, Rubydex-index-backed, candidate/opt-in).
+Slice: 2026-07-11 README scope statement (docs-only, user-requested).
+
+What changed: two-line scope statement added to README's "How metz-scan
+compares" — metz-scan measures design pressure only and is not a security or
+correctness auditor; pair it with brakeman or a full audit pipeline. Positions
+the tool against the reader's likely alternatives (audit stacks), not just
+sandi_meter.
+
+How verified: README/docs freshness tests green, `rubocop` clean (242 files),
+dependency-direction / sample-frozen / tracker-queue guards pass. No CLI
+behavior changed.
+
+Prior committed slice — 2026-07-09 Tier-2 testing analyzer —
+`MetzProject/TestCallsPrivateMethod` (wrapper-side, Rubydex-index-backed,
+candidate/opt-in).
 
 What changed: new project analyzer flagging tests that call an index-confirmed
 private/protected method on the subject-under-test — the Rubydex-confirmed form
@@ -475,6 +488,7 @@ calibration internals moved to `docs/project-analyzer-calibration.md`.
 
 | Date | Commit | Summary |
 | --- | --- | --- |
+| 2026-07-11 | `this commit` | Docs-only: README scope statement in "How metz-scan compares" — metz-scan measures design pressure only, not a security/correctness auditor (pair with brakeman or a full audit pipeline). Freshness tests, rubocop, and repo guards green; no CLI behavior changed. |
 | 2026-07-09 | `this commit` | Tier-2 testing analyzer: `MetzProject/TestCallsPrivateMethod` (wrapper-side, Rubydex-index-backed, candidate/opt-in). Flags tests calling an index-confirmed private/protected SUT method — the confirmed form of `Metz/TestReachesPrivate`. SUT-scoped conservative (describe/described_class/`FooTest`→`Foo` unique-match; SUT-only receivers; own-declarations-only; method_identity match). Added `visibility` to `ProjectIndex::MethodDeclaration` + an AST `module_function` seam (Rubydex `#visibility` panics unrescuably on `module_function` — upstream bug, local workaround verified). Registered in `INDEX_BACKED_ANALYZERS` (drift-covered, 0 sample_app findings). Codex-implemented (redispatched past a #432 wedge), orchestrator-reviewed + panic-verified empirically + e2e smoke. rake 664/0F, rubocop clean, dogfood 0 findings. Both-paths missing_rubydex; docs/spec/notes updated. |
 | 2026-07-09 | `this commit` | Per-cop calibration round for `Metz/TestStubsSubject` (`docs/dogfooding/2026-07-09-test-stubs-subject.md`). Dogfooded against **four** RSpec suites (Mastodon, Discourse, Forem, OpenFoodNetwork): accurate (0 FP, reproduces `RSpec/SubjectStub`) but **stays opt-in** — density is suite-dependent (0.0–0.33/100 on three suites, **~11.9/100 on OpenFoodNetwork**), so not reliably sparse for default output. The initial n=3 (Mastodon+Discourse) sparse read did not generalize; a 4th target flipped the verdict. Judge-only; docs + tracker, no code. Also records two reusable round-method fixes (avoid repo `tmp/`; pin `TargetRubyVersion`, not `--force-default-config`). |
 | 2026-07-09 | `this commit` | Third testing-discipline cop: `Metz/TestStubsSubject` (Tier 1, **RSpec-only**, AST), opt-in (`Enabled: false`). Flags RSpec tests that stub/mock the subject under test (`expect`/`allow(subject).to receive*`, `is_expected`, named subjects) — an inline port of `RSpec/SubjectStub` with an ancestor-group subject-name fold (`subject`/`subject!` add, `let`/`let!` subtract, always include `:subject`, siblings isolated, recursive stub-matcher search). Minitest deferred (no detectable subject token); `TestFrameworks` deferred again. RSpec-only `Include`; reuses the slice-1 opt-in gate. Codex-implemented, orchestrator-reviewed (traced fold + all FP-guard fixtures) and re-verified: rake 637/0F/0E, rubocop clean, dogfood 0 findings. 28 cop tests / 24 fixtures; opt-in gate coverage extended. |
