@@ -103,6 +103,31 @@ Metz/ControllersTooManyDirectCollaborators:
     - 'app/controllers/**/*.rb'
   VersionAdded: '0.1'
 
+Metz/OperationsTooManyPublicMethods:
+  Description: >-
+    Flags classes under app/services or app/operations that expose more than
+    MaxPublicMethods public methods (excluding AllowedMethods such as initialize).
+  Enabled: true
+  Severity: refactor
+  MaxPublicMethods: 1
+  AllowedMethods:
+    - initialize
+  Include:
+    - 'app/services/**/*.rb'
+    - 'app/operations/**/*.rb'
+  VersionAdded: '0.6'
+
+Metz/GodServiceClass:
+  Description: >-
+    Flags *Service classes that expose more than MaxPublicMethods public methods
+    (excluding AllowedMethods such as initialize) — god-service / multi-use bags.
+  Enabled: true
+  Severity: refactor
+  MaxPublicMethods: 1
+  AllowedMethods:
+    - initialize
+  VersionAdded: '0.6'
+
 Metz/ViewsDeepNavigation:
   Description: 'Flags Rails view templates whose ERB/HAML/SLIM expressions traverse the object graph deeper than MaxChainLength.'
   Enabled: true

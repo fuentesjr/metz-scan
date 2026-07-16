@@ -21,6 +21,7 @@ module Metz
     CONTROLLER_PATTERN = %r{(?:\A|/)app/controllers/[^\0]+\.rb\z}
     VIEW_PATTERN       = %r{(?:\A|/)app/views/[^\0]+\.(?:erb|haml|slim)\z}
     MODEL_PATTERN      = %r{(?:\A|/)app/models/[^\0]+\.rb\z}
+    OPERATION_PATTERN  = %r{(?:\A|/)app/(?:services|operations)/[^\0]+\.rb\z}
 
     module_function
 
@@ -34,6 +35,13 @@ module Metz
 
     def model?(path)
       normalize(path).match?(MODEL_PATTERN)
+    end
+
+    # Application-operation homes (legacy `app/services` and preferred
+    # `app/operations`). Path alone does not legitimize a class; it only
+    # scopes shape cops such as OperationsTooManyPublicMethods.
+    def operation?(path)
+      normalize(path).match?(OPERATION_PATTERN)
     end
 
     # Windows-style paths arrive with backslash separators when the caller is

@@ -9,16 +9,22 @@ class MetzFileClassifierTest < Minitest::Test
   end
 
   def test_responds_to_predicate_api
-    %i[controller? view? model?].each do |predicate|
+    %i[controller? view? model? operation?].each do |predicate|
       assert_respond_to Metz::FileClassifier, predicate
     end
   end
 
   def test_predicates_return_strict_booleans
     boolean_values = [true, false]
+    hits = {
+      controller?: "app/controllers/x_controller.rb",
+      view?: "app/views/x/index.html.erb",
+      model?: "app/models/x.rb",
+      operation?: "app/services/x.rb"
+    }
 
-    %i[controller? view? model?].each do |predicate|
-      hit = Metz::FileClassifier.public_send(predicate, "app/controllers/x_controller.rb")
+    hits.each do |predicate, path|
+      hit = Metz::FileClassifier.public_send(predicate, path)
       miss = Metz::FileClassifier.public_send(predicate, "lib/foo.txt")
 
       assert_includes boolean_values, hit, "#{predicate} returned non-boolean #{hit.inspect}"
@@ -81,6 +87,27 @@ class MetzFileClassifierTest < Minitest::Test
       app/models/user.txt
     ].each do |path|
       refute Metz::FileClassifier.model?(path), "expected model? false for #{path}"
+    end
+  end
+
+  def test_operation_predicate_matches_services_and_operations_paths
+    %w[
+      app/services/checkout.rb
+      app/services/billing/charge.rb
+      app/operations/import_accounts.rb
+      app/operations/admin/sync.rb
+    ].each do |path|
+      assert Metz::FileClassifier.operation?(path), "expected operation? true for #{path}"
+    end
+
+    %w[
+      app/models/user.rb
+      app/controllers/users_controller.rb
+      lib/services/checkout.rb
+      app/service/checkout.rb
+      app/services/checkout.txt
+    ].each do |path|
+      refute Metz::FileClassifier.operation?(path), "expected operation? false for #{path}"
     end
   end
 

@@ -72,6 +72,12 @@ scorecard — forward with a wider, more current toolset:
 `metz-scan` measures design pressure only. It is not a security or correctness
 auditor — pair it with brakeman or a full audit pipeline for those concerns.
 
+When an application operation (“service object”) is legitimate vs procedural abuse,
+and how that is enforced (including `Metz/OperationsTooManyPublicMethods` and
+`Metz/GodServiceClass`), see
+[`docs/application-operations.md`](docs/application-operations.md). That document is
+maintained in full in this repo so metz-scan has no hard dependency on rails-audit.
+
 ## Install
 
 ```bash

@@ -792,3 +792,16 @@ Decision:
 - Local release readiness is green. The next step is to push the local commits,
   watch CI, then open or update the `Release v0.4.0` checklist issue only after
   remote CI is green.
+
+## R1/R2 operation shape cops (2026-07-15)
+- Added `Metz/OperationsTooManyPublicMethods` (app/services + app/operations; max 1
+  public method excl. AllowedMethods/initialize) and `Metz/GodServiceClass` (*Service
+  basename; same public-method limit). Shared `PublicApiMethods` collector +
+  `FileClassifier.operation?`. Aligns with rails-audit `docs/application-operations.md`
+  rules R1/R2 (enforce illegitimacy, not presence).
+- Tests: cop unit tests + file classifier; `metz-scan rules` / `explain` show metadata.
+- Not in this slice: R3/R4, concern cops, rails-audit presence-cop removal (sibling work).
+
+## Application operations standard copy (2026-07-15)
+- Added full `docs/application-operations.md` in this repo (independent of rails-audit;
+  drift accepted; no gem/runtime dependency). README + R1/R2 cop comments point here.
