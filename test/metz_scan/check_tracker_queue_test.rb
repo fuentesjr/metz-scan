@@ -37,35 +37,35 @@ module MetzScan
 
     def watch_only_tracker
       <<~MARKDOWN
-        # Project Tracker
+        # STATE
 
-        ## Next Queue
+        ## Next
 
         1. Continue package feedback watch.
         2. Keep #25 deferred.
         3. Monitor analyzer evidence.
 
-        ## Parked / Not Next
+        ## Backlog
       MARKDOWN
     end
 
     def actionable_tracker
       <<~MARKDOWN
-        # Project Tracker
+        # STATE
 
-        ## Next Queue
+        ## Next
 
         1. Keep package feedback watch.
         2. Fix calibration command mutation.
         3. Monitor analyzer evidence.
 
-        ## Parked / Not Next
+        ## Backlog
       MARKDOWN
     end
 
     def with_tracker(contents)
       Dir.mktmpdir("metz-scan-tracker-queue") do |dir|
-        path = File.join(dir, "PROJECT_TRACKER.md")
+        path = File.join(dir, "STATE.md")
         File.write(path, contents)
         yield path
       end

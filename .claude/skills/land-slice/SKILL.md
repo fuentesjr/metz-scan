@@ -1,6 +1,6 @@
 ---
 name: land-slice
-description: "Finish, verify, and commit a work slice in metz-scan: run the verification gauntlet in the right order, update PROJECT_TRACKER.md correctly, satisfy the fixture/docs freshness gates, and gate the push on bin/check_ci_parity. Use whenever a code change is ready to commit, or when tests are failing after an edit and you need to know which gate you tripped."
+description: "Finish, verify, and commit a work slice in metz-scan: run the verification gauntlet in the right order, update .trk/ via trk correctly, satisfy the fixture/docs freshness gates, and gate the push on bin/check_ci_parity. Use whenever a code change is ready to commit, or when tests are failing after an edit and you need to know which gate you tripped."
 ---
 
 # Land a slice
@@ -11,11 +11,11 @@ and the gates that most often surprise agents.
 
 ## Preconditions
 
-- `origin/main` CI must be green before starting new work (standing rule,
-  `PROJECT_TRACKER.md` Standing rules). Check with
+- `origin/main` CI must be green before starting new work (standing rule in
+  `CLAUDE.md`). Check with
   `gh run list --repo fuentesjr/metz-scan --branch main --limit 3`.
-- The change should map to a Next Queue item, a filed issue, or an explicit
-  user request. If it touches a parked area (analyzer thresholds, statuses,
+- The change should map to a Next item, a filed issue, or an explicit user
+  request. If it touches a parked area (analyzer thresholds, statuses,
   suppressions, calibration targets, coverage sweeps), stop and ask the user.
 
 ## Verification gauntlet (run in this order — cheap first)
@@ -78,19 +78,17 @@ file).
 
 ## Tracker update (same commit as the work)
 
-Update `PROJECT_TRACKER.md`:
+Update `.trk/` through the `trk` CLI:
 
-- Current Snapshot date/baseline if it moved.
-- Latest Slice Checkpoint: a few lines only — what changed, how verified,
-  anything surprising. Git history carries the rest.
-- Recently Completed table: one row, date + commit + summary.
-- Next Queue: keep the top 3 items actionable (`bin/check_tracker_queue`
-  enforces this — parked/watch-only wording like "monitor", "keep", "defer"
-  without an action verb fails).
+- `trk goal` / `trk next` / `trk backlog` for current state changes.
+- `trk log` for completed work, decisions, and surprising findings.
+- Keep the top Next items actionable (`bin/check_tracker_queue` enforces this —
+  parked/watch-only wording like "monitor", "keep", "defer" without an action
+  verb fails).
 
 Never commit a tracker-only change unless it is a deliberate direction change.
-If the slice needs more durable detail than the tracker should carry, add a
-short section to `implementation-notes.md` (task, scope boundaries, decisions,
+If the slice needs more durable detail than STATE should carry, add a short
+section to `implementation-notes.md` (task, scope boundaries, decisions,
 verification) — match the existing entries' shape and brevity.
 
 ## Red-green discipline

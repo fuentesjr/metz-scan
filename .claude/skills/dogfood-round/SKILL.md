@@ -5,7 +5,7 @@ description: "Run a qualitative dogfooding round of released metz-scan gems agai
 
 # Dogfooding round
 
-This is the project's direction engine (`PROJECT_TRACKER.md` Current
+This is the project's direction engine (`.trk/STATE.md` Current
 Direction): install the *released* gems the way a user would, run them on real
 codebases, and judge whether the output would embarrass the tool. The
 2026-07-05 round (`docs/dogfooding/2026-07-05-round-0.5.0.md`) is the canonical
@@ -69,6 +69,6 @@ pattern: a project whose config excludes a templated `.rb` file, default vs
    passed** (list them). Quality nits do not fail the round.
 3. Draft GitHub issues for each headline defect — filing needs user approval
    (precedent: #34 draft waited for approval).
-4. Update `PROJECT_TRACKER.md`: dogfooding state in Current Snapshot, queue
-   rebuilt around any defects found, checkpoint row. Commit notes + tracker
+4. Update `.trk/` via `trk` (goal/next/backlog/log as needed): dogfooding
+   state and queue rebuilt around any defects found. Commit notes + tracker
    together via the `land-slice` skill.

@@ -13,8 +13,9 @@ agents have gone wrong before.
 **Hard boundary:** creating the tag, cutting the GitHub Release, and every
 `gem push` require explicit user authorization in this session. Prep and
 verification do not. rubygems.org publishing is additionally gated on the four
-exit criteria in `PROJECT_TRACKER.md` "Path to rubygems.org" and is a separate
-explicit user decision — this skill covers GitHub Packages.
+exit criteria recorded historically under Path to rubygems.org (now reflected
+in `.trk/STATE.md` goal) and is a separate explicit user decision — this skill
+covers GitHub Packages.
 
 ## Phase 1 — choose the version (a decision, not a mechanical bump)
 
@@ -40,7 +41,7 @@ Touch exactly these surfaces:
 5. README install example only if the current `~>` constraint no longer
    resolves to the new version (it was deliberately left at `~> 0.5.0` for
    `0.5.1`).
-6. `PROJECT_TRACKER.md` checkpoint row for the prep.
+6. `.trk/` update via `trk log` / `trk goal` as needed for the prep.
 
 Then run the full gauntlet from the `land-slice` skill, including
 `CI_PARITY_FULL=1 bin/check_ci_parity` (parity now runs a reduced subset by
@@ -76,8 +77,8 @@ label for #34 in `0.5.1`). Then:
   still open (issue writes need user approval — batch the ask with the publish
   authorization).
 - `rm -f metz-scan-*.gem rubocop-metz/rubocop-metz-*.gem`.
-- Record completion: tracker snapshot/checkpoint/Recently Completed row plus a
-  short `implementation-notes.md` entry (shape of "2026-07-06: v0.5.1 release
+- Record completion: `trk log` for the release plus a short
+  `implementation-notes.md` entry (shape of "2026-07-06: v0.5.1 release
   completion"). This record commit is real project work, not tracker churn.
 
 ## Known failure modes

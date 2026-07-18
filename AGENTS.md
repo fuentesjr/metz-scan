@@ -11,9 +11,12 @@ the first section.
    quality bar, escalation rules, and review criteria live there, once. Do not
    duplicate its content here; if it conflicts with this file, `CLAUDE.md`
    wins except for the OpenAI-specific sections below.
-2. `PROJECT_TRACKER.md` — current direction, Next Queue, parked work, standing
-   rules. Orient here before deciding any work. Run `bin/check_ci_parity`
-   before any push.
+2. Work tracking lives in `.trk/` via the `trk` CLI. Orchestrator: run
+   `trk status --json` at session start; `trk dispatch` before spawning
+   long-running subagents and `trk resolve` on return; `trk check --strict`
+   before session end. Subagents: do not modify anything under `.trk/`; report
+   results in your final message. `bin/check_tracker_queue` still gates that
+   the top Next items are actionable. Run `bin/check_ci_parity` before any push.
 3. `.claude/guides/operator-playbook.md` — mandatory for executor models
    before touching code (session-start ritual, hard stops, trap table).
 

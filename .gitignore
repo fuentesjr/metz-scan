@@ -11,3 +11,4 @@ loops/
 
 # Personal harness state; the rest of .claude/ (skills, guides) is tracked.
 .claude/settings.local.json
+.trk/lock

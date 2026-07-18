@@ -1,9 +1,9 @@
 # Claude Code project notes
 
-Orient from `PROJECT_TRACKER.md` first — it holds the current direction (a
-quality-gated path to rubygems.org), the Next Queue, parked work, and standing
-rules. Tracker standing rules govern slice discipline. Run `bin/check_ci_parity`
-before any push.
+Orient from `trk status --json` / `.trk/STATE.md` first — they hold the current
+goal, Next steps, and backlog (including parked work). Work tracking is written
+through the `trk` CLI; see `AGENTS.md`. Standing process rules below still
+govern slice discipline. Run `bin/check_ci_parity` before any push.
 
 Repo skills (canonical in `.claude/skills/`, mirrored for OpenAI/Codex via the
 `.agents/skills` symlink): `land-slice` (finish + verify + commit a slice),
@@ -61,7 +61,7 @@ bin/check_ci_parity           # pre-push gate: runs a deliberate CI subset in a 
 bin/check_dependency_direction
 bin/check_sample_app_frozen   # SHA-256 freeze gate on test/fixtures/sample_app
 bin/check_read_only_commands  # runs read-only maintenance cmds under BUNDLE_FROZEN=1, fails on dirty tree
-bin/check_tracker_queue       # fails if top-3 Next Queue items are all parked/watch-only
+bin/check_tracker_queue       # fails if top-3 .trk/STATE.md Next items are all parked/watch-only
 bin/check_dogfood             # metz-scan on this repo; requires rubydex group; zero findings required
 ```
 
@@ -116,7 +116,7 @@ always running the full suite — remote CI stays the full-suite backstop; set
    right reason precedes the fix (see `16824db` / `d041d51` for shape).
 2. `bundle exec rake`, `bundle exec rubocop`, and the guard scripts pass.
 3. `bin/check_ci_parity` passes on the committed HEAD before pushing.
-4. `PROJECT_TRACKER.md` updated in the same commit as the work (never
+4. `.trk/` updated via `trk` in the same commit as the work (never
    tracker-only commits, except deliberate direction changes).
 5. Docs updated when behavior changed (the freshness tests will tell you).
 6. No coverage sweeps: test hardening is declared done. New tests accompany
@@ -144,7 +144,7 @@ always running the full suite — remote CI stays the full-suite backstop; set
 - Filing or closing GitHub issues (issue creation was permission-blocked by
   policy on 2026-07-05; drafts need user approval).
 - Changing analyzer thresholds, statuses, default-output policy, or promoting
-  candidate analyzers — all explicitly parked in PROJECT_TRACKER.md.
+  candidate analyzers — all explicitly parked in `.trk/STATE.md` backlog.
 - Adding app-specific suppressions or new calibration targets (parked).
 - Adding dependencies (Sorbet was evaluated and rejected in
   `docs/spikes/sorbet-issue-26.md`; don't relitigate without new evidence).
@@ -158,8 +158,8 @@ mentions the wrapper; (2) `on_send` cops include `OnSendCsendBridge`;
 (3) sample-app freeze manifest consistent with fixture edits; (4) exact-output
 fixtures updated deliberately, not assertions loosened; (5) README/skill
 freshness tests still meaningful (docs match new behavior, not weakened to
-pass); (6) tracker updated with the slice and queue still actionable;
-(7) scope matches a Next Queue item or filed issue — flag parked-area changes;
+pass); (6) `.trk/` updated with the slice and Next still actionable;
+(7) scope matches a Next item or filed issue — flag parked-area changes;
 (8) no defensive rescue/nil-guard slop, no comments restating code, no new
 abstractions without three concrete uses; (9) tests exercise observable CLI or
 analyzer behavior, not implementation internals.

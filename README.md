@@ -354,7 +354,7 @@ If your shell resolves to macOS system Ruby, switch to a Ruby `>= 3.3` before ru
 
 ## Contributing / Development
 
-Before starting autonomous repo work, read [PROJECT_TRACKER.md](PROJECT_TRACKER.md)
+Before starting autonomous repo work, run `trk status --json` (see [AGENTS.md](AGENTS.md))
 for the current local direction, next queue, parked work, and the reason this
 repo tracks agent coordination locally instead of only in GitHub Projects or
 issues.

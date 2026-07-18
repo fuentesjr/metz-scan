@@ -1,12 +1,13 @@
 # /goal backlog — top 5 bounded runs
 
 Ranked by expected value against the tracker's rubygems.org exit criteria
-(`PROJECT_TRACKER.md` "Path to rubygems.org"). Assumption: `/goal` accepts a
+(historical Path to rubygems.org criteria; current goal is in `.trk/STATE.md`).
+Assumption: `/goal` accepts a
 free-text goal statement; the DoD, proof, cap, and constraints are embedded in
 each command so the executing agent carries them even if the harness doesn't.
 OpenAI/Codex operators: there is no `/goal` command — paste the goal text
 (everything after `/goal`) as the session prompt; the skills it names resolve
-via `.agents/skills`. Re-derive this backlog from `PROJECT_TRACKER.md` Next
+via `.agents/skills`. Re-derive this backlog from `.trk/STATE.md` Next
 Queue when it drifts.
 
 ---

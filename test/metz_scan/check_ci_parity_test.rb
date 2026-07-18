@@ -44,10 +44,10 @@ module MetzScan
     end
 
     def build_repo(repo, tracker)
-      FileUtils.mkdir_p(File.join(repo, "bin"))
+      FileUtils.mkdir_p([File.join(repo, "bin"), File.join(repo, ".trk")])
       copy_ci_scripts(repo)
       write_guard_stubs(repo)
-      File.write(File.join(repo, "PROJECT_TRACKER.md"), tracker)
+      File.write(File.join(repo, ".trk/STATE.md"), tracker)
     end
 
     def copy_ci_scripts(repo)
@@ -127,7 +127,7 @@ module MetzScan
 
     def tracker_with_items(*items)
       body = items.each_with_index.map { |item, index| "#{index + 1}. #{item}" }.join("\n")
-      "# Project Tracker\n\n## Next Queue\n\n#{body}\n"
+      "# STATE\n\n## Next\n\n#{body}\n"
     end
   end
 

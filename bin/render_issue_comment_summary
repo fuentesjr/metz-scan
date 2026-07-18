@@ -9,7 +9,7 @@ require "yaml"
 require "metz_scan/calibration/project_analyzer_evidence_runner/readiness_catalog"
 
 ROOT = File.expand_path("..", __dir__)
-TRACKER_PATH = ENV.fetch("RENDER_ISSUE_COMMENT_TRACKER_PATH", File.join(ROOT, "PROJECT_TRACKER.md"))
+TRACKER_PATH = ENV.fetch("RENDER_ISSUE_COMMENT_TRACKER_PATH", File.join(ROOT, ".trk/LOG.md"))
 BASELINE_PATH = File.join(ROOT, "docs/calibration/project_analyzer_baseline.yml")
 CATALOG = MetzScan::Calibration::ProjectAnalyzerEvidenceRunner::ReadinessCatalog
 
