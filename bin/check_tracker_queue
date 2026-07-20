@@ -1,7 +1,11 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-ACTION_WORDS = /\b(add|check|docs?|fix|generate|guard|implement|improve|make|script|test|tooling|update|dogfood|assess)\b/i
+ACTION_WORDS = Regexp.new(
+  "\\b(add|check|docs?|fix|generate|guard|implement|improve|make|" \
+  "script|test|tooling|update|dogfood|assess)\\b",
+  Regexp::IGNORECASE
+)
 PARKED_WORDS = /\b(defer|keep|monitor|park(?:ed)?|watch)\b/i
 TOP_QUEUE_LIMIT = 3
 

@@ -436,7 +436,9 @@ gem configs. The fix adds a wrapper-local `ProjectConfigScope` loader that
 parses RuboCop YAML, preserves only file-scope data (`AllCops` Include/Exclude,
 Metz per-cop Include/Exclude, and Ruby interpreters for target discovery), and
 feeds that into `RuboCop::TargetFinder` / `excluded_file?`. This keeps the
+
 # 33/#37 scope contract for local target config without requiring target
+
 extension gems in the `metz-scan` bundle. An absent `inherit_gem` cannot
 contribute scope because its config file is unavailable; installed inherited
 configs are parsed through the same scope-only path. Durable internal-API
@@ -489,7 +491,9 @@ Decision: **defect.** Per-cop `Metz/*: Exclude` is file *scope*, not cop
 *tuning*, so default mode should honor it the same way #33 honors
 `AllCops: Exclude`. The distinction that resolves the whole fork: default mode
 overrides *tuning* (Max/Enabled/Severity) but honors *scope* (Include/Exclude).
+
 # 33 already committed to honoring scope at the AllCops level; per-cop `Exclude`
+
 is the same file-scoping mechanism at finer granularity, and it matches Sandi
 Metz's intent (the length rules target production code, not arrange-act-assert
 tests with embedded fixtures). Honoring it grants no new hiding power users did
@@ -830,3 +834,17 @@ passes after the fix. Focused metadata test and focused RuboCop pass. Supported
 builds (`gem build metz-scan.gemspec`; `cd rubocop-metz && gem build
 rubocop-metz.gemspec`) pass, and built gem contents include each gem's library
 entrypoint. Generated `.gem` artifacts were removed.
+
+## 2026-07-20: Green-gate cleanup after local operation cops
+
+Task: keep going after the Dependabot gemspec fix by clearing the two verified
+clean-clone gate failures without widening product scope.
+
+Changes: added `Metz/GodServiceClass` and `Metz/OperationsTooManyPublicMethods`
+to the `metz-scan rules` registered-cop expectation; split
+`bin/check_tracker_queue`'s action-word regex into an equivalent
+`Regexp.new` form solely to satisfy line length.
+
+Verification: red-focused rules test and focused RuboCop reproduced the two
+failures before the edit; both passed after the edit. Broader verification is
+recorded in the subagent report for this slice.

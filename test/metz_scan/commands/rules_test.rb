@@ -14,8 +14,10 @@ module MetzScan
         Metz/ClassesTooLong
         Metz/ControllersTooManyDirectCollaborators
         Metz/DemeterTrainWreck
+        Metz/GodServiceClass
         Metz/MethodsTooLong
         Metz/MethodsTooManyParameters
+        Metz/OperationsTooManyPublicMethods
         Metz/TestAssertsOnInternals
         Metz/TestReachesPrivate
         Metz/TestStubsSubject

@@ -10,3 +10,6 @@ Parked issue boundaries (for bin/render_issue_comment_summary):
 
 ## 2026-07-20T00:51Z resolve dependabot-gemspec-evaluation
 Outcome: Implemented CWD-independent gemspec file discovery with a non-repo-CWD regression test; focused test, dependency-direction check, focused lint, documented builds, and independent review passed. Full rake/rubocop remain blocked by pre-existing local operation-cop registry and tracker-script lint failures; no push.
+
+## 2026-07-20T01:13Z resolve green-gate-regressions
+Outcome: Restored green clean-clone gates by registering the two operation cops in RulesTest and splitting the tracker queue regex without changing semantics; full suite, RuboCop, guards, and dogfood pass; no push.
