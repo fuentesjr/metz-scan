@@ -1,0 +1,2 @@
+2026-07-20 | testing | item:unintegrated-cop-registry-fixture | task: validate Dependabot gemspec fix | claim: every committed cop slice must update the rules-registry expectation before later slices can receive a green full-suite result
+2026-07-20 | code-quality | item:unintegrated-rubocop-baseline | task: validate Dependabot gemspec fix | claim: every committed slice must leave repository scripts RuboCop-clean before later slices can receive a green lint result

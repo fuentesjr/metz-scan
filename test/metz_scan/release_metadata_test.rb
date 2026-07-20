@@ -2,6 +2,7 @@
 
 require "minitest/autorun"
 require "rubygems"
+require "tmpdir"
 
 module MetzScan
   class ReleaseMetadataTest < Minitest::Test
@@ -25,6 +26,13 @@ module MetzScan
     def test_gem_file_lists_include_runtime_files_only
       assert_runtime_file_list metz_scan_spec, expected: metz_scan_runtime_file
       assert_runtime_file_list rubocop_metz_spec, expected: "lib/rubocop/metz/plugin.rb"
+    end
+
+    def test_gemspecs_evaluate_from_non_repo_cwd
+      Dir.mktmpdir("metz-scan-gemspec-cwd") do |dir|
+        assert_metz_scan_loads_from_cwd(dir)
+        assert_rubocop_metz_loads_from_cwd(dir)
+      end
     end
 
     private
@@ -53,6 +61,20 @@ module MetzScan
       refute(runtime_excluded_path?(spec))
     end
 
+    def assert_metz_scan_loads_from_cwd(cwd)
+      spec = load_spec_from_cwd(repo_path("metz-scan.gemspec"), cwd)
+
+      assert_includes spec.files, "lib/metz_scan.rb"
+      assert_includes spec.files, "bin/metz-scan"
+    end
+
+    def assert_rubocop_metz_loads_from_cwd(cwd)
+      spec = load_spec_from_cwd(repo_path("rubocop-metz/rubocop-metz.gemspec"), cwd)
+
+      assert_includes spec.files, "lib/rubocop-metz.rb"
+      assert_includes spec.files, "config/default.yml"
+    end
+
     def dependency_requirements(dependency)
       dependency.requirement.requirements.map { |op, version| "#{op} #{version}" }
     end
@@ -79,6 +101,10 @@ module MetzScan
 
     def load_spec(path)
       Dir.chdir(File.dirname(path)) { Gem::Specification.load(File.basename(path)) }
+    end
+
+    def load_spec_from_cwd(path, cwd)
+      Dir.chdir(cwd) { Gem::Specification.load(path) }
     end
 
     def repo_path(path)

@@ -41,6 +41,7 @@ Task: Next Queue item 1 — `Metz/TestAssertsOnInternals` (`docs/design/testing-
 Cop: `RuboCop::Cop::Metz::TestAssertsOnInternals` (rubocop-metz, Tier 1, AST-only,
 `on_send` + `OnSendCsendBridge`). Flags, in test files (Include globs
 `*_test.rb`/`test_*.rb`/`*_spec.rb`):
+
 - `instance_variable_get` / `instance_variable_set` on any receiver (arg literal or
   dynamic — the method is the signal);
 - receiverless `assigns(:name)` with a bare symbol/string literal arg (Rails
@@ -83,6 +84,7 @@ prove privacy, and receiverless `send(:foo)` may call the test's own method.
 
 Deliberate deviations from the spec (also recorded in
 `docs/design/testing-cops.md`):
+
 - **`public_send` DROPPED** from detection (spec §5 listed it). It can only
   invoke public methods, so flagging it contradicts the cop's principle and is a
   guaranteed FP; core `Style/SendWithLiteralMethodName` already owns the
@@ -154,6 +156,7 @@ immediate, self-explaining failure instead of a silently corrupt gem, and leaves
 gemspec eval clean in every context (Bundler, Dependabot, `gem build`).
 
 Lessons (durable):
+
 - Release verification for a wrapper+plugin gem pair MUST run a real `scan` from
   a clean install of each registry, not just `--version` — a broken transitive
   dependency only shows up when the plugin is actually required.
@@ -255,6 +258,7 @@ Exact spec to hand Codex verbatim:
   the project-analyzers block), one blank line before it. Also in the `report`
   re-render. Not in sarif/gh-annotations.
 - Format (align counts, 2-space gutter):
+
   ```
 
   Summary
@@ -271,6 +275,7 @@ Exact spec to hand Codex verbatim:
     app/models/story.rb                           31
     ...
   ```
+
 - Metric defs: compliance % = round((inspected_file_count − files_with_Metz/*_offenses)/inspected_file_count×100);
   "files clean" uses the same numerator. inspected==0 → "Metz compliance: n/a (no files scanned)".
   "<N> offenses across <K> cops": N=offense_count, K=distinct cops with ≥1 offense (Metz/* and MetzProject/*); singular "1 offense across 1 cop".
@@ -287,8 +292,10 @@ writes it (positioning narrative). Draft to adapt (factual, credits sandi_meter
 as prior art, not disparaging):
 
 > ## Why metz-scan?
+>
 > metz-scan is a modern, actively maintained take on the question `sandi_meter`
 > popularized — how well does this code follow Sandi Metz's rules?
+>
 > - All four classic rules, plus Law-of-Demeter chains and deep view navigation.
 > - Correct on modern Ruby: analyzes at your project's `TargetRubyVersion`, so
 >   Ruby 3.x syntax (endless methods, anonymous forwarding, pattern matching)
@@ -429,7 +436,7 @@ gem configs. The fix adds a wrapper-local `ProjectConfigScope` loader that
 parses RuboCop YAML, preserves only file-scope data (`AllCops` Include/Exclude,
 Metz per-cop Include/Exclude, and Ruby interpreters for target discovery), and
 feeds that into `RuboCop::TargetFinder` / `excluded_file?`. This keeps the
-#33/#37 scope contract for local target config without requiring target
+# 33/#37 scope contract for local target config without requiring target
 extension gems in the `metz-scan` bundle. An absent `inherit_gem` cannot
 contribute scope because its config file is unavailable; installed inherited
 configs are parsed through the same scope-only path. Durable internal-API
@@ -482,7 +489,7 @@ Decision: **defect.** Per-cop `Metz/*: Exclude` is file *scope*, not cop
 *tuning*, so default mode should honor it the same way #33 honors
 `AllCops: Exclude`. The distinction that resolves the whole fork: default mode
 overrides *tuning* (Max/Enabled/Severity) but honors *scope* (Include/Exclude).
-#33 already committed to honoring scope at the AllCops level; per-cop `Exclude`
+# 33 already committed to honoring scope at the AllCops level; per-cop `Exclude`
 is the same file-scoping mechanism at finer granularity, and it matches Sandi
 Metz's intent (the length rules target production code, not arrange-act-assert
 tests with embedded fixtures). Honoring it grants no new hiding power users did
@@ -712,8 +719,6 @@ assertions, 0 failures) and reviewed the full diff.
 Follow-up: dogfooding issues #31/#32 were triaged into queue positions 1-2;
 see `PROJECT_TRACKER.md`.
 
-
-
 Task: start the next four large tracker tasks, keep using agenticons, track
 elapsed time, update `PROJECT_TRACKER.md`, and commit.
 
@@ -794,6 +799,7 @@ Decision:
   remote CI is green.
 
 ## R1/R2 operation shape cops (2026-07-15)
+
 - Added `Metz/OperationsTooManyPublicMethods` (app/services + app/operations; max 1
   public method excl. AllowedMethods/initialize) and `Metz/GodServiceClass` (*Service
   basename; same public-method limit). Shared `PublicApiMethods` collector +
@@ -803,5 +809,24 @@ Decision:
 - Not in this slice: R3/R4, concern cops, rails-audit presence-cop removal (sibling work).
 
 ## Application operations standard copy (2026-07-15)
+
 - Added full `docs/application-operations.md` in this repo (independent of rails-audit;
   drift accepted; no gem/runtime dependency). README + R1/R2 cop comments point here.
+
+## 2026-07-20: Dependabot-safe gemspec file discovery
+
+Task: fix the Dependabot/Bundler gemspec-evaluation failure caused by CWD-relative
+`spec.files` discovery in both gemspecs.
+
+Decision/tradeoff: anchored `Dir.glob` and filesystem predicates to each
+gemspec's own directory via `base: gem_root`/`File.join`, preserving relative
+package paths and the entrypoint guards without reintroducing global `Dir.chdir`.
+A root `gem build rubocop-metz/rubocop-metz.gemspec` may now be safe/correct;
+that is preferred over fragile caller detection to preserve the former failure.
+
+Verification: added a red regression test that loads both gemspecs by absolute
+path from a temporary non-repo CWD; it failed on the old CWD-relative guards and
+passes after the fix. Focused metadata test and focused RuboCop pass. Supported
+builds (`gem build metz-scan.gemspec`; `cd rubocop-metz && gem build
+rubocop-metz.gemspec`) pass, and built gem contents include each gem's library
+entrypoint. Generated `.gem` artifacts were removed.

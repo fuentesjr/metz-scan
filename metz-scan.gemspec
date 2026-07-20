@@ -23,12 +23,14 @@ Gem::Specification.new do |spec|
   spec.metadata["github_repo"] = "ssh://github.com/fuentesjr/metz-scan"
   spec.metadata["github_package_uri"] = "https://github.com/users/fuentesjr/packages/rubygems/package/metz-scan"
 
-  spec.files = Dir.glob("lib/**/*", File::FNM_DOTMATCH).reject { |f| File.directory?(f) } +
-               Dir.glob("bin/metz-scan").select { |f| File.file?(f) } +
-               ["LICENSE", "metz-scan.gemspec"].select { |f| File.exist?(f) }
-  # See rubocop-metz.gemspec: fail loudly if built from the wrong directory
-  # rather than shipping a gem missing its own lib. Build from the repo root:
-  #   gem build metz-scan.gemspec
+  gem_root = __dir__
+  spec.files = Dir.glob("lib/**/*", File::FNM_DOTMATCH, base: gem_root)
+                  .reject { |f| File.directory?(File.join(gem_root, f)) } +
+               Dir.glob("bin/metz-scan", base: gem_root)
+                  .select { |f| File.file?(File.join(gem_root, f)) } +
+               ["LICENSE", "metz-scan.gemspec"].select { |f| File.exist?(File.join(gem_root, f)) }
+  # Keep metadata evaluation independent of the caller CWD while still failing
+  # loudly if the computed package files are missing this gem's own lib.
   unless spec.files.include?("lib/metz_scan.rb")
     raise "metz-scan.gemspec: lib/metz_scan.rb missing from packaged files; " \
           "build from the repo root (gem build metz-scan.gemspec)."
