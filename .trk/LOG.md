@@ -22,3 +22,9 @@ Outcome: Deleted the stale 0.5.1 autonomous goal backlog and rerouted AGENTS, th
 
 ## 2026-07-20T03:46Z resolve docs-goal-backlog-retirement
 Outcome: Deleted the stale goal backlog and rerouted executor guidance to trk status/.trk/STATE.md; focused docs test, full rake (685 runs, 3262 assertions, 0 failures, 0 errors, 2 skips), RuboCop, dogfood, dependency-direction, sample-freeze, read-only, and tracker-queue checks pass. Individual slow-test diagnostics explained the earlier timeout uncertainty; no push.
+
+## 2026-07-20T06:23Z log
+2026-07-20 TestCallsPrivateMethod dogfood: Mastodon 13 findings/3 files, OpenFoodNetwork 22/3, Forem 60/5; reviewed calls matched private production declarations and no false-positive category appeared. Keep candidate-only; active calibration lacks a substantial Minitest target, and Discourse/Rails index runs exceeded bounded review windows. Next item remains open for Minitest evidence.
+
+## 2026-07-20T15:21Z log
+2026-07-20 TestCallsPrivateMethod dogfood complete: RSpec targets Mastodon 13, OpenFoodNetwork 22, Forem 60; Minitest targets Rails Action Pack 9, Active Record 11, Active Support 0. Source spot checks found no false-positive category. Keep candidate-only; next assess remaining testing-cops rollout and likely drop TestTooManyAssertions.

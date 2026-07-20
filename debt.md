@@ -3,3 +3,4 @@
 2026-07-20 | PAID | item:unintegrated-cop-registry-fixture | added operation cops to rules command registry expectation
 2026-07-20 | PAID | item:unintegrated-rubocop-baseline | split check_tracker_queue ACTION_WORDS regex without changing action words
 2026-07-20 | testing | item:full-suite-timeout | task: retire stale goal backlog | claim: the full verification suite should terminate within its bounded CI window; two local runs exceeded 180s and 240s without identifying a failing test
+2026-07-20 | testing | item:rubydex-dogfood-runtime | task: dogfood TestCallsPrivateMethod | claim: project-index dogfood should complete within a bounded review window on large real repositories; Discourse and selected Rails components exceeded 10 and 15 minutes

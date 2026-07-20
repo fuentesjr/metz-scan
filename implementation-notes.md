@@ -874,3 +874,19 @@ slow group passed with 110 runs and 582 assertions; and verbose `bundle exec
 rake` passed with 685 runs, 3262 assertions, 0 failures, 0 errors, and 2 skips.
 The grouped checks exposed no hanging test, so no production or test workaround
 was added.
+
+## 2026-07-20: TestCallsPrivateMethod dogfooding
+
+Task: dogfood the Tier 2 `MetzProject/TestCallsPrivateMethod` analyzer before any
+rollout decision. Scope was judge-only; no analyzer thresholds, statuses,
+suppressions, or production code changed.
+
+Result: working-tree Rubydex runs on Mastodon, OpenFoodNetwork, and Forem found
+13, 22, and 60 high-signal RSpec findings. Rails Action Pack, Active Record, and
+Active Support found 9, 11, and 0 Minitest findings. Source spot checks matched
+private production declarations across both frameworks. Keep the analyzer
+candidate-only because Forem's 60-finding review queue is too large for default
+output.
+
+Artifacts: `docs/dogfooding/2026-07-20-test-calls-private-method.md` and the
+tracker log record the completed round and the candidate-only decision.

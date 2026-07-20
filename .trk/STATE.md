@@ -6,8 +6,7 @@ v0.5.3 is released on rubygems.org and GitHub Packages; all four exit criteria m
 ## Dispatched
 
 ## Next
-1. Dogfood MetzProject/TestCallsPrivateMethod on test-heavy RSpec + Minitest suites with Rubydex (docs/design/testing-cops.md §8); record FP rate and default-output eligibility.
-2. Assess remaining testing-cops rollout after that dogfood: TestTooManyAssertions is a weak candidate (likely drop per spec §10). Do not start a cop before its dogfooding evidence.
+1. Assess remaining testing-cops rollout after that dogfood: TestTooManyAssertions is a weak candidate (likely drop per spec §10). Do not start a cop before its dogfooding evidence.
 
 ## Backlog
 - issue-25-dogfood-ci — Parked: dogfood CI enforcement is trigger-gated; reopen only when collaboration expands beyond owner+Dependabot or CI-enforced dogfood becomes deliberate policy (2026-07-18T08:38Z)
