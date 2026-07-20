@@ -848,3 +848,29 @@ to the `metz-scan rules` registered-cop expectation; split
 Verification: red-focused rules test and focused RuboCop reproduced the two
 failures before the edit; both passed after the edit. Broader verification is
 recorded in the subagent report for this slice.
+
+## 2026-07-20: Retire stale goal backlog
+
+Task: remove the stale autonomous goal backlog and route bounded autonomous work
+through the tracker.
+
+Static authority proof: `.trk/STATE.md` is the current Goal/Next authority, and
+`trk status --json` is the session-start command. The removed backlog still
+routed agents toward released `0.5.1` work and `PROJECT_TRACKER.md`. Repository
+search found no runtime parser or executor references.
+
+Changes: deleted `.claude/guides/goal-backlog.md`; updated `AGENTS.md`, the
+operator playbook, and the workspace docs test to route Codex/executor sessions
+to `trk status --json` and `.trk/STATE.md`.
+
+Verification: updated the focused workspace docs test red-first, then green;
+searched for live `goal-backlog` references; ran tracker queue and Markdown
+audit checks. The Markdown audit still reports pre-existing broken Demeter doc
+links, left untouched by this slice.
+
+Continuation: the earlier full-suite timeout did not reproduce. `bundle exec
+rake test:fast` passed with 575 runs, 2680 assertions, and 2 skips; the verbose
+slow group passed with 110 runs and 582 assertions; and verbose `bundle exec
+rake` passed with 685 runs, 3262 assertions, 0 failures, 0 errors, and 2 skips.
+The grouped checks exposed no hanging test, so no production or test workaround
+was added.

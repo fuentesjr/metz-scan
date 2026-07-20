@@ -13,3 +13,12 @@ Outcome: Implemented CWD-independent gemspec file discovery with a non-repo-CWD 
 
 ## 2026-07-20T01:13Z resolve green-gate-regressions
 Outcome: Restored green clean-clone gates by registering the two operation cops in RulesTest and splitting the tracker queue regex without changing semantics; full suite, RuboCop, guards, and dogfood pass; no push.
+
+## 2026-07-20T01:34Z resolve docs-goal-backlog-retirement
+Outcome: Deleted the stale 0.5.1 autonomous goal backlog and rerouted AGENTS, the operator playbook, and its focused test to trk status and .trk/STATE.md; static authority review and focused verification passed. Pre-existing Demeter documentation links remain for their own slice; no push.
+
+## 2026-07-20T03:34Z log
+2026-07-20 handoff: goal-backlog retirement is staged but uncommitted. Deleted .claude/guides/goal-backlog.md; routed AGENTS.md and operator playbook to trk status/.trk/STATE.md; updated agent workspace docs test; appended implementation note. Focused docs test, RuboCop, dependency direction, sample freeze, tracker queue, and dogfood passed. Markdown audit still reports the pre-existing two broken rubocop-metz/docs/demeter-design.md links. bundle exec rake timed out twice at 180s and 240s; hard-stop: diagnose before a third run or commit. main is pushed at 987d887 and CI run 29710718431 passed; do not push this slice.
+
+## 2026-07-20T03:46Z resolve docs-goal-backlog-retirement
+Outcome: Deleted the stale goal backlog and rerouted executor guidance to trk status/.trk/STATE.md; focused docs test, full rake (685 runs, 3262 assertions, 0 failures, 0 errors, 2 skips), RuboCop, dogfood, dependency-direction, sample-freeze, read-only, and tracker-queue checks pass. Individual slow-test diagnostics explained the earlier timeout uncertainty; no push.

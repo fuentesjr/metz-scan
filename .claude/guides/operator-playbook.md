@@ -36,7 +36,7 @@ in a preserved clean clone.
 | Anything involving versions, tags, gem push | the `release` skill |
 | Evaluating scan output on real codebases | the `dogfood-round` skill |
 | Just solved something that took >1 attempt | the `extract-approach` skill |
-| Executing a backlog goal | `.claude/guides/goal-backlog.md`, top item first |
+| Executing a backlog task | `trk status --json`, then the top actionable `## Next` item in `.trk/STATE.md` |
 
 The skills encode ordering (e.g. commit BEFORE `bin/check_ci_parity`, publish
 `rubocop-metz` BEFORE `metz-scan`). Reordering steps because they "seem

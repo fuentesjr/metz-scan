@@ -24,8 +24,8 @@ Repo skills follow the open Agent Skills standard and are discoverable at
 `.agents/skills` (a symlink to the canonical `.claude/skills`): `land-slice`
 (verify + commit a slice), `release` (GitHub Packages runbook),
 `dogfood-round` (output-quality rubric), `extract-approach` (learning notes).
-Goal backlog for bounded autonomous runs: `.claude/guides/goal-backlog.md` —
-paste a goal's text as your prompt.
+For bounded autonomous runs, use `trk status --json` and the current `## Next`
+queue in `.trk/STATE.md`.
 
 ## OpenAI docs instruction
 
