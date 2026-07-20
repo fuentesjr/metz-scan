@@ -31,3 +31,15 @@ Outcome: Deleted the stale goal backlog and rerouted executor guidance to trk st
 
 ## 2026-07-20T15:33Z log
 2026-07-20 rollout assessment: drop TestTooManyAssertions. RSpec/MultipleExpectations and Minitest/MultipleAssertions already provide configurable assertion-count checks; no Metz duplicate adds novel signal. Next: assess the next product slice before implementation.
+
+## 2026-07-20T15:42Z log
+--help
+
+## 2026-07-20T16:15Z log
+2026-07-20 assessment: rejected test_depends_on_unowned_return as too semantic for current AST/index surfaces; rejected R3 trivial CRUD and R4 fat operation body as false-positive/overlap risks. Next bounded slice is a fixed-sample precision study for operation directory density.
+
+## 2026-07-20T16:15Z log
+Correction: a help probe earlier created an inert '--help' tracker log entry; it changed no goal, next item, dispatch, or backlog state.
+
+## 2026-07-20T16:18Z log
+2026-07-20 fixed-sample operation-role study: 48 service files across Forem, Foreman, Chatwoot, Discourse, OpenFoodNetwork, and Mastodon classified as 16 operations, 8 adapters/integrations, 9 queries/readers, 1 presenter/serializer, 11 utilities/value objects, and 3 infrastructure/framework files. app/services is a mixed bucket; path-based OperationDirectoryDensity is not defensible. Defer P2 implementation.

@@ -6,7 +6,7 @@ v0.5.3 is released on rubygems.org and GitHub Packages; all four exit criteria m
 ## Dispatched
 
 ## Next
-1. Assess the next testing-discipline or project-analyzer slice before implementation; require generic evidence and a bounded design.
+1. Define and measure a generic operation-role classifier on a new fixed sample before revisiting OperationDirectoryDensity; do not implement path-based density.
 
 ## Backlog
 - issue-25-dogfood-ci — Parked: dogfood CI enforcement is trigger-gated; reopen only when collaboration expands beyond owner+Dependabot or CI-enforced dogfood becomes deliberate policy (2026-07-18T08:38Z)

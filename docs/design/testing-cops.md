@@ -177,6 +177,16 @@ already provide configurable assertion-count checks in the two target
 frameworks. A Metz duplicate adds no novel signal and weakens the tool's tie to
 Sandi Metz's design principles. Recommend the community cops instead.
 
+**Assessment (2026-07-20): do not implement
+`test_depends_on_unowned_return` as the next slice.**
+The testing principle is valid, but a generic analyzer cannot prove the subject,
+collaborator ownership, or query-versus-command semantics from the current AST
+and index surfaces. Calibration scans found thousands of direct RSpec
+`expect(receiver.method)` shapes, most of which are legitimate public-behavior
+assertions. The candidate remains a research note until a narrower pattern has
+measured generic precision; no cop or analyzer implementation follows from this
+assessment.
+
 ### Tier 1 — AST-only (no index required)
 
 #### `Metz/TestReachesPrivate`

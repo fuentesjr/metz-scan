@@ -902,3 +902,39 @@ configurable assertion-count checks. A Metz duplicate would add no detection
 signal, and the rule has a weaker tie to Sandi Metz than the shipped testing
 cops. The design spec now records the decision and recommends the community
 cops.
+
+## 2026-07-20: Assess the next product slice
+
+Task: continue the tracker assessment after dropping `TestTooManyAssertions`.
+No production code, thresholds, statuses, suppressions, or calibration targets
+changed.
+
+Decision: reject `test_depends_on_unowned_return` as the next implementation.
+The current AST and index can identify direct assertion shapes, but cannot prove
+subject ownership or query-versus-command semantics. The calibration corpus
+contained 9,697 direct `expect(receiver.method)` candidates in Forem, 4,200 in
+Mastodon, and 5,804 in OpenFoodNetwork, so a broad rule would produce a large
+review queue before semantic filtering.
+
+Operation-analyzer comparison: reject R4 (fat operation body) for now because
+it overlaps `Metz/MethodsTooLong`; reject R3 (trivial CRUD operation) because
+one-write syntax does not distinguish a CRUD wrapper from an operation that
+also performs I/O or orchestration, as `OpenFoodNetwork::ImageImporter` shows.
+P2 (operation directory density) is a possible portfolio-pressure candidate,
+but `app/services` mixes operations with adapters and other roles. The sampled
+operation/model ratios ranged from 0.01 to 1.91 across seven calibration apps,
+which is descriptive evidence, not a defensible threshold.
+
+Next bounded evidence slice: manually classify a fixed sample of service and
+operation files across the calibration corpus to measure whether path-based
+operation density can separate operation pressure from legitimate service
+roles. Do not implement P2 until that precision evidence supports a narrow
+design.
+
+Fixed-sample result: the first eight lexicographically sorted service files in
+six calibration apps produced 48 classifications: 16 application operations,
+8 adapters or integrations, 9 queries or readers, 1 presenter or serializer,
+11 utilities or value objects, and 3 infrastructure/framework files.
+`app/services` is a mixed bucket, so path-based OperationDirectoryDensity is
+not a defensible proxy. P2 is deferred; no operation analyzer implementation
+is justified by this evidence.
