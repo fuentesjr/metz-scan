@@ -890,3 +890,15 @@ output.
 
 Artifacts: `docs/dogfooding/2026-07-20-test-calls-private-method.md` and the
 tracker log record the completed round and the candidate-only decision.
+
+## 2026-07-20: Drop TestTooManyAssertions candidate
+
+Task: assess the remaining testing-cops rollout after the private-method
+analyzer dogfood. No cop implementation was started.
+
+Decision: drop `TestTooManyAssertions`. The official
+`RSpec/MultipleExpectations` and `Minitest/MultipleAssertions` docs both define
+configurable assertion-count checks. A Metz duplicate would add no detection
+signal, and the rule has a weaker tie to Sandi Metz than the shipped testing
+cops. The design spec now records the decision and recommends the community
+cops.

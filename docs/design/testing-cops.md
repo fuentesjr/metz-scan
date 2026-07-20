@@ -158,7 +158,7 @@ position against them rather than silently re-implement:
 | Proposed | Existing coverage |
 | --- | --- |
 | `TestStubsSubject` | `RSpec/SubjectStub` (RSpec only) — including a battle-tested subject-identification heuristic |
-| `TestTooManyAssertions` | `RSpec/MultipleExpectations` **and** `Minitest/MultipleAssertions` — both ecosystems already ship this |
+| `TestTooManyAssertions` | Dropped — `RSpec/MultipleExpectations` and `Minitest/MultipleAssertions` already cover this |
 | `TestAssertsOnInternals` | `RSpec/InstanceVariable` (partial, RSpec only, different rule shape) |
 | `TestReachesPrivate` / `test_calls_private_method` | none in either plugin |
 
@@ -167,13 +167,20 @@ alongside the design cops; (2) the literal-`send` + **index-confirmed privacy**
 pair, which neither plugin attempts; (3) Metz metadata (`why_it_matters` etc.)
 driving `explain` and enriched output. Where an existing cop has solved a
 heuristic we need (notably `RSpec/SubjectStub`'s subject detection, see §10),
-reuse its approach — do not re-derive it. Where a rule is already well-served
-in both ecosystems (`TestTooManyAssertions`), the bar for a Metz-branded
-duplicate is correspondingly higher.
+reuse its approach — do not re-derive it.
+
+**Decision (2026-07-20): drop `TestTooManyAssertions`.**
+[RSpec/MultipleExpectations](https://docs.rubocop.org/rubocop-rspec/latest/cops_rspec.html#rspecmultipleexpectations)
+and
+[Minitest/MultipleAssertions](https://docs.rubocop.org/rubocop-minitest/latest/cops_minitest.html#minitestmultipleassertions)
+already provide configurable assertion-count checks in the two target
+frameworks. A Metz duplicate adds no novel signal and weakens the tool's tie to
+Sandi Metz's design principles. Recommend the community cops instead.
 
 ### Tier 1 — AST-only (no index required)
 
 #### `Metz/TestReachesPrivate`
+
 - **Principle:** test the interface, not the implementation.
 - **Detects:** `send` / `__send__` / `public_send` with a **literal** symbol or
   string first argument, inside a test case — the canonical "reach past the
@@ -189,6 +196,7 @@ duplicate is correspondingly higher.
 - **`on_send`** → include `OnSendCsendBridge`.
 
 #### `Metz/TestAssertsOnInternals`
+
 - **Principle:** don't bind tests to implementation state.
 - **Detects:** `instance_variable_get` / `instance_variable_set` on any
   receiver inside a test case, and Rails controller-test `assigns(:ivar)`
@@ -201,6 +209,7 @@ duplicate is correspondingly higher.
   legitimate legacy-state assertions → `AllowedMethods`.
 
 #### `Metz/TestStubsSubject`
+
 - **Principle:** don't mock the object you are testing; minimize doubles.
 - **Detects (high signal, RSpec-only):** stubbing/mocking the subject under
   test via `expect(subject).to receive`, `allow(subject).to receive`,
@@ -212,18 +221,11 @@ duplicate is correspondingly higher.
   no equivalent subject token exists, and inferring from arbitrary locals or
   `described_class` instances floods false positives.
 
-#### `Metz/TestTooManyAssertions`  *(candidate — weakest Sandi tie, weakest novelty)*
-- **Principle:** sparse, focused tests ("test one thing"). Closer to
-  Meszaros/xUnit than to Sandi specifically; included as a candidate, not a
-  headline cop.
-- **Detects:** assertion/expectation count per test case exceeds a generous
-  `Max`.
-- **FP risk:** legitimately multi-fact tests. Generous default, opt-in.
-- **Prior art:** already shipped in *both* ecosystems
-  (`RSpec/MultipleExpectations`, `Minitest/MultipleAssertions`), which weakens
-  the case further — a Metz version must justify itself beyond "framework
-  neutrality" (users can enable both existing cops today). Default stance:
-  probably drop; see §10.
+#### `Metz/TestTooManyAssertions` — dropped
+
+This candidate would count assertion or expectation calls per test case. The
+community RSpec and Minitest plugins already provide that signal, so Metz will
+not implement a duplicate. See the decision above.
 
 ### Tier 2 — Rubydex-index-backed (cross-file visibility): project analyzers, not cops
 
@@ -250,6 +252,7 @@ test assuming the index is installed — use the
 `test/support/missing_rubydex.rb` pattern for both paths.
 
 #### `test_calls_private_method` (analyzer)
+
 - **Principle:** don't test private methods (the confirmed form of
   `TestReachesPrivate`).
 - **Detects:** a test invokes a method that the index resolves as `private` /
@@ -259,6 +262,7 @@ test assuming the index is installed — use the
   site (no double-reporting; see Tier 1).
 
 #### `test_depends_on_unowned_return` (analyzer)  *(speculative — needs research)*
+
 - **Principle:** don't test outgoing query messages (don't assert on the return
   value of a message to a collaborator you don't own).
 - **Status:** even with the index, distinguishing "owned" from "unowned"
@@ -323,8 +327,7 @@ Reuse the existing calibration/dogfooding machinery:
 3. Dogfood it; fix FP patterns; decide default-output eligibility.
 4. Repeat for `TestAssertsOnInternals`, `TestStubsSubject`, then the
    index-backed `test_calls_private_method` analyzer (wrapper-side slice,
-   including its drift-check entry). Candidates (`TestTooManyAssertions`,
-   `test_depends_on_unowned_return`) only if evidence warrants.
+   including its drift-check entry). Do not implement dropped candidates.
 5. Each cop is its own reviewable slice with its own dogfooding round.
 
 ## 10. Open questions
@@ -337,8 +340,3 @@ Reuse the existing calibration/dogfooding machinery:
   the RSpec/Rails DSL surface to cover in the first `TestFrameworks` cut.
 - **Default severity** — `refactor` (matching current cops) vs. a softer
   advisory level for the noisier candidates.
-- Whether `TestTooManyAssertions` belongs in a Metz-branded tool at all, given
-  its weaker tie to Sandi specifically **and** that both
-  `RSpec/MultipleExpectations` and `Minitest/MultipleAssertions` already exist
-  (see §5 Prior art). Current lean: drop it and recommend the community cops
-  instead.

@@ -28,3 +28,6 @@ Outcome: Deleted the stale goal backlog and rerouted executor guidance to trk st
 
 ## 2026-07-20T15:21Z log
 2026-07-20 TestCallsPrivateMethod dogfood complete: RSpec targets Mastodon 13, OpenFoodNetwork 22, Forem 60; Minitest targets Rails Action Pack 9, Active Record 11, Active Support 0. Source spot checks found no false-positive category. Keep candidate-only; next assess remaining testing-cops rollout and likely drop TestTooManyAssertions.
+
+## 2026-07-20T15:33Z log
+2026-07-20 rollout assessment: drop TestTooManyAssertions. RSpec/MultipleExpectations and Minitest/MultipleAssertions already provide configurable assertion-count checks; no Metz duplicate adds novel signal. Next: assess the next product slice before implementation.
