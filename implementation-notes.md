@@ -938,3 +938,38 @@ six calibration apps produced 48 classifications: 16 application operations,
 `app/services` is a mixed bucket, so path-based OperationDirectoryDensity is
 not a defensible proxy. P2 is deferred; no operation analyzer implementation
 is justified by this evidence.
+
+## 2026-07-20: Measure an operation-role classifier
+
+Task: complete the tracker’s bounded follow-up without implementing
+`OperationDirectoryDensity`.
+
+Definition: classify an `operation-shaped` file from generic source facts:
+one public instance entry, a side-effect observation, and at least two distinct
+receiver roots. Query-only, protocol/adapter, and multi-entry shapes take
+precedence. This is a role-shape grouping, not a claim that L1–L6 from the
+application-operations standard are satisfied.
+
+Sample: the existing calibration checkouts, with deterministic quantile picks
+at 0%, 25%, 50%, 75%, and 99.9% from each service directory. Nine targets,
+42 files, and the target revisions are recorded in
+`docs/project-analyzer-calibration.md`. No calibration target or fixture was
+added.
+
+Manual role labels: 10 operations, 3 queries/readers, 8 adapters/integrations,
+12 utilities/policies/value objects, 2 framework/extension protocols, 1
+presenter, 2 multi-entry services, 1 form/domain object, 1 transformer, and 2
+factory/setup objects.
+
+Measurement: 9 true positives, 1 false positive, 1 false negative, and 31 true
+negatives. Precision and recall were both 90.0%; accuracy was 95.2%. The false
+positive was OpenFoodNetwork’s `AddressGeocoder`, an adapter that looks like an
+operation from local side-effect facts. The false negative was Discourse’s
+`UpcomingChanges::Track`, whose `Service::Base` DSL hides the public entry from
+local visibility analysis.
+
+Decision: the classifier is useful as a future calibration aid but not strong
+enough to justify path-based density. The adapter-versus-operation ambiguity
+and DSL blind spot require a larger fixed sample plus generic reverse-call and
+DSL facts. No production code, thresholds, statuses, suppressions, or default
+output changed.

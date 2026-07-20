@@ -43,3 +43,6 @@ Correction: a help probe earlier created an inert '--help' tracker log entry; it
 
 ## 2026-07-20T16:18Z log
 2026-07-20 fixed-sample operation-role study: 48 service files across Forem, Foreman, Chatwoot, Discourse, OpenFoodNetwork, and Mastodon classified as 16 operations, 8 adapters/integrations, 9 queries/readers, 1 presenter/serializer, 11 utilities/value objects, and 3 infrastructure/framework files. app/services is a mixed bucket; path-based OperationDirectoryDensity is not defensible. Defer P2 implementation.
+
+## 2026-07-20T21:59Z log
+2026-07-20: Measured a generic operation-role shape classifier on a fixed 42-file sample across nine existing calibration targets. One public entry + side-effect + two receiver roots produced 9 TP, 1 FP, 1 FN, 31 TN (90.0% precision/recall; 95.2% accuracy). AddressGeocoder was the adapter false positive; Discourse UpcomingChanges::Track was the Service::Base DSL false negative. Keep OperationDirectoryDensity deferred; no production code, thresholds, statuses, suppressions, or new targets changed.
