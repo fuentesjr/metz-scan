@@ -10,7 +10,7 @@ module MetzScan
     CODEX_SKILLS_LINK = File.join(REPO_ROOT, ".agents/skills")
     SKILL_NAMES = %w[dogfood-round extract-approach land-slice release].freeze
     OPERATOR_PLAYBOOK = ".claude/guides/operator-playbook.md"
-    GOAL_BACKLOG = ".claude/guides/goal-backlog.md"
+    OBSOLETE_GOAL_BACKLOG = ".claude/guides/goal-backlog.md"
     HARNESS_SLASH_INVOCATION = %r{`/(?:dogfood-round|extract-approach|land-slice|release)`}
 
     def test_codex_skills_symlink_resolves_to_canonical_skills
@@ -38,9 +38,10 @@ module MetzScan
     end
 
     def test_codex_entrypoint_routes_to_shared_brief
-      ["CLAUDE.md", ".trk/", ".agents/skills", OPERATOR_PLAYBOOK, GOAL_BACKLOG].each do |ref|
+      ["CLAUDE.md", ".trk/", ".trk/STATE.md", ".agents/skills", OPERATOR_PLAYBOOK].each do |ref|
         assert_includes codex_entrypoint, ref
       end
+      refute_includes codex_entrypoint, OBSOLETE_GOAL_BACKLOG
     end
 
     private

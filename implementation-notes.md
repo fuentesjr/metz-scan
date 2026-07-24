@@ -848,3 +848,128 @@ to the `metz-scan rules` registered-cop expectation; split
 Verification: red-focused rules test and focused RuboCop reproduced the two
 failures before the edit; both passed after the edit. Broader verification is
 recorded in the subagent report for this slice.
+
+## 2026-07-20: Retire stale goal backlog
+
+Task: remove the stale autonomous goal backlog and route bounded autonomous work
+through the tracker.
+
+Static authority proof: `.trk/STATE.md` is the current Goal/Next authority, and
+`trk status --json` is the session-start command. The removed backlog still
+routed agents toward released `0.5.1` work and `PROJECT_TRACKER.md`. Repository
+search found no runtime parser or executor references.
+
+Changes: deleted `.claude/guides/goal-backlog.md`; updated `AGENTS.md`, the
+operator playbook, and the workspace docs test to route Codex/executor sessions
+to `trk status --json` and `.trk/STATE.md`.
+
+Verification: updated the focused workspace docs test red-first, then green;
+searched for live `goal-backlog` references; ran tracker queue and Markdown
+audit checks. The Markdown audit still reports pre-existing broken Demeter doc
+links, left untouched by this slice.
+
+Continuation: the earlier full-suite timeout did not reproduce. `bundle exec
+rake test:fast` passed with 575 runs, 2680 assertions, and 2 skips; the verbose
+slow group passed with 110 runs and 582 assertions; and verbose `bundle exec
+rake` passed with 685 runs, 3262 assertions, 0 failures, 0 errors, and 2 skips.
+The grouped checks exposed no hanging test, so no production or test workaround
+was added.
+
+## 2026-07-20: TestCallsPrivateMethod dogfooding
+
+Task: dogfood the Tier 2 `MetzProject/TestCallsPrivateMethod` analyzer before any
+rollout decision. Scope was judge-only; no analyzer thresholds, statuses,
+suppressions, or production code changed.
+
+Result: working-tree Rubydex runs on Mastodon, OpenFoodNetwork, and Forem found
+13, 22, and 60 high-signal RSpec findings. Rails Action Pack, Active Record, and
+Active Support found 9, 11, and 0 Minitest findings. Source spot checks matched
+private production declarations across both frameworks. Keep the analyzer
+candidate-only because Forem's 60-finding review queue is too large for default
+output.
+
+Artifacts: `docs/dogfooding/2026-07-20-test-calls-private-method.md` and the
+tracker log record the completed round and the candidate-only decision.
+
+## 2026-07-20: Drop TestTooManyAssertions candidate
+
+Task: assess the remaining testing-cops rollout after the private-method
+analyzer dogfood. No cop implementation was started.
+
+Decision: drop `TestTooManyAssertions`. The official
+`RSpec/MultipleExpectations` and `Minitest/MultipleAssertions` docs both define
+configurable assertion-count checks. A Metz duplicate would add no detection
+signal, and the rule has a weaker tie to Sandi Metz than the shipped testing
+cops. The design spec now records the decision and recommends the community
+cops.
+
+## 2026-07-20: Assess the next product slice
+
+Task: continue the tracker assessment after dropping `TestTooManyAssertions`.
+No production code, thresholds, statuses, suppressions, or calibration targets
+changed.
+
+Decision: reject `test_depends_on_unowned_return` as the next implementation.
+The current AST and index can identify direct assertion shapes, but cannot prove
+subject ownership or query-versus-command semantics. The calibration corpus
+contained 9,697 direct `expect(receiver.method)` candidates in Forem, 4,200 in
+Mastodon, and 5,804 in OpenFoodNetwork, so a broad rule would produce a large
+review queue before semantic filtering.
+
+Operation-analyzer comparison: reject R4 (fat operation body) for now because
+it overlaps `Metz/MethodsTooLong`; reject R3 (trivial CRUD operation) because
+one-write syntax does not distinguish a CRUD wrapper from an operation that
+also performs I/O or orchestration, as `OpenFoodNetwork::ImageImporter` shows.
+P2 (operation directory density) is a possible portfolio-pressure candidate,
+but `app/services` mixes operations with adapters and other roles. The sampled
+operation/model ratios ranged from 0.01 to 1.91 across seven calibration apps,
+which is descriptive evidence, not a defensible threshold.
+
+Next bounded evidence slice: manually classify a fixed sample of service and
+operation files across the calibration corpus to measure whether path-based
+operation density can separate operation pressure from legitimate service
+roles. Do not implement P2 until that precision evidence supports a narrow
+design.
+
+Fixed-sample result: the first eight lexicographically sorted service files in
+six calibration apps produced 48 classifications: 16 application operations,
+8 adapters or integrations, 9 queries or readers, 1 presenter or serializer,
+11 utilities or value objects, and 3 infrastructure/framework files.
+`app/services` is a mixed bucket, so path-based OperationDirectoryDensity is
+not a defensible proxy. P2 is deferred; no operation analyzer implementation
+is justified by this evidence.
+
+## 2026-07-20: Measure an operation-role classifier
+
+Task: complete the tracker’s bounded follow-up without implementing
+`OperationDirectoryDensity`.
+
+Definition: classify an `operation-shaped` file from generic source facts:
+one public instance entry, a side-effect observation, and at least two distinct
+receiver roots. Query-only, protocol/adapter, and multi-entry shapes take
+precedence. This is a role-shape grouping, not a claim that L1–L6 from the
+application-operations standard are satisfied.
+
+Sample: the existing calibration checkouts, with deterministic quantile picks
+at 0%, 25%, 50%, 75%, and 99.9% from each service directory. Nine targets,
+42 files, and the target revisions are recorded in
+`docs/project-analyzer-calibration.md`. No calibration target or fixture was
+added.
+
+Manual role labels: 10 operations, 3 queries/readers, 8 adapters/integrations,
+12 utilities/policies/value objects, 2 framework/extension protocols, 1
+presenter, 2 multi-entry services, 1 form/domain object, 1 transformer, and 2
+factory/setup objects.
+
+Measurement: 9 true positives, 1 false positive, 1 false negative, and 31 true
+negatives. Precision and recall were both 90.0%; accuracy was 95.2%. The false
+positive was OpenFoodNetwork’s `AddressGeocoder`, an adapter that looks like an
+operation from local side-effect facts. The false negative was Discourse’s
+`UpcomingChanges::Track`, whose `Service::Base` DSL hides the public entry from
+local visibility analysis.
+
+Decision: the classifier is useful as a future calibration aid but not strong
+enough to justify path-based density. The adapter-versus-operation ambiguity
+and DSL blind spot require a larger fixed sample plus generic reverse-call and
+DSL facts. No production code, thresholds, statuses, suppressions, or default
+output changed.

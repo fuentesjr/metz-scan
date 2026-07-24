@@ -2138,3 +2138,108 @@ Policy decision:
   `ActivityPub::Activity`.
 - Revisit filtering only if a future manifest-backed run shows a recurring
   non-actionable root family across multiple targets.
+
+## Operation-role classifier checkpoint
+
+**Result (2026-07-20): keep `OperationDirectoryDensity` deferred.** A generic
+shape classifier separates most operation-shaped files in a fixed sample, but
+it cannot reliably distinguish an adapter from an operation or see entries
+created by a service DSL. Those are the exact distinctions that path-based
+density would need.
+
+### Proposed classifier
+
+The classifier assigns a role shape. It does not claim that a class satisfies
+all six legitimacy criteria in `docs/application-operations.md`.
+
+| Fact | Generic observation |
+| --- | --- |
+| Single entry | The class exposes exactly one public instance method after excluding `initialize`. |
+| Side effect | The entry uses a transaction, persistence mutation, queue or delivery call, or event publication. |
+| Collaboration | The entry reaches at least two distinct receiver roots. |
+| Query-only | The class returns read-side data without a side-effect observation. |
+| Protocol or adapter | The class exposes an inherited or delegated interface, an external-client boundary, or an extension hook. |
+
+Classify a file as **operation-shaped** only when the first three facts hold and
+query-only and protocol-or-adapter evidence do not take precedence. Classify
+query-only, protocol-or-adapter, and multi-entry shapes before falling back to
+utility, presenter, form, transformer, or value-object roles. A reverse-call
+index may supply boundary-caller evidence, but local source facts cannot prove
+that the operation is reused across application edges or that it owns no domain
+rules.
+
+The measurement used only the local facts above. It did not implement the
+classifier or add an analyzer. The proposed `operation-shaped` label is a
+candidate grouping for future calibration, not a default-output policy.
+
+### Fixed sample
+
+The sample uses existing calibration checkouts and does not add a target. For
+each target with a service directory, it selects the lexicographically sorted
+files at positions 0%, 25%, 50%, 75%, and 99.9%. It keeps all files for the two-
+file `maybe` directory. The sample contains 42 files across nine targets.
+
+| Target | Revision | Files |
+| --- | --- | ---: |
+| `chatwoot` | `e86222034e39` | 5 |
+| `discourse` | `2115f1cac5f9` | 5 |
+| `forem` | `d9a393f1d502` | 5 |
+| `foreman` | `2eccf03ea835` | 5 |
+| `manageiq` | `67749d3468ce` | 5 |
+| `mastodon` | `34bbb4748223` | 5 |
+| `maybe` | `77b546983275` | 2 |
+| `openfoodnetwork` | `be9d51ab32a6` | 5 |
+| `spree` | `7752652ef4ea` | 5 |
+
+The sample has this manually adjudicated role mix:
+
+| Role shape | Files |
+| --- | ---: |
+| Operation | 10 |
+| Query or reader | 3 |
+| Adapter or integration | 8 |
+| Utility, policy, or value object | 12 |
+| Framework or extension protocol | 2 |
+| Presenter | 1 |
+| Multi-entry service | 2 |
+| Form or domain object | 1 |
+| Transformer or serializer | 1 |
+| Factory or setup object | 2 |
+
+### Measurement
+
+The classifier marked 10 files as operation-shaped. Manual review accepted nine
+of those as operations and rejected one as an adapter. It missed one operation.
+
+| Measure | Count |
+| --- | ---: |
+| True positive | 9 |
+| False positive | 1 |
+| False negative | 1 |
+| True negative | 31 |
+| Precision | 90.0% |
+| Recall | 90.0% |
+| Accuracy | 95.2% |
+
+The false positive is `openfoodnetwork/app/services/address_geocoder.rb`.
+Its external lookup plus address update matches the shape, but the class is an
+adapter boundary rather than an application operation. The false negative is
+`discourse/app/services/upcoming_changes/track.rb`. Its `Service::Base` DSL
+generates the public entry outside the sampled class body, so local visibility
+facts cannot see it.
+
+`spree/spree/core/app/services/spree/seeds/roles.rb` is a useful near miss. It
+has one visible `call` method and a write, but only one collaborator root. The
+collaboration condition excludes this setup operation from the candidate set.
+
+### Decision
+
+The result supports a future **role-shape** classifier as a calibration aid,
+not a `OperationDirectoryDensity` implementation. A 90% precision and recall
+sample still leaves the central adapter-versus-operation error, and the DSL
+case shows that local syntax misses legitimate application entries. More work
+would require a larger fixed sample, reverse-call facts, and generic treatment
+of service DSLs.
+
+Do not implement path-based density, change thresholds, add suppressions, or
+promote an analyzer from this checkpoint.
