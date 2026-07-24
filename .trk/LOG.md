@@ -46,3 +46,9 @@ Correction: a help probe earlier created an inert '--help' tracker log entry; it
 
 ## 2026-07-20T21:59Z log
 2026-07-20: Measured a generic operation-role shape classifier on a fixed 42-file sample across nine existing calibration targets. One public entry + side-effect + two receiver roots produced 9 TP, 1 FP, 1 FN, 31 TN (90.0% precision/recall; 95.2% accuracy). AddressGeocoder was the adapter false positive; Discourse UpcomingChanges::Track was the Service::Base DSL false negative. Keep OperationDirectoryDensity deferred; no production code, thresholds, statuses, suppressions, or new targets changed.
+
+## 2026-07-24T13:45Z log
+Professionalism sprint: public-surface polish (badges, CONTRIBUTING/SECURITY, issue templates, docs/maintainers relocation, GitHub topics; closed #25/#27/#28 earlier). Uncommitted work landing now.
+
+## 2026-07-24T13:45Z log
+Dropped backlog slugs for closed issues #25/#27/#28 (reopen bars live in issue comments + LOG parking notes).

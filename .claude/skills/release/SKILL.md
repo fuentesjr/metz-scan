@@ -22,7 +22,7 @@ covers GitHub Packages.
 - Patch (`0.5.0` → `0.5.1`): pure defect fixes, no default-behavior change.
 - Minor: any default-behavior change or new user-visible surface. Precedent:
   #31 changed default scan output, forcing `0.5.0` instead of `0.4.1`
-  (`implementation-notes.md` 2026-07-05).
+  (`docs/maintainers/implementation-notes.md` 2026-07-05).
 - Do not use `1.0.0` for a first public push (tracker rule).
 
 ## Phase 2 — prep commit (one commit, shape of `3ec8f29`)
@@ -78,7 +78,7 @@ label for #34 in `0.5.1`). Then:
   authorization).
 - `rm -f metz-scan-*.gem rubocop-metz/rubocop-metz-*.gem`.
 - Record completion: `trk log` for the release plus a short
-  `implementation-notes.md` entry (shape of "2026-07-06: v0.5.1 release
+  `docs/maintainers/implementation-notes.md` entry (shape of "2026-07-06: v0.5.1 release
   completion"). This record commit is real project work, not tracker churn.
 
 ## Known failure modes

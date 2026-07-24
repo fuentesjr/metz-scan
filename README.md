@@ -1,5 +1,9 @@
 # metz-scan
 
+[![CI](https://github.com/fuentesjr/metz-scan/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/fuentesjr/metz-scan/actions/workflows/ci.yml)
+[![Gem Version](https://badge.fury.io/rb/metz-scan.svg)](https://rubygems.org/gems/metz-scan)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 `metz-scan` is a Ruby CLI for finding Sandi-Metz-style design pressure in Ruby and Rails code.
 
 ## Why this exists
@@ -354,16 +358,11 @@ If your shell resolves to macOS system Ruby, switch to a Ruby `>= 3.3` before ru
 
 ## Contributing / Development
 
-Before starting autonomous repo work, run `trk status --json` (see [AGENTS.md](AGENTS.md))
-for the current local direction, next queue, parked work, and the reason this
-repo tracks agent coordination locally instead of only in GitHub Projects or
-issues.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for bug reports, feature proposals, and
+security reporting. Issues are welcome:
+<https://github.com/fuentesjr/metz-scan/issues>
 
-For durable code-level design exceptions, write a lightweight Design Decision
-Record before finalizing the exception. See
-[docs/design-decision-records.md](docs/design-decision-records.md).
-
-Clone the repo and install dependencies:
+Clone the repo (Ruby `>= 3.3`, Bundler `4.0.8`):
 
 ```bash
 git clone https://github.com/fuentesjr/metz-scan.git
@@ -372,12 +371,17 @@ gem install bundler -v 4.0.8
 bundle install
 ```
 
-Run the local checks:
+Run the test suite and linter:
+
+```bash
+bundle exec rake
+bundle exec rubocop
+```
+
+Additional maintainer checks before a push:
 
 ```bash
 bin/check_dogfood
-bundle exec rake
-bundle exec rubocop
 bin/check_dependency_direction
 bin/check_sample_app_frozen
 bin/check_ci_parity
@@ -421,7 +425,22 @@ gem build metz-scan.gemspec
 cd rubocop-metz && gem build rubocop-metz.gemspec && cd ..
 ```
 
-File bugs and feature work in GitHub issues: <https://github.com/fuentesjr/metz-scan/issues>
+### Maintainer / agent notes
+
+This subsection is for maintainers and coding agents, not required for a
+one-off external contribution.
+
+Before autonomous repo work, run `trk status --json` (see [AGENTS.md](AGENTS.md)
+and [CLAUDE.md](CLAUDE.md)) for the current local direction, next queue, parked
+work, and why this repo tracks agent coordination in `.trk/` rather than only
+in GitHub Projects or issues.
+
+For durable code-level design exceptions, write a lightweight Design Decision
+Record before finalizing the exception. See
+[docs/design-decision-records.md](docs/design-decision-records.md).
+
+Working papers (session notes, design history, debt list) live under
+[docs/maintainers/](docs/maintainers/).
 
 ## License
 

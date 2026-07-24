@@ -140,7 +140,8 @@ always running the full suite — remote CI stays the full-suite backstop; set
 ## Escalation — stop and ask the user before
 
 - Publishing gems, creating tags, cutting GitHub Releases (explicit release
-  authorization is a standing rule; see `implementation-notes.md`).
+  authorization is a standing rule; see
+  `docs/maintainers/implementation-notes.md`).
 - Filing or closing GitHub issues (issue creation was permission-blocked by
   policy on 2026-07-05; drafts need user approval).
 - Changing analyzer thresholds, statuses, default-output policy, or promoting

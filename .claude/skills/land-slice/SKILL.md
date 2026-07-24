@@ -88,7 +88,7 @@ Update `.trk/` through the `trk` CLI:
 
 Never commit a tracker-only change unless it is a deliberate direction change.
 If the slice needs more durable detail than STATE should carry, add a short
-section to `implementation-notes.md` (task, scope boundaries, decisions,
+section to `docs/maintainers/implementation-notes.md` (task, scope boundaries, decisions,
 verification) — match the existing entries' shape and brevity.
 
 ## Red-green discipline

@@ -7,7 +7,8 @@ Audience: humans designing Rails apps; authors of Metz cops and project analyzer
 repository as well. The two gems do **not** depend on each other for this document (no
 shared package, no runtime link). Copies may drift; that is accepted for now.
 
-Related in *this* repo: [README.md](../README.md), [metz_scan_design.md](../metz_scan_design.md),
+Related in *this* repo: [README.md](../README.md),
+[metz_scan_design.md](maintainers/metz_scan_design.md),
 cops under `rubocop-metz/`, project analyzer `MetzProject/ServiceSoup`.
 
 ## Why this exists
