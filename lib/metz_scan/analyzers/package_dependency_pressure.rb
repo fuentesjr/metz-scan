@@ -50,7 +50,7 @@ module MetzScan
 
       def declarations
         index.declarations.select { |declaration| declaration_candidate?(declaration) }
-                          .sort_by { |declaration| declaration.name.to_s }
+             .sort_by { |declaration| declaration.name.to_s }
       end
 
       def declaration_candidate?(declaration)

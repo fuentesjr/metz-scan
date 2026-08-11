@@ -49,13 +49,18 @@ STEP_TEMPLATE = [
 ].freeze
 
 # Scrub the invoking checkout's bundler state so the clone resolves its own.
+# Also drop CI_PARITY_FULL: mode is already resolved for this run, and the
+# clean clone must match CI (which never sets the local full-suite override).
+# Leaving it set would make nested `bin/check_ci_parity` meta-tests inside
+# the suite always see mode=full and fail the docs-only classification check.
 CLEAN_BUNDLER_ENV = {
   "BUNDLE_IGNORE_CONFIG" => "1",
   "BUNDLE_GEMFILE" => nil,
   "BUNDLE_BIN_PATH" => nil,
   "BUNDLER_VERSION" => nil,
   "RUBYOPT" => nil,
-  "RUBYLIB" => nil
+  "RUBYLIB" => nil,
+  "CI_PARITY_FULL" => nil
 }.freeze
 
 Mode = Struct.new(:name, :changed_files, :reason, keyword_init: true)

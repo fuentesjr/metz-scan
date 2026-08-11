@@ -55,3 +55,12 @@ Dropped backlog slugs for closed issues #25/#27/#28 (reopen bars live in issue c
 
 ## 2026-08-11T01:17Z log
 Reviewed RuboCop 1.89 (metaredux post + gem source): native opt-in rubydex project index via Cop::Base#project_index, experimental. Verified rubocop-metz compatible with 1.89 in sandbox and rubydex 0.2.8 API-compatible. Queued upgrade + README positioning slices; parked cop-migration watch item as rubocop-native-project-index-migration.
+
+## 2026-08-11T01:29Z resolve rubocop-1-89
+Outcome: RuboCop 1.89.0 landed: Gemfile.lock + 4 Layout/MultilineMethodCallIndentation fixes; rake/rubocop/dogfood/guards green; no suppressions
+
+## 2026-08-11T01:29Z log
+Upgrade RuboCop 1.88.2 → 1.89.0 (lockfile only pin already ~> 1.80). Fixed 4 Layout/MultilineMethodCallIndentation offenses in inheritance_descendants, namespace_leak_pressure, package_dependency_pressure, method_declarations — no suppressions. Verified: bundle exec rake (685 runs), bundle exec rubocop clean, bin/check_dogfood PASS, guards green. Transitive: json 2.20→2.21.2, parser 3.3.11.1→3.3.12.0.
+
+## 2026-08-11T02:44Z log
+CI_PARITY_FULL env leak: nested check_ci_parity meta-test failed under full override because child inherited CI_PARITY_FULL. Fixed by unsetting it in CLEAN_BUNDLER_ENV (clone mirrors CI) and test ci_env (fixture isolation).

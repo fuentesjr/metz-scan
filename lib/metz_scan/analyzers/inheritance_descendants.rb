@@ -50,7 +50,7 @@ module MetzScan
 
       def auto_discovered_base_candidates
         index.declarations.select { |declaration| auto_discovered_base_candidate?(declaration) }
-                          .map(&:name).compact.uniq.sort
+             .map(&:name).compact.uniq.sort
       end
 
       def auto_discovered_base_candidate?(declaration)

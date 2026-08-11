@@ -179,8 +179,10 @@ module MetzScan
     end
 
     def ci_env(paths)
+      # Unset CI_PARITY_FULL so nested parity exercises mode classification even
+      # when the outer operator set the full-suite override (e.g. release gate).
       { "PATH" => "#{paths.fake_bin}:#{ENV.fetch('PATH')}", "CI_PARITY_TMPDIR" => paths.tmp_base,
-        "FAKE_BUNDLE_LOG" => paths.bundle_log }
+        "FAKE_BUNDLE_LOG" => paths.bundle_log, "CI_PARITY_FULL" => nil }
     end
 
     def preserved_clone_path(stderr)

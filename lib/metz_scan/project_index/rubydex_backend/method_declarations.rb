@@ -19,7 +19,7 @@ module MetzScan
 
         def method_declaration_entries
           graph.declarations.select { |declaration| method_declaration?(declaration) }
-                            .filter_map { |declaration| method_declaration_for(declaration) }
+               .filter_map { |declaration| method_declaration_for(declaration) }
         end
 
         def method_declaration?(declaration)
