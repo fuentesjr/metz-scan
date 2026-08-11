@@ -52,3 +52,6 @@ Professionalism sprint: public-surface polish (badges, CONTRIBUTING/SECURITY, is
 
 ## 2026-07-24T13:45Z log
 Dropped backlog slugs for closed issues #25/#27/#28 (reopen bars live in issue comments + LOG parking notes).
+
+## 2026-08-11T01:17Z log
+Reviewed RuboCop 1.89 (metaredux post + gem source): native opt-in rubydex project index via Cop::Base#project_index, experimental. Verified rubocop-metz compatible with 1.89 in sandbox and rubydex 0.2.8 API-compatible. Queued upgrade + README positioning slices; parked cop-migration watch item as rubocop-native-project-index-migration.
