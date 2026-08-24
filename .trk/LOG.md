@@ -64,3 +64,6 @@ Upgrade RuboCop 1.88.2 → 1.89.0 (lockfile only pin already ~> 1.80). Fixed 4 L
 
 ## 2026-08-11T02:44Z log
 CI_PARITY_FULL env leak: nested check_ci_parity meta-test failed under full override because child inherited CI_PARITY_FULL. Fixed by unsetting it in CLEAN_BUNDLER_ENV (clone mirrors CI) and test ci_env (fixture isolation).
+
+## 2026-08-24T23:33Z log
+Fix #41: Dependabot bundler updater failed gemspec eval because the packaged-files entrypoint raise fired in Dependabot's sparse temp tree (version.rb only). Removed the raise from both gemspecs; kept __dir__+base: packaging; added gemspec_dependabot_eval_test sparse-tree regression.

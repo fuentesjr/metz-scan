@@ -99,12 +99,16 @@ module MetzScan
       @rubocop_metz_spec ||= load_spec(repo_path("rubocop-metz/rubocop-metz.gemspec"))
     end
 
+    # Load via an absolute path. Gem::Specification.load caches by the path
+    # string it is given; basename loads can return a poisoned cache entry after
+    # sparse-tree evals in other tests (#41).
     def load_spec(path)
-      Dir.chdir(File.dirname(path)) { Gem::Specification.load(File.basename(path)) }
+      absolute = File.expand_path(path)
+      Dir.chdir(File.dirname(absolute)) { Gem::Specification.load(absolute) }
     end
 
     def load_spec_from_cwd(path, cwd)
-      Dir.chdir(cwd) { Gem::Specification.load(path) }
+      Dir.chdir(cwd) { Gem::Specification.load(File.expand_path(path)) }
     end
 
     def repo_path(path)

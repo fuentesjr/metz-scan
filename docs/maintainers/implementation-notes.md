@@ -160,14 +160,19 @@ Lessons (durable):
 - Release verification for a wrapper+plugin gem pair MUST run a real `scan` from
   a clean install of each registry, not just `--version` — a broken transitive
   dependency only shows up when the plugin is actually required.
-- Always build `rubocop-metz` from its own directory; the gemspec now enforces
-  this. Content-verify each built gem (`gem spec <gem> files`) BEFORE `gem push`.
-- Don't put side effects (`Dir.chdir`) or `__dir__`-dependent absolute-path
-  logic in a gemspec — it's eval'd in several contexts (gem build, Bundler,
-  Dependabot) with different CWD/`__FILE__` semantics. Prefer a loud guard.
+- Always build `rubocop-metz` from its own directory. Content-verify each built
+  gem (`gem spec <gem> files`) BEFORE `gem push`.
+- Don't put side effects (`Dir.chdir`) in a gemspec — it's eval'd in several
+  contexts (gem build, Bundler, Dependabot) with different CWD/`__FILE__`
+  semantics. Prefer `__dir__` + `Dir.glob(..., base:)` for packaging.
+- A loud "entrypoint missing from packaged files" raise (#41) breaks Dependabot:
+  its bundler updater evaluates gemspecs in a **sparse** temp tree that only
+  materializes `require_relative` targets (`version.rb`), not the full package.
+  Keep packaging CWD-independent; assert package completeness in tests against
+  the full checkout (`release_metadata_test` + `gemspec_dependabot_eval_test`).
 - `check_ci_parity` and the CI **test** workflow do not exercise the Dependabot
   gemspec-eval path; a green test suite is not proof the gemspec loads cleanly
-  everywhere.
+  everywhere unless the sparse-tree regression is present.
 
 Delegation: version-bump/first-hardening prep was sonnet-delegated; the
 orchestrator caught the Dependabot regression, replaced the fragile fix with the

@@ -24,18 +24,16 @@ Gem::Specification.new do |spec|
   spec.metadata["github_repo"] = "ssh://github.com/fuentesjr/metz-scan"
   spec.metadata["github_package_uri"] = "https://github.com/users/fuentesjr/packages/rubygems/package/metz-scan"
 
+  # Resolve files from the gemspec directory so evaluation is CWD-independent.
+  # Do not raise when the entrypoint is absent: Dependabot evaluates gemspecs in
+  # a sparse tree that only materializes require_relative targets (#41). Package
+  # completeness is checked by release_metadata_test against the full checkout.
   gem_root = __dir__
   spec.files = Dir.glob("lib/**/*", File::FNM_DOTMATCH, base: gem_root)
                   .reject { |f| File.directory?(File.join(gem_root, f)) } +
                Dir.glob("bin/metz-scan", base: gem_root)
                   .select { |f| File.file?(File.join(gem_root, f)) } +
                ["LICENSE", "metz-scan.gemspec"].select { |f| File.exist?(File.join(gem_root, f)) }
-  # Keep metadata evaluation independent of the caller CWD while still failing
-  # loudly if the computed package files are missing this gem's own lib.
-  unless spec.files.include?("lib/metz_scan.rb")
-    raise "metz-scan.gemspec: lib/metz_scan.rb missing from packaged files; " \
-          "build from the repo root (gem build metz-scan.gemspec)."
-  end
   spec.bindir        = "bin"
   spec.executables   = ["metz-scan"]
   spec.require_paths = ["lib"]

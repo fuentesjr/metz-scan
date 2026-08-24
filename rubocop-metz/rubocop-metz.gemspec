@@ -24,16 +24,14 @@ Gem::Specification.new do |spec|
   spec.metadata["github_package_uri"] = "https://github.com/users/fuentesjr/packages/rubygems/package/rubocop-metz"
   spec.metadata["default_lint_roller_plugin"] = "RuboCop::Metz::Plugin"
 
+  # Resolve files from the gemspec directory so evaluation is CWD-independent.
+  # Do not raise when the entrypoint is absent: Dependabot evaluates gemspecs in
+  # a sparse tree that only materializes require_relative targets (#41). Package
+  # completeness is checked by release_metadata_test against the full checkout.
   gem_root = __dir__
   spec.files = Dir.glob("{lib,config}/**/*", File::FNM_DOTMATCH, base: gem_root)
                   .reject { |f| File.directory?(File.join(gem_root, f)) } +
                ["LICENSE", "rubocop-metz.gemspec"].select { |f| File.exist?(File.join(gem_root, f)) }
-  # Keep metadata evaluation independent of the caller CWD while still failing
-  # loudly if the computed package files are missing this gem's own cops.
-  unless spec.files.include?("lib/rubocop-metz.rb")
-    raise "rubocop-metz.gemspec: lib/rubocop-metz.rb missing from packaged files; " \
-          "build from rubocop-metz/ (cd rubocop-metz && gem build rubocop-metz.gemspec)."
-  end
   spec.require_paths = ["lib"]
 
   spec.add_dependency "lint_roller", "~> 1.1"
