@@ -2,7 +2,7 @@ PATH
   remote: .
   specs:
     metz-scan (0.5.3)
-      rubocop-metz (= 0.5.3)
+      rubocop-metz (~> 0.5.3)
 
 PATH
   remote: rubocop-metz
