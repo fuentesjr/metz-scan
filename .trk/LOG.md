@@ -67,3 +67,9 @@ CI_PARITY_FULL env leak: nested check_ci_parity meta-test failed under full over
 
 ## 2026-08-24T23:33Z log
 Fix #41: Dependabot bundler updater failed gemspec eval because the packaged-files entrypoint raise fired in Dependabot's sparse temp tree (version.rb only). Removed the raise from both gemspecs; kept __dir__+base: packaging; added gemspec_dependabot_eval_test sparse-tree regression.
+
+## 2026-09-03T23:40Z log
+Upgrade RuboCop 1.89.0 → 1.90.0 (lockfile only; gemspec pin already ~> 1.80). Confirmed against installed 1.90: only 3 Style/DirectiveScope offenses (disable/enable pairs around one statement). Autocorrected to disable-next in type_inference.rb, views_deep_navigation.rb, and type_inference_test.rb; kept the UselessMethodDefinition justification. No Style/DirectiveScope config disable, no cop behavior change. bundle update rubocop left rubocop-metz (~> 0.5.3) intact (Dependabot #43 rewrote it to =). rubydex 0.4.0 pin unchanged. Not a redesign.
+
+## 2026-09-03T23:40Z resolve rubocop-1-90
+Outcome: RuboCop 1.90.0 landed: Gemfile.lock + 3 Style/DirectiveScope disable-next conversions; no suppressions. Supersedes Dependabot #43.

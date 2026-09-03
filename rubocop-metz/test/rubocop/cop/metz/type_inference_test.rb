@@ -33,9 +33,8 @@ class RuboCopCopMetzTypeInferenceTest < Minitest::Test
     literal_node = Struct.new(:type)
     assert_equal :string, inference.literal_type(literal_node.new(:str))
     assert_equal :array, inference.literal_type(literal_node.new(:array))
-    # rubocop:disable Lint/BooleanSymbol
+    # rubocop:disable-next Lint/BooleanSymbol
     assert_equal :boolean, inference.literal_type(literal_node.new(:true))
-    # rubocop:enable Lint/BooleanSymbol
   end
 
   def test_literal_type_returns_nil_for_unknown_node_type

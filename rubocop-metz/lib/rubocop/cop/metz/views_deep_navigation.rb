@@ -33,11 +33,10 @@ module RuboCop
 
         # RuboCop's dispatcher needs the subclass to own the callback, while the
         # inherited implementation remains the shared chain analyzer.
-        # rubocop:disable Lint/UselessMethodDefinition -- required for subclass callback registration.
+        # rubocop:disable-next Lint/UselessMethodDefinition -- required for subclass callback registration.
         def on_send(node)
           super
         end
-        # rubocop:enable Lint/UselessMethodDefinition
 
         def relevant_file?(file)
           return super if file.nil? || file.empty? || file == "(string)"
