@@ -9,6 +9,31 @@ Use `.trk/` (`trk status --json`) for the current goal, next steps, backlog, and
 log. Add new notes here only when a slice needs more durable detail than STATE
 should carry.
 
+## 2026-09-03: Rubydex 0.4.0 Graph constructor adapter
+
+Dependabot PR #42 bumps the optional `rubydex` group `~> 0.2.8` → `~> 0.4.0`.
+Default CI never installs that group, so its green is not a rubydex proof.
+
+0.4.0's breaking change (Shopify/rubydex#965) moves `workspace_path` onto a
+first-class `Rubydex::Config` object. `Rubydex::Graph.new` now takes no
+arguments (`ArgumentError: wrong number of arguments (given 1, expected 0)`).
+The replacement is `Rubydex::Graph.configure_for_workspace(path)`, which loads
+`Config` from `workspace_path/rubydex.toml` (or defaults) and calls
+`graph.load_config`. `RubydexBackend.build` is the only production call site.
+
+Verified still present on 0.4.0: `Graph#index_all`, `#index_workspace`,
+`#resolve`, `#declarations`, `#documents`, `#diagnostics`, `#search`, `[]`,
+`Namespace#descendants`, `Declaration#references` / `#definitions` / `#owner` /
+`#name`, and `Rubydex::Method#visibility`. `NullBackend` degradation is
+unchanged.
+
+The 2026-07-09 `module_function` AST seam remains. 0.3.0 added "Resolve
+module_function visibility"; 0.4.0 also fixes visiting `module_function` bodies
+once. The seam is still the conservative overlay — not removed in this slice.
+
+Default CI still omits `BUNDLE_WITH=rubydex`, so NullBackend paths stay covered
+there. Local proof of this bump requires the optional group on.
+
 ## 2026-07-09: Tier-2 TestCallsPrivateMethod analyzer
 
 Task: implement wrapper-side `MetzProject/TestCallsPrivateMethod`, the
