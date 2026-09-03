@@ -28,7 +28,8 @@ module MetzScan
         require "rubydex"
 
         files = ruby_files_for(paths)
-        graph = Rubydex::Graph.new(workspace_path: workspace_path_for(paths))
+        # 0.4.0: Config owns workspace_path; Graph.new no longer takes it (Shopify/rubydex#965).
+        graph = Rubydex::Graph.configure_for_workspace(workspace_path_for(paths))
         index_errors = index_graph(graph, files, workspace)
 
         new(graph: graph, indexed_files: files, index_errors: index_errors)
