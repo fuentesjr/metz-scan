@@ -19,7 +19,7 @@ module RuboCop
 
           PASS_THROUGH = %i[tap then yield_self itself dup clone freeze].to_set.freeze
 
-          # rubocop:disable Lint/BooleanSymbol
+          # rubocop:disable-next Lint/BooleanSymbol
           LITERAL_MAP = {
             str: :string, dstr: :string, xstr: :string,
             sym: :symbol, dsym: :symbol,
@@ -28,7 +28,6 @@ module RuboCop
             true: :boolean, false: :boolean, nil: :nil_value,
             regexp: :regexp, irange: :range, erange: :range
           }.freeze
-          # rubocop:enable Lint/BooleanSymbol
 
           METHOD_RETURN_TYPES = {
             string: {
