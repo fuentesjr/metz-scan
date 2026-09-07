@@ -12,5 +12,5 @@ group :development, :test do
 end
 
 group :rubydex, optional: true do
-  gem "rubydex", "~> 0.4.0"
+  gem "rubydex", "~> 0.4.1"
 end
