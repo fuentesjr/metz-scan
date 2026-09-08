@@ -73,3 +73,6 @@ Upgrade RuboCop 1.89.0 → 1.90.0 (lockfile only; gemspec pin already ~> 1.80). 
 
 ## 2026-09-03T23:40Z resolve rubocop-1-90
 Outcome: RuboCop 1.90.0 landed: Gemfile.lock + 3 Style/DirectiveScope disable-next conversions; no suppressions. Supersedes Dependabot #43.
+
+## 2026-09-08T21:20Z log
+Bump optional rubydex 0.4.0 → 0.4.1. Confirmed against installed 0.4.1: Graph.configure_for_workspace adapter from #44 still works; no adapter rewrite. bundle update rubydex left rubocop-metz (~> 0.5.3) intact (Dependabot #46 rewrote it to =). CI still omits BUNDLE_WITH=rubydex.

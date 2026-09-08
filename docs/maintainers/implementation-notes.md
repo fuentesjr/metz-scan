@@ -9,6 +9,26 @@ Use `.trk/` (`trk status --json`) for the current goal, next steps, backlog, and
 log. Add new notes here only when a slice needs more durable detail than STATE
 should carry.
 
+## 2026-09-08: Rubydex 0.4.0 → 0.4.1 (no adapter change)
+
+Dependabot PR #46 bumps the optional `rubydex` group `~> 0.4.0` → `~> 0.4.1`.
+Default CI never installs that group, so its green is not a rubydex proof.
+
+Verified against installed 0.4.1 (not release-note inference):
+`Rubydex::Graph.configure_for_workspace` still takes `workspace_path`,
+`Graph.new` still takes no arguments (`ArgumentError: wrong number of arguments
+(given 1, expected 0)`), and `#index_all` / `#index_workspace` / `#resolve` /
+`#declarations` / `#documents` / `#diagnostics` / `#search` are still present.
+The #44 adapter in `RubydexBackend.build` still works. No constructor rewrite.
+`NullBackend` degradation is unchanged.
+
+`bundle update rubydex` left `rubocop-metz (~> 0.5.3)` intact. Dependabot #46
+rewrote that pin to `=`, which dirties a clean `bundle install` and fails
+`bin/check_read_only_commands`.
+
+Default CI still omits `BUNDLE_WITH=rubydex`, so NullBackend paths stay covered
+there. Local proof of this bump requires the optional group on.
+
 ## 2026-09-03: Rubydex 0.4.0 Graph constructor adapter
 
 Dependabot PR #42 bumps the optional `rubydex` group `~> 0.2.8` → `~> 0.4.0`.
