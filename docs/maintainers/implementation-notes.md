@@ -9,6 +9,14 @@ Use `.trk/` (`trk status --json`) for the current goal, next steps, backlog, and
 log. Add new notes here only when a slice needs more durable detail than STATE
 should carry.
 
+## 2026-09-15: Rubydex 0.4.0 → 0.4.1 (no adapter change)
+
+Optional `:rubydex` group only; `Rubydex::Graph.configure_for_workspace` verified
+unchanged from 0.4.0 — no rewrite of `RubydexBackend` or other adapter code.
+Default CI still omits `BUNDLE_WITH=rubydex`. Leave `rubocop-metz` at `~>` in the
+Gemfile (path gem); do not adopt Dependabot #46's rewrite to `=`. Supersedes
+Dependabot #46.
+
 ## 2026-09-03: Rubydex 0.4.0 Graph constructor adapter
 
 Dependabot PR #42 bumps the optional `rubydex` group `~> 0.2.8` → `~> 0.4.0`.
