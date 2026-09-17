@@ -76,3 +76,9 @@ Outcome: RuboCop 1.90.0 landed: Gemfile.lock + 3 Style/DirectiveScope disable-ne
 
 ## 2026-09-15T22:38Z log
 Bump optional rubydex group ~> 0.4.0 → ~> 0.4.1 (Gemfile + Gemfile.lock DEPENDENCIES pin; lock already at 0.4.1 with x86_64-linux platform). No adapter change — configure_for_workspace unchanged. Supersedes Dependabot #46 (which rewrote rubocop-metz to =). CI still omits BUNDLE_WITH=rubydex.
+
+## 2026-09-16T23:59Z log
+Upgrade RuboCop 1.90.0 → 1.91.0 (lockfile only; gemspec pin already ~> 1.80). bundle update rubocop --conservative: only rubocop moved; json 2.21.2 and parallel 2.1.0 left in place (plain bundle update rubocop also pulls json 3.0.2 / parallel 2.2.0, but 1.91 still accepts json >= 2.3 and parallel >= 1.10). rubocop-metz (~> 0.5.3) intact (Dependabot #48 rewrote it to =). Installed 1.91.0 reported 0 offenses; no style edits, no suppressions, no cop behavior change.
+
+## 2026-09-16T23:59Z resolve rubocop-1-91
+Outcome: RuboCop 1.91.0 landed lockfile-only; rubocop-metz ~> pin preserved. Supersedes Dependabot #48.
