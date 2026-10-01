@@ -1,138 +1,226 @@
 ---
 name: metz-scan
-description: "Use when Codex needs to run, explain, or integrate metz-scan on Ruby or Rails projects: installing or invoking the CLI, choosing scan and project-analyzer commands, selecting text/JSON/SARIF/GitHub annotation output, interpreting design-pressure findings, using safe auto-fix, or handling optional Rubydex-backed project analyzers."
+description: "Run metz-scan as the end-of-task design check on Ruby or Rails projects. Use after changing Ruby code and before handing work back: scan, fix the Sandi-Metz-style design findings you introduced, rerun to confirm, and report what remains. Also covers the CLI commands, output formats, project analyzers, and CI use."
 ---
 
 # Metz Scan
 
-Use this skill to apply `metz-scan` as a consumer tool on Ruby and Rails
-repositories. Keep maintainer-only workflows, release checks, calibration
-artifacts, and project-tracker work out of this skill.
+`metz-scan` reports Sandi-Metz-style design pressure in Ruby code: long
+methods and classes, long parameter lists, controllers with many
+collaborators, Demeter chains, god service classes, and cross-file patterns
+such as repeated branching. A finding means "look here", not "defect". The
+procedure below is for a coding agent finishing a task; the reference
+sections serve anyone running the CLI. When the project's `Gemfile` includes
+metz-scan, prefix every command with `bundle exec`; otherwise run `metz-scan`
+directly. When neither works, say so in the handoff and leave the `Gemfile`
+unchanged. Run from the project root so report paths match `git` paths.
 
-## Quick Workflow
+## End-of-task check
 
-1. Confirm the target is a Ruby project. Prefer `bundle exec metz-scan ...`
-   when the project has a `Gemfile`.
-2. Start read-only. Run `rules`, inspect project analyzer availability, then
-   scan the narrowest useful paths.
-3. Treat exit status `1` from `scan` as "findings were reported", not a
-   crash. Treat higher exits or command errors as invocation/environment
-   failures.
-4. Summarize findings as design pressure for human review. Do not present them
-   as proof of a defect.
-5. Use auto-fix only after a dry run and only when the user asked for edits.
+Run this once, after your code changes are complete and before you hand work
+back. Do not run it after every edit: the rules judge finished shape, and
+mid-edit findings push you into premature micro-refactors.
 
-## Core Commands
+1. Scan the project and save the report as the before report. The commands
+   use a fixed directory because your shell may not keep variables between
+   commands. Record `summary.offense_count` for the handoff.
 
-List rules:
+   ```bash
+   out="${TMPDIR:-/tmp}/metz-scan-check"
+   mkdir -p "$out"
+   bundle exec metz-scan scan . --format json > "$out/scan.json"
+   ```
 
-```bash
-bundle exec metz-scan rules
-bundle exec metz-scan rules --json
+   Pass directories, not a list of changed files: directories honor the
+   project's `Exclude` scope, a file passed by name is scanned even when the
+   project excludes it, and cross-file analyzers only see the paths you pass.
+   When the root is slow, pass the top-level directories that hold your
+   changes, for example `app lib`.
+
+2. Keep the findings in files you changed. `<base>` is the commit your task
+   started from: `HEAD` while your work is uncommitted, otherwise the merge
+   base of your branch and the default branch.
+
+   ```bash
+   git diff --name-only <base>
+   git ls-files --others --exclude-standard
+   ```
+
+   `files[].path` in the report is relative to the directory you ran from;
+   when that is not the repository root, add `--relative` to `git diff`.
+
+3. Decide which of those findings are yours. Every finding in a new file is
+   yours. In an existing file, a finding is yours when either holds:
+
+   - Its `location.start_line` through `location.last_line` overlaps lines
+     you added or changed. `git diff -U0 <base> -- <file>` prints each change
+     as `@@ -a,b +c,d @@`; the new lines are `c` through `c + d - 1`. An
+     omitted `,d` means one line; `d` of `0` means lines were only deleted.
+   - Its `message` names a method, class, parameter, or collaborator you
+     added or changed. `Metz/GodServiceClass` and
+     `Metz/OperationsTooManyPublicMethods` anchor on the class name, and
+     `Metz/ControllersTooManyDirectCollaborators` anchors on the first
+     collaborator in the method, so their location may miss your edit; their
+     messages list the methods or collaborators.
+
+   Every other finding in a changed file is pre-existing: leave it and list
+   it in the handoff. When you cannot tell, scan the base commit and compare
+   on path suffix, `cop_name`, and `message`; a finding absent from the base
+   report is yours.
+
+   ```bash
+   base_dir="$(mktemp -d)/base"
+   git worktree add --detach "$base_dir" <base>
+   bundle exec metz-scan scan "$base_dir" --format json > "$out/base.json"
+   git worktree remove --force "$base_dir"
+   ```
+
+4. Fix each finding that is yours. Read its `why_it_matters` and
+   `suggested_next_moves` first. For a `Metz/*` cop, `metz-scan explain <cop>`
+   prints the same guidance with the cop's configuration; `explain` does not
+   accept `MetzProject/*` analyzers. Aim each fix at the design problem
+   the finding describes, not at the threshold: move behavior onto the object
+   that owns the data, introduce a named query, presenter, or value object,
+   replace a parameter list with one object when the parameters travel
+   together, split a long method around named responsibilities, and delegate
+   instead of walking collaborators. When every fix you can see makes the
+   code harder to read, stop and apply the suppression rules below instead of
+   forcing a change.
+
+5. Rerun the scan with the same paths and write the after report to a new
+   file so the before report survives.
+
+   ```bash
+   bundle exec metz-scan scan . --format json > "$out/after.json"
+   ```
+
+   A finding is fixed when it no longer appears in the after report and you
+   added no suppression for it. Repeat steps 4 and 5 until none of your
+   findings remain, then run the project's test suite; a design fix that
+   breaks a test is not done.
+
+6. Hand off with a short metz-scan section: the scan command and
+   `summary.offense_count` before and after your fixes; each finding you
+   fixed (cop, `path:line`, design move); each pre-existing finding you left
+   in a changed file; each suppression you added, with its reason; and any
+   finding of yours you could not fix, and why.
+
+## Changes that are not fixes
+
+These satisfy the scanner without improving the design. Do not make them,
+even when they make a finding disappear:
+
+- Moving code to a path the scan does not cover: an excluded directory, a
+  non-Ruby file such as an ERB template, or a directory you add to `Exclude`.
+- Renaming a `*Service` class, or moving an operation out of `app/services`
+  or `app/operations`, so a name-scoped or path-scoped cop stops matching.
+- Splitting a method into helpers named after position (`step_1`,
+  `build_part_2`, `do_build`, `build_impl`) or at an arbitrary line.
+- Moving methods into a mixin, concern, or helper module that only the
+  original class includes, leaving the same collaborators and public surface.
+- Making public methods private to lower a public-method count while callers
+  still reach them with `send`.
+- Hiding a Demeter chain behind local variables, `tap`, `then`, or `send`
+  while the caller still walks the same object graph.
+- Raising `Max` or adding `AllowedMethods` in `.rubocop.yml`. The default
+  scan ignores threshold settings, so this changes nothing.
+
+## Suppressions
+
+Suppress a finding only after a genuine fix attempt, when the finding is
+wrong for this code or every fix makes the code harder to read. Write the
+reason at the suppression site and cover the smallest span that works:
+inline on the line the finding reports, or around a block closed with
+`# rubocop:enable Metz/<Cop>`.
+
+```ruby
+def build(row) # rubocop:disable Metz/MethodsTooLong -- mirrors vendor schema
 ```
 
-List project analyzers and rollout status:
+In `.rubocop.yml`, use a per-cop `Exclude` with the reason above the entry:
+
+```yaml
+Metz/ClassesTooLong:
+  Exclude:
+    # Generated from the vendor schema; regenerated on every schema change.
+    - "app/models/vendor_schema.rb"
+```
+
+Do not disable a cop for a whole file, add application code to
+`AllCops: Exclude`, or suppress without a reason. Report every suppression in
+the handoff. When the same reason recurs, ask the human for project-level
+configuration instead of repeating it.
+
+## Reading a report
+
+- Stdout holds the report; stderr holds `metz-scan: note:` lines and errors.
+- Exit status `0` means no findings. Treat exit status `1` as findings only
+  when stdout holds a report: a usage error (missing path, unknown option,
+  invalid format) also exits `1` but prints `metz-scan scan: ...` on stderr
+  and no report. Exit status `2` means RuboCop failed; treat it as an
+  environment problem, not a finding.
+- JSON: `files[].path` and `files[].offenses[]` with `cop_name`, `message`,
+  `location` (`start_line`, `last_line`, `column`), `why_it_matters`,
+  `fix_safety`, and `suggested_next_moves`; `summary` with `offense_count`,
+  `offenses_by_cop`, `clean_file_count`, and `files_with_offenses`.
+- Text output ends with a `Summary` scorecard: Metz compliance is the share
+  of inspected files with no `Metz/*` offense, and `MetzProject/*` findings
+  do not make a file unclean.
+- `Lint/Syntax` offenses mean RuboCop could not parse the file at the Ruby
+  version it detected; set `AllCops: TargetRubyVersion` or fix the syntax.
+
+## Scope and configuration
+
+- The default scan runs only `Metz/*` cops with stock thresholds and reads
+  file scope only from the project's `.rubocop.yml`: `AllCops: Exclude` and
+  per-cop `Include` and `Exclude`. It runs without the project's RuboCop
+  extension gems; when `.rubocop.yml` inherits from a gem that is not
+  installed, it prints a `metz-scan: note:` line and skips that gem's scope.
+- `--all-cops` runs the full RuboCop suite under the complete project
+  configuration and needs the project's extension gems in the bundle.
+- `Metz/TestReachesPrivate`, `Metz/TestAssertsOnInternals`, and
+  `Metz/TestStubsSubject` are opt-in: `rules` lists them, but they appear in
+  a scan only when the project enables them and you use an opt-in path such
+  as `--all-cops`.
+
+## Project analyzers
+
+The default scan includes the validated default-output analyzers
+`MetzProject/RepeatedBranching` and `MetzProject/ServiceSoup`; they look
+across the files you pass, and their findings go through the end-of-task
+check like any cop finding. `--project-analyzers` adds the remaining
+validated, candidate, and manual-review analyzers. Treat those added
+findings as advisory: keep them out of the fix loop and use them when the
+task asks for a broader design review.
 
 ```bash
 bundle exec metz-scan project-analyzers
-bundle exec metz-scan project-analyzers --json
-```
-
-Scan likely application paths:
-
-```bash
-bundle exec metz-scan scan app lib --format text
-bundle exec metz-scan scan . --format json
-bundle exec metz-scan scan . --format sarif
-bundle exec metz-scan scan . --format gh-annotations
-```
-
-Text `scan` and `report` outputs end with a `Summary` scorecard: Metz compliance
-is the share of inspected files with no `Metz/*` rule offenses, and advisory
-`MetzProject/*` findings do not make a file unclean. The scorecard also rolls up
-total offenses, per-cop counts, and the files with the most offenses. JSON
-summary data includes `clean_file_count`, `files_with_offenses`, and
-`offenses_by_cop`.
-
-Include the full opt-in project-analyzer set:
-
-```bash
-bundle exec metz-scan scan . --project-analyzers --format text
 bundle exec metz-scan scan . --project-analyzers --format json
 ```
 
-Re-render a saved JSON report:
+`MetzProject/DeepInheritanceTree`, `MetzProject/PackageDependencyPressure`,
+`MetzProject/NamespaceLeakPressure`, `MetzProject/SubclassOverridePressure`,
+and `MetzProject/TestCallsPrivateMethod` need the optional Rubydex bundle
+group; without it they report nothing. Do not install Rubydex unless the
+human asks for that coverage.
+
+## Other commands and formats
 
 ```bash
-bundle exec metz-scan scan . --format json > tmp/metz-scan.json
-bundle exec metz-scan report tmp/metz-scan.json --format text
-```
-
-Preview safe corrections before applying them:
-
-```bash
+bundle exec metz-scan rules --json
+bundle exec metz-scan explain Metz/MethodsTooLong
+bundle exec metz-scan scan app lib --format text
+bundle exec metz-scan report "$out/scan.json" --format text
+bundle exec metz-scan scan . --format sarif
+bundle exec metz-scan scan . --format gh-annotations
 bundle exec metz-scan scan . --auto-fix --dry-run
-bundle exec metz-scan scan . --auto-fix
 ```
 
-## Choosing Project Analyzer Mode
+Use `--format text` for humans, `--format json` for filtering, `--format
+sarif` for code-scanning upload, and `--format gh-annotations` in GitHub
+Actions so findings appear inline on pull requests, where exit status `1`
+fails the step unless the workflow sets `continue-on-error`.
 
-Default `scan` output reports regular Metz findings plus project-analyzer
-findings that satisfy the default-output policy.
-
-Use `--project-analyzers` when the user wants broader design review,
-calibration-style evidence, candidate analyzer output, lower-confidence
-findings, or project-wide relationship signals. Explain that candidate and
-opt-in findings are advisory and require context.
-
-Optional Rubydex-backed indexing is opportunistic. Normal scans do not require
-Rubydex. With `--project-analyzers`, index-backed analyzers may report no
-findings when the optional bundle group is unavailable. Do not install optional
-Rubydex dependencies unless the user explicitly wants fuller project-index
-coverage.
-
-Default scan mode reads only file-scope settings from the target `.rubocop.yml`.
-It can run even when the target declares external RuboCop extensions through
-`plugins:`, `require:`, or `inherit_gem:` that are not installed in the current
-bundle. `--all-cops` delegates to RuboCop's complete project configuration, so
-missing target extension gems are environment/setup errors: install the gem in
-the bundle used to run `metz-scan`, or use the default Metz-only scan.
-
-`Metz/TestReachesPrivate`, `Metz/TestAssertsOnInternals`, and
-`Metz/TestStubsSubject` are opt-in testing-discipline cops. They are listed by
-`rules` and `explain`, but default `scan` output does not include them unless
-the project explicitly enables them and runs through an opt-in path such as
-`--all-cops`.
-
-If an `inherit_gem:` target isn't installed, its file-scope `Exclude` can't be
-read, so default mode prints a one-line `metz-scan: note:` warning to stderr
-naming the gem instead of silently skipping that exclude.
-
-## Output Selection
-
-- Use `--format text` for human review in chat or terminal.
-- Use `--format json` for machine processing or follow-up filtering.
-- Use `--format sarif` for code-scanning upload workflows.
-- Use `--format gh-annotations` in GitHub Actions so findings appear inline on
-  pull requests.
-
-Example GitHub Actions step:
-
-```yaml
-- name: Run metz-scan annotations
-  run: bundle exec metz-scan scan . --format gh-annotations
-```
-
-## Reporting Findings
-
-When summarizing results:
-
-- Group by rule or project analyzer.
-- Include severity/confidence/triage context when present.
-- Quote the command and target paths used.
-- Distinguish default-output findings from `--project-analyzers` opt-in
-  findings.
-- Recommend concrete review next steps rather than automatic refactors.
-
-Avoid app-specific suppressions or threshold changes unless the user asks to
-change this tool's own analyzer implementation.
+No `Metz/*` cop autocorrects, so `--auto-fix` only matters with `--all-cops`:
+it applies RuboCop's safe corrections, `--unsafe` adds the unsafe ones, and
+`--dry-run` prints the diff without writing. Preview before applying.
