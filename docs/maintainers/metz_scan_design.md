@@ -370,6 +370,10 @@ Metz/ControllersTooManyDirectCollaborators:
 
 This keeps threshold tuning in the familiar RuboCop config path rather than inventing a parallel config too early.[web:28][web:38]
 
+> Current behavior: the default `metz-scan scan` ignores every cop setting above except file scope (`Include` and `Exclude`); only `--all-cops` and plain `rubocop` read the rest.
+> Some keys in this example predate the shipped cops; `rubocop-metz/config/default.yml` lists the current ones.
+> See [docs/ddrs/2026-07-08-rubocop-scope-only-config.md](../ddrs/2026-07-08-rubocop-scope-only-config.md).
+
 ## Example user experience
 
 ### RuboCop direct

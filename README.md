@@ -63,9 +63,10 @@ scorecard — forward with a wider, more current toolset:
 - **Correct on modern Ruby.** Default scans analyze at your project's
   `TargetRubyVersion`, so Ruby 3.x syntax (endless methods, anonymous argument
   forwarding, pattern matching) is parsed, not flagged as a syntax error.
-- **Project-level design pressure, not just per-file rules.** Eight opt-in
-  project analyzers surface service soup, repeated branching, deep inheritance,
-  and other cross-file smells.
+- **Project-level design pressure, not just per-file rules.** Nine project
+  analyzers surface service soup, repeated branching, deep inheritance, and
+  other cross-file smells; two report in the default scan, and
+  `--project-analyzers` adds the rest.
 - **CI-native.** Text, JSON, SARIF (GitHub code scanning), and GitHub
   annotations, with an exit code of `1` reserved for "findings reported."
 - **RuboCop-native.** Built as a RuboCop plugin that honors your project's
@@ -300,7 +301,23 @@ see [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md).
 
 ## Configuration
 
-Configure `rubocop-metz` in `.rubocop.yml`.
+The default scan reads two kinds of settings from `.rubocop.yml`: file scope
+(`AllCops: Exclude` and per-cop `Include` and `Exclude`) and
+`AllCops: TargetRubyVersion`. Every other cop setting stays at its stock value,
+so a project cannot weaken a Metz cop and get a rosier report.
+
+To take code out of a cop's scope in every scan mode, add a per-cop `Exclude`:
+
+```yaml
+Metz/MethodsTooLong:
+  Exclude:
+    - "test/**/*"
+```
+
+Other cop settings, such as `Max`, `Enabled`, `Severity`, and
+`AllowedReceivers`, take effect only under `metz-scan scan --all-cops` or plain
+`bundle exec rubocop` with the plugin loaded. The default scan ignores them
+without a warning. To set them for `--all-cops` and plain `rubocop`:
 
 ```yaml
 plugins:
@@ -315,7 +332,8 @@ Metz/DemeterTrainWreck:
 
 | Setting | Where | Notes |
 | --- | --- | --- |
-| Enabled cops | `.rubocop.yml` | Standard RuboCop plugin configuration. |
+| File scope | `.rubocop.yml` (`AllCops: Exclude`, per-cop `Include` and `Exclude`) | Honored by every scan mode. |
+| Other cop settings (`Max`, `Enabled`, `Severity`, allow-lists) | `.rubocop.yml` | Honored only by `--all-cops` and plain `rubocop`; the default scan uses stock values. |
 | Output format | `metz-scan scan --format text\|json\|sarif\|gh-annotations` | `text` is for humans; `json`/`sarif` are for tools; `gh-annotations` emits GitHub Actions workflow annotations. |
 | Auto-fix safety | `--auto-fix`, `--unsafe`, `--dry-run` | Safe fixes use RuboCop `-a`; unsafe fixes use RuboCop `-A`. |
 | Environment variables | N/A | `metz-scan` does not require environment variables. |

@@ -122,8 +122,9 @@ even when they make a finding disappear:
   still reach them with `send`.
 - Hiding a Demeter chain behind local variables, `tap`, `then`, or `send`
   while the caller still walks the same object graph.
-- Raising `Max` or adding `AllowedMethods` in `.rubocop.yml`. The default
-  scan ignores threshold settings, so this changes nothing.
+- Raising `Max`, adding `AllowedMethods`, or setting `Enabled: false` in
+  `.rubocop.yml`. The default scan ignores these settings, so these edits
+  change nothing.
 
 ## Suppressions
 
@@ -148,8 +149,8 @@ Metz/ClassesTooLong:
 
 Do not disable a cop for a whole file, add application code to
 `AllCops: Exclude`, or suppress without a reason. Report every suppression in
-the handoff. When the same reason recurs, ask the human for project-level
-configuration instead of repeating it.
+the handoff. When the same reason recurs, ask the human whether to add a
+per-cop `Exclude` instead of repeating it.
 
 ## Reading a report
 

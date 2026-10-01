@@ -14,15 +14,15 @@ The goal is not to make every method five lines forever. The goal is to notice w
 
 They are intentionally simple defaults. A five-line method or one-hundred-line class is not automatically good, and a six-line method is not automatically bad. The thresholds are useful because they make design pressure visible early.
 
-If a threshold is too noisy for your codebase, configure it in `.rubocop.yml`.
+The default `metz-scan scan` uses stock thresholds on purpose, so a project cannot weaken a cop and get a rosier report. If a cop is too noisy for part of your codebase, take that code out of the cop's scope with a per-cop `Exclude` in `.rubocop.yml`:
 
 ```yaml
 Metz/MethodsTooLong:
-  Max: 8
-
-Metz/ClassesTooLong:
-  Max: 150
+  Exclude:
+    - "test/**/*"
 ```
+
+Custom thresholds such as `Max` apply only under `metz-scan scan --all-cops` or plain `bundle exec rubocop` with the `rubocop-metz` plugin loaded.
 
 ## Won't this create too many tiny methods?
 
@@ -70,7 +70,7 @@ Avoid refactors that only satisfy the metric while making the code harder to rea
 
 ## What should I do when a finding is wrong for my code?
 
-Configure the cop instead of fighting it. Use the same RuboCop mechanisms you already use: raise a threshold, exclude generated files, disable a cop for a directory, or add a narrow inline disable with a reason.
+Scope the cop instead of fighting it. The default scan honors two RuboCop mechanisms: a per-cop `Exclude` in `.rubocop.yml`, for example to skip generated files, and a narrow inline disable with a reason. Raising a threshold or setting `Enabled: false`, including in a directory's own `.rubocop.yml`, affects only `--all-cops` and plain `rubocop`.
 
 ```ruby
 # rubocop:disable Metz/DemeterTrainWreck -- this query object intentionally mirrors the reporting schema
@@ -78,7 +78,7 @@ row.account.subscription.plan.name
 # rubocop:enable Metz/DemeterTrainWreck
 ```
 
-Inline disables should be rare and specific. If the same exception appears repeatedly, prefer project-level configuration.
+Inline disables should be rare and specific. If the same exception appears repeatedly, prefer a per-cop `Exclude` in `.rubocop.yml`.
 
 ## Can static analysis really understand object-oriented design?
 
@@ -108,7 +108,7 @@ Look for repeated patterns rather than isolated violations. The highest-value fi
 
 ## How should a team adopt these rules?
 
-Adopt them as shared language first. Discuss a few findings in code review, agree on which ones reflect real pain, and tune the config before enforcing anything.
+Adopt them as shared language first. Discuss a few findings in code review, agree on which ones reflect real pain, and settle exclusions before enforcing anything.
 
 A practical rollout is:
 
@@ -120,8 +120,8 @@ A practical rollout is:
      run: bundle exec metz-scan scan . --format gh-annotations
    ```
 
-3. Tune thresholds and exclusions.
-4. Fail CI only on new findings or on the cops your team agrees are valuable.
+3. Add per-cop `Exclude` entries for code the team agrees a cop should not cover.
+4. Fail CI only on findings your team agrees matter, for example by filtering the JSON report on `cop_name`.
 
 ## Where can I learn more about the Demeter implementation?
 
