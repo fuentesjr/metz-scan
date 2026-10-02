@@ -35,7 +35,7 @@ module MetzScan
     def test_rubocop_metz_gemspec_evaluates_in_sparse_tree
       with_sparse_spec(RUBOCOP_METZ) do |spec|
         assert_sparse_identity(spec, RUBOCOP_METZ)
-        assert_equal ["~> 1.80"], sparse_requirements(spec, RUBOCOP_METZ)
+        assert_equal ["~> 1.90"], sparse_requirements(spec, RUBOCOP_METZ)
       end
     end
 

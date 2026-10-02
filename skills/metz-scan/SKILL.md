@@ -95,7 +95,8 @@ mid-edit findings push you into premature micro-refactors.
    ```
 
    A finding is fixed when it no longer appears in the after report and you
-   added no suppression for it. Repeat steps 4 and 5 until none of your
+   added no suppression for it; a suppressed finding moves to the report's
+   `suppressions` list instead of disappearing. Repeat steps 4 and 5 until none of your
    findings remain, then run the project's test suite; a design fix that
    breaks a test is not done.
 
@@ -148,8 +149,10 @@ Metz/ClassesTooLong:
 ```
 
 Do not disable a cop for a whole file, add application code to
-`AllCops: Exclude`, or suppress without a reason. Report every suppression in
-the handoff. When the same reason recurs, ask the human whether to add a
+`AllCops: Exclude`, or suppress without a reason. The default scan lists every
+finding an inline directive or a per-cop `Exclude` hid, with its reason or
+`reason_status: missing`, so a suppression you add shows up in the after
+report. Report every suppression in the handoff. When the same reason recurs, ask the human whether to add a
 per-cop `Exclude` instead of repeating it.
 
 ## Reading a report
@@ -164,6 +167,17 @@ per-cop `Exclude` instead of repeating it.
   `location` (`start_line`, `last_line`, `column`), `why_it_matters`,
   `fix_safety`, and `suggested_next_moves`; `summary` with `offense_count`,
   `offenses_by_cop`, `clean_file_count`, and `files_with_offenses`.
+- JSON `suppressions[]` lists findings an inline directive or a per-cop
+  `Exclude` hid, with `cop_name`, `path`, `line`, `column`, `message`,
+  `suppressed_by` (`inline_disable` or `config_exclude`), `reason`,
+  `reason_status` (`present`, `missing`, or `unchecked`), and `directive`
+  (`line`) or `config` (`path`, `line`, `pattern`). They do not count toward
+  `offense_count` or the exit status. Text output lists them under
+  `Suppressed findings: N, M without a reason` before the `Summary`.
+  A per-cop `Include` that narrows a cop also hides findings, without a
+  record. Regexp `Exclude` entries are reported with their `/regexp/` text and
+  reason `unchecked`. When the same `Exclude` pattern appears in a base and an
+  inheriting config (`inherit_mode: merge`), the base file's entry is credited.
 - Text output ends with a `Summary` scorecard: Metz compliance is the share
   of inspected files with no `Metz/*` offense, and `MetzProject/*` findings
   do not make a file unclean.

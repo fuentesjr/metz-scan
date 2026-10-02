@@ -177,6 +177,19 @@ bundle exec metz-scan scan . --format gh-annotations
 map) alongside the existing fields — so tools can consume the compliance
 scorecard without parsing the text output.
 
+A default scan also lists the findings a suppression hid. Each finding that an
+inline `# rubocop:disable` (or `todo`, `disable-next`) directive or a
+project per-cop `Exclude` entry kept out of the report appears once in a
+top-level `suppressions` array, sorted by path, line, column, and cop name.
+Each record carries `cop_name`, `path`, `line`, `column`, `message`,
+`suppressed_by` (`inline_disable` or `config_exclude`), `reason`,
+`reason_status` (`present`, `missing`, or `unchecked`), and either
+`directive` (`{line}`) or `config` (`{path, line, pattern}`). Suppressed
+findings never count toward `offense_count`, compliance, or the exit code.
+Text output lists them in a `Suppressed findings: N, M without a reason`
+section before the Summary, omitted when nothing was suppressed. The key is
+absent under `--all-cops`; SARIF and `gh-annotations` output are unchanged.
+
 By default, `scan` runs the RuboCop-backed `Metz/*` cops only, plus
 project-analyzer findings that satisfy the default-output policy: the analyzer
 is explicitly default-output eligible, the analyzer is validated, and the
@@ -311,8 +324,22 @@ To take code out of a cop's scope in every scan mode, add a per-cop `Exclude`:
 ```yaml
 Metz/MethodsTooLong:
   Exclude:
-    - "test/**/*"
+    - "test/**/*" # tests build fixtures inline
 ```
+
+A default scan credits every finding a per-cop `Exclude` hides to the entry
+that hid it, and reads the entry's reason from the first of: a trailing
+comment on the entry, a comment block directly above the entry, a trailing
+comment on `Exclude:`, or a comment block directly above `Exclude:`. An inline
+directive's reason is its `-- reason` text. Suppressions without a reason are
+counted in the ledger so they stay visible. Entries in an ERB config are read
+from the rendered YAML and reported without a line number; entries reached
+through a YAML alias are reported as `unchecked`. Regexp entries
+(`!ruby/regexp`) are reported with their `/regexp/` text and a reason that is
+not checked. When the same `Exclude` pattern appears in a base config and an
+inheriting config (`inherit_mode: merge`), the base file's entry is credited.
+Stock-default and `AllCops: Exclude` scope produce no record, and neither does
+a per-cop `Include` that narrows a cop: findings it hides leave no record.
 
 Other cop settings, such as `Max`, `Enabled`, `Severity`, and
 `AllowedReceivers`, take effect only under `metz-scan scan --all-cops` or plain

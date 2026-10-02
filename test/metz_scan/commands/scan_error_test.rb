@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "json"
 require "minitest/autorun"
 require "open3"
 require "rbconfig"
@@ -11,6 +12,21 @@ require "metz_scan/commands/scan"
 module MetzScan
   module Commands
     class ScanErrorTest < Minitest::Test
+      INLINE_DISABLED_LONG_METHOD = <<~RUBY
+        class Suppressed
+          # rubocop:disable Metz/MethodsTooLong -- kept for the regression
+          def long
+            a = 1
+            b = 2
+            c = 3
+            d = 4
+            e = 5
+            [a, b, c, d, e]
+          end
+          # rubocop:enable Metz/MethodsTooLong
+        end
+      RUBY
+
       def test_invalid_rubocop_config_exits_non_zero_with_friendly_message
         Dir.mktmpdir("metz-scan-error-test") do |dir|
           assert_invalid_config_error(*invalid_config_scan(dir, "--all-cops"))
@@ -26,7 +42,24 @@ module MetzScan
         end
       end
 
+      def test_invalid_project_config_still_keeps_inline_disabled_findings_out_of_the_result
+        Dir.mktmpdir("metz-scan-error-test") do |dir|
+          code, json = invalid_config_json_scan(dir)
+
+          assert_equal [0, 0], [code, json.dig("summary", "offense_count")]
+          assert_equal(["inline_disable"], json.fetch("suppressions").map { |record| record.fetch("suppressed_by") })
+        end
+      end
+
       private
+
+      def invalid_config_json_scan(dir)
+        stdout = StringIO.new
+        write_invalid_config_fixture(dir)
+        File.write(File.join(dir, "suppressed.rb"), INLINE_DISABLED_LONG_METHOD)
+        code = Scan.run([dir, "--format", "json"], stdout: stdout, stderr: StringIO.new)
+        [code, JSON.parse(stdout.string)]
+      end
 
       def invalid_config_scan(dir, *flags)
         stdout = StringIO.new

@@ -78,7 +78,9 @@ row.account.subscription.plan.name
 # rubocop:enable Metz/DemeterTrainWreck
 ```
 
-Inline disables should be rare and specific. If the same exception appears repeatedly, prefer a per-cop `Exclude` in `.rubocop.yml`.
+Inline disables should be rare and specific. If the same exception appears repeatedly, prefer a per-cop `Exclude` in `.rubocop.yml`, with the reason as a comment on or above the entry.
+
+Suppressions stay visible. The default scan lists every finding an inline disable or a per-cop `Exclude` hid in a suppression ledger (the JSON `suppressions` array and the text `Suppressed findings` section), with the reason it found or a note that none was given. Suppressed findings do not count as offenses or affect the exit status.
 
 ## Can static analysis really understand object-oriented design?
 

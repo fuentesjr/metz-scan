@@ -3,6 +3,8 @@
 require "pathname"
 require "rubocop"
 
+require "metz_scan/commands/scan/exclude_provenance"
+
 module MetzScan
   module Commands
     class Scan
@@ -104,9 +106,18 @@ module MetzScan
             path = @path_cache[dir] ||= RuboCop::ConfigLoader.configuration_file_for(dir)
             @object_cache[path] ||= @loader.load(path)
           end
+
+          # The project Exclude entry (with its source config file) that scopes
+          # the cop off `file`, or nil when only a stock default does.
+          def applied_exclude(badge, file)
+            config = for_file(file)
+            @loader.provenance.entries_for(config).applied(config, badge, file)
+          end
         end
 
         class ConfigLoader
+          def provenance = @provenance ||= ExcludeProvenance.new
+
           def default_for(dir)
             path = File.join(File.expand_path(dir), ".rubocop.yml")
             config = RuboCop::Config.new({}, path)
@@ -118,7 +129,7 @@ module MetzScan
 
             config = RuboCop::Config.new(scope_hash(path), path)
             config.deprecation_check { |_message| nil }
-            config.make_excludes_absolute
+            provenance.make_excludes_absolute(config)
             RuboCop::ConfigLoader.merge_with_default(config, path)
           end
 
@@ -128,7 +139,7 @@ module MetzScan
             absolute_path = File.expand_path(path)
             return {} if seen.include?(absolute_path)
 
-            raw_hash = RuboCop::ConfigLoader.load_yaml_configuration(absolute_path)
+            raw_hash = provenance.load_yaml_configuration(absolute_path)
             inherited = inherited_scope_hash(raw_hash, absolute_path, [*seen, absolute_path])
             merge(inherited, local_scope_hash(raw_hash), raw_hash["inherit_mode"])
           end

@@ -9,7 +9,7 @@ PATH
   specs:
     rubocop-metz (0.5.3)
       lint_roller (~> 1.1)
-      rubocop (~> 1.80)
+      rubocop (~> 1.90)
       rubocop-ast (~> 1.49)
 
 GEM

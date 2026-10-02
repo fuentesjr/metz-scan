@@ -6,6 +6,7 @@ require "rubocop"
 require "stringio"
 
 require "metz_scan/commands/scan/project_config_scope"
+require "metz_scan/commands/scan/suppression_ledger"
 require "metz_scan/commands/scan/target_ruby_version"
 
 module MetzScan
@@ -33,7 +34,7 @@ module MetzScan
           report = TargetRubyVersion.with_project_config(paths, all_cops: all_cops) do
             parse_output(capture_output(rubocop_argv(paths, all_cops: all_cops)))
           end
-          all_cops ? report : ProjectCopScope.honor(report)
+          all_cops ? report : SuppressionLedger.apply(report)
         end
 
         def self.with_errors
@@ -44,7 +45,8 @@ module MetzScan
 
         def self.rubocop_argv(paths, all_cops:)
           require_metz_plugin
-          ["--plugin", "rubocop-metz", *cop_selection_argv(all_cops), "--format", FORMATTER, *paths]
+          ["--plugin", "rubocop-metz", *cop_selection_argv(all_cops), *ledger_argv(all_cops), "--format", FORMATTER,
+           *paths]
         end
 
         def self.require_metz_plugin
@@ -59,9 +61,10 @@ module MetzScan
           TargetFileDiscovery.for_project_config(paths).map { |path| display_path(path) }
         end
 
-        def self.cop_selection_argv(all_cops)
-          all_cops ? [] : ["--force-default-config", "--only", "Metz"]
-        end
+        def self.cop_selection_argv(all_cops) = all_cops ? [] : ["--force-default-config", "--only", "Metz"]
+
+        # The suppression ledger needs inline-suppressed offenses; AutoFix reuses cop_selection_argv without it.
+        def self.ledger_argv(all_cops) = all_cops ? [] : ["--display-suppressed"]
 
         def self.capture_output(argv)
           out = StringIO.new
@@ -120,7 +123,7 @@ module MetzScan
         end
 
         def self.empty_report
-          { "metadata" => metadata, "files" => [],
+          { "metadata" => metadata, "files" => [], "suppressions" => [],
             "summary" => { "offense_count" => 0, "target_file_count" => 0, "inspected_file_count" => 0 } }
         end
 
@@ -136,44 +139,6 @@ module MetzScan
           return expanded_path.delete_prefix(cwd) if expanded_path.start_with?(cwd)
 
           expanded_path
-        end
-      end
-
-      # Default mode uses stock Metz config (--force-default-config) but must
-      # still honor the project's per-cop file *scope* (Include/Exclude), the
-      # same way #33 honors AllCops: Exclude. RuboCop's own excluded_file?
-      # resolves the project config's scope per cop; offenses on files a cop is
-      # scoped off are dropped here. Invalid project config -> nothing to honor
-      # (matches the forced-default target-discovery fallback). See #37.
-      module ProjectCopScope
-        module_function
-
-        def honor(report)
-          store = ProjectConfigScope.store
-          files = Array(report["files"]).map { |file| reject_scoped_off(store, file) }
-          recount(report.merge("files" => files))
-        rescue RuboCop::Error, Psych::Exception
-          report
-        end
-
-        def reject_scoped_off(store, file)
-          absolute = File.expand_path(file.fetch("path"))
-          kept = Array(file["offenses"]).reject { |o| scoped_off?(store, o.fetch("cop_name"), absolute) }
-          file.merge("offenses" => kept)
-        end
-
-        def scoped_off?(store, cop_name, absolute_path)
-          cop_class = RuboCop::Cop::Registry.global.find_by_cop_name(cop_name)
-          return false unless cop_class
-
-          cop_class.new(store.for_file(absolute_path)).excluded_file?(absolute_path)
-        end
-
-        def recount(report)
-          return report unless report["summary"]
-
-          count = Array(report["files"]).sum { |file| Array(file["offenses"]).size }
-          report.merge("summary" => report["summary"].merge("offense_count" => count))
         end
       end
 
