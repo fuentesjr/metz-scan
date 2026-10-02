@@ -543,6 +543,117 @@ module MetzScan
       end
     end
 
+    class ScanProjectInheritModeExcludeTest < Minitest::Test
+      INHERITED_EXCLUDE_CONFIG = <<~YAML
+        Metz/MethodsTooLong:
+          Exclude:
+            - "app/foo.rb"
+      YAML
+      LOCAL_OVERRIDE_CONFIG = <<~YAML
+        inherit_from: base.yml
+        Metz/MethodsTooLong:
+          Exclude:
+            - "app/baz.rb"
+      YAML
+      INHERIT_MODE_MERGE_CONFIG = <<~YAML
+        inherit_from: base.yml
+        inherit_mode:
+          merge:
+            - Exclude
+        Metz/MethodsTooLong:
+          Exclude:
+            - "app/baz.rb"
+      YAML
+      SIBLING_MERGE_CONFIG = <<~YAML
+        inherit_from: [base.yml, other.yml]
+        inherit_mode:
+          merge:
+            - Exclude
+      YAML
+      SIBLING_EXCLUDE_CONFIG = INHERITED_EXCLUDE_CONFIG.sub("app/foo.rb", "app/baz.rb")
+      LONG_METHOD_FIXTURE = ScanCopSelectionTest::METZ_VIOLATING_FIXTURE
+      SIBLING_EXCLUDE_KEPT_MSG = "inherit_mode merge must union Exclude across sibling inherit_from files"
+      INHERITED_EXCLUDE_KEPT_MSG = "inherit_mode merge must keep the inherited per-cop Exclude"
+      LOCAL_EXCLUDE_KEPT_MSG = "the local per-cop Exclude must apply"
+      INHERITED_EXCLUDE_REPLACED_MSG = "without inherit_mode the local Exclude replaces the inherited one"
+
+      def setup
+        @stdout = StringIO.new
+        @stderr = StringIO.new
+        configure_rubocop_cache_root
+        FileUtils.mkdir_p(tmp_root)
+        @tmpdir = Dir.mktmpdir("metz-scan-inherit-mode-test", tmp_root)
+      end
+
+      def teardown
+        FileUtils.remove_entry(@tmpdir) if @tmpdir
+        FileUtils.rmdir(tmp_root) if File.directory?(tmp_root) && Dir.empty?(tmp_root)
+        restore_rubocop_cache_root
+      end
+
+      def test_inherit_mode_merge_unions_inherited_per_cop_exclude
+        write_project(INHERIT_MODE_MERGE_CONFIG)
+        run_scan([@tmpdir, "--format", "json"])
+        refute_includes cops_for("app/foo.rb"), "Metz/MethodsTooLong", INHERITED_EXCLUDE_KEPT_MSG
+        refute_includes cops_for("app/baz.rb"), "Metz/MethodsTooLong", LOCAL_EXCLUDE_KEPT_MSG
+      end
+
+      def test_local_per_cop_exclude_overrides_inherited_without_inherit_mode
+        write_project(LOCAL_OVERRIDE_CONFIG)
+        run_scan([@tmpdir, "--format", "json"])
+        assert_includes cops_for("app/foo.rb"), "Metz/MethodsTooLong", INHERITED_EXCLUDE_REPLACED_MSG
+        refute_includes cops_for("app/baz.rb"), "Metz/MethodsTooLong", LOCAL_EXCLUDE_KEPT_MSG
+      end
+
+      def test_inherit_mode_merge_unions_sibling_inherit_from_excludes
+        write_file("other.yml", SIBLING_EXCLUDE_CONFIG)
+        write_project(SIBLING_MERGE_CONFIG)
+        run_scan([@tmpdir, "--format", "json"])
+        refute_includes cops_for("app/foo.rb"), "Metz/MethodsTooLong", SIBLING_EXCLUDE_KEPT_MSG
+        refute_includes cops_for("app/baz.rb"), "Metz/MethodsTooLong", SIBLING_EXCLUDE_KEPT_MSG
+      end
+
+      private
+
+      def write_project(config)
+        write_file("base.yml", INHERITED_EXCLUDE_CONFIG)
+        write_file(".rubocop.yml", config)
+        write_file("app/foo.rb", LONG_METHOD_FIXTURE)
+        write_file("app/baz.rb", LONG_METHOD_FIXTURE)
+      end
+
+      def write_file(relative_path, contents)
+        path = File.join(@tmpdir, relative_path)
+        FileUtils.mkdir_p(File.dirname(path))
+        File.write(path, contents)
+      end
+
+      def run_scan(argv)
+        Scan.run(argv, stdout: @stdout, stderr: @stderr)
+      end
+
+      def cops_for(path_suffix)
+        JSON.parse(@stdout.string).fetch("files")
+            .select { |file| file.fetch("path").end_with?(path_suffix) }
+            .flat_map { |file| file.fetch("offenses").map { |offense| offense.fetch("cop_name") } }
+      end
+
+      def tmp_root
+        File.expand_path("../../../scan-test-tmp", __dir__)
+      end
+
+      def configure_rubocop_cache_root
+        @original_rubocop_cache_root = ENV.fetch("RUBOCOP_CACHE_ROOT", nil)
+        ENV["RUBOCOP_CACHE_ROOT"] = File.expand_path("../../../tmp/rubocop_cache", __dir__)
+      end
+
+      def restore_rubocop_cache_root
+        return ENV.delete("RUBOCOP_CACHE_ROOT") unless @original_rubocop_cache_root
+
+        ENV["RUBOCOP_CACHE_ROOT"] = @original_rubocop_cache_root
+      end
+    end
+
     class ScanProjectExternalConfigScopeTest < Minitest::Test
       EXTERNAL_CONFIG_WITH_SCOPE = <<~YAML
         plugins:
