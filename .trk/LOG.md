@@ -103,3 +103,6 @@ Suppression ledger (Next 1) implemented to the 21 owner-pinned spec tests (uncha
 
 ## 2026-10-02T16:16Z log
 Usage errors now exit 64 (sysexits EX_USAGE) across the whole CLI (owner chose 64 and whole-CLI scope 2026-10-02): scan, report, explain, rules, bare/unknown subcommand. Exit 1 stays findings, 2 RuboCop failure. Spec tests written first by a Sonnet worker. Also fixes rules --bogus crashing with an uncaught OptionParser::InvalidOption. Report usage-error tests moved to report_validation_test.rb (mirrors scan_validation_test.rb) to keep ReportTest under Metz/ClassesTooLong. Dropped backlog scope-loader-ruby-version-file (could not reproduce).
+
+## 2026-10-02T17:08Z log
+Exit-64 contract completed on fix/usage-error-exit-code: explain and project-analyzers now exit 64 on an invalid option (explain previously stack-traced, project-analyzers exited 1), and scan validates --format under --auto-fix instead of silently ignoring it. Gaps found in the 2026-10-02 doc review; spec tests written first by a separate model (Sonnet), fix by Opus; Fable advisor recommended finishing here rather than narrowing the PR claim.

@@ -29,6 +29,11 @@ module MetzScan
         assert_invalid_format_message(code)
       end
 
+      def test_unknown_format_with_auto_fix_exits_with_usage_error_with_friendly_message
+        code = run_scan([@tmpdir, "--auto-fix", "--format", "bogus"])
+        assert_invalid_format_message(code)
+      end
+
       def test_nonexistent_path_exits_with_usage_error_with_friendly_message
         path = File.join("/nonexistent", "metz-scan-#{Process.pid}", "path")
         assert_friendly_missing_path(run_scan([path]), path)

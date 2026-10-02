@@ -70,6 +70,14 @@ module MetzScan
         assert_includes @stderr.string, "Metrics/ClassLength"
       end
 
+      def test_explain_invalid_option_exits_with_usage_error_without_stack_trace
+        code = Explain.run(["--bogus"], stdout: @stdout, stderr: @stderr)
+
+        assert_equal 64, code
+        assert_match(/metz-scan explain: invalid option: --bogus/, @stderr.string)
+        refute_match(/\.rb:\d+:in /, @stdout.string + @stderr.string)
+      end
+
       def test_explain_without_argument_exits_with_usage_error_with_usage
         code = Explain.run([], stdout: @stdout, stderr: @stderr)
         assert_equal 64, code

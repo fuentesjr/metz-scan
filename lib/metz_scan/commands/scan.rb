@@ -129,7 +129,6 @@ module MetzScan
       def validate(options)
         return missing_path_arg if options.paths.empty?
         return missing_paths(options.paths) unless options.paths.all? { |p| File.exist?(p) }
-        return nil if options.auto_fix
 
         invalid_format(options.format) unless VALID_FORMATS.include?(options.format)
       end

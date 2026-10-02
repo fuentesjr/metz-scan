@@ -24,6 +24,8 @@ module MetzScan
         return missing_argument_error if args.empty?
 
         emit_or_error(args.first)
+      rescue OptionParser::ParseError => e
+        parser_error(e)
       end
 
       def emit_or_error(cop_name)
@@ -51,6 +53,12 @@ module MetzScan
 
       def metz_cop?(cop)
         cop.cop_name.start_with?("Metz/") && cop.respond_to?(:metz_metadata)
+      end
+
+      def parser_error(err)
+        stderr.puts "metz-scan explain: #{err.message}"
+        stderr.puts USAGE
+        CLI::USAGE_ERROR
       end
 
       def missing_argument_error
