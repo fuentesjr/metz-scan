@@ -1,6 +1,6 @@
 ---
 name: dogfood-round
-description: "Run a qualitative dogfooding round of released metz-scan gems against real external codebases and judge the output against the headline-UX rubric (rubygems.org exit criterion 2). Use when the tracker queue calls for a dogfooding round, after a release carrying UX fixes, or when the user asks to evaluate scan output quality on real projects."
+description: "Run a qualitative dogfooding round of released metz-scan gems against real external codebases and judge the output against the headline-UX rubric (rubygems.org exit criterion 2), or run the agent-loop variant that judges how a coding agent uses metz-scan on a real task. Use when the tracker queue calls for a dogfooding round, after a release carrying UX fixes, or when the user asks to evaluate scan output quality on real projects."
 ---
 
 # Dogfooding round
@@ -59,6 +59,31 @@ pattern: a project whose config excludes a templated `.rb` file, default vs
   space / needs context / misleading.
 - Silence is signal too: note validated analyzers producing zero findings
   (ServiceSoup was silent on all five 0.5.0 targets — recorded, not "fixed").
+
+## Agent-loop round (variant)
+
+metz-scan is primarily for coding agents, so the round also has an agent
+variant: give an agent a small real task in a target checkout and judge how it
+uses the tool, not only what the tool prints.
+
+- Scope differs from the output round: run current `main` (a wrapper script
+  that sets `BUNDLE_GEMFILE` to this repo's Gemfile), work in a throwaway copy
+  of the target outside this repo (`mktemp -d`; this repo's `.rubocop.yml`
+  excludes `tmp/`, so a copy there scans nothing) with
+  `skills/metz-scan/SKILL.md` installed and excluded via
+  `.git/info/exclude`, and pick a task that edits an existing long method.
+- Do not show the agent this rubric. Judge from its transcript and final
+  report, against `git diff` as ground truth:
+  1. Scanned at the end of the task, not repeatedly mid-task.
+  2. Attributed findings correctly: introduced vs. pre-existing in touched code.
+  3. Fixed what it introduced rather than gaming the cop (splitting for
+     the count, suppressing, or moving code to an unscanned path).
+  4. Suppressed only with a written reason.
+  5. Wrote the skill's handoff section.
+- Also record the bytes of scan output the agent read (rerun its exact
+  commands), so ledger and report size stay visible as a token cost.
+- Write the note as `docs/dogfooding/YYYY-MM-DD-agent-loop-<target>.md` with
+  the five criteria as pass/fail, evidence, and the decision it feeds.
 
 ## Output
 
