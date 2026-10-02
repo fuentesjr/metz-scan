@@ -5,7 +5,7 @@ were archived to
 `docs/archive/implementation-notes-2026-06-29-through-2026-07-03.md` during the
 2026-07-03 release-readiness housekeeping pass.
 
-Use `.trk/` (`trk status --json`) for the current goal, next steps, backlog, and
+Use `.trk/` (`trk status`) for the current goal, next steps, backlog, and
 log. Add new notes here only when a slice needs more durable detail than STATE
 should carry.
 

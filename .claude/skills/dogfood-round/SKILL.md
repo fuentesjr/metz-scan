@@ -69,6 +69,7 @@ pattern: a project whose config excludes a templated `.rb` file, default vs
    passed** (list them). Quality nits do not fail the round.
 3. Draft GitHub issues for each headline defect — filing needs user approval
    (precedent: #34 draft waited for approval).
-4. Update `.trk/` via `trk` (goal/next/backlog/log as needed): dogfooding
+4. Update `.trk/` via `trk` (orchestrator only; see `AGENTS.md`)
+   (goal/next/backlog/log as needed): dogfooding
    state and queue rebuilt around any defects found. Commit notes + tracker
    together via the `land-slice` skill.
