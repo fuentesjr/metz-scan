@@ -4,11 +4,13 @@ Status: **roadmap with rollout in progress.** This document is the specification
 and evidence bar for testing-discipline cops; implementation proceeds one
 opt-in slice at a time.
 
-Last updated: 2026-07-09.
+Last updated: 2026-10-02.
 
-Implementation status (2026-07-09): rollout in progress. `Metz/TestReachesPrivate`
+Implementation status (2026-10-02): rollout in progress. `Metz/TestReachesPrivate`
 (§9 step 2), `Metz/TestAssertsOnInternals` (§5), and `Metz/TestStubsSubject`
-(§5) are implemented and shipped opt-in (`Enabled: false`). `TestStubsSubject`
+(§5) are implemented and shipped opt-in (`Enabled: false`). The Tier 2
+analyzer `MetzProject/TestCallsPrivateMethod` (§5 Tier 2) is implemented with
+status `candidate`. `TestStubsSubject`
 is RSpec-only: RSpec has an explicit subject token, while general Minitest
 subject inference would flood false positives. `TestReachesPrivate` was
 dogfooded (accurate but too dense → stays opt-in,
@@ -98,7 +100,8 @@ false positive before the cop is trusted.*
    against an abstraction ("am I in a test case?", "what are the assertion /
    double / expectation sends here?"). A shared `TestFrameworks` support module
    supplies Minitest and RSpec matchers. Rule logic never branches on framework
-   inline.
+   inline. *Deferred (see deviations above): no `TestFrameworks` module ships
+   yet.*
 3. **Self-scoping via `Include`.** Each cop's `config/default.yml` entry carries
    `Include` globs for test paths, exactly as `ControllersTooManyDirect­Collaborators`
    scopes to `app/controllers`. Testing cops never fire on app code. Design
@@ -106,9 +109,9 @@ false positive before the cop is trusted.*
    `DemeterTrainWreck` excludes `spec/**/*` by default, so the families are
    orthogonal in intent but not perfectly in current config — any future claim
    of orthogonality must account for that carve-out.
-4. **Earn default output.** New cops ship implemented and `Enabled`, but their
-   promotion to *default scan output* is a separate, calibrated decision per the
-   default-output-policy escalation rule. Each cop stays evidence-gated (opt-in
+4. **Earn default output.** New cops ship implemented but opt-in
+   (`Enabled: false`); their promotion to *default scan output* is a separate,
+   calibrated decision per the default-output-policy escalation rule. Each cop stays evidence-gated (opt-in
    or generous threshold) until real-repo dogfooding proves a sparse,
    reviewable signal — same discipline as the project analyzers.
 5. **Reuse the existing cop conventions.** `extend ::Metz::CopMetadata`
@@ -144,6 +147,9 @@ not re-check paths):
 
 Each cop consumes this abstraction; adding a third framework later means
 extending the module, not touching the cops.
+
+*Deferred (see deviations above): this module does not exist yet. Shipped cops
+scope by `Include` globs and match their specific sends directly.*
 
 ## 5. Cop catalog
 
@@ -192,14 +198,15 @@ assessment.
 #### `Metz/TestReachesPrivate`
 
 - **Principle:** test the interface, not the implementation.
-- **Detects:** `send` / `__send__` / `public_send` with a **literal** symbol or
+- **Detects:** `send` / `__send__` with a **literal** symbol or
   string first argument, inside a test case — the canonical "reach past the
   public interface" move. AST alone cannot confirm the target is private, so
   Tier 1 flags literal `send` in tests at **low confidence** (opt-in); Tier 2
-  (`test_calls_private_method`) confirms privacy via the index. The two must
-  not double-report: when the index is available and confirms privacy, only
-  the Tier 2 finding surfaces; the Tier 1 cop is the fallback signal for
-  index-less runs, not an additional one.
+  (`test_calls_private_method`) confirms privacy via the index. Both may report
+  the same call site; prefer the Tier 2 finding when both are enabled. The
+  Tier 1 cop is the fallback signal for index-less runs. There is no runtime
+  de-duplication (see deviations above). `public_send` is not flagged (see
+  deviations above).
 - **FP risk:** legitimate metaprogramming, dynamic dispatch of *public* methods,
   frameworks that require `send`. Mitigation: literal-arg only; low confidence;
   `AllowedReceivers`/`AllowedMethods` config escape hatch.
@@ -245,9 +252,10 @@ reference `MetzScan` (dependency direction, enforced by
 `bin/check_dependency_direction`). RuboCop cops also run per-file inside
 RuboCop's engine, with no natural home for a project-wide index. So Tier 2
 rules ship as **project analyzers** in `lib/metz_scan/analyzers/`, exactly like
-the four existing index-backed analyzers — snake_case class with
-`PROJECT_ANALYZER_STATUS` / `TRIAGE_SUMMARY`, surfaced via
-`project_analyzers`, not via `--only Metz` cop runs.
+the four existing index-backed analyzers — a snake_case file defining a class
+with `RULE_ID`, `PROJECT_ANALYZER_STATUS`, and `TRIAGE_SUMMARY` (shipped as
+`TestCallsPrivateMethod`, rule id `MetzProject/TestCallsPrivateMethod`),
+surfaced via `project_analyzers`, not via `--only Metz` cop runs.
 
 The alternative — giving `rubocop-metz` its own optional `rubydex` dependency
 plus index-injection machinery inside the RuboCop engine — was considered and
@@ -268,8 +276,9 @@ test assuming the index is installed — use the
 - **Detects:** a test invokes a method that the index resolves as `private` /
   `protected` on the corresponding production class. High signal, low FP.
 - **Dependency:** index only; contributes zero findings under `NullBackend`.
-  When it does run, it supersedes `Metz/TestReachesPrivate` for the same call
-  site (no double-reporting; see Tier 1).
+  When it does run, prefer it over `Metz/TestReachesPrivate`; both may report
+  the same call site, with no runtime de-duplication (see Tier 1 and the
+  deviations above).
 
 #### `test_depends_on_unowned_return` (analyzer)  *(speculative — needs research)*
 

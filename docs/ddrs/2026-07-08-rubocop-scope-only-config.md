@@ -47,3 +47,7 @@ weaken the #33/#37 file-scope contract unless every user noticed the warning.
 - Future RuboCop upgrades must recheck the internal calls used here:
   `ConfigLoader.load_yaml_configuration`, `ConfigLoader.merge`, and
   `ConfigLoader.merge_with_default`.
+- Update 2026-10-02: a missing `inherit_gem` is no longer silent. Default scans
+  print one `metz-scan: note:` line to stderr per missing gem, saying its
+  file-scope `Exclude` is not applied
+  (`lib/metz_scan/commands/scan/project_config_scope.rb`).

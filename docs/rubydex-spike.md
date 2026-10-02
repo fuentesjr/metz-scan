@@ -41,25 +41,31 @@ awareness, subscribe to GitHub release notifications for
 <https://github.com/Shopify/rubydex/releases.atom>.
 
 Treat every `rubydex` bump as a project-index drift check. Patch/minor updates
-within the current constraint, such as `0.2.x`, should at least re-run the
+within the current constraint, such as `0.4.x`, should at least re-run the
 Rubydex-index-backed analyzer subset against the active manifest:
 
 ```bash
 bin/check_rubydex_drift
 ```
 
-Those four analyzers consume the optional project index directly. AST/file-based
+The five index-backed analyzers (`DeepInheritanceTree`,
+`PackageDependencyPressure`, `NamespaceLeakPressure`,
+`SubclassOverridePressure`, and `TestCallsPrivateMethod`) consume the optional
+project index directly; `bin/check_rubydex_drift` runs all of them, though
+`TestCallsPrivateMethod` reports zero on the tracked targets because they scan
+only `app` and `lib`. AST/file-based
 analyzers such as `RepeatedBranching`, `ServiceSoup`,
 `RepeatedQueryCriteria`, and `ImplicitContextPressure` do not need a
 Rubydex-driven recheck unless their own implementation or the active fixture
 manifest changes.
 
 For a new minor line that requires a Gemfile constraint change, such as
-`0.3.0`, treat the update as higher risk: run `bin/check_rubydex_drift`, run the
+`0.5.0`, treat the update as higher risk: run `bin/check_rubydex_drift`, run the
 Rubydex spike commands in this document, and compare index counts, diagnostics,
 declaration kinds, descendant counts, constant references, and
 method-declaration behavior before merging. Record material count or readiness
-changes in `docs/project-analyzer-calibration.md` and `PROJECT_TRACKER.md`.
+changes in `docs/project-analyzer-calibration.md` and in the `.trk/` tracker
+via the `trk` CLI.
 
 Do not re-run historical `/private/tmp` calibration artifacts for release
 tracking. Current decisions should use `tmp/project-analyzer-calibration/apps`
@@ -378,7 +384,9 @@ Reasons not to enable it by default yet:
 Default `metz-scan scan` output includes only explicitly default-output
 eligible, validated, medium-confidence design-pressure project-analyzer
 findings. `metz-scan scan --project-analyzers` runs the full project-analyzer
-set, including validated opt-in-only analyzers:
+set, including validated opt-in-only analyzers. This list covers the
+analyzers that existed during the spike; the project analyzer status table in
+`README.md` is the current list:
 
 - `MetzProject/ServiceSoup` — validated. Reports methods with at least three
   distinct service constants. Medium-confidence design-pressure findings are

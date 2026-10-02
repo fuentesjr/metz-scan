@@ -236,7 +236,7 @@ Neither product depends on the other. Roles below are coordination *intent*, not
 
 ## 8. metz-scan product stance
 
-1. **Explain the why** on every rule (`why_it_matters`, `suggested_next_moves`, `metz-scan explain`).
+1. **Explain the why** on every rule (`why_it_matters`, `suggested_next_moves`, `metz-scan explain` for `Metz/*` cops).
 2. **Enforce illegitimacy**, not presence — multi-public-method bags, god `*Service`, soup; not “you have a service class.”
 3. **This document** is the full standard for readers of metz-scan alone; no need to open rails-audit.
 4. Planned R3–R6 / P2–P4 stay in this product’s roadmap.
