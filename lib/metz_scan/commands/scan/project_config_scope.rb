@@ -130,13 +130,24 @@ module MetzScan
 
             raw_hash = RuboCop::ConfigLoader.load_yaml_configuration(absolute_path)
             inherited = inherited_scope_hash(raw_hash, absolute_path, [*seen, absolute_path])
-            RuboCop::ConfigLoader.merge(inherited, local_scope_hash(raw_hash))
+            merge(inherited, local_scope_hash(raw_hash), raw_hash["inherit_mode"])
           end
 
           def inherited_scope_hash(raw_hash, path, seen)
             inherited_paths(raw_hash, path).each_with_object({}) do |inherited_path, merged|
-              merged.replace(RuboCop::ConfigLoader.merge(merged, scope_hash(inherited_path, seen)))
+              merged.replace(merge(merged, scope_hash(inherited_path, seen), raw_hash["inherit_mode"]))
             end
+          end
+
+          # RuboCop's resolve_inheritance merges every inherited file with the
+          # inheriting file's top-level inherit_mode, so sibling inherit_from
+          # files union under `merge: [Exclude]` too.
+          def merge(base_hash, derived_hash, inherit_mode)
+            resolver.merge(base_hash, derived_hash, inherit_mode: inherit_mode || {})
+          end
+
+          def resolver
+            @resolver ||= RuboCop::ConfigLoaderResolver.new
           end
 
           def inherited_paths(raw_hash, path)
