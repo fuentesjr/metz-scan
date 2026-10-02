@@ -106,3 +106,8 @@ Agent-loop dogfood round 1 (Claude Sonnet, lobsters, current main): agent passed
 
 ## 2026-10-03T00:37Z log
 Pre-merge Fable review: dogfood-round agent variant now says the throwaway target copy lives outside this repo; .rubocop.yml excludes tmp/, so an in-repo copy scans zero files.
+## 2026-10-02T17:10Z log
+F1 fixed in skills/metz-scan/SKILL.md step 3 (skill text only): for the size cops (MethodsTooLong, ClassesTooLong, MethodsTooManyParameters, DemeterTrainWreck, ViewsDeepNavigation) the base scan decides, matching on path suffix + cop_name + message with numbers removed + the start_line source line; paired findings are pre-existing and reported as grew/shrank/unchanged. Base scan uses step 1's paths; every block using $out defines it; step 5's fixed test uses the same key. Matching design from a Fable advisor consult, checked against the cop message formats. Skill test pins the new wording.
+
+## 2026-10-03T00:37Z log
+Pre-merge Fable review of F1 step 3: the parameter and chain cops locate on the line the agent edits, so a whole-line key made a trimmed parameter list or edited chain look new. Key anchor is now the method, class, or constant name for the length and parameter cops (chain cops keep the stripped line), base-scan path prefix stripping is explicit, and the rename/edited-chain gap is stated.

@@ -7,10 +7,9 @@ v0.5.3 is released on rubygems.org and GitHub Packages; all four exit criteria m
 
 ## Next
 1. Usage-error exit code (contract change; owner decides the code): usage errors exit 1 like findings, so agents mistake typos for findings. Pick the new code, add a compat note, update README, SKILL.md "Reading a report", CLAUDE.md exit invariant. Spec tests first. Context: LOG 2026-10-01.
-2. Fix agent-loop finding F1 in skills/metz-scan/SKILL.md step 3 (owner approved 2026-10-02): when matching a base-scan finding, ignore the [n/max] size in the message, and report whether a pre-existing finding in touched code grew or shrank, instead of calling it the agent's. Skill text only, no CLI change. Evidence: docs/dogfooding/2026-10-02-agent-loop-lobsters.md.
-3. Second agent-loop dogfood round with Codex against the F1-fixed skill (owner approved 2026-10-02), same method as the lobsters round; record the suppression-ledger size if the target has config Excludes.
-4. Revisit the operation-role classifier only with a larger fixed sample that includes generic reverse-call and service-DSL facts; do not implement path-based density.
-5. Docs pass: revisit the README project-analyzer narrative now that RuboCop 1.89 ships native opt-in cross-file indexing (`AllCops/UseProjectIndex` + rubydex, experimental). Position metz-scan's project analyzers relative to upstream (what ours adds: descendants/reference queries, method visibility, NullBackend degradation, calibration pipeline) rather than implying cross-file analysis is unique to metz-scan. Docs-freshness tests pin README content — update deliberately, don't loosen.
+2. Second agent-loop dogfood round with Codex against the F1-fixed skill (owner approved 2026-10-02), same method as the lobsters round; record the suppression-ledger size if the target has config Excludes.
+3. Revisit the operation-role classifier only with a larger fixed sample that includes generic reverse-call and service-DSL facts; do not implement path-based density.
+4. Docs pass: revisit the README project-analyzer narrative now that RuboCop 1.89 ships native opt-in cross-file indexing (`AllCops/UseProjectIndex` + rubydex, experimental). Position metz-scan's project analyzers relative to upstream (what ours adds: descendants/reference queries, method visibility, NullBackend degradation, calibration pipeline) rather than implying cross-file analysis is unique to metz-scan. Docs-freshness tests pin README content — update deliberately, don't loosen.
 
 ## Backlog
 - fixture-coverage-sweeps — Parked as a class: reopen an individual fixture only when a defect shows that exact missing fixture would have caught it (2026-07-18T08:38Z)
