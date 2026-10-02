@@ -170,8 +170,9 @@ per-cop `Exclude` instead of repeating it.
 - JSON `suppressions[]` lists findings an inline directive or a per-cop
   `Exclude` hid, with `cop_name`, `path`, `line`, `column`, `message`,
   `suppressed_by` (`inline_disable` or `config_exclude`), `reason`,
-  `reason_status` (`present`, `missing`, or `unchecked`), and `directive`
-  (`line`) or `config` (`path`, `line`, `pattern`). They do not count toward
+  `reason_status` (`present`, `missing`, or `unchecked`), `directive`
+  (`line`), and `config` (`path`, `line`, `pattern`); exactly one of
+  `directive` and `config` is non-null. They do not count toward
   `offense_count` or the exit status. Text output lists them under
   `Suppressed findings: N, M without a reason` before the `Summary`.
   A per-cop `Include` that narrows a cop also hides findings, without a
@@ -187,10 +188,11 @@ per-cop `Exclude` instead of repeating it.
 ## Scope and configuration
 
 - The default scan runs only `Metz/*` cops with stock thresholds and reads
-  file scope only from the project's `.rubocop.yml`: `AllCops: Exclude` and
-  per-cop `Include` and `Exclude`. It runs without the project's RuboCop
-  extension gems; when `.rubocop.yml` inherits from a gem that is not
-  installed, it prints a `metz-scan: note:` line and skips that gem's scope.
+  only file scope and `AllCops: TargetRubyVersion` from the project's
+  `.rubocop.yml`; file scope is `AllCops: Exclude` and per-cop `Include` and
+  `Exclude`. It runs without the project's RuboCop extension gems; when
+  `.rubocop.yml` inherits from a gem that is not installed, it prints a
+  `metz-scan: note:` line and skips that gem's scope.
 - `--all-cops` runs the full RuboCop suite under the complete project
   configuration and needs the project's extension gems in the bundle.
 - `Metz/TestReachesPrivate`, `Metz/TestAssertsOnInternals`, and
@@ -203,10 +205,11 @@ per-cop `Exclude` instead of repeating it.
 The default scan includes the validated default-output analyzers
 `MetzProject/RepeatedBranching` and `MetzProject/ServiceSoup`; they look
 across the files you pass, and their findings go through the end-of-task
-check like any cop finding. `--project-analyzers` adds the remaining
-validated, candidate, and manual-review analyzers. Treat those added
-findings as advisory: keep them out of the fix loop and use them when the
-task asks for a broader design review.
+check like any cop finding. `--project-analyzers` adds the other validated
+and candidate analyzers, plus default-analyzer findings outside the default
+output bar (validated, medium confidence, design pressure).
+Treat those added findings as advisory: keep them out of the fix loop and use
+them when the task asks for a broader design review.
 
 ```bash
 bundle exec metz-scan project-analyzers
@@ -228,7 +231,7 @@ bundle exec metz-scan scan app lib --format text
 bundle exec metz-scan report "$out/scan.json" --format text
 bundle exec metz-scan scan . --format sarif
 bundle exec metz-scan scan . --format gh-annotations
-bundle exec metz-scan scan . --auto-fix --dry-run
+bundle exec metz-scan scan . --all-cops --auto-fix --dry-run
 ```
 
 Use `--format text` for humans, `--format json` for filtering, `--format
@@ -238,4 +241,5 @@ fails the step unless the workflow sets `continue-on-error`.
 
 No `Metz/*` cop autocorrects, so `--auto-fix` only matters with `--all-cops`:
 it applies RuboCop's safe corrections, `--unsafe` adds the unsafe ones, and
-`--dry-run` prints the diff without writing. Preview before applying.
+`--dry-run` prints the diff and restores the original files afterward;
+files are rewritten during the run. Preview before applying.

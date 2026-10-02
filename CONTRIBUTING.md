@@ -36,10 +36,12 @@ bundle exec rake
 bundle exec rubocop
 ```
 
-Before pushing release or workflow changes, run `bin/check_ci_parity`. On
-failure it prints a `clean clone preserved at` path and a `next action:`
-command to reproduce the failed phase without local-only state. Full local
-checks and build steps are in the README
+Run `bin/check_ci_parity` before every push. Its test phase is a subset
+(docs-freshness tests for docs-only commits, `rake test:fast` for code
+commits); set `CI_PARITY_FULL=1` to force the full suite. On failure it
+prints a `clean clone preserved at` path and a `next action:` command to
+reproduce the failed phase without local-only state. Full local checks and
+build steps are in the README
 [Contributing / Development](README.md#contributing--development) section.
 
 ## Maintainer coordination (optional)
