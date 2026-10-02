@@ -16,6 +16,9 @@ module MetzScan
 
     SUBCOMMANDS = SUBCOMMAND_SUMMARIES.keys.freeze
 
+    # sysexits(3) EX_USAGE: keeps caller errors distinct from exit 1, "findings reported".
+    USAGE_ERROR = 64
+
     def self.start(argv = ARGV, stdout: $stdout, stderr: $stderr)
       new(stdout: stdout, stderr: stderr).run(argv)
     end
@@ -55,7 +58,7 @@ module MetzScan
 
     def show_help_and_fail
       stderr.puts help_text
-      1
+      USAGE_ERROR
     end
 
     def dispatch(args)
@@ -86,7 +89,7 @@ module MetzScan
     def unknown_subcommand(name)
       stderr.puts "metz-scan: unknown subcommand '#{name}'."
       stderr.puts help_text
-      1
+      USAGE_ERROR
     end
 
     def help_text

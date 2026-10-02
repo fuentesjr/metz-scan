@@ -2,6 +2,7 @@
 
 require "optparse"
 require "yaml"
+require_relative "../cli"
 
 module MetzScan
   module Commands
@@ -56,13 +57,13 @@ module MetzScan
         stderr.puts "metz-scan explain: missing required COP_NAME argument."
         stderr.puts USAGE
         stderr.puts "Run `metz-scan rules` to see the list of available Metz cops."
-        1
+        CLI::USAGE_ERROR
       end
 
       def unknown_cop_error(name)
         stderr.puts "metz-scan explain: no such cop '#{name}'."
         stderr.puts "Run `metz-scan rules` to see the list of available Metz cops."
-        1
+        CLI::USAGE_ERROR
       end
 
       def emit(cop)
