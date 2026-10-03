@@ -18,7 +18,8 @@ module MetzScan
       "--format gh-annotations",
       "--auto-fix --dry-run",
       "Rubydex",
-      "exit status `1`"
+      "exit status `1`",
+      "Exit status `64`"
     ].freeze
     MAINTAINER_ONLY_TERMS = [
       "PROJECT_TRACKER.md",

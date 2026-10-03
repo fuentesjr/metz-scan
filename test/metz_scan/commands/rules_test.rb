@@ -61,6 +61,15 @@ module MetzScan
         assert_match(/\e\[/, tty_stdout.string)
       end
 
+      def test_invalid_option_exits_with_usage_error_with_message_and_usage_on_stderr
+        code = Rules.run(["--bogus"], stdout: @stdout, stderr: @stderr)
+
+        assert_equal 64, code
+        assert_match(/metz-scan rules: invalid option: --bogus/, @stderr.string)
+        assert_match(/Usage: metz-scan rules/, @stderr.string)
+        assert_empty @stdout.string
+      end
+
       def test_json_flag_emits_entry_for_each_registered_metz_cop
         Rules.run(["--json"], stdout: @stdout, stderr: @stderr)
 
