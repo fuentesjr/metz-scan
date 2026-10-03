@@ -106,3 +106,6 @@ Usage errors now exit 64 (sysexits EX_USAGE) across the whole CLI (owner chose 6
 
 ## 2026-10-02T17:08Z log
 Exit-64 contract completed on fix/usage-error-exit-code: explain and project-analyzers now exit 64 on an invalid option (explain previously stack-traced, project-analyzers exited 1), and scan validates --format under --auto-fix instead of silently ignoring it. Gaps found in the 2026-10-02 doc review; spec tests written first by a separate model (Sonnet), fix by Opus; Fable advisor recommended finishing here rather than narrowing the PR claim.
+
+## 2026-10-03T00:26Z log
+Pre-merge Fable review follow-up on fix/usage-error-exit-code: removed the unreachable CLI stub_subcommand (the last literal exit 1 outside findings; every listed subcommand has a handler) and listed invalid report JSON among README's exit-64 cases.

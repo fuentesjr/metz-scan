@@ -65,8 +65,7 @@ module MetzScan
       name = args.shift
       return unknown_subcommand(name) unless SUBCOMMANDS.include?(name)
 
-      handler = subcommand_handler(name)
-      handler ? handler.run(args, stdout: stdout, stderr: stderr) : stub_subcommand(name)
+      subcommand_handler(name).run(args, stdout: stdout, stderr: stderr)
     end
 
     SUBCOMMAND_HANDLERS = { "rules" => "Rules", "explain" => "Explain", "scan" => "Scan",
@@ -74,16 +73,8 @@ module MetzScan
     private_constant :SUBCOMMAND_HANDLERS
 
     def subcommand_handler(name)
-      klass_name = SUBCOMMAND_HANDLERS[name]
-      return unless klass_name
-
       require_relative "commands/#{name.tr('-', '_')}"
-      Commands.const_get(klass_name)
-    end
-
-    def stub_subcommand(name)
-      stderr.puts "metz-scan: subcommand '#{name}' is not yet implemented."
-      1
+      Commands.const_get(SUBCOMMAND_HANDLERS.fetch(name))
     end
 
     def unknown_subcommand(name)
