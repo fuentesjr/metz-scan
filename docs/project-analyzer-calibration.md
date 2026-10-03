@@ -1,6 +1,6 @@
 # Project analyzer calibration
 
-Last updated: 2026-07-04.
+Last updated: 2026-10-02.
 
 This note records real-world calibration passes for the opt-in analyzers behind
 `metz-scan scan --project-analyzers`. The goal was to decide whether
@@ -77,11 +77,12 @@ offenses:
 | `MetzProject/SubclassOverridePressure` | 148 | 148 |
 
 Rubydex version drift directly affects the project-index-backed analyzers, so
-the future minimal recheck scope is the four analyzers that consume the
+the future minimal recheck scope is the five analyzers that consume the
 optional index: `MetzProject/DeepInheritanceTree`,
 `MetzProject/PackageDependencyPressure`, `MetzProject/NamespaceLeakPressure`,
-and `MetzProject/SubclassOverridePressure`. Use the compact drift command for
-that check:
+`MetzProject/SubclassOverridePressure`, and
+`MetzProject/TestCallsPrivateMethod`. Use the compact drift command for that
+check:
 
 ```bash
 bin/check_rubydex_drift
@@ -617,6 +618,27 @@ recorded elsewhere in this document.
   Repeated override families are triaged as broad-root, abstract-hook,
   cooperative, replacement, or unclassified override pressure with
   category-specific report language and next steps.
+
+### `MetzProject/TestCallsPrivateMethod`
+
+- **Index:** Requires the optional project index and contributes no findings
+  when the index is unavailable.
+- **Scope:** Scans test files only: `*_test.rb`, `test_*.rb`, and `*_spec.rb`.
+- **Detection:** Reports literal `send` / `__send__` calls whose target method
+  the index resolves as `private` or `protected` on the receiver's own class.
+  Only these receivers resolve: a constant (singleton methods), `Const.new` or
+  `described_class.new`, an RSpec `subject`, and a local or instance variable
+  assigned exactly once from `Const.new`. Receiverless `send`, methods declared on an
+  ancestor, and methods that also have a public declaration outside test files
+  are not reported. Declarations in test files do not count as confirmation;
+  `public_send` is not checked.
+- **Triage:** Candidate status, high confidence, `manual review` severity.
+- **Overlap:** This is the index-confirmed form of `Metz/TestReachesPrivate`
+  and, under default configuration, reports a subset of its call sites. Both
+  may report the same call site; there is no de-duplication, so prefer this
+  finding when both are enabled.
+- **Calibration:** Active calibration targets scan only app and library paths,
+  so the calibration pipeline does not exercise this analyzer.
 
 Project analyzer output includes status, confidence, triage severity, and triage
 summary metadata. Default output includes only explicitly eligible, validated,
