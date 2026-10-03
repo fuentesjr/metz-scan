@@ -2,6 +2,7 @@
 
 require "optparse"
 require "yaml"
+require_relative "../cli"
 
 module MetzScan
   module Commands
@@ -23,6 +24,8 @@ module MetzScan
         return missing_argument_error if args.empty?
 
         emit_or_error(args.first)
+      rescue OptionParser::ParseError => e
+        parser_error(e)
       end
 
       def emit_or_error(cop_name)
@@ -52,17 +55,23 @@ module MetzScan
         cop.cop_name.start_with?("Metz/") && cop.respond_to?(:metz_metadata)
       end
 
+      def parser_error(err)
+        stderr.puts "metz-scan explain: #{err.message}"
+        stderr.puts USAGE
+        CLI::USAGE_ERROR
+      end
+
       def missing_argument_error
         stderr.puts "metz-scan explain: missing required COP_NAME argument."
         stderr.puts USAGE
         stderr.puts "Run `metz-scan rules` to see the list of available Metz cops."
-        1
+        CLI::USAGE_ERROR
       end
 
       def unknown_cop_error(name)
         stderr.puts "metz-scan explain: no such cop '#{name}'."
         stderr.puts "Run `metz-scan rules` to see the list of available Metz cops."
-        1
+        CLI::USAGE_ERROR
       end
 
       def emit(cop)

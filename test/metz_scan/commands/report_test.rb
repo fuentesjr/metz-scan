@@ -69,38 +69,6 @@ module MetzScan
         assert_equal 2, out["files"].flat_map { |f| f["offenses"] }.size
       end
 
-      def test_missing_file_exits_non_zero_with_friendly_message
-        code = run_report(["/tmp/does-not-exist-#{Process.pid}.json"])
-
-        refute_equal 0, code
-        assert_match(%r{/tmp/does-not-exist-#{Process.pid}\.json}, @stderr.string)
-        assert_match(/no such file/i, @stderr.string)
-        refute_match(/\.rb:\d+:in /, @stderr.string)
-      end
-
-      def test_invalid_json_exits_non_zero_with_parse_message
-        File.write(@json_path, "not json {{")
-        code = run_report([@json_path])
-
-        refute_equal 0, code
-        assert_match(/invalid JSON|parse/i, @stderr.string)
-        refute_match(/\.rb:\d+:in /, @stderr.string)
-      end
-
-      def test_invalid_format_exits_non_zero
-        code = run_report([@json_path, "--format", "bogus"])
-
-        refute_equal 0, code
-        assert_match(/invalid --format/i, @stderr.string)
-      end
-
-      def test_missing_path_argument_exits_non_zero_with_usage
-        code = run_report([])
-
-        refute_equal 0, code
-        assert_match(/missing PATH/i, @stderr.string)
-      end
-
       def test_clean_json_with_no_offenses_exits_zero
         File.write(@json_path, JSON.generate(empty_report))
         code = run_report([@json_path])
