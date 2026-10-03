@@ -61,10 +61,11 @@ module MetzScan
         assert_status(parsed, "MetzProject/TestCallsPrivateMethod", "candidate")
       end
 
-      def test_unknown_option_exits_nonzero_with_usage
+      def test_unknown_option_exits_with_usage_error_with_usage
         code = ProjectAnalyzers.run(["--bogus"], stdout: @stdout, stderr: @stderr)
 
-        refute_equal 0, code
+        assert_equal 64, code
+        assert_match(/metz-scan project-analyzers: invalid option/, @stderr.string)
         assert_match(/Usage: metz-scan project-analyzers/, @stderr.string)
       end
 

@@ -8,6 +8,7 @@ require_relative "scan/compliance_scorecard"
 require_relative "scan/text_renderer"
 require_relative "scan/sarif_renderer"
 require_relative "scan/github_annotations_renderer"
+require_relative "../cli"
 
 module MetzScan
   module Commands
@@ -87,28 +88,28 @@ module MetzScan
       def parser_error(err)
         stderr.puts "metz-scan report: #{err.message}"
         stderr.puts USAGE
-        1
+        CLI::USAGE_ERROR
       end
 
       def missing_path_arg
         stderr.puts "metz-scan report: missing PATH argument."
         stderr.puts USAGE
-        1
+        CLI::USAGE_ERROR
       end
 
       def missing_file(path)
         stderr.puts "metz-scan report: no such file: #{path}"
-        1
+        CLI::USAGE_ERROR
       end
 
       def invalid_format(fmt)
         stderr.puts "metz-scan report: invalid --format '#{fmt}'. Valid formats: text, json, sarif, gh-annotations."
-        1
+        CLI::USAGE_ERROR
       end
 
       def invalid_json(path, detail)
         stderr.puts "metz-scan report: invalid JSON in #{path}: #{detail}"
-        1
+        CLI::USAGE_ERROR
       end
     end
   end

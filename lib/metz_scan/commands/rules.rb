@@ -2,6 +2,7 @@
 
 require "json"
 require "optparse"
+require_relative "../cli"
 
 module MetzScan
   module Commands
@@ -23,15 +24,26 @@ module MetzScan
       end
 
       def run(argv)
-        options = parse_options(argv)
-        cops = load_cops
-        options[:json] ? emit_json(cops) : emit_table(cops)
-        0
+        emit(parse_options(argv))
+      rescue OptionParser::ParseError => e
+        parser_error(e)
       end
 
       private
 
       attr_reader :stdout, :stderr
+
+      def emit(options)
+        cops = load_cops
+        options[:json] ? emit_json(cops) : emit_table(cops)
+        0
+      end
+
+      def parser_error(err)
+        stderr.puts "metz-scan rules: #{err.message}"
+        stderr.puts USAGE
+        CLI::USAGE_ERROR
+      end
 
       def parse_options(argv)
         options = { json: false }

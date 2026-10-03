@@ -51,9 +51,9 @@ module MetzScan
         assert_match(/#{Regexp.escape(cop_name)}.*Why it matters:.*Fix safety:/m, stdout.string)
       end
 
-      def test_explain_unknown_cop_exits_non_zero_with_friendly_message
+      def test_explain_unknown_cop_exits_with_usage_error_with_friendly_message
         code = Explain.run(["Nonexistent/Cop"], stdout: @stdout, stderr: @stderr)
-        refute_equal 0, code
+        assert_equal 64, code
         assert_unknown_cop_error(@stdout.string + @stderr.string)
       end
 
@@ -66,13 +66,21 @@ module MetzScan
 
       def test_explain_non_metz_cop_treated_as_unknown
         code = Explain.run(["Metrics/ClassLength"], stdout: @stdout, stderr: @stderr)
-        refute_equal 0, code
+        assert_equal 64, code
         assert_includes @stderr.string, "Metrics/ClassLength"
       end
 
-      def test_explain_without_argument_exits_non_zero_with_usage
+      def test_explain_invalid_option_exits_with_usage_error_without_stack_trace
+        code = Explain.run(["--bogus"], stdout: @stdout, stderr: @stderr)
+
+        assert_equal 64, code
+        assert_match(/metz-scan explain: invalid option: --bogus/, @stderr.string)
+        refute_match(/\.rb:\d+:in /, @stdout.string + @stderr.string)
+      end
+
+      def test_explain_without_argument_exits_with_usage_error_with_usage
         code = Explain.run([], stdout: @stdout, stderr: @stderr)
-        refute_equal 0, code
+        assert_equal 64, code
         assert_match(/Usage: metz-scan explain/, @stderr.string)
       end
     end
