@@ -2,8 +2,8 @@
 
 How an executor model (Claude Opus/Sonnet/Haiku, or a GPT/Codex session) uses
 this workspace safely. Read this, then `CLAUDE.md` (the canonical shared brief,
-whichever harness you run in), then `trk status --json` / `.trk/STATE.md` — in
-that order — before touching code.
+whichever harness you run in), then `trk status` / `.trk/STATE.md` — in that
+order — before touching code.
 
 Harness note: Claude Code auto-discovers the repo skills from
 `.claude/skills/`; Codex discovers the same skills through the
@@ -20,7 +20,7 @@ in a preserved clean clone.
 
 ## Session start (every session, ~5 minutes)
 
-1. Run `trk status --json` and read `.trk/STATE.md` (Goal, Next, Backlog). Your
+1. Run `trk status` and read `.trk/STATE.md` (Goal, Next, Backlog). Your
    task must map to a Next item, a filed issue, or an explicit user instruction.
    If it maps only to parked backlog, stop and tell the user — do not proceed.
 2. Check `origin/main` CI: `gh run list --repo fuentesjr/metz-scan --branch main --limit 3`.
@@ -36,7 +36,7 @@ in a preserved clean clone.
 | Anything involving versions, tags, gem push | the `release` skill |
 | Evaluating scan output on real codebases | the `dogfood-round` skill |
 | Just solved something that took >1 attempt | the `extract-approach` skill |
-| Executing a backlog task | `trk status --json`, then the top actionable `## Next` item in `.trk/STATE.md` |
+| Executing a queued (Next) task | `trk status`, then the top actionable `## Next` item in `.trk/STATE.md` |
 
 The skills encode ordering (e.g. commit BEFORE `bin/check_ci_parity`, publish
 `rubocop-metz` BEFORE `metz-scan`). Reordering steps because they "seem
@@ -85,8 +85,11 @@ independent" is the classic cheap-model failure here.
 - One slice = one commit = code + tests + docs + tracker update together.
 - Tracker-only commits are forbidden (exception: user-approved direction
   changes).
-- Commit message shape follows history: imperative, ≤72-char subject, issue
-  refs like `Fix #34: ...` (see `git log --oneline -20`).
+- Commit message shape follows recent history: Conventional Commits
+  (`type(scope): subject`, e.g. `fix(cli):`, `docs:`), imperative, ≤72-char
+  subject, issue refs in the body (`Closes #NN`); GitHub adds the trailing
+  `(#NN)` PR number on squash-merge, so do not write it (see
+  `git log --oneline -20`).
 - Push only after `bin/check_ci_parity` passes on the committed HEAD, and only
   if the user authorized pushing.
 

@@ -1,7 +1,7 @@
 # Claude Code project notes
 
-Orient from `trk status --json` / `.trk/STATE.md` first — they hold the current
-goal, Next steps, and backlog (including parked work). Work tracking is written
+Orient from `trk status` / `.trk/STATE.md` first — they hold the current goal,
+Next steps, and backlog (including parked work). Work tracking is written
 through the `trk` CLI; see `AGENTS.md`. Standing process rules below still
 govern slice discipline. Run `bin/check_ci_parity` before any push.
 
@@ -23,8 +23,8 @@ Two gems in one repo, strict dependency direction:
   `MetzScan`/`metz_scan` (only its gemspec may). Enforced by
   `bin/check_dependency_direction`.
 - `lib/metz_scan/` — the `metz-scan` CLI wrapper. Depends on `rubocop-metz`
-  via `"~> #{MetzScan::VERSION}"` in `metz-scan.gemspec:31`, so version bumps
-  auto-carry the pin.
+  via `"~> #{MetzScan::VERSION}"` (the `add_dependency "rubocop-metz"` line in
+  `metz-scan.gemspec`), so version bumps auto-carry the pin.
 
 Key paths:
 
@@ -38,20 +38,22 @@ Key paths:
   `implicit_context_pressure.rb`, `repeated_query_criteria.rb`) and
   Rubydex-index-backed (`inheritance_descendants.rb`,
   `package_dependency_pressure.rb`, `namespace_leak_pressure.rb`,
-  `subclass_override_pressure.rb`) via `lib/metz_scan/project_index.rb`
+  `subclass_override_pressure.rb`, `test_calls_private_method.rb`) via
+  `lib/metz_scan/project_index.rb`
   (`RubydexBackend` when the optional `rubydex` bundle group is installed,
   `NullBackend` otherwise — index-backed analyzers then silently contribute
   zero findings).
 - Calibration pipeline: `lib/metz_scan/calibration/`, driven by
   `bin/check_project_analyzer_calibration`, with the tracked target manifest
   and baseline in `docs/calibration/project_analyzer_{targets,baseline}.yml`.
-- Output renderers (text/json/sarif/gh-annotations) under
-  `lib/metz_scan/commands/scan/*_renderer.rb`.
+- Output renderers (text/sarif/gh-annotations) under
+  `lib/metz_scan/commands/scan/*_renderer.rb`; JSON output is generated inline
+  in `lib/metz_scan/commands/scan.rb`.
 
 ## Commands
 
 ```bash
-bundle exec rake              # full suite (~546 runs as of 0.5.1)
+bundle exec rake              # full suite (~710 runs as of 2026-10)
 bundle exec rake test:fast    # groups defined in test/support/test_file_groups.rb
 bundle exec rake test:slow    # subprocess/integration tests
 bundle exec rubocop           # repo lints itself with its own plugin
@@ -89,7 +91,10 @@ always running the full suite — remote CI stays the full-suite backstop; set
   `readme_workflow_docs_test.rb`, `read_only_command_docs_test.rb`, and
   `metz_scan_skill_test.rb` pin README/skill content to actual behavior. If you
   change CLI output, analyzer status, or workflow commands, expect to update
-  README.md and `skills/metz-scan/SKILL.md` too.
+  README.md and `skills/metz-scan/SKILL.md` too. `agent_workspace_docs_test.rb`
+  pins this file, `AGENTS.md`, and the repo skills;
+  `project_analyzer_calibration_docs_test.rb` pins the calibration docs; and
+  `release_checklist_test.rb` pins `RELEASE_CHECKLIST.md` to CI and the guards.
 - Exact-output fixtures under `test/fixtures/` (e.g.
   `project_analyzers/text.txt`, `check_rubydex_drift/*.txt`) pin CLI text/JSON
   byte-for-byte. Output changes require deliberate fixture updates, never

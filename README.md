@@ -477,7 +477,7 @@ cd rubocop-metz && gem build rubocop-metz.gemspec && cd ..
 This subsection is for maintainers and coding agents, not required for a
 one-off external contribution.
 
-Before autonomous repo work, run `trk status --json` (see [AGENTS.md](AGENTS.md)
+Before autonomous repo work, run `trk status` (see [AGENTS.md](AGENTS.md)
 and [CLAUDE.md](CLAUDE.md)) for the current local direction, next queue, parked
 work, and why this repo tracks agent coordination in `.trk/` rather than only
 in GitHub Projects or issues.

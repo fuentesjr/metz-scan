@@ -12,7 +12,7 @@ the first section.
    duplicate its content here; if it conflicts with this file, `CLAUDE.md`
    wins except for the OpenAI-specific sections below.
 2. Work tracking lives in `.trk/` via the `trk` CLI. Orchestrator: run
-   `trk status --json` at session start; `trk dispatch` before spawning
+   `trk status` at session start; `trk dispatch` before spawning
    long-running subagents and `trk resolve` on return; `trk check --strict`
    before session end. Subagents: do not modify anything under `.trk/`; report
    results in your final message. `bin/check_tracker_queue` still gates that
@@ -24,8 +24,8 @@ Repo skills follow the open Agent Skills standard and are discoverable at
 `.agents/skills` (a symlink to the canonical `.claude/skills`): `land-slice`
 (verify + commit a slice), `release` (GitHub Packages runbook),
 `dogfood-round` (output-quality rubric), `extract-approach` (learning notes).
-For bounded autonomous runs, use `trk status --json` and the current `## Next`
-queue in `.trk/STATE.md`.
+For bounded autonomous runs, use `trk status` and the current `## Next` queue
+in `.trk/STATE.md`.
 
 ## OpenAI docs instruction
 
