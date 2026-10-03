@@ -107,8 +107,9 @@ always running the full suite — remote CI stays the full-suite backstop; set
 - `.rubocop.yml` is ERB and excludes all `test/fixtures/*` app trees. To scan a
   fixture app manually, copy it outside the repo first (mktemp pattern in
   RELEASE_CHECKLIST.md and CI).
-- `scan` exit 1 means "findings reported", not a crash. Higher exits are real
-  failures.
+- `scan` exit 1 means "findings reported", not a crash. Exit 2 is a RuboCop
+  failure and 64 a usage error in any subcommand; any other nonzero exit is
+  a crash.
 - Version bumps touch both `lib/metz_scan/version.rb` and
   `rubocop-metz/lib/rubocop/metz/version.rb`, plus `Gemfile.lock`;
   release-issue dry-run expectations in tests pin the version string.

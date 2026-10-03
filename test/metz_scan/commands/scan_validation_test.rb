@@ -24,14 +24,35 @@ module MetzScan
         restore_rubocop_cache_root
       end
 
-      def test_unknown_format_exits_non_zero_with_friendly_message
+      def test_unknown_format_exits_with_usage_error_with_friendly_message
         code = run_scan([@tmpdir, "--format", "bogus"])
         assert_invalid_format_message(code)
       end
 
-      def test_nonexistent_path_exits_non_zero_with_friendly_message
+      def test_unknown_format_with_auto_fix_exits_with_usage_error_with_friendly_message
+        code = run_scan([@tmpdir, "--auto-fix", "--format", "bogus"])
+        assert_invalid_format_message(code)
+      end
+
+      def test_nonexistent_path_exits_with_usage_error_with_friendly_message
         path = File.join("/nonexistent", "metz-scan-#{Process.pid}", "path")
         assert_friendly_missing_path(run_scan([path]), path)
+      end
+
+      def test_invalid_option_exits_with_usage_error_with_message
+        code = run_scan(["--bogus"])
+
+        assert_equal 64, code
+        assert_match(/invalid option: --bogus/i, @stderr.string)
+        assert_no_stack_trace
+      end
+
+      def test_missing_path_exits_with_usage_error_with_message
+        code = run_scan([])
+
+        assert_equal 64, code
+        assert_match(/missing PATH/i, @stderr.string)
+        assert_no_stack_trace
       end
 
       def test_empty_ruby_project_exits_zero
@@ -69,14 +90,14 @@ module MetzScan
       end
 
       def assert_invalid_format_message(code)
-        refute_equal 0, code
+        assert_equal 64, code
         assert_match(/invalid --format/i, @stderr.string)
         Scan::VALID_FORMATS.each { |fmt| assert_match(/#{fmt}/, @stderr.string) }
         assert_no_stack_trace
       end
 
       def assert_friendly_missing_path(code, path)
-        refute_equal 0, code
+        assert_equal 64, code
         assert_match(/#{Regexp.escape(path)}/, @stderr.string)
         assert_match(/no such file/i, @stderr.string)
         assert_no_stack_trace
