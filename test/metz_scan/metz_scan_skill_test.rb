@@ -19,6 +19,7 @@ module MetzScan
       "--auto-fix --dry-run",
       "Rubydex",
       "exit status `1`",
+      "Exit status `64`",
       "with every number removed",
       "shrank, or unchanged"
     ].freeze

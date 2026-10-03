@@ -16,6 +16,9 @@ module MetzScan
 
     SUBCOMMANDS = SUBCOMMAND_SUMMARIES.keys.freeze
 
+    # sysexits(3) EX_USAGE: keeps caller errors distinct from exit 1, "findings reported".
+    USAGE_ERROR = 64
+
     def self.start(argv = ARGV, stdout: $stdout, stderr: $stderr)
       new(stdout: stdout, stderr: stderr).run(argv)
     end
@@ -55,15 +58,14 @@ module MetzScan
 
     def show_help_and_fail
       stderr.puts help_text
-      1
+      USAGE_ERROR
     end
 
     def dispatch(args)
       name = args.shift
       return unknown_subcommand(name) unless SUBCOMMANDS.include?(name)
 
-      handler = subcommand_handler(name)
-      handler ? handler.run(args, stdout: stdout, stderr: stderr) : stub_subcommand(name)
+      subcommand_handler(name).run(args, stdout: stdout, stderr: stderr)
     end
 
     SUBCOMMAND_HANDLERS = { "rules" => "Rules", "explain" => "Explain", "scan" => "Scan",
@@ -71,22 +73,14 @@ module MetzScan
     private_constant :SUBCOMMAND_HANDLERS
 
     def subcommand_handler(name)
-      klass_name = SUBCOMMAND_HANDLERS[name]
-      return unless klass_name
-
       require_relative "commands/#{name.tr('-', '_')}"
-      Commands.const_get(klass_name)
-    end
-
-    def stub_subcommand(name)
-      stderr.puts "metz-scan: subcommand '#{name}' is not yet implemented."
-      1
+      Commands.const_get(SUBCOMMAND_HANDLERS.fetch(name))
     end
 
     def unknown_subcommand(name)
       stderr.puts "metz-scan: unknown subcommand '#{name}'."
       stderr.puts help_text
-      1
+      USAGE_ERROR
     end
 
     def help_text

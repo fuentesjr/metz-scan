@@ -2,6 +2,7 @@
 
 require "json"
 require "optparse"
+require_relative "../cli"
 
 require_relative "scan/project_analyzer_runner"
 
@@ -21,7 +22,7 @@ module MetzScan
 
       def run(argv)
         options = parse_options(argv)
-        return 1 unless options
+        return CLI::USAGE_ERROR unless options
 
         entries = analyzer_entries
         options[:json] ? emit_json(entries) : emit_table(entries)
@@ -41,7 +42,7 @@ module MetzScan
       end
 
       def parse_error(error)
-        stderr.puts error.message
+        stderr.puts "metz-scan project-analyzers: #{error.message}"
         stderr.puts option_parser.help
         nil
       end

@@ -11,6 +11,7 @@ require_relative "scan/text_renderer"
 require_relative "scan/sarif_renderer"
 require_relative "scan/github_annotations_renderer"
 require_relative "scan/auto_fix"
+require_relative "../cli"
 
 module MetzScan
   module Commands
@@ -128,7 +129,6 @@ module MetzScan
       def validate(options)
         return missing_path_arg if options.paths.empty?
         return missing_paths(options.paths) unless options.paths.all? { |p| File.exist?(p) }
-        return nil if options.auto_fix
 
         invalid_format(options.format) unless VALID_FORMATS.include?(options.format)
       end
@@ -168,7 +168,7 @@ module MetzScan
       def parser_error(err)
         stderr.puts "metz-scan scan: #{err.message}"
         stderr.puts USAGE
-        1
+        CLI::USAGE_ERROR
       end
 
       def print_help
@@ -179,17 +179,17 @@ module MetzScan
       def missing_path_arg
         stderr.puts "metz-scan scan: missing PATH argument."
         stderr.puts USAGE
-        1
+        CLI::USAGE_ERROR
       end
 
       def missing_paths(paths)
         paths.reject { |p| File.exist?(p) }.each { |p| stderr.puts "metz-scan scan: no such file or directory: #{p}" }
-        1
+        CLI::USAGE_ERROR
       end
 
       def invalid_format(fmt)
         stderr.puts "metz-scan scan: invalid --format '#{fmt}'. Valid formats: text, json, sarif, gh-annotations."
-        1
+        CLI::USAGE_ERROR
       end
 
       def runner_error(err)

@@ -111,3 +111,11 @@ F1 fixed in skills/metz-scan/SKILL.md step 3 (skill text only): for the size cop
 
 ## 2026-10-03T00:37Z log
 Pre-merge Fable review of F1 step 3: the parameter and chain cops locate on the line the agent edits, so a whole-line key made a trimmed parameter list or edited chain look new. Key anchor is now the method, class, or constant name for the length and parameter cops (chain cops keep the stripped line), base-scan path prefix stripping is explicit, and the rename/edited-chain gap is stated.
+## 2026-10-02T16:16Z log
+Usage errors now exit 64 (sysexits EX_USAGE) across the whole CLI (owner chose 64 and whole-CLI scope 2026-10-02): scan, report, explain, rules, bare/unknown subcommand. Exit 1 stays findings, 2 RuboCop failure. Spec tests written first by a Sonnet worker. Also fixes rules --bogus crashing with an uncaught OptionParser::InvalidOption. Report usage-error tests moved to report_validation_test.rb (mirrors scan_validation_test.rb) to keep ReportTest under Metz/ClassesTooLong. Dropped backlog scope-loader-ruby-version-file (could not reproduce).
+
+## 2026-10-02T17:08Z log
+Exit-64 contract completed on fix/usage-error-exit-code: explain and project-analyzers now exit 64 on an invalid option (explain previously stack-traced, project-analyzers exited 1), and scan validates --format under --auto-fix instead of silently ignoring it. Gaps found in the 2026-10-02 doc review; spec tests written first by a separate model (Sonnet), fix by Opus; Fable advisor recommended finishing here rather than narrowing the PR claim.
+
+## 2026-10-03T00:26Z log
+Pre-merge Fable review follow-up on fix/usage-error-exit-code: removed the unreachable CLI stub_subcommand (the last literal exit 1 outside findings; every listed subcommand has a handler) and listed invalid report JSON among README's exit-64 cases.
