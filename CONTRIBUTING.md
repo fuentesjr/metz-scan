@@ -48,5 +48,5 @@ build steps are in the README
 
 External contributors can ignore this. Maintainers and coding agents coordinate
 via [AGENTS.md](AGENTS.md), [CLAUDE.md](CLAUDE.md), and the `.trk/` work
-tracker (`trk status --json`). Design-decision records live under
+tracker (`trk status`). Design-decision records live under
 `docs/ddrs/`; longer working papers under `docs/maintainers/`.

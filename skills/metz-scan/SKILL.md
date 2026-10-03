@@ -50,7 +50,43 @@ mid-edit findings push you into premature micro-refactors.
    when that is not the repository root, add `--relative` to `git diff`.
 
 3. Decide which of those findings are yours. Every finding in a new file is
-   yours. In an existing file, a finding is yours when either holds:
+   yours. In an existing file, the rule depends on the cop.
+
+   The length, parameter, and chain cops (`Metz/MethodsTooLong`,
+   `Metz/ClassesTooLong`, `Metz/MethodsTooManyParameters`,
+   `Metz/DemeterTrainWreck`, `Metz/ViewsDeepNavigation`) report a count such
+   as `[27/5]` and name no method. The length cops span the whole method or
+   class, so any edit inside overlaps them; the parameter and chain cops sit
+   on the line you change when you touch them. Either way, overlap cannot
+   tell your finding from a pre-existing one, so the base scan decides. Scan
+   the base commit with the same paths as step 1: `"$base_dir"` for `.`, or
+   `"$base_dir/app" "$base_dir/lib"` when step 1 passed `app lib`.
+
+   ```bash
+   out="${TMPDIR:-/tmp}/metz-scan-check"
+   base_dir="$(mktemp -d)/base"
+   git worktree add --detach "$base_dir" <base>
+   bundle exec metz-scan scan "$base_dir" --format json > "$out/base.json"
+   git worktree remove --force "$base_dir"
+   ```
+
+   Match findings on a key, ignoring the numbers: path suffix, `cop_name`,
+   `message` with every number removed, and an anchor read from the source
+   line at `location.start_line`. For the length and parameter cops the
+   anchor is the method, class, or constant name on that line (`def name`,
+   `define_method(:name)`, `class Name`, `Name = Struct.new`), so editing
+   the body or the parameters keeps the key. For the chain cops it is the
+   whole line with leading whitespace stripped. Base-scan paths are absolute
+   under `$base_dir`; strip that prefix, then read the line with
+   `git show <base>:<file>` for a base finding and from your working tree
+   for yours. When several findings share a key, pair them in `start_line`
+   order. An unpaired finding in your report is yours. A paired finding is
+   pre-existing even when it overlaps your edit: leave it and list it in the
+   handoff as grew (`27/5` to `30/5`), shrank, or unchanged. A chain you
+   edited, or a method or class you renamed, pairs with nothing and counts
+   as yours.
+
+   For every other cop, a finding is yours when either holds:
 
    - Its `location.start_line` through `location.last_line` overlaps lines
      you added or changed. `git diff -U0 <base> -- <file>` prints each change
@@ -64,16 +100,8 @@ mid-edit findings push you into premature micro-refactors.
      messages list the methods or collaborators.
 
    Every other finding in a changed file is pre-existing: leave it and list
-   it in the handoff. When you cannot tell, scan the base commit and compare
-   on path suffix, `cop_name`, and `message`; a finding absent from the base
-   report is yours.
-
-   ```bash
-   base_dir="$(mktemp -d)/base"
-   git worktree add --detach "$base_dir" <base>
-   bundle exec metz-scan scan "$base_dir" --format json > "$out/base.json"
-   git worktree remove --force "$base_dir"
-   ```
+   it in the handoff. When you cannot tell, match it against the base scan
+   with the key above; an unpaired finding is yours.
 
 4. Fix each finding that is yours. Read its `why_it_matters` and
    `suggested_next_moves` first. For a `Metz/*` cop, `metz-scan explain <cop>`
@@ -91,20 +119,23 @@ mid-edit findings push you into premature micro-refactors.
    file so the before report survives.
 
    ```bash
+   out="${TMPDIR:-/tmp}/metz-scan-check"
    bundle exec metz-scan scan . --format json > "$out/after.json"
    ```
 
-   A finding is fixed when it no longer appears in the after report and you
-   added no suppression for it; a suppressed finding moves to the report's
-   `suppressions` list instead of disappearing. Repeat steps 4 and 5 until none of your
-   findings remain, then run the project's test suite; a design fix that
-   breaks a test is not done.
+   A finding is fixed when nothing in the after report matches it on the
+   step 3 key and you added no suppression for it; a size finding that is
+   still present but smaller is not fixed. A suppressed finding moves to the
+   report's `suppressions` list instead of disappearing. Repeat steps 4 and 5
+   until none of your findings remain, then run the project's test suite; a
+   design fix that breaks a test is not done.
 
 6. Hand off with a short metz-scan section: the scan command and
    `summary.offense_count` before and after your fixes; each finding you
    fixed (cop, `path:line`, design move); each pre-existing finding you left
-   in a changed file; each suppression you added, with its reason; and any
-   finding of yours you could not fix, and why.
+   in a changed file, with grew, shrank, or unchanged for a size finding;
+   each suppression you added, with its reason; and any finding of yours you
+   could not fix, and why.
 
 ## Changes that are not fixes
 
@@ -227,6 +258,7 @@ human asks for that coverage.
 bundle exec metz-scan rules --json
 bundle exec metz-scan explain Metz/MethodsTooLong
 bundle exec metz-scan scan app lib --format text
+out="${TMPDIR:-/tmp}/metz-scan-check"
 bundle exec metz-scan report "$out/scan.json" --format text
 bundle exec metz-scan scan . --format sarif
 bundle exec metz-scan scan . --format gh-annotations

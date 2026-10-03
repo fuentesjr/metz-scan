@@ -23,7 +23,7 @@ covers GitHub Packages.
 - Minor: any default-behavior change or new user-visible surface. Precedent:
   #31 changed default scan output, forcing `0.5.0` instead of `0.4.1`
   (`docs/maintainers/implementation-notes.md` 2026-07-05).
-- Do not use `1.0.0` for a first public push (tracker rule).
+- Do not use `1.0.0`; it remains reserved (`.trk/STATE.md` goal).
 
 ## Phase 2 — prep commit (one commit, shape of `3ec8f29`)
 
@@ -31,22 +31,25 @@ Touch exactly these surfaces:
 
 1. `lib/metz_scan/version.rb` and `rubocop-metz/lib/rubocop/metz/version.rb`.
 2. `Gemfile.lock` — run `bundle install`; the gemspec pin
-   `"~> #{MetzScan::VERSION}"` (`metz-scan.gemspec:31`) carries the PATH
-   constraint automatically. Do not hand-edit the lockfile.
+   `"~> #{MetzScan::VERSION}"` (the `add_dependency "rubocop-metz"` line in
+   `metz-scan.gemspec`) carries the PATH constraint automatically. Do not
+   hand-edit the lockfile.
 3. Release-issue dry-run expectations: `test/metz_scan/create_release_issue_test.rb`
-   and `test/metz_scan/release_metadata_test.rb` pin the version string.
+   pins the version string (`release_metadata_test.rb` compares the gemspecs
+   and needs no edit).
 4. `docs/releases/vX.Y.Z.md` — release notes draft; model on
    `docs/releases/v0.5.1.md` (issue-centric, migration note only if behavior
    changed).
 5. README install example only if the current `~>` constraint no longer
-   resolves to the new version (it was deliberately left at `~> 0.5.0` for
-   `0.5.1`).
-6. `.trk/` update via `trk log` / `trk goal` as needed for the prep.
+   resolves to the new version (it pins `~> 0.5.3` as of `0.5.3`).
+6. `.trk/` update via `trk log` / `trk goal` as needed for the prep
+   (orchestrator only; see `AGENTS.md`).
 
 Then run the full gauntlet from the `land-slice` skill, including
 `CI_PARITY_FULL=1 bin/check_ci_parity` (parity now runs a reduced subset by
-default; force the full suite for a release prep) on the committed prep, push,
-and wait for green CI on the prep commit before asking to tag. Verify with
+default; force the full suite for a release prep) on the committed prep. Push
+only when the user authorized pushing, then wait for green CI on the prep
+commit before asking to tag. Verify with
 `gh run list --repo fuentesjr/metz-scan --branch main --limit 3`.
 
 ## Phase 3 — tag, GitHub Release, publish (authorization required)
@@ -83,8 +86,8 @@ label for #34 in `0.5.1`). Then:
 
 ## Known failure modes
 
-- `check_ci_parity` red on prep almost always means a version-pinned test in
-  the two files listed in Phase 2 step 3 was missed.
+- `check_ci_parity` red on prep almost always means the version-pinned test
+  listed in Phase 2 step 3 was missed.
 - Publishing `metz-scan` before `rubocop-metz` is visible → consumer resolution
   failure; `bin/check_published_gem` catches it, fix by waiting/republishing in
   order.

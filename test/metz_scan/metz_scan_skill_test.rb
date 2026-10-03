@@ -19,7 +19,9 @@ module MetzScan
       "--auto-fix --dry-run",
       "Rubydex",
       "exit status `1`",
-      "Exit status `64`"
+      "Exit status `64`",
+      "with every number removed",
+      "shrank, or unchanged"
     ].freeze
     MAINTAINER_ONLY_TERMS = [
       "PROJECT_TRACKER.md",

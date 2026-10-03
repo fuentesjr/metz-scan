@@ -103,11 +103,21 @@ Suppression ledger (Next 1) implemented to the 21 owner-pinned spec tests (uncha
 
 ## 2026-10-02T17:00Z log
 docs: user-doc drift pass (2026-10-02 doc review) — --auto-fix is a no-op without --all-cops (no Metz cop autocorrects); --dry-run rewrites then restores files; check_ci_parity runs before every push and tests a subset (CI_PARITY_FULL=1 for all); suppression records carry both directive and config keys; default scan also reads TargetRubyVersion and silently skips remote inherit_from; Bundler dropped from consumer requirements. Parked: scan --help still says --dry-run does not modify files; DemeterTrainWreck fix_safety :unsafe with no corrector.
+## 2026-10-02T16:58Z log
+docs: maintainer-doc drift pass (2026-10-02 doc review) — orient with `trk status` (--json omits goal and Next); CLAUDE.md lists TestCallsPrivateMethod as index-backed, renderers and docs-enforcing tests corrected; land-slice/release push only when authorized, tracker writes are the orchestrator's; release skill drops the stale gemspec line number and version-pin list; playbook commit style is Conventional Commits.
+
+## 2026-10-03T00:37Z log
+Pre-merge Fable review: playbook commit style corrected; issue refs go in the body, and the trailing (#NN) on older subjects is the PR number GitHub adds on squash-merge.
 ## 2026-10-02T16:25Z log
 Agent-loop dogfood round 1 (Claude Sonnet, lobsters, current main): agent passed scan-at-end, fixed-not-gamed, handoff; no suppressions. F1: skill step 3 overlap rule and message-based base compare both misattribute pre-existing findings in touched code (method 27/5 -> 18/5, class 1095 -> 1098). F2: JSON size did not reach agent context (filtered with Python); skill text was the largest cost. Owner decisions: fix F1 in skill text, then a Codex round; --changed-since demoted to backlog because it filters by file and does not address F1. Added the agent-loop variant to the dogfood-round skill.
 
 ## 2026-10-03T00:37Z log
 Pre-merge Fable review: dogfood-round agent variant now says the throwaway target copy lives outside this repo; .rubocop.yml excludes tmp/, so an in-repo copy scans zero files.
+## 2026-10-02T17:10Z log
+F1 fixed in skills/metz-scan/SKILL.md step 3 (skill text only): for the size cops (MethodsTooLong, ClassesTooLong, MethodsTooManyParameters, DemeterTrainWreck, ViewsDeepNavigation) the base scan decides, matching on path suffix + cop_name + message with numbers removed + the start_line source line; paired findings are pre-existing and reported as grew/shrank/unchanged. Base scan uses step 1's paths; every block using $out defines it; step 5's fixed test uses the same key. Matching design from a Fable advisor consult, checked against the cop message formats. Skill test pins the new wording.
+
+## 2026-10-03T00:37Z log
+Pre-merge Fable review of F1 step 3: the parameter and chain cops locate on the line the agent edits, so a whole-line key made a trimmed parameter list or edited chain look new. Key anchor is now the method, class, or constant name for the length and parameter cops (chain cops keep the stripped line), base-scan path prefix stripping is explicit, and the rename/edited-chain gap is stated.
 ## 2026-10-02T16:16Z log
 Usage errors now exit 64 (sysexits EX_USAGE) across the whole CLI (owner chose 64 and whole-CLI scope 2026-10-02): scan, report, explain, rules, bare/unknown subcommand. Exit 1 stays findings, 2 RuboCop failure. Spec tests written first by a Sonnet worker. Also fixes rules --bogus crashing with an uncaught OptionParser::InvalidOption. Report usage-error tests moved to report_validation_test.rb (mirrors scan_validation_test.rb) to keep ReportTest under Metz/ClassesTooLong. Dropped backlog scope-loader-ruby-version-file (could not reproduce).
 
