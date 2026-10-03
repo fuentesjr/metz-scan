@@ -70,7 +70,7 @@ Avoid refactors that only satisfy the metric while making the code harder to rea
 
 ## What should I do when a finding is wrong for my code?
 
-Scope the cop instead of fighting it. The default scan honors two RuboCop mechanisms: a per-cop `Exclude` in `.rubocop.yml`, for example to skip generated files, and a narrow inline disable with a reason. Raising a threshold or setting `Enabled: false`, including in a directory's own `.rubocop.yml`, affects only `--all-cops` and plain `rubocop`.
+Scope the cop instead of fighting it. The default scan honors file scope from `.rubocop.yml` (`AllCops: Exclude` and per-cop `Include` and `Exclude`, for example a per-cop `Exclude` to skip generated files) and a narrow inline disable with a reason. Raising a threshold or setting `Enabled: false`, including in a directory's own `.rubocop.yml`, affects only `--all-cops` and plain `rubocop`.
 
 ```ruby
 # rubocop:disable Metz/DemeterTrainWreck -- this query object intentionally mirrors the reporting schema
@@ -90,12 +90,12 @@ That limitation is why findings should be reviewed as prompts. A warning means "
 
 ## Does auto-fix redesign my code?
 
-No. Auto-correction is limited to fixes that RuboCop can apply mechanically. Design changes usually require human judgment, naming, and tests, so most Metz findings explain the issue and suggest next moves rather than rewriting the code.
+No. No `Metz/*` cop rewrites code: design changes require human judgment, naming, and tests, so Metz findings explain the issue and suggest next moves instead. `--auto-fix` only applies stock RuboCop's mechanical corrections, so it changes nothing unless you add `--all-cops`.
 
-Use `--dry-run` before auto-fix when you want to inspect what would change.
+Use `--dry-run` to inspect what would change. It prints the diff and restores the original files afterward; files are rewritten during the run.
 
 ```bash
-bundle exec metz-scan scan . --auto-fix --dry-run
+bundle exec metz-scan scan . --all-cops --auto-fix --dry-run
 ```
 
 ## Where should I start on an existing codebase?
