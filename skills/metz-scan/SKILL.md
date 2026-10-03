@@ -158,11 +158,10 @@ per-cop `Exclude` instead of repeating it.
 ## Reading a report
 
 - Stdout holds the report; stderr holds `metz-scan: note:` lines and errors.
-- Exit status `0` means no findings. Treat exit status `1` as findings only
-  when stdout holds a report: a usage error (missing path, unknown option,
-  invalid format) also exits `1` but prints `metz-scan scan: ...` on stderr
-  and no report. Exit status `2` means RuboCop failed; treat it as an
-  environment problem, not a finding.
+- Exit status `0` means no findings and `1` means findings reported.
+  Exit status `64` is a usage error (missing path, unknown option, invalid
+  format): fix the command and rerun. Exit status `2` means RuboCop failed;
+  treat it as an environment problem, not a finding.
 - JSON: `files[].path` and `files[].offenses[]` with `cop_name`, `message`,
   `location` (`start_line`, `last_line`, `column`), `why_it_matters`,
   `fix_safety`, and `suggested_next_moves`; `summary` with `offense_count`,

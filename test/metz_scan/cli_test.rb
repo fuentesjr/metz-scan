@@ -35,17 +35,17 @@ module MetzScan
       assert_empty @stderr.string
     end
 
-    def test_bare_invocation_prints_help_to_stderr_and_exits_non_zero
+    def test_bare_invocation_prints_help_to_stderr_and_exits_with_usage_error
       code = MetzScan::CLI.start([], stdout: @stdout, stderr: @stderr)
 
-      refute_equal 0, code
+      assert_equal 64, code
       assert_subcommands_in @stderr.string
     end
 
-    def test_unknown_subcommand_exits_non_zero_with_help
+    def test_unknown_subcommand_exits_with_usage_error_with_help
       code = MetzScan::CLI.start(["bogus"], stdout: @stdout, stderr: @stderr)
 
-      refute_equal 0, code
+      assert_equal 64, code
       assert_match(/unknown subcommand 'bogus'/, @stderr.string)
       assert_subcommands_in @stderr.string
     end

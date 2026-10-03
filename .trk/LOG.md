@@ -103,3 +103,16 @@ Suppression ledger (Next 1) implemented to the 21 owner-pinned spec tests (uncha
 
 ## 2026-10-02T17:00Z log
 docs: user-doc drift pass (2026-10-02 doc review) — --auto-fix is a no-op without --all-cops (no Metz cop autocorrects); --dry-run rewrites then restores files; check_ci_parity runs before every push and tests a subset (CI_PARITY_FULL=1 for all); suppression records carry both directive and config keys; default scan also reads TargetRubyVersion and silently skips remote inherit_from; Bundler dropped from consumer requirements. Parked: scan --help still says --dry-run does not modify files; DemeterTrainWreck fix_safety :unsafe with no corrector.
+## 2026-10-02T16:25Z log
+Agent-loop dogfood round 1 (Claude Sonnet, lobsters, current main): agent passed scan-at-end, fixed-not-gamed, handoff; no suppressions. F1: skill step 3 overlap rule and message-based base compare both misattribute pre-existing findings in touched code (method 27/5 -> 18/5, class 1095 -> 1098). F2: JSON size did not reach agent context (filtered with Python); skill text was the largest cost. Owner decisions: fix F1 in skill text, then a Codex round; --changed-since demoted to backlog because it filters by file and does not address F1. Added the agent-loop variant to the dogfood-round skill.
+
+## 2026-10-03T00:37Z log
+Pre-merge Fable review: dogfood-round agent variant now says the throwaway target copy lives outside this repo; .rubocop.yml excludes tmp/, so an in-repo copy scans zero files.
+## 2026-10-02T16:16Z log
+Usage errors now exit 64 (sysexits EX_USAGE) across the whole CLI (owner chose 64 and whole-CLI scope 2026-10-02): scan, report, explain, rules, bare/unknown subcommand. Exit 1 stays findings, 2 RuboCop failure. Spec tests written first by a Sonnet worker. Also fixes rules --bogus crashing with an uncaught OptionParser::InvalidOption. Report usage-error tests moved to report_validation_test.rb (mirrors scan_validation_test.rb) to keep ReportTest under Metz/ClassesTooLong. Dropped backlog scope-loader-ruby-version-file (could not reproduce).
+
+## 2026-10-02T17:08Z log
+Exit-64 contract completed on fix/usage-error-exit-code: explain and project-analyzers now exit 64 on an invalid option (explain previously stack-traced, project-analyzers exited 1), and scan validates --format under --auto-fix instead of silently ignoring it. Gaps found in the 2026-10-02 doc review; spec tests written first by a separate model (Sonnet), fix by Opus; Fable advisor recommended finishing here rather than narrowing the PR claim.
+
+## 2026-10-03T00:26Z log
+Pre-merge Fable review follow-up on fix/usage-error-exit-code: removed the unreachable CLI stub_subcommand (the last literal exit 1 outside findings; every listed subcommand has a handler) and listed invalid report JSON among README's exit-64 cases.
