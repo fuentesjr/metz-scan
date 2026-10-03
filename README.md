@@ -185,8 +185,9 @@ project per-cop `Exclude` entry kept out of the report appears once in a
 top-level `suppressions` array, sorted by path, line, column, and cop name.
 Each record carries `cop_name`, `path`, `line`, `column`, `message`,
 `suppressed_by` (`inline_disable` or `config_exclude`), `reason`,
-`reason_status` (`present`, `missing`, or `unchecked`), and either
-`directive` (`{line}`) or `config` (`{path, line, pattern}`). Suppressed
+`reason_status` (`present`, `missing`, or `unchecked`), `directive`
+(`{line}`), and `config` (`{path, line, pattern}`). Both `directive` and
+`config` are always present; exactly one is non-null. Suppressed
 findings never count toward `offense_count`, compliance, or the exit code.
 Text output lists them in a `Suppressed findings: N, M without a reason`
 section before the Summary, omitted when nothing was suppressed. The key is
@@ -208,10 +209,10 @@ bundle exec metz-scan scan . --project-analyzers --format sarif
 ```
 
 In default mode, `scan` reports stock Metz opinion on your project: it honors
-your project's file *scope* — both `AllCops: Exclude` and per-cop
-`Metz/*: Exclude` lists — but uses stock Metz cop configuration for thresholds,
-severity, and opt-in status, so a project cannot weaken a Metz cop and get a
-rosier report. This is why the length cops (`Metz/MethodsTooLong`,
+your project's file *scope* — `AllCops: Exclude` and per-cop `Include` and
+`Exclude` lists for `Metz/*` cops — but uses stock Metz cop configuration for
+thresholds, severity, and opt-in status, so a project cannot weaken a Metz cop
+and get a rosier report. This is why the length cops (`Metz/MethodsTooLong`,
 `Metz/ClassesTooLong`) can be scoped off test trees with a per-cop `Exclude`
 while still applying to production code. `--all-cops` runs the full stock
 RuboCop suite under your complete project configuration instead.
@@ -221,11 +222,12 @@ RuboCop suite under your complete project configuration instead.
 `rules` and `explain`, but they are not included in default scan output until
 separate dogfooding earns that promotion.
 
-Default mode reads only file-scope settings from the target `.rubocop.yml`, so
-it does not require external RuboCop extensions declared with `plugins:`,
-`require:`, or `inherit_gem:`. `--all-cops` uses RuboCop's complete project
-configuration; if a target extension gem is missing, install that gem in the
-bundle you use to run `metz-scan` or run the default Metz-only scan.
+Default mode reads only file-scope settings and `AllCops: TargetRubyVersion`
+from the target `.rubocop.yml`, so it does not require external RuboCop
+extensions declared with `plugins:`, `require:`, or `inherit_gem:`.
+`--all-cops` uses RuboCop's complete project configuration; if a target
+extension gem is missing, install that gem in the bundle you use to run
+`metz-scan` or run the default Metz-only scan.
 
 If an `inherit_gem:` entry names a gem that isn't installed in the bundle
 running `metz-scan`, that gem's file-scope `Exclude` cannot be read, so it is
@@ -233,6 +235,10 @@ not applied — default mode prints a one-line `metz-scan: note:` warning to
 stderr naming the gem instead of silently dropping the exclude. Install the
 gem (or run `--all-cops`, which uses your complete project configuration) to
 have that scope honored.
+
+Default mode skips remote (`http://` or `https://`) `inherit_from:` entries
+without a warning, so file-scope settings in a remote config are not applied.
+Use `--all-cops` when a remote config carries scope you need.
 
 Current project analyzer status:
 
@@ -259,12 +265,17 @@ includes tests, such as `metz-scan scan . --project-analyzers`; scanning only
 [docs/project-analyzer-calibration.md](docs/project-analyzer-calibration.md)
 for per-analyzer scope, thresholds, triage rules, and calibration evidence.
 
-Run safe auto-correction or preview it first:
+No `Metz/*` cop autocorrects, so `--auto-fix` changes nothing unless you add
+`--all-cops`; it then applies stock RuboCop's safe corrections. Preview them
+first:
 
 ```bash
-bundle exec metz-scan scan . --auto-fix --dry-run
-bundle exec metz-scan scan . --auto-fix
+bundle exec metz-scan scan . --all-cops --auto-fix --dry-run
+bundle exec metz-scan scan . --all-cops --auto-fix
 ```
+
+`--dry-run` prints the diff and restores the original files afterward; files
+are rewritten during the run.
 
 Use `--format gh-annotations` in GitHub Actions to emit workflow command
 annotations that appear inline on pull requests:
@@ -364,7 +375,7 @@ Metz/DemeterTrainWreck:
 | File scope | `.rubocop.yml` (`AllCops: Exclude`, per-cop `Include` and `Exclude`) | Honored by every scan mode. |
 | Other cop settings (`Max`, `Enabled`, `Severity`, allow-lists) | `.rubocop.yml` | Honored only by `--all-cops` and plain `rubocop`; the default scan uses stock values. |
 | Output format | `metz-scan scan --format text\|json\|sarif\|gh-annotations` | `text` is for humans; `json`/`sarif` are for tools; `gh-annotations` emits GitHub Actions workflow annotations. |
-| Auto-fix safety | `--auto-fix`, `--unsafe`, `--dry-run` | Safe fixes use RuboCop `-a`; unsafe fixes use RuboCop `-A`. |
+| Auto-fix safety | `--auto-fix`, `--unsafe`, `--dry-run` | Safe fixes use RuboCop `-a`; unsafe fixes use RuboCop `-A`. No `Metz/*` cop autocorrects, so these only change code with `--all-cops`. |
 | Environment variables | N/A | `metz-scan` does not require environment variables. |
 
 ## GitHub Packages install
@@ -398,7 +409,6 @@ bundle exec metz-scan --version
 ## Requirements
 
 - Ruby `>= 3.3`
-- Bundler `4.0.8`
 - A working compiler toolchain may be needed by transitive native gems on some platforms.
 
 If your shell resolves to macOS system Ruby, switch to a Ruby `>= 3.3` before running Bundler.
@@ -439,9 +449,11 @@ bin/check_ci_parity
 It accepts zero project-analyzer findings. It fails if any
 non-project-analyzer offense appears or if a project-analyzer finding appears.
 
-Use `bin/check_ci_parity` before pushing release or workflow changes. It clones
-the committed HEAD into a temp dir and runs the single-command CI phases
-without local Bundler config or untracked files. If a phase fails, use the
+Run `bin/check_ci_parity` before every push. It clones the committed HEAD
+into a temp dir and runs the single-command CI phases without local Bundler
+config or untracked files. Its test phase is a subset: docs-freshness tests
+for docs-only commits and `rake test:fast` for code commits. Set
+`CI_PARITY_FULL=1` to force the full suite. If a phase fails, use the
 printed `clean clone preserved at` path plus the `next action:` command to
 reproduce that failed phase inside the preserved clone.
 
@@ -477,7 +489,7 @@ cd rubocop-metz && gem build rubocop-metz.gemspec && cd ..
 This subsection is for maintainers and coding agents, not required for a
 one-off external contribution.
 
-Before autonomous repo work, run `trk status --json` (see [AGENTS.md](AGENTS.md)
+Before autonomous repo work, run `trk status` (see [AGENTS.md](AGENTS.md)
 and [CLAUDE.md](CLAUDE.md)) for the current local direction, next queue, parked
 work, and why this repo tracks agent coordination in `.trk/` rather than only
 in GitHub Projects or issues.

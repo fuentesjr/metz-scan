@@ -39,21 +39,21 @@ bin/check_read_only_commands
 bin/check_tracker_queue
 
 # 5. Commit the slice, THEN parity-check the committed HEAD, THEN push
-git add -A && git commit
+git add <the slice's paths> && git commit
 bin/check_ci_parity
-git push
+git push                 # only when the user authorized pushing
 ```
 
 `bin/check_ci_parity` clones the *committed HEAD* into a temp dir — it does not
-see uncommitted changes. Commit first, parity-check, push. Parity now runs a
-deliberate CI subset by default: docs-freshness tests for docs-only commits,
-`rake test:fast` for code commits — a real subset of CI, not a full mirror.
-Remote CI stays the full-suite backstop; set `CI_PARITY_FULL=1` to force the
-full local suite (do this before a release prep, per the `release` skill). If
-a phase fails it prints `clean clone preserved at <dir>` and a `next action:`
-command; reproduce there, not in your checkout (the failure is usually a
-local-only environment assumption such as the rubydex group or an untracked
-file).
+see uncommitted changes. Commit first, parity-check, then push if the user
+authorized it. Parity now runs a deliberate CI subset by default:
+docs-freshness tests for docs-only commits, `rake test:fast` for code commits —
+a real subset of CI, not a full mirror. Remote CI stays the full-suite
+backstop; set `CI_PARITY_FULL=1` to force the full local suite (do this before
+a release prep, per the `release` skill). If a phase fails it prints `clean
+clone preserved at <dir>` and a `next action:` command; reproduce there, not in
+your checkout (the failure is usually a local-only environment assumption such
+as the rubydex group or an untracked file).
 
 ## Gates that break in clusters (know these before editing)
 
@@ -78,13 +78,15 @@ file).
 
 ## Tracker update (same commit as the work)
 
-Update `.trk/` through the `trk` CLI:
+Update `.trk/` through the `trk` CLI. Tracker writes are the orchestrator's; a
+subagent running this skill lists the intended `trk` entries in its final
+message instead (see `AGENTS.md`).
 
 - `trk goal` / `trk next` / `trk backlog` for current state changes.
 - `trk log` for completed work, decisions, and surprising findings.
-- Keep the top Next items actionable (`bin/check_tracker_queue` enforces this —
-  parked/watch-only wording like "monitor", "keep", "defer" without an action
-  verb fails).
+- Keep the top Next items actionable. `bin/check_tracker_queue` fails when all
+  of the top three Next items are parked/watch-only (wording like "monitor",
+  "keep", "defer" without an action verb such as "add", "fix", or "update").
 
 Never commit a tracker-only change unless it is a deliberate direction change.
 If the slice needs more durable detail than STATE should carry, add a short

@@ -60,9 +60,8 @@ Rules:
 
 ## Land it
 
-- Commit the note **with the slice that solved the problem** (or the very next
-  slice) — never as a standalone docs commit; the tracker standing rule
-  forbids docs-only churn.
+- Prefer committing the note **with the slice that solved the problem** (or
+  the very next slice), so the note and the fix it describes land together.
 - If the note's Reusable rule contradicts or extends CLAUDE.md's "Failure
   modes" section, update that section in the same commit and keep the note as
   the detailed record.
