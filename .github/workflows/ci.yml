@@ -90,7 +90,7 @@ jobs:
         run: bin/check_sample_app_frozen
 
       - name: Check read-only commands
-        run: bin/check_read_only_commands
+        run: bundle exec bin/check_read_only_commands
 
   # Same checks with the optional rubydex bundle group installed, so the
   # index-backed (RubydexBackend) tests that skip in `test` actually run.
