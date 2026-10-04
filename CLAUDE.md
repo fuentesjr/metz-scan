@@ -7,7 +7,7 @@ govern slice discipline. Run `bin/check_ci_parity` before any push.
 
 Repo skills (canonical in `.claude/skills/`, mirrored for OpenAI/Codex via the
 `.agents/skills` symlink): `land-slice` (finish + verify + commit a slice),
-`release` (GitHub Packages release runbook), `dogfood-round` (qualitative
+`release` (release runbook), `dogfood-round` (qualitative
 dogfooding rubric), `extract-approach` (write a learning note after a
 non-trivial fix). Executor models of any vendor: read
 `.claude/guides/operator-playbook.md` before doing anything. This file is the
@@ -73,8 +73,13 @@ Focused single test file (Rakefile load paths at `Rakefile:7`):
 bundle exec ruby -Ilib -Itest -Irubocop-metz/lib -Irubocop-metz/test path/to_test.rb
 ```
 
-Ruby >= 3.3, Bundler 4.0.8. CI is `.github/workflows/ci.yml`; `check_ci_parity`
-replicates every single-command step plus tracker hygiene, but scales the
+Ruby >= 3.3 (gemspecs), Bundler 4.0.8. Development and CI use the Ruby in
+`.ruby-version`. CI is `.github/workflows/ci.yml`: the required `test` job runs
+without the optional `rubydex` group, and a `rubydex` job (after `test`,
+skipped for docs-only PRs) installs it and runs `bin/check_dogfood`, the full
+suite, and `bin/check_rubydex_drift` on the sample app. `check_ci_parity`
+replicates every single-command `test`-job step plus tracker hygiene (not the
+`rubydex` job: its clean clone ignores local Bundler config), but scales the
 "tests" step to the commits being pushed (docs-only vs code) rather than
 always running the full suite — remote CI stays the full-suite backstop; set
 `CI_PARITY_FULL=1` to force the full local suite (do this before a release).
@@ -103,9 +108,10 @@ no separate push run; their PR run covers them.
   `project_analyzers/text.txt`, `check_rubydex_drift/*.txt`) pin CLI text/JSON
   byte-for-byte. Output changes require deliberate fixture updates, never
   loosened assertions.
-- Never write a test that assumes the `rubydex` group is installed — CI does
-  not install it. Use the `test/support/missing_rubydex.rb` pattern for both
-  paths.
+- Never write a test that assumes the `rubydex` group is installed. The
+  required `test` CI job runs without it (NullBackend path); the separate
+  `rubydex` job installs it (RubydexBackend path). Use the
+  `test/support/missing_rubydex.rb` pattern so tests cover both paths.
 - New read-only maintenance commands go into the `bin/check_read_only_commands`
   guard list (and its docs), not one-off wrappers.
 - `.rubocop.yml` is ERB and excludes all `test/fixtures/*` app trees. To scan a

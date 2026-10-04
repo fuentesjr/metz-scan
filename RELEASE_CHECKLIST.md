@@ -162,6 +162,8 @@ rm -rf "$autofix_dir"
 
 ## Source Tag and GitHub Release
 
+- [ ] Open the prep PR, merge it after CI passes, wait for the main push run to go green, then tag that merge commit.
+
 - [ ] Confirm the release tag does not already exist.
 
 ```bash
@@ -226,6 +228,17 @@ gem push --key github \
 ```bash
 gh api /users/fuentesjr/packages/rubygems/rubocop-metz --jq .html_url
 gh api /users/fuentesjr/packages/rubygems/metz-scan --jq .html_url
+```
+
+- [ ] The owner publishes both gems to rubygems.org by hand, in the same order
+  (agent `gem push` to rubygems.org is permission-blocked), then confirms the
+  version is live.
+
+```bash
+gem push rubocop-metz/rubocop-metz-X.Y.Z.gem
+gem push metz-scan-X.Y.Z.gem
+gem list -r -e rubocop-metz
+gem list -r -e metz-scan
 ```
 
 ## Post-Publish Smoke Test

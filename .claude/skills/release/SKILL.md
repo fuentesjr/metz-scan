@@ -1,9 +1,9 @@
 ---
 name: release
-description: "Run a metz-scan/rubocop-metz release to GitHub Packages: version-target prep commit, verification, tag, GitHub Release, ordered gem publish, post-publish smoke, and record-keeping. Use when the user asks to prepare, cut, or publish a release, or to verify one. Publishing and tagging always require explicit user authorization."
+description: "Run a metz-scan/rubocop-metz release to GitHub Packages and rubygems.org: version-target prep commit, verification, tag, GitHub Release, ordered gem publish, post-publish smoke, and record-keeping. Use when the user asks to prepare, cut, or publish a release, or to verify one. Publishing and tagging always require explicit user authorization."
 ---
 
-# Release runbook (GitHub Packages)
+# Release runbook (GitHub Packages and rubygems.org)
 
 This wraps `RELEASE_CHECKLIST.md` with the decisions and pitfalls the checklist
 does not spell out. The checklist's commands are canonical — follow it
@@ -12,10 +12,9 @@ agents have gone wrong before.
 
 **Hard boundary:** creating the tag, cutting the GitHub Release, and every
 `gem push` require explicit user authorization in this session. Prep and
-verification do not. rubygems.org publishing is additionally gated on the four
-exit criteria recorded historically under Path to rubygems.org (now reflected
-in `.trk/STATE.md` goal) and is a separate explicit user decision — this skill
-covers GitHub Packages.
+verification do not. rubygems.org is a standing release target: after the
+GitHub Packages publish and smoke check, the owner pushes both gems there by
+hand, in the same order.
 
 ## Phase 1 — choose the version (a decision, not a mechanical bump)
 
@@ -38,18 +37,20 @@ Touch exactly these surfaces:
    pins the version string (`release_metadata_test.rb` compares the gemspecs
    and needs no edit).
 4. `docs/releases/vX.Y.Z.md` — release notes draft; model on
-   `docs/releases/v0.5.1.md` (issue-centric, migration note only if behavior
-   changed).
+   `docs/releases/v0.6.0.md` (issue-centric, upgrade notes only if behavior
+   changed; Release Links cover GitHub Packages and rubygems.org). Add it to
+   `docs/releases/README.md`.
 5. README install example only if the current `~>` constraint no longer
-   resolves to the new version (it pins `~> 0.5.3` as of `0.5.3`).
+   resolves to the new version (it pins `~> 0.6.0` as of `0.6.0`).
 6. `.trk/` update via `trk log` / `trk goal` as needed for the prep
    (orchestrator only; see `AGENTS.md`).
 
 Then run the full gauntlet from the `land-slice` skill, including
 `CI_PARITY_FULL=1 bin/check_ci_parity` (parity now runs a reduced subset by
-default; force the full suite for a release prep) on the committed prep. Push
-only when the user authorized pushing, then wait for green CI on the prep
-commit before asking to tag. Verify with
+default; force the full suite for a release prep) on the committed prep. Main is branch-protected
+(required `test` check), so push the prep as a branch and merge it via PR, only
+when the user authorized pushing. Then wait for the green main push run on the
+merge commit before asking to tag. Verify with
 `gh run list --repo fuentesjr/metz-scan --branch main --limit 3`.
 
 ## Phase 3 — tag, GitHub Release, publish (authorization required)
@@ -58,7 +59,10 @@ Ask the user for release authorization, then follow
 `RELEASE_CHECKLIST.md` sections "Source Tag and GitHub Release" and
 "Publish Decision" exactly. Non-obvious constraints:
 
-- Tag the prep commit (the one CI validated), not a later checkpoint commit.
+- Tag the merge commit of the prep PR after its main push run is green (as
+  done for v0.6.0), not a later checkpoint commit.
+- rubygems.org publishing is done by the owner by hand; agent `gem push` to
+  rubygems.org is permission-blocked.
 - **Publish order matters:** `rubocop-metz` first, then `metz-scan` — the
   wrapper's dependency must be resolvable at push time.
 - Credentials: use the `gh`-managed token with `write:packages` scope, written

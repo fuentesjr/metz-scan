@@ -158,3 +158,14 @@ Fixed QA defect: a default scan with an invalid root .rubocop.yml (bad YAML or u
 Fixed QA defect: metz-scan report accepted JSON that is not a scan report (array/null crashed, {} and SARIF reported a false clean). It now exits 64 with a one-line message; check is files[] of objects with offenses arrays. Malformed entries inside offenses still crash (left as follow-up).
 ## 2026-10-04T03:08Z log
 Corrected the v0.6.0 release notes (owner approved the sentence 2026-10-03): the 'disable or tune MaxPublicMethods' advice does not work in a default scan, which honors only per-cop Exclude (reproduced: Enabled false and MaxPublicMethods 5 still report both new cops, exit 1). Updated docs/releases/v0.6.0.md and the GitHub Release body.
+
+## 2026-10-04T04:55Z log
+Release runbook hygiene: release skill/checklist describe the PR-based prep flow (tag the prep PR's merge commit), make rubygems.org a standing owner-run publish target after GitHub Packages, drop the stale 0.5.3 pin remark; AGENTS.md/CLAUDE.md stop calling it a GitHub Packages-only runbook; v0.6.0 notes gain rubygems.org links; dead links removed from rubocop-metz/docs/demeter-design.md.
+## 2026-10-04T04:56Z log
+Hygiene cleanup: deleted orphan .grok workflow; debt.md marks full-suite-timeout PAID and hands rubydex-dogfood-runtime to the backlog; release-notes index plus links to orphan docs; Dependabot bundler uses versioning-strategy lockfile-only so it stops rewriting the path-gem pin. Tracker: goal moved to v0.6.0, operation-role classifier demoted to backlog, policy-only backlog items dropped (CLAUDE.md already states them), QA follow-ups recorded.
+
+## 2026-10-04T05:03Z log
+CI hygiene: Ruby comes from a new .ruby-version (3.4.1, the version used locally) instead of a hardcoded 3.3; runners pinned to ubuntu-24.04 ahead of the ubuntu-latest move to 26.04 on 2026-10-19; the classify step logs changed files; bin/check_read_only_commands runs in CI. New non-required rubydex job installs the optional group and runs check_dogfood, the full suite (8 index-backed tests that skip in test now run), and check_rubydex_drift on the sample app. The required test job still runs without rubydex.
+
+## 2026-10-04T05:11Z resolve docs-drift-implementation
+Outcome: Agenticons advisor and documentation reviewer completed scope/design review; separate spec author derived requirement cases. Implementation awaits owner decision on direct Copilot CLI versus Agentic Workflows. Working files and plan are isolated in /private/tmp/metz-scan-docs-drift-exemption; no workflow implemented yet.
