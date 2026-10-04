@@ -51,3 +51,9 @@ weaken the #33/#37 file-scope contract unless every user noticed the warning.
   print one `metz-scan: note:` line to stderr per missing gem, saying its
   file-scope `Exclude` is not applied
   (`lib/metz_scan/commands/scan/project_config_scope.rb`).
+- Update 2026-10-03: the scope-only loader also preserves per-cop `Enabled`
+  (stamped with the config file that wrote it), so the default scan honors a
+  project `Enabled: false` for `Metz/*` cops and the `Metz` department and
+  credits each hidden finding in the suppression ledger as `config_disabled`.
+  `Max*` and other tuning stay at stock values. `MetzProject/*` analyzers read
+  no project config: RuboCop rejects `MetzProject/*` keys as unknown cops.

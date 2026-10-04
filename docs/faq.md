@@ -70,7 +70,7 @@ Avoid refactors that only satisfy the metric while making the code harder to rea
 
 ## What should I do when a finding is wrong for my code?
 
-Scope the cop instead of fighting it. The default scan honors file scope from `.rubocop.yml` (`AllCops: Exclude` and per-cop `Include` and `Exclude`, for example a per-cop `Exclude` to skip generated files) and a narrow inline disable with a reason. Raising a threshold or setting `Enabled: false`, including in a directory's own `.rubocop.yml`, affects only `--all-cops` and plain `rubocop`.
+Scope the cop instead of fighting it. The default scan honors file scope from `.rubocop.yml` (`AllCops: Exclude` and per-cop `Include` and `Exclude`, for example a per-cop `Exclude` to skip generated files) and a narrow inline disable with a reason. Raising a threshold, including in a directory's own `.rubocop.yml`, affects only `--all-cops` and plain `rubocop`. Setting `Enabled: false` hides the cop's findings in the default scan too, but the scan lists each one in its suppression ledger, so prefer a scoped `Exclude` with a reason.
 
 ```ruby
 # rubocop:disable Metz/DemeterTrainWreck -- this query object intentionally mirrors the reporting schema

@@ -57,20 +57,6 @@ module MetzScan
           @locators[config_path] ||= ExcludeEntryLocator.new(config_path)
         end
       end
-
-      # Invalid project config leaves no project scope to honor, matching the
-      # forced-default target-discovery fallback.
-      module NoConfigExclusions
-        module_function
-
-        def scoped_off?(_path, _offense)
-          false
-        end
-
-        def record_fields(_path, _offense)
-          nil
-        end
-      end
     end
   end
 end

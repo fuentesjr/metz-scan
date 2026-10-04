@@ -6,8 +6,8 @@ require "psych"
 module MetzScan
   module Commands
     class Scan
-      # Finds where a config file writes one Exclude entry and the reason
-      # comment documenting it. ERB configs are read as RuboCop renders them;
+      # Finds where a config file writes one Exclude entry (or a cop's
+      # `Enabled` key) and the reason comment documenting it. ERB configs are read as RuboCop renders them;
       # their rendered line numbers do not match the file, so no line is given.
       class ExcludeEntryLocator
         Location = Struct.new(:line, :reason, :reason_status, keyword_init: true)
@@ -27,12 +27,22 @@ module MetzScan
           exclude_key, entry = entry_nodes(key, pattern)
           return UNCHECKED unless entry
 
-          reason = entry_reason(entry) || key_reason(exclude_key)
-          Location.new(line: (entry.start_line + 1 unless @erb), reason: reason,
-                       reason_status: reason ? "present" : "missing")
+          location(entry, entry_reason(entry) || key_reason(exclude_key))
+        end
+
+        def locate_enabled(key)
+          enabled_key, = mapping_pair(mapping_pair(@root, key)&.last, "Enabled")
+          return UNCHECKED unless enabled_key
+
+          location(enabled_key, key_reason(enabled_key))
         end
 
         private
+
+        def location(node, reason)
+          Location.new(line: (node.start_line + 1 unless @erb), reason: reason,
+                       reason_status: reason ? "present" : "missing")
+        end
 
         def entry_nodes(key, pattern)
           exclude_key, excludes = mapping_pair(mapping_pair(@root, key)&.last, "Exclude")
