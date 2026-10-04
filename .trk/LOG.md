@@ -151,3 +151,6 @@ v0.6.0 published to GitHub Packages (tag v0.6.0 -> d8fd71e, GitHub Release live,
 
 ## 2026-10-04T01:30Z log
 v0.6.0 also on rubygems.org: owner pushed rubocop-metz then metz-scan from a v0.6.0 worktree; rubygems.org API reports 0.6.0 as latest for both.
+
+## 2026-10-04T04:51Z log
+Fixed QA defect: a default scan with an invalid root .rubocop.yml (bad YAML or unsupported TargetRubyVersion) silently fell back to defaults and passed with exit 0. It now exits 2 with a one-line 'RuboCop failed:' message like --all-cops. Reverses the 82bb331-era test that pinned the fallback (written when the default scan ignored project config, before #33). Follow-ups: broken nested .rubocop.yml is still ignored in the default scan; Runner.parse_output ignores RuboCop exit status 2.
