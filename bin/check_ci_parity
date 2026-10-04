@@ -2,10 +2,13 @@
 # frozen_string_literal: true
 
 # Reproduces the CI environment before pushing: clones the committed HEAD into
-# a temp dir and runs the single-command CI steps from .github/workflows/ci.yml
-# there. The clone drops untracked files and local bundler config (including
-# the optional rubydex group CI never installs), so environment assumptions
-# that pass in this checkout but would fail in CI fail here first. The
+# a temp dir and runs the single-command steps of the `test` job from
+# .github/workflows/ci.yml there. The clone drops untracked files and local
+# bundler config (including the optional rubydex group, which the `test` job
+# never installs), so environment assumptions that pass in this checkout but
+# would fail in CI fail here first. The separate `rubydex` CI job is not
+# replicated: it needs that group, which this clean clone deliberately ignores;
+# run `bin/check_dogfood` locally with the group enabled instead. The
 # multi-line GitHub annotations smoke is not replicated; it stays covered by
 # CI and RELEASE_CHECKLIST.md. Uncommitted changes are not checked — commit
 # the slice, run this, then push.
@@ -166,7 +169,7 @@ def parity_tmpdir
   Dir.mktmpdir("metz-scan-ci-parity-", ENV.fetch("CI_PARITY_TMPDIR", nil))
 end
 
-puts "check_ci_parity: ruby #{RUBY_VERSION} (CI pins its version in .github/workflows/ci.yml)"
+puts "check_ci_parity: ruby #{RUBY_VERSION} (CI uses the version in .ruby-version)"
 
 mode = resolve_mode
 puts mode_message(mode)
