@@ -181,3 +181,6 @@ Default-scan config policy (Next 1) landed for Metz/* only: project Enabled: fal
 
 ## 2026-10-04T23:17Z log
 Trimmed skills/metz-scan/SKILL.md for agent context cost (round 1 F2): 14,621 to 10,271 bytes, keeping every docs-freshness-pinned behavior; doc-reviewer confirmed step 3 attribution semantics survive. Fixed the step 3 base-scan recipe to scan from inside the base worktree, so path-scoped cops match there too; the CLI-level cause is backlog scan-path-scoped-include-cwd.
+
+## 2026-10-04T23:54Z log
+Agent-loop dogfood round 2 with Codex (codex-cli 0.160.0) on lobsters against the trimmed skill: scanned at the end, attributed both grown size findings as pre-existing (round 1 F1 did not recur), wrote the handoff. Skill cost 10,271 bytes; printed scan output 43,064 bytes, mostly repeated per-finding guidance. Two attempts voided: lobsters' contributor AGENTS.md (hidden in the fixture copy) and an unpinned wrapper Ruby. Note: docs/dogfooding/2026-10-04-agent-loop-lobsters-codex.md.
