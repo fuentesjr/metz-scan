@@ -2,6 +2,8 @@
 
 require "fileutils"
 require "minitest/autorun"
+require "open3"
+require "rbconfig"
 require "rubygems"
 require "tmpdir"
 
@@ -24,6 +26,12 @@ module MetzScan
       version_relative: "lib/rubocop/metz/version.rb",
       dependency: "rubocop"
     }.freeze
+
+    # Evaluate in a fresh Ruby, as Dependabot does: this process already has
+    # both VERSION constants loaded, which would mask a gemspec that no longer
+    # requires its version file.
+    LOAD_SPEC_SCRIPT = "spec = Gem::Specification.load(ARGV.fetch(0)); print spec.to_yaml if spec"
+    ISOLATED_ENV = { "RUBYOPT" => nil, "RUBYLIB" => nil, "BUNDLE_GEMFILE" => nil }.freeze
 
     def test_metz_scan_gemspec_evaluates_in_sparse_tree
       with_sparse_spec(METZ_SCAN) do |spec|
@@ -73,7 +81,9 @@ module MetzScan
 
     def load_spec(path)
       absolute = File.expand_path(path)
-      Dir.chdir(File.dirname(absolute)) { Gem::Specification.load(absolute) }
+      stdout, _stderr, status = Open3.capture3(ISOLATED_ENV, RbConfig.ruby, "-e", LOAD_SPEC_SCRIPT, absolute,
+                                               chdir: File.dirname(absolute))
+      Gem::Specification.from_yaml(stdout) if status.success? && !stdout.empty?
     end
 
     def repo_path(path)
