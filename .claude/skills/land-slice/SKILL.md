@@ -48,8 +48,9 @@ git push                 # only when the user authorized pushing
 see uncommitted changes. Commit first, parity-check, then push if the user
 authorized it. Parity now runs a deliberate CI subset by default:
 docs-freshness tests for docs-only commits, `rake test:fast` for code commits —
-a real subset of CI, not a full mirror. Remote CI stays the full-suite
-backstop; set `CI_PARITY_FULL=1` to force the full local suite (do this before
+a real subset of CI, not a full mirror. Remote CI applies the same docs-only
+rule to PRs and runs the full suite on every push to `main`, which stays the
+full-suite backstop; set `CI_PARITY_FULL=1` to force the full local suite (do this before
 a release prep, per the `release` skill). If a phase fails it prints `clean
 clone preserved at <dir>` and a `next action:` command; reproduce there, not in
 your checkout (the failure is usually a local-only environment assumption such
