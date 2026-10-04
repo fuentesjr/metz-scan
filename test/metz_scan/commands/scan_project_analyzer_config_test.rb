@@ -12,7 +12,8 @@ module MetzScan
     # Spec tests: `scan --project-analyzers` honors the scanned project's own
     # `MetzProject/*` config (Enabled: false, per-analyzer Exclude), the way the
     # default scan honors per-cop Exclude for `Metz/*` cops (owner-approved
-    # 2026-10-03). Each test runs the CLI as a subprocess on a scratch copy of
+    # 2026-10-03). Disabled findings are credited as `config_disabled` ledger
+    # records. Each test runs the CLI as a subprocess on a scratch copy of
     # test/fixtures/service_soup_app, with the controller moved to
     # app/workflows so no Metz/* cop fires and only MetzProject/ServiceSoup can
     # make the scan fail.
@@ -47,6 +48,12 @@ module MetzScan
 
       def sarif_results(stdout)
         JSON.parse(stdout).fetch("runs").flat_map { |run| run.fetch("results") }
+      end
+
+      def disabled_record(line)
+        { "cop_name" => ANALYZER, "path" => WORKFLOW, "line" => line, "column" => 1, "message" => MESSAGE,
+          "suppressed_by" => "config_disabled", "reason" => nil, "reason_status" => "missing", "directive" => nil,
+          "config" => { "path" => ".rubocop.yml", "line" => 2 } }
       end
 
       def excluded_record(line)
@@ -102,19 +109,19 @@ module MetzScan
                       summary.fetch("clean_file_count")]
       end
 
-      # Mirrors the default scan: a project `Enabled: false` is not a recorded
-      # suppression, so the ledger stays empty (see the report for the evidence).
-      def test_disabled_analyzer_is_not_listed_in_the_suppression_ledger
+      # A project `Enabled: false` hides the findings but is credited in the
+      # ledger as a `config_disabled` record (owner-approved 2026-10-03).
+      def test_disabled_analyzer_findings_appear_in_the_ledger_as_config_disabled
         write_config(DISABLED)
-        assert_equal [], scan_json.fetch("suppressions")
+        assert_equal((5..8).map { |line| disabled_record(line) }, scan_json.fetch("suppressions"))
       end
 
-      def test_disabled_analyzer_text_output_has_no_analyzer_section_and_exits_zero
+      def test_disabled_analyzer_text_output_has_no_offenses_and_lists_the_ledger
         write_config(DISABLED)
         stdout, = scan
         assert_equal 0, @status.exitstatus
-        refute_includes stdout, ANALYZER
-        refute_includes stdout, "Suppressed findings"
+        assert_includes stdout, "Suppressed findings: 4, 4 without a reason"
+        assert_includes stdout, ".rubocop.yml:2 Enabled: false, no reason"
       end
     end
 
