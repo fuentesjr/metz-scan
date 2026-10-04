@@ -92,7 +92,7 @@ gem install metz-scan
 Or add it to your Gemfile:
 
 ```ruby
-gem "metz-scan", "~> 0.5.3"
+gem "metz-scan", "~> 0.6.0"
 ```
 
 ```bash
@@ -397,7 +397,7 @@ unset GITHUB_PACKAGES_TOKEN
 source "https://rubygems.org"
 
 source "https://rubygems.pkg.github.com/fuentesjr" do
-  gem "metz-scan", "~> 0.5.3"
+  gem "metz-scan", "~> 0.6.0"
 end
 ```
 
