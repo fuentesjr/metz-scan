@@ -41,15 +41,16 @@ Touch exactly these surfaces:
    `docs/releases/v0.5.1.md` (issue-centric, migration note only if behavior
    changed).
 5. README install example only if the current `~>` constraint no longer
-   resolves to the new version (it pins `~> 0.5.3` as of `0.5.3`).
+   resolves to the new version (it pins `~> 0.6.0` as of `0.6.0`).
 6. `.trk/` update via `trk log` / `trk goal` as needed for the prep
    (orchestrator only; see `AGENTS.md`).
 
 Then run the full gauntlet from the `land-slice` skill, including
 `CI_PARITY_FULL=1 bin/check_ci_parity` (parity now runs a reduced subset by
-default; force the full suite for a release prep) on the committed prep. Push
-only when the user authorized pushing, then wait for green CI on the prep
-commit before asking to tag. Verify with
+default; force the full suite for a release prep) on the committed prep. Main is branch-protected
+(required `test` check), so push the prep as a branch and merge it via PR, only
+when the user authorized pushing. Then wait for the green main push run on the
+merge commit before asking to tag. Verify with
 `gh run list --repo fuentesjr/metz-scan --branch main --limit 3`.
 
 ## Phase 3 — tag, GitHub Release, publish (authorization required)
@@ -58,7 +59,10 @@ Ask the user for release authorization, then follow
 `RELEASE_CHECKLIST.md` sections "Source Tag and GitHub Release" and
 "Publish Decision" exactly. Non-obvious constraints:
 
-- Tag the prep commit (the one CI validated), not a later checkpoint commit.
+- Tag the merge commit of the prep PR after its main push run is green (as
+  done for v0.6.0), not a later checkpoint commit.
+- rubygems.org publishing is done by the owner by hand; agent `gem push` to
+  rubygems.org is permission-blocked.
 - **Publish order matters:** `rubocop-metz` first, then `metz-scan` — the
   wrapper's dependency must be resolvable at push time.
 - Credentials: use the `gh`-managed token with `write:packages` scope, written

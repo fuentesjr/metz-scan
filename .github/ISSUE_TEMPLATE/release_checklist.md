@@ -163,6 +163,8 @@ rm -rf "$autofix_dir"
 
 ## Source Tag and GitHub Release
 
+- [ ] Open the prep PR, merge it after CI passes, wait for the main push run to go green, then tag that merge commit.
+
 - [ ] Confirm the release tag does not already exist.
 
 ```bash
