@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "json"
 require "minitest/autorun"
 require "open3"
 require "rbconfig"
@@ -12,79 +11,49 @@ require "metz_scan/commands/scan"
 module MetzScan
   module Commands
     class ScanErrorTest < Minitest::Test
-      INLINE_DISABLED_LONG_METHOD = <<~RUBY
-        class Suppressed
-          # rubocop:disable Metz/MethodsTooLong -- kept for the regression
-          def long
-            a = 1
-            b = 2
-            c = 3
-            d = 4
-            e = 5
-            [a, b, c, d, e]
-          end
-          # rubocop:enable Metz/MethodsTooLong
-        end
-      RUBY
-
       def test_invalid_rubocop_config_exits_non_zero_with_friendly_message
         Dir.mktmpdir("metz-scan-error-test") do |dir|
           assert_invalid_config_error(*invalid_config_scan(dir, "--all-cops"))
         end
       end
 
-      def test_default_scan_ignores_invalid_project_config
+      def test_default_scan_rejects_invalid_project_config
         Dir.mktmpdir("metz-scan-error-test") do |dir|
-          code, output = invalid_config_scan(dir)
-
-          assert_equal 0, code
-          assert_no_stack_trace(output)
+          assert_invalid_config_error(*invalid_config_scan(dir))
         end
       end
 
-      def test_invalid_project_config_still_keeps_inline_disabled_findings_out_of_the_result
+      def test_default_scan_rejects_unknown_target_ruby_version
         Dir.mktmpdir("metz-scan-error-test") do |dir|
-          code, json = invalid_config_json_scan(dir)
+          code, output = config_scan(dir, "AllCops:\n  TargetRubyVersion: 1.0\n")
 
-          assert_equal [0, 0], [code, json.dig("summary", "offense_count")]
-          assert_equal(["inline_disable"], json.fetch("suppressions").map { |record| record.fetch("suppressed_by") })
+          assert_invalid_config_error(code, output)
+          assert_match(/unsupported Ruby version 1\.0 in `TargetRubyVersion` parameter/, output)
         end
       end
 
       private
 
-      def invalid_config_json_scan(dir)
-        stdout = StringIO.new
-        write_invalid_config_fixture(dir)
-        File.write(File.join(dir, "suppressed.rb"), INLINE_DISABLED_LONG_METHOD)
-        code = Scan.run([dir, "--format", "json"], stdout: stdout, stderr: StringIO.new)
-        [code, JSON.parse(stdout.string)]
+      def invalid_config_scan(dir, *flags)
+        config_scan(dir, "AllCops: [\n", *flags)
       end
 
-      def invalid_config_scan(dir, *flags)
+      def config_scan(dir, config, *flags)
         stdout = StringIO.new
         stderr = StringIO.new
-        code = run_invalid_config_scan(dir, stdout, stderr, flags)
+        write_fixture(dir, config)
+        code = Scan.run([dir, *flags], stdout: stdout, stderr: stderr)
         [code, stdout.string + stderr.string]
       end
 
-      def run_invalid_config_scan(dir, stdout, stderr, flags)
-        write_invalid_config_fixture(dir)
-        Scan.run([dir, *flags], stdout: stdout, stderr: stderr)
-      end
-
-      def write_invalid_config_fixture(dir)
-        File.write(File.join(dir, ".rubocop.yml"), "AllCops: [\n")
-        write_valid_fixture(dir)
-      end
-
-      def write_valid_fixture(dir)
+      def write_fixture(dir, config)
+        File.write(File.join(dir, ".rubocop.yml"), config)
         File.write(File.join(dir, "sample.rb"), "# frozen_string_literal: true\n")
       end
 
       def assert_invalid_config_error(code, output)
         assert_equal 2, code
-        assert_match(/RuboCop failed/i, output)
+        assert_match(/\A[^\n]*RuboCop failed: [^\n]+\n\z/, output)
         assert_no_stack_trace(output)
       end
 

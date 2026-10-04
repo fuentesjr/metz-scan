@@ -146,17 +146,7 @@ module MetzScan
         module_function
 
         def for_project_config(paths)
-          find(paths, ProjectConfigScope.store)
-        rescue RuboCop::Error, Psych::Exception
-          with_forced_defaults(paths)
-        end
-
-        def with_forced_defaults(paths)
-          find(paths, RuboCop::ConfigStore.new.tap(&:force_default_config!))
-        end
-
-        def find(paths, store)
-          RuboCop::TargetFinder.new(store, {}).find(paths, :all_file_types)
+          RuboCop::TargetFinder.new(ProjectConfigScope.store, {}).find(paths, :all_file_types)
         end
       end
     end
