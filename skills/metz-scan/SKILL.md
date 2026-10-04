@@ -222,10 +222,10 @@ per-cop `Exclude` instead of repeating it.
 ## Scope and configuration
 
 - The default scan runs only `Metz/*` cops with stock thresholds and reads
-  only file scope, per-cop `Enabled: false`, and `AllCops: TargetRubyVersion`
-  from the project's `.rubocop.yml`; file scope is `AllCops: Exclude` and
-  per-cop `Include` and `Exclude`. Per-cop `Exclude` and `Enabled: false` also
-  apply to `MetzProject/*` analyzers in the default scan. It runs without the project's RuboCop extension gems; when
+  only file scope, `Enabled: false` for `Metz/*` cops and the `Metz`
+  department, and `AllCops: TargetRubyVersion` from the project's
+  `.rubocop.yml`; file scope is `AllCops: Exclude` and per-cop `Include` and
+  `Exclude`. It runs without the project's RuboCop extension gems; when
   `.rubocop.yml` inherits from a gem that is not installed, it prints a
   `metz-scan: note:` line and skips that gem's scope.
 - `--all-cops` runs the full RuboCop suite under the complete project

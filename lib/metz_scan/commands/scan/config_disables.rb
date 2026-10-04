@@ -20,8 +20,8 @@ module MetzScan
         end
 
         def record_fields(path, offense)
-          config_path = disabling_config(path, offense)
-          location = locator(config_path).locate_enabled(offense.fetch("cop_name"))
+          config_path, key = disabling_config(path, offense)
+          location = locator(config_path).locate_enabled(key)
           { "suppressed_by" => "config_disabled", "reason" => location.reason,
             "reason_status" => location.reason_status, "directive" => nil,
             "config" => { "path" => Runner.display_path(config_path), "line" => location.line } }

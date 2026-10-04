@@ -141,6 +141,19 @@ module MetzScan
         json = scan_json
         assert_equal [1, [LONG], []], [@status.exitstatus, cop_names(json), json.fetch("suppressions")]
       end
+
+      def test_disabled_metz_department_hides_the_cop_and_credits_the_department
+        write_file(".rubocop.yml", "Metz:\n  Enabled: false\n")
+        json = scan_json
+        assert_equal [0, []], [@status.exitstatus, cop_names(json)]
+        assert_equal [DISABLED_RECORD], json.fetch("suppressions")
+      end
+
+      def test_cop_enabled_under_a_disabled_department_still_reports
+        write_file(".rubocop.yml", "Metz:\n  Enabled: false\n#{LONG}:\n  Enabled: true\n")
+        json = scan_json
+        assert_equal [1, [LONG], []], [@status.exitstatus, cop_names(json), json.fetch("suppressions")]
+      end
     end
 
     class ScanConfigDisabledThresholdTest < Minitest::Test

@@ -169,3 +169,12 @@ CI hygiene: Ruby comes from a new .ruby-version (3.4.1, the version used locally
 
 ## 2026-10-04T05:11Z resolve docs-drift-implementation
 Outcome: Agenticons advisor and documentation reviewer completed scope/design review; separate spec author derived requirement cases. Implementation awaits owner decision on direct Copilot CLI versus Agentic Workflows. Working files and plan are isolated in /private/tmp/metz-scan-docs-drift-exemption; no workflow implemented yet.
+
+## 2026-10-04T21:34Z resolve docs-drift-implementation
+Outcome: Agenticons implementation, documentation scope review, independent design/security review, and spec drafting returned. Implemented files remain isolated and uncommitted in /private/tmp/metz-scan-docs-drift-exemption; parent completing full-suite verification, hosted activation awaits merge and repository PR setting.
+
+## 2026-10-04T21:36Z log
+Documentation drift implementation verified in /private/tmp/metz-scan-docs-drift-exemption on docs/drift-job-permission: 755 runs/3631 assertions, zero failures/errors, 10 optional rubydex skips (writable temp Rubocop cache); focused validation/snapshot/publisher specs, lint, docs freshness, shell/YAML, dogfood and guards passed. Agenticons implementation/reviews/spec drafting completed. Main workspace source changes untouched; isolated changes remain uncommitted/unpushed. Hosted Copilot/PR run and committed-HEAD parity remain pending owner-approved commit/merge and Actions PR-creation setting. Operation/effectiveness runbook included in isolated change.
+
+## 2026-10-04T22:59Z log
+Default-scan config policy (Next 1) landed for Metz/* only: project Enabled: false on a Metz/* cop or the Metz department hides its findings and records each in the suppression ledger as config_disabled (credited to the Enabled line); a cop's Enabled: true overrides a disabled department, as in RuboCop. Max* stays fixed. Spec tests written first by a separate model; reviewer found department-level disable ignored (fixed red-green), an analyzer finding-count bug, and that MetzProject/* keys make plain rubocop and --all-cops exit 2. Owner chose to split: analyzer config removed from this slice and parked (backlog metzproject-analyzer-config).

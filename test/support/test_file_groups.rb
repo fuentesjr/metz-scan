@@ -22,7 +22,6 @@ module MetzScan
       "test/metz_scan/commands/scan_config_disabled_test.rb",
       "test/metz_scan/commands/scan_error_test.rb",
       "test/metz_scan/commands/scan_github_annotations_format_test.rb",
-      "test/metz_scan/commands/scan_project_analyzer_config_test.rb",
       "test/metz_scan/commands/scan_project_analyzers_test.rb",
       "test/metz_scan/commands/scan_regexp_exclude_test.rb",
       "test/metz_scan/commands/scan_suppression_ledger_test.rb",

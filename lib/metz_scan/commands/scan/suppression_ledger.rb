@@ -29,21 +29,6 @@ module MetzScan
           new(report, []).apply
         end
 
-        # Project analyzer offenses join the report after RuboCop's were
-        # partitioned: partitions `offenses_by_path`, adds its records to the
-        # report's ledger, and returns the live offenses by display path.
-        def self.partition!(report, offenses_by_path)
-          partitioned = apply("files" => report_files(offenses_by_path), "summary" => {})
-          report["suppressions"] = sort(Array(report["suppressions"]) + partitioned["suppressions"])
-          partitioned["files"].to_h { |file| file.values_at("path", "offenses") }.reject { |_path, live| live.empty? }
-        end
-
-        def self.report_files(offenses_by_path)
-          offenses_by_path.map { |path, offenses| { "path" => Runner.display_path(path), "offenses" => offenses } }
-        end
-
-        def self.sort(records) = records.sort_by { |record| record.values_at(*SORT_KEYS) }
-
         def initialize(report, config_sources)
           @report = report
           @config_sources = config_sources
@@ -53,7 +38,7 @@ module MetzScan
 
         def apply
           files = Array(report["files"]).map { |file| file.merge("offenses" => live_offenses(file)) }
-          recount(report.merge("files" => files, "suppressions" => self.class.sort(records)))
+          recount(report.merge("files" => files, "suppressions" => records.sort_by { |r| r.values_at(*SORT_KEYS) }))
         end
 
         private

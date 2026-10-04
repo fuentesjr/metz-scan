@@ -120,11 +120,15 @@ module MetzScan
             @loader.provenance.entries_for(config).applied(config, badge, file)
           end
 
-          # The project config file whose `Enabled: false` turns `cop_name` off
-          # for `file`, or nil when the project leaves it enabled.
+          # The project config file and key (the cop or its department) whose
+          # `Enabled: false` turns `cop_name` off for `file`, or nil when the
+          # project leaves it enabled.
           def disabling_config(cop_name, file)
-            settings = for_file(file).for_cop(cop_name)
-            settings[ENABLED_SOURCE] if settings["Enabled"] == false
+            config = for_file(file)
+            return unless config.for_cop(cop_name)["Enabled"] == false
+
+            key = [cop_name, cop_name.rpartition("/").first].find { |name| config.to_h.dig(name, ENABLED_SOURCE) }
+            [config.to_h.dig(key, ENABLED_SOURCE), key] if key
           end
         end
 

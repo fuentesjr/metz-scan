@@ -11,8 +11,9 @@ module MetzScan
         # Remembers which config file wrote each Exclude entry the scope-only
         # loader reads, so the suppression ledger can credit the entry a cop
         # actually applies. Raw YAML entries are tracked by object identity:
-        # two files writing the same pattern stay distinct. A cop's `Enabled`
-        # is stamped with its file instead (see ENABLED_SOURCE).
+        # two files writing the same pattern stay distinct. A cop's or
+        # department's `Enabled` is stamped with its file instead (see
+        # ENABLED_SOURCE).
         class ExcludeProvenance
           def initialize
             @sources = {}.compare_by_identity
