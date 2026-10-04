@@ -154,9 +154,11 @@ even when they make a finding disappear:
   still reach them with `send`.
 - Hiding a Demeter chain behind local variables, `tap`, `then`, or `send`
   while the caller still walks the same object graph.
-- Raising `Max`, adding `AllowedMethods`, or setting `Enabled: false` in
-  `.rubocop.yml`. The default scan ignores these settings, so these edits
-  change nothing.
+- Raising `Max` or adding `AllowedMethods` in `.rubocop.yml`. The default
+  scan ignores these settings, so these edits change nothing.
+- Setting `Enabled: false` in `.rubocop.yml`. The default scan hides the
+  cop's findings but lists every one in the suppression ledger, so it is a
+  suppression, not a fix.
 
 ## Suppressions
 
@@ -181,7 +183,7 @@ Metz/ClassesTooLong:
 
 Do not disable a cop for a whole file, add application code to
 `AllCops: Exclude`, or suppress without a reason. The default scan lists every
-finding an inline directive or a per-cop `Exclude` hid, with its reason or
+finding an inline directive, a per-cop `Exclude`, or `Enabled: false` hid, with its reason or
 `reason_status: missing`, so a suppression you add shows up in the after
 report. Report every suppression in the handoff. When the same reason recurs, ask the human whether to add a
 per-cop `Exclude` instead of repeating it.
@@ -198,11 +200,12 @@ per-cop `Exclude` instead of repeating it.
   `location` (`start_line`, `last_line`, `column`), `why_it_matters`,
   `fix_safety`, and `suggested_next_moves`; `summary` with `offense_count`,
   `offenses_by_cop`, `clean_file_count`, and `files_with_offenses`.
-- JSON `suppressions[]` lists findings an inline directive or a per-cop
-  `Exclude` hid, with `cop_name`, `path`, `line`, `column`, `message`,
-  `suppressed_by` (`inline_disable` or `config_exclude`), `reason`,
-  `reason_status` (`present`, `missing`, or `unchecked`), `directive`
-  (`line`), and `config` (`path`, `line`, `pattern`); exactly one of
+- JSON `suppressions[]` lists findings an inline directive, a per-cop
+  `Exclude`, or a per-cop `Enabled: false` hid, with `cop_name`, `path`,
+  `line`, `column`, `message`, `suppressed_by` (`inline_disable`,
+  `config_exclude`, or `config_disabled`), `reason`, `reason_status`
+  (`present`, `missing`, or `unchecked`), `directive` (`line`), and `config`
+  (`path`, `line`, and `pattern` for `config_exclude`); exactly one of
   `directive` and `config` is non-null. They do not count toward
   `offense_count` or the exit status. Text output lists them under
   `Suppressed findings: N, M without a reason` before the `Summary`.
@@ -219,9 +222,10 @@ per-cop `Exclude` instead of repeating it.
 ## Scope and configuration
 
 - The default scan runs only `Metz/*` cops with stock thresholds and reads
-  only file scope and `AllCops: TargetRubyVersion` from the project's
-  `.rubocop.yml`; file scope is `AllCops: Exclude` and per-cop `Include` and
-  `Exclude`. It runs without the project's RuboCop extension gems; when
+  only file scope, per-cop `Enabled: false`, and `AllCops: TargetRubyVersion`
+  from the project's `.rubocop.yml`; file scope is `AllCops: Exclude` and
+  per-cop `Include` and `Exclude`. Per-cop `Exclude` and `Enabled: false` also
+  apply to `MetzProject/*` analyzers in the default scan. It runs without the project's RuboCop extension gems; when
   `.rubocop.yml` inherits from a gem that is not installed, it prints a
   `metz-scan: note:` line and skips that gem's scope.
 - `--all-cops` runs the full RuboCop suite under the complete project
