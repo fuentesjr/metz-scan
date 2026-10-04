@@ -178,3 +178,6 @@ Documentation drift implementation verified in /private/tmp/metz-scan-docs-drift
 
 ## 2026-10-04T22:59Z log
 Default-scan config policy (Next 1) landed for Metz/* only: project Enabled: false on a Metz/* cop or the Metz department hides its findings and records each in the suppression ledger as config_disabled (credited to the Enabled line); a cop's Enabled: true overrides a disabled department, as in RuboCop. Max* stays fixed. Spec tests written first by a separate model; reviewer found department-level disable ignored (fixed red-green), an analyzer finding-count bug, and that MetzProject/* keys make plain rubocop and --all-cops exit 2. Owner chose to split: analyzer config removed from this slice and parked (backlog metzproject-analyzer-config).
+
+## 2026-10-04T23:17Z log
+Trimmed skills/metz-scan/SKILL.md for agent context cost (round 1 F2): 14,621 to 10,271 bytes, keeping every docs-freshness-pinned behavior; doc-reviewer confirmed step 3 attribution semantics survive. Fixed the step 3 base-scan recipe to scan from inside the base worktree, so path-scoped cops match there too; the CLI-level cause is backlog scan-path-scoped-include-cwd.
