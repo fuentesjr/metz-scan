@@ -145,3 +145,16 @@ Gemspec Dependabot test now evaluates each gemspec in a fresh Ruby (RUBYOPT/RUBY
 
 ## 2026-10-04T01:00Z log
 Release v0.6.0 prep (owner authorized the release and approved the notes text 2026-10-03): both gems 0.5.3 -> 0.6.0, Gemfile.lock, release-issue dry-run expectations, README install pin ~> 0.6.0, docs/releases/v0.6.0.md. Minor bump: GodServiceClass and OperationsTooManyPublicMethods enabled by default, usage errors exit 64, rubocop ~> 1.90. GitHub Packages only; rubygems.org remains a separate owner decision.
+
+## 2026-10-04T01:22Z log
+v0.6.0 published to GitHub Packages (tag v0.6.0 -> d8fd71e, GitHub Release live, rubocop-metz then metz-scan, check_published_gem PASS). rubygems.org not published; awaiting owner decision. Post-release QA dispatched to a qa-engineer subagent; project hygiene review queued after it.
+
+## 2026-10-04T01:30Z log
+v0.6.0 also on rubygems.org: owner pushed rubocop-metz then metz-scan from a v0.6.0 worktree; rubygems.org API reports 0.6.0 as latest for both.
+
+## 2026-10-04T04:51Z log
+Fixed QA defect: a default scan with an invalid root .rubocop.yml (bad YAML or unsupported TargetRubyVersion) silently fell back to defaults and passed with exit 0. It now exits 2 with a one-line 'RuboCop failed:' message like --all-cops. Reverses the 82bb331-era test that pinned the fallback (written when the default scan ignored project config, before #33). Follow-ups: broken nested .rubocop.yml is still ignored in the default scan; Runner.parse_output ignores RuboCop exit status 2.
+## 2026-10-04T04:43Z log
+Fixed QA defect: metz-scan report accepted JSON that is not a scan report (array/null crashed, {} and SARIF reported a false clean). It now exits 64 with a one-line message; check is files[] of objects with offenses arrays. Malformed entries inside offenses still crash (left as follow-up).
+## 2026-10-04T03:08Z log
+Corrected the v0.6.0 release notes (owner approved the sentence 2026-10-03): the 'disable or tune MaxPublicMethods' advice does not work in a default scan, which honors only per-cop Exclude (reproduced: Enabled false and MaxPublicMethods 5 still report both new cops, exit 1). Updated docs/releases/v0.6.0.md and the GitHub Release body.

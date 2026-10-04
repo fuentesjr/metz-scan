@@ -61,6 +61,37 @@ module MetzScan
         assert_match(/invalid option: --bogus/i, @stderr.string)
       end
 
+      WRONG_SHAPE_REPORTS = {
+        "array" => "[]",
+        "null" => "null",
+        "string" => '"str"',
+        "empty_object" => "{}",
+        "non_array_files" => '{"files":"x"}',
+        "non_object_file_entry" => '{"files":["x"]}',
+        "non_array_offenses" => '{"files":[{"path":"a.rb","offenses":"x"}]}',
+        "sarif" => '{"version":"2.1.0","runs":[{"tool":{"driver":{"name":"metz-scan"}},"results":[]}]}'
+      }.freeze
+
+      WRONG_SHAPE_REPORTS.each do |label, content|
+        define_method("test_#{label}_report_exits_with_usage_error") do
+          File.write(@json_path, content)
+          code = run_report([@json_path])
+
+          assert_equal 64, code
+          assert_equal "metz-scan report: not a metz-scan JSON report: #{@json_path}\n", @stderr.string
+          assert_empty @stdout.string
+        end
+      end
+
+      def test_report_with_no_files_still_renders_clean
+        File.write(@json_path, '{"metadata":{},"files":[],"summary":{"offense_count":0}}')
+        code = run_report([@json_path])
+
+        assert_equal 0, code
+        assert_match(/No offenses found/, @stdout.string)
+        assert_empty @stderr.string
+      end
+
       private
 
       def run_report(argv)
