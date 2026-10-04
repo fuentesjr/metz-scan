@@ -107,6 +107,14 @@ module MetzScan
         assert_equal before, File.binread(path)
       end
 
+      def test_dry_run_restores_corrected_file_alongside_read_only_file
+        File.chmod(0o444, write_fixture("a_notes.txt", "notes\n"))
+        path = write_fixture("bad.rb", SAFE_FIXTURE)
+        before = File.binread(path)
+        run_cli(["scan", @tmpdir, "--auto-fix", "--dry-run", "--all-cops"])
+        assert_equal before, File.binread(path)
+      end
+
       def test_dry_run_prints_diff_when_corrected_file_still_has_offenses
         path = write_fixture("partial.rb", PARTIAL_FIXTURE)
         before = File.binread(path)
