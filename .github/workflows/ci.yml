@@ -8,7 +8,11 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    outputs:
+      docs_only: ${{ steps.scope.outputs.docs_only }}
+    # Runs without the optional rubydex group so the NullBackend path stays covered.
+    # Pinned: ubuntu-latest migrates to 26.04 starting 2026-10-19; pin for reproducible runs.
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout
@@ -29,6 +33,7 @@ jobs:
           docs_only=false
           if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
             changed="$(git diff --name-only "$BASE_SHA...$HEAD_SHA")"
+            printf 'Changed files:\n%s\n' "$changed"
             if [ -n "$changed" ] && [ -z "$(printf '%s\n' "$changed" | grep -Ev '\.md$|^LICENSE$|^docs/|^skills/')" ]; then
               docs_only=true
             fi
@@ -39,7 +44,7 @@ jobs:
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: "3.3"
+          ruby-version: .ruby-version
           bundler-cache: true
 
       - name: Run docs-freshness tests
@@ -83,3 +88,41 @@ jobs:
 
       - name: Check sample app frozen
         run: bin/check_sample_app_frozen
+
+      - name: Check read-only commands
+        run: bundle exec bin/check_read_only_commands
+
+  # Same checks with the optional rubydex bundle group installed, so the
+  # index-backed (RubydexBackend) tests that skip in `test` actually run.
+  # Not a required check; skipped for docs-only PRs via the `test` job's scope.
+  rubydex:
+    needs: test
+    if: needs.test.outputs.docs_only != 'true'
+    runs-on: ubuntu-24.04
+    env:
+      BUNDLE_WITH: rubydex
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: .ruby-version
+          bundler-cache: true
+
+      # Fails if rubydex does not load, so the steps below cannot silently fall
+      # back to NullBackend.
+      - name: Check dogfood
+        run: bin/check_dogfood
+
+      - name: Run tests
+        run: bundle exec rake
+
+      # Default targets are external app checkouts CI does not have; the sample
+      # app output is pinned in test/fixtures/check_rubydex_drift/.
+      - name: Check rubydex drift
+        run: bundle exec bin/check_rubydex_drift --text test/fixtures/sample_app
