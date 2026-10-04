@@ -1,7 +1,9 @@
 name: CI
 
+# Branch pushes are covered by their pull_request run; only main gets a push run.
 on:
   push:
+    branches: [main]
   pull_request:
 
 jobs:
@@ -11,25 +13,55 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+
+      # Same rule as docs_path? in bin/check_ci_parity; keep the two in sync.
+      # The `test` job must still report (branch protection requires it), so
+      # docs-only PRs skip the heavy steps instead of skipping the workflow.
+      # Pushes to main always run everything.
+      - name: Classify change scope
+        id: scope
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          docs_only=false
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            changed="$(git diff --name-only "$BASE_SHA...$HEAD_SHA")"
+            if [ -n "$changed" ] && [ -z "$(printf '%s\n' "$changed" | grep -Ev '\.md$|^LICENSE$|^docs/|^skills/')" ]; then
+              docs_only=true
+            fi
+          fi
+          echo "docs_only=$docs_only" >> "$GITHUB_OUTPUT"
+          echo "docs_only=$docs_only"
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: "3.3"
+          bundler-cache: true
 
-      - name: Install dependencies
-        run: bundle install
+      - name: Run docs-freshness tests
+        if: steps.scope.outputs.docs_only == 'true'
+        run: >-
+          bundle exec ruby -Ilib -Itest -Irubocop-metz/lib -Irubocop-metz/test
+          -e 'Dir[%(test/metz_scan/{readme_*,*skill*,read_only_command_docs,project_analyzer_calibration_docs,agent_workspace_docs}*_test.rb)].each { |f| require File.expand_path(f) }'
 
       - name: Run tests
+        if: steps.scope.outputs.docs_only != 'true'
         run: bundle exec rake
 
       - name: Run RuboCop
+        if: steps.scope.outputs.docs_only != 'true'
         run: bundle exec rubocop
 
       - name: Smoke calibration artifact output
+        if: steps.scope.outputs.docs_only != 'true'
         run: bundle exec ruby bin/check_project_analyzer_calibration --text --no-write test/fixtures/sample_app
 
       - name: Smoke GitHub annotations output
+        if: steps.scope.outputs.docs_only != 'true'
         run: |
           fixture_dir="$(mktemp -d)"
           cp -R test/fixtures/service_soup_app "$fixture_dir/service_soup_app"

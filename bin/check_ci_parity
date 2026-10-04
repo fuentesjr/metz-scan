@@ -14,8 +14,10 @@
 # scaled to the commits about to be pushed instead of always running the full
 # suite. Docs-only commits (every changed path matches *.md, docs/, skills/,
 # or LICENSE) run the docs-freshness test group; code commits run
-# `rake test:fast`; remote CI (.github/workflows/ci.yml) remains the full-suite
-# backstop for both. Set CI_PARITY_FULL=1 to force the full local suite (do
+# `rake test:fast`. Remote CI (.github/workflows/ci.yml) applies the same
+# docs-only rule to pull requests (keep its classify step in sync with
+# docs_path?) and runs the full suite on every push to main, which remains the
+# full-suite backstop. Set CI_PARITY_FULL=1 to force the full local suite (do
 # this before a release). Mode falls back to full whenever it cannot be
 # determined (no upstream configured, or the diff command errors) so an
 # ambiguous range never silently reduces coverage.
@@ -28,8 +30,8 @@ ROOT = File.expand_path("..", __dir__)
 CALIBRATION_SMOKE = "bundle exec ruby bin/check_project_analyzer_calibration --text --no-write " \
                     "test/fixtures/sample_app"
 DOCS_FRESHNESS_TESTS = "bundle exec ruby -Ilib -Itest -Irubocop-metz/lib -Irubocop-metz/test " \
-                       "-e 'Dir[\"test/metz_scan/{readme_*,*skill*,read_only_command_docs," \
-                       "project_analyzer_calibration_docs,agent_workspace_docs}*_test.rb\"]" \
+                       "-e 'Dir[%(test/metz_scan/{readme_*,*skill*,read_only_command_docs," \
+                       "project_analyzer_calibration_docs,agent_workspace_docs}*_test.rb)]" \
                        ".each { |f| require File.expand_path(f) }'"
 FAST_TESTS = "bundle exec rake test:fast"
 FULL_TESTS = "bundle exec rake"

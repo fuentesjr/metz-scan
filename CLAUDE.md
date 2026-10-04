@@ -78,6 +78,10 @@ replicates every single-command step plus tracker hygiene, but scales the
 "tests" step to the commits being pushed (docs-only vs code) rather than
 always running the full suite — remote CI stays the full-suite backstop; set
 `CI_PARITY_FULL=1` to force the full local suite (do this before a release).
+CI applies the same docs-only rule to pull requests: docs-only PRs run only
+the docs-freshness tests and cheap guards (the required `test` check still
+reports), while every push to `main` runs the full suite. Branch pushes get
+no separate push run; their PR run covers them.
 
 ## Invariants and conventions (violating these fails a check or a review)
 
