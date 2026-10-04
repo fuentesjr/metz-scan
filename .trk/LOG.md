@@ -145,3 +145,9 @@ Gemspec Dependabot test now evaluates each gemspec in a fresh Ruby (RUBYOPT/RUBY
 
 ## 2026-10-04T01:00Z log
 Release v0.6.0 prep (owner authorized the release and approved the notes text 2026-10-03): both gems 0.5.3 -> 0.6.0, Gemfile.lock, release-issue dry-run expectations, README install pin ~> 0.6.0, docs/releases/v0.6.0.md. Minor bump: GodServiceClass and OperationsTooManyPublicMethods enabled by default, usage errors exit 64, rubocop ~> 1.90. GitHub Packages only; rubygems.org remains a separate owner decision.
+
+## 2026-10-04T01:22Z log
+v0.6.0 published to GitHub Packages (tag v0.6.0 -> d8fd71e, GitHub Release live, rubocop-metz then metz-scan, check_published_gem PASS). rubygems.org not published; awaiting owner decision. Post-release QA dispatched to a qa-engineer subagent; project hygiene review queued after it.
+
+## 2026-10-04T01:30Z log
+v0.6.0 also on rubygems.org: owner pushed rubocop-metz then metz-scan from a v0.6.0 worktree; rubygems.org API reports 0.6.0 as latest for both.
