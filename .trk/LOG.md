@@ -134,3 +134,6 @@ Pre-merge Fable review follow-up on fix/usage-error-exit-code: removed the unrea
 
 ## 2026-10-04T00:04Z log
 CI scoped to change type (owner request 2026-10-03: full pipeline on docs-only PRs is wasteful). Push runs now fire only on main, so each PR gets one run instead of two. A classify step applies check_ci_parity's docs_path? rule to the PR diff; docs-only PRs run the docs-freshness tests plus dependency/sample-app guards and skip rake, rubocop, and both smokes. The job stays named test so the required check still reports (paths-ignore would block merges under branch protection). Full suite still runs on every push to main. Docs-freshness glob switched to %() quoting so CI and parity share one byte-identical command, pinned by release_checklist_test. Baseline: ~2 min per run, two runs per PR.
+
+## 2026-10-04T00:10Z log
+Same branch: CI now uses setup-ruby bundler-cache instead of a bare bundle install. The cache installs gems to vendor/bundle inside the checkout, and .rubocop.yml's AllCops Exclude replaces RuboCop's defaults, so vendor/**/* is now excluded explicitly (verified: a file under vendor/bundle was a RuboCop target before the exclude, not after).

@@ -40,9 +40,7 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: "3.3"
-
-      - name: Install dependencies
-        run: bundle install
+          bundler-cache: true
 
       - name: Run docs-freshness tests
         if: steps.scope.outputs.docs_only == 'true'

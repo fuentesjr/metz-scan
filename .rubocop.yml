@@ -29,6 +29,8 @@ AllCops:
     - "**/*.slim"
   Exclude:
     - tmp/**/*
+    # CI's bundler cache installs gems here; this list replaces RuboCop's defaults.
+    - vendor/**/*
     - rubocop-metz/test/fixtures/**/*
     # Deliberate Rails fixture for the Rails-aware cops; integration tests that
     # scan it intentionally provide their own config instead of changing global
