@@ -138,5 +138,7 @@ CI scoped to change type (owner request 2026-10-03: full pipeline on docs-only P
 ## 2026-10-04T00:10Z log
 Same branch: CI now uses setup-ruby bundler-cache instead of a bare bundle install. The cache installs gems to vendor/bundle inside the checkout, and .rubocop.yml's AllCops Exclude replaces RuboCop's defaults, so vendor/**/* is now excluded explicitly (verified: a file under vendor/bundle was a RuboCop target before the exclude, not after).
 
+## 2026-10-04T00:52Z log
+scan --auto-fix --dry-run now restores only files RuboCop changed. It rewrote every regular file under the target, so one read-only file (e.g. a checked-out .txt with mode 0444) raised Errno::EACCES mid-loop and left later files with their autocorrections applied, the opposite of a dry run. Red test: read-only a_notes.txt sorted before a correctable bad.rb. The change? predicate is shared with the diff printer to keep AutoFix under Metz/ClassesTooLong. Found by the 2026-10-03 README doc review.
 ## 2026-10-04T00:33Z log
 Gemspec Dependabot test now evaluates each gemspec in a fresh Ruby (RUBYOPT/RUBYLIB/BUNDLE_GEMFILE cleared) instead of in-process. In-process loading redefined both VERSION constants (the 'already initialized constant' CI warnings) and masked a gemspec that stopped requiring its version file: with the require deleted and VERSION preloaded, the old test passed and the new one fails.

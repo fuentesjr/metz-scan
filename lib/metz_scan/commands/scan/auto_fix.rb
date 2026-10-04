@@ -103,8 +103,7 @@ module MetzScan
         end
 
         def print_file_diff(path, original)
-          return unless File.exist?(path)
-          return if File.binread(path) == original
+          return unless File.exist?(path) && changed?(path, original)
 
           stdout.puts diff_against(path, original)
         end
@@ -130,8 +129,11 @@ module MetzScan
         def restore_files(snapshot)
           return unless snapshot
 
-          snapshot.each { |path, content| File.binwrite(path, content) }
+          snapshot.each { |path, content| File.binwrite(path, content) if changed?(path, content) }
         end
+
+        # Only rewrite what RuboCop touched, so an unchanged read-only file cannot abort the restore.
+        def changed?(path, original) = !File.exist?(path) || File.binread(path) != original
       end
     end
   end
