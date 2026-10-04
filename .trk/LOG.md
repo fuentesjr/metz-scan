@@ -154,3 +154,5 @@ v0.6.0 also on rubygems.org: owner pushed rubocop-metz then metz-scan from a v0.
 
 ## 2026-10-04T04:51Z log
 Fixed QA defect: a default scan with an invalid root .rubocop.yml (bad YAML or unsupported TargetRubyVersion) silently fell back to defaults and passed with exit 0. It now exits 2 with a one-line 'RuboCop failed:' message like --all-cops. Reverses the 82bb331-era test that pinned the fallback (written when the default scan ignored project config, before #33). Follow-ups: broken nested .rubocop.yml is still ignored in the default scan; Runner.parse_output ignores RuboCop exit status 2.
+## 2026-10-04T03:08Z log
+Corrected the v0.6.0 release notes (owner approved the sentence 2026-10-03): the 'disable or tune MaxPublicMethods' advice does not work in a default scan, which honors only per-cop Exclude (reproduced: Enabled false and MaxPublicMethods 5 still report both new cops, exit 1). Updated docs/releases/v0.6.0.md and the GitHub Release body.
