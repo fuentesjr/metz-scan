@@ -161,3 +161,5 @@ Corrected the v0.6.0 release notes (owner approved the sentence 2026-10-03): the
 
 ## 2026-10-04T04:55Z log
 Release runbook hygiene: release skill/checklist describe the PR-based prep flow (tag the prep PR's merge commit), make rubygems.org a standing owner-run publish target after GitHub Packages, drop the stale 0.5.3 pin remark; AGENTS.md/CLAUDE.md stop calling it a GitHub Packages-only runbook; v0.6.0 notes gain rubygems.org links; dead links removed from rubocop-metz/docs/demeter-design.md.
+## 2026-10-04T04:56Z log
+Hygiene cleanup: deleted orphan .grok workflow; debt.md marks full-suite-timeout PAID and hands rubydex-dogfood-runtime to the backlog; release-notes index plus links to orphan docs; Dependabot bundler uses versioning-strategy lockfile-only so it stops rewriting the path-gem pin. Tracker: goal moved to v0.6.0, operation-role classifier demoted to backlog, policy-only backlog items dropped (CLAUDE.md already states them), QA follow-ups recorded.
