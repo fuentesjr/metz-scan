@@ -8,7 +8,8 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    # Pinned: ubuntu-latest migrates to 26.04 starting 2026-10-19; pin for reproducible runs.
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout
@@ -29,6 +30,7 @@ jobs:
           docs_only=false
           if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
             changed="$(git diff --name-only "$BASE_SHA...$HEAD_SHA")"
+            printf 'Changed files:\n%s\n' "$changed"
             if [ -n "$changed" ] && [ -z "$(printf '%s\n' "$changed" | grep -Ev '\.md$|^LICENSE$|^docs/|^skills/')" ]; then
               docs_only=true
             fi
@@ -83,3 +85,6 @@ jobs:
 
       - name: Check sample app frozen
         run: bin/check_sample_app_frozen
+
+      - name: Check read-only commands
+        run: bin/check_read_only_commands
