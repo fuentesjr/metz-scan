@@ -151,3 +151,6 @@ v0.6.0 published to GitHub Packages (tag v0.6.0 -> d8fd71e, GitHub Release live,
 
 ## 2026-10-04T01:30Z log
 v0.6.0 also on rubygems.org: owner pushed rubocop-metz then metz-scan from a v0.6.0 worktree; rubygems.org API reports 0.6.0 as latest for both.
+
+## 2026-10-04T04:43Z log
+Fixed QA defect: metz-scan report accepted JSON that is not a scan report (array/null crashed, {} and SARIF reported a false clean). It now exits 64 with a one-line message; check is files[] of objects with offenses arrays. Malformed entries inside offenses still crash (left as follow-up).
