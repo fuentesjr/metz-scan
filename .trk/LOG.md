@@ -166,3 +166,6 @@ Hygiene cleanup: deleted orphan .grok workflow; debt.md marks full-suite-timeout
 
 ## 2026-10-04T05:03Z log
 CI hygiene: Ruby comes from a new .ruby-version (3.4.1, the version used locally) instead of a hardcoded 3.3; runners pinned to ubuntu-24.04 ahead of the ubuntu-latest move to 26.04 on 2026-10-19; the classify step logs changed files; bin/check_read_only_commands runs in CI. New non-required rubydex job installs the optional group and runs check_dogfood, the full suite (8 index-backed tests that skip in test now run), and check_rubydex_drift on the sample app. The required test job still runs without rubydex.
+
+## 2026-10-04T05:11Z resolve docs-drift-implementation
+Outcome: Agenticons advisor and documentation reviewer completed scope/design review; separate spec author derived requirement cases. Implementation awaits owner decision on direct Copilot CLI versus Agentic Workflows. Working files and plan are isolated in /private/tmp/metz-scan-docs-drift-exemption; no workflow implemented yet.

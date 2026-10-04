@@ -48,7 +48,7 @@ STEP_TEMPLATE = [
   ["tests", :tests],
   ["rubocop", "bundle exec rubocop"],
   ["calibration smoke", CALIBRATION_SMOKE],
-  ["read-only command guard", "bin/check_read_only_commands"],
+  ["read-only command guard", "bundle exec bin/check_read_only_commands"],
   ["dependency direction", "bin/check_dependency_direction"],
   ["sample app frozen", "bin/check_sample_app_frozen"]
 ].freeze

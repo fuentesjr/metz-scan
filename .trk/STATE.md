@@ -4,7 +4,6 @@
 v0.6.0 is released on rubygems.org and GitHub Packages (2026-10-03). Active direction: fix v0.6.0 post-release QA defects, then decide the default-scan config policy (Enabled: false honored, recorded in the suppression ledger). Testing-discipline cops stay opt-in. Do not promote candidates, change thresholds, or add suppressions without new generic evidence. 1.0.0 remains reserved.
 
 ## Dispatched
-- [agenticons] docs-drift-implementation — Implement owner-requested weekly documentation drift review in /private/tmp/metz-scan-docs-drift-exemption; provider choice pending; scoped draft-PR exception approved. (2026-10-04T05:05Z)
 
 ## Next
 1. Default-scan config policy (owner chose 2026-10-03): honor project Enabled: false for Metz/* cops and MetzProject/* analyzers, list what it hides in the suppression ledger as config_disabled, keep Max* fixed. Spec tests on spec/project-analyzer-config; implement locally, owner reviews before push.
