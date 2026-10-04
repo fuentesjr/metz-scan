@@ -137,11 +137,12 @@ module MetzScan
       STOCK_STYLE_FIXTURE = <<~RUBY
         answer=1
       RUBY
+      # A per-cop `Enabled: false` is honored (scan_config_disabled_test.rb);
+      # DisabledByDefault and Max* thresholds are not.
       DISABLING_PROJECT_CONFIG = <<~YAML
         AllCops:
           DisabledByDefault: true
         Metz/MethodsTooLong:
-          Enabled: false
           Max: 200
       YAML
       METZ_VIOLATING_FIXTURE = <<~RUBY
@@ -191,7 +192,7 @@ module MetzScan
         assert_includes cop_names, "Layout/SpaceAroundOperators"
       end
 
-      def test_default_scan_reports_metz_cops_when_project_config_disables_them
+      def test_default_scan_reports_metz_cops_despite_disabled_by_default_and_max
         write_disabling_project_config
         write_metz_violating_fixture
         code = run_scan([@tmpdir, "--format", "json"])
@@ -426,7 +427,7 @@ module MetzScan
 
     # Default (Metz-only) mode honors the project's per-cop file *scope*
     # (Include/Exclude) just as #33 made it honor AllCops: Exclude, while still
-    # forcing Metz cop *tuning* (Max/Enabled/Severity) to stock defaults. See #37.
+    # forcing Metz cop *tuning* (Max/Severity) to stock defaults. See #37.
     class ScanProjectPerCopExcludeTest < Minitest::Test
       # Loosens the threshold (must be ignored) and scopes the length cop off
       # spec files (must be honored) in a single config.

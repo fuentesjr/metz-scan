@@ -19,16 +19,18 @@ module MetzScan
           @locators = {}
         end
 
+        # Project analyzers are not RuboCop cops; only a project Exclude entry
+        # scopes them off.
         def scoped_off?(path, offense)
-          cop_class = cop_class(offense)
-          return false unless cop_class
-
           absolute = File.expand_path(path)
+          cop_class = cop_class(offense)
+          return !applied_exclude(offense, absolute).nil? unless cop_class
+
           cop_class.new(store.for_file(absolute)).excluded_file?(absolute)
         end
 
         def record_fields(path, offense)
-          entry = store.applied_exclude(cop_class(offense).badge, File.expand_path(path))
+          entry = applied_exclude(offense, File.expand_path(path))
           return unless entry
 
           location = locator(entry.config_path).locate(entry.key, entry.pattern)
@@ -39,6 +41,10 @@ module MetzScan
         private
 
         attr_reader :store
+
+        def applied_exclude(offense, file)
+          store.applied_exclude(RuboCop::Cop::Badge.parse(offense.fetch("cop_name")), file)
+        end
 
         def cop_class(offense)
           RuboCop::Cop::Registry.global.find_by_cop_name(offense.fetch("cop_name"))
@@ -55,20 +61,6 @@ module MetzScan
 
         def locator(config_path)
           @locators[config_path] ||= ExcludeEntryLocator.new(config_path)
-        end
-      end
-
-      # Invalid project config leaves no project scope to honor, matching the
-      # forced-default target-discovery fallback.
-      module NoConfigExclusions
-        module_function
-
-        def scoped_off?(_path, _offense)
-          false
-        end
-
-        def record_fields(_path, _offense)
-          nil
         end
       end
     end

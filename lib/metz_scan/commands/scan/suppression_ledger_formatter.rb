@@ -32,7 +32,13 @@ module MetzScan
           return "inline disable at line #{record.dig('directive', 'line')}" unless record.fetch("config")
 
           config = record.fetch("config")
-          "#{[config.fetch('path'), config.fetch('line')].compact.join(':')} Exclude \"#{config.fetch('pattern')}\""
+          "#{[config.fetch('path'), config.fetch('line')].compact.join(':')} #{config_setting(record)}"
+        end
+
+        def config_setting(record)
+          return "Enabled: false" if record.fetch("suppressed_by") == "config_disabled"
+
+          "Exclude \"#{record.dig('config', 'pattern')}\""
         end
 
         def reason(record)

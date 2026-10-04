@@ -11,6 +11,11 @@ module MetzScan
       # DDR: docs/ddrs/2026-07-08-rubocop-scope-only-config.md explains why default mode bypasses ConfigStore here.
       module ProjectConfigScope
         SCOPE_KEYS = %w[Include Exclude Includes Excludes].freeze
+        # ExcludeProvenance stamps ENABLED_SOURCE beside each project-written
+        # `Enabled`, so inheritance resolves the file that wrote the winning
+        # value along with the value itself.
+        ENABLED_SOURCE = "MetzScanEnabledSource"
+        COP_KEYS = (SCOPE_KEYS + ["Enabled", ENABLED_SOURCE]).freeze
         ALL_COPS_PROJECT_KEYS = (SCOPE_KEYS + %w[RubyInterpreters TargetRubyVersion]).freeze
         DEFAULT_FILE = RuboCop::ConfigLoader::DEFAULT_FILE
 
@@ -113,6 +118,13 @@ module MetzScan
           def applied_exclude(badge, file)
             config = for_file(file)
             @loader.provenance.entries_for(config).applied(config, badge, file)
+          end
+
+          # The project config file whose `Enabled: false` turns `cop_name` off
+          # for `file`, or nil when the project leaves it enabled.
+          def disabling_config(cop_name, file)
+            settings = for_file(file).for_cop(cop_name)
+            settings[ENABLED_SOURCE] if settings["Enabled"] == false
           end
         end
 
@@ -223,7 +235,7 @@ module MetzScan
           end
 
           def scoped_settings(key, value)
-            keys = key == "AllCops" ? ALL_COPS_PROJECT_KEYS : SCOPE_KEYS
+            keys = key == "AllCops" ? ALL_COPS_PROJECT_KEYS : COP_KEYS
             value.each_with_object({}) do |(setting, setting_value), scope|
               scope[setting] = copy_value(setting_value) if keys.include?(setting)
             end

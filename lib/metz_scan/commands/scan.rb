@@ -156,7 +156,7 @@ module MetzScan
       end
 
       def project_analyzer_options(options)
-        { default_output: !options.project_analyzers }
+        { default_output: !options.project_analyzers, project_config: !options.all_cops }
       end
 
       def render(parsed, format)

@@ -40,11 +40,14 @@ module MetzScan
 
         module_function
 
-        def merge!(parsed, paths, **)
+        # `project_config: true` (default scan) honors the project's
+        # MetzProject/* Enabled: false and Exclude via the suppression ledger.
+        def merge!(parsed, paths, project_config: false, **)
           findings = project_findings_for(paths, **)
           return parsed if findings.empty?
 
-          merge_findings(parsed, findings)
+          offense_set = ProjectAnalyzerOffenses.build(findings, ledger_report: (parsed if project_config))
+          merge_offense_set(parsed, offense_set) unless offense_set.findings.empty?
           parsed
         end
 
@@ -56,10 +59,9 @@ module MetzScan
           default_output ? findings.select { |finding| default_output_finding?(finding) } : findings
         end
 
-        def merge_findings(parsed, findings)
-          offense_set = ProjectAnalyzerOffenses.build(findings)
+        def merge_offense_set(parsed, offense_set)
           merge_offenses(parsed, offense_set.by_path)
-          update_summary(parsed, findings, offense_set.offenses)
+          update_summary(parsed, offense_set.findings, offense_set.offenses)
         end
 
         def project_findings(paths, index: nil, default_output: false)
