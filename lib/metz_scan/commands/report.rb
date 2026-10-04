@@ -61,17 +61,24 @@ module MetzScan
       end
 
       def emit(options)
-        parsed = load_json(options.path)
+        parsed = load_report(options.path)
         return parsed if parsed.is_a?(Integer)
 
         render(parsed, options.format)
         Scan::Runner.exit_code_for(parsed)
       end
 
-      def load_json(path)
-        JSON.parse(File.read(path))
+      def load_report(path)
+        parsed = JSON.parse(File.read(path))
+        report?(parsed) ? parsed : not_a_report(path)
       rescue JSON::ParserError => e
         invalid_json(path, e.message)
+      end
+
+      # The shape shared by `rubocop --format json` and `metz-scan scan --format json`.
+      def report?(parsed)
+        parsed.is_a?(Hash) && parsed["files"].is_a?(Array) &&
+          parsed["files"].all? { |file| file.is_a?(Hash) && file["offenses"].is_a?(Array) }
       end
 
       def render(parsed, format)
@@ -109,6 +116,11 @@ module MetzScan
 
       def invalid_json(path, detail)
         stderr.puts "metz-scan report: invalid JSON in #{path}: #{detail}"
+        CLI::USAGE_ERROR
+      end
+
+      def not_a_report(path)
+        stderr.puts "metz-scan report: not a metz-scan JSON report: #{path}"
         CLI::USAGE_ERROR
       end
     end
