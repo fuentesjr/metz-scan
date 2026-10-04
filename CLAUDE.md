@@ -7,7 +7,7 @@ govern slice discipline. Run `bin/check_ci_parity` before any push.
 
 Repo skills (canonical in `.claude/skills/`, mirrored for OpenAI/Codex via the
 `.agents/skills` symlink): `land-slice` (finish + verify + commit a slice),
-`release` (GitHub Packages release runbook), `dogfood-round` (qualitative
+`release` (release runbook), `dogfood-round` (qualitative
 dogfooding rubric), `extract-approach` (write a learning note after a
 non-trivial fix). Executor models of any vendor: read
 `.claude/guides/operator-playbook.md` before doing anything. This file is the

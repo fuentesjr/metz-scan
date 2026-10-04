@@ -119,7 +119,8 @@ bundle exec metz-scan scan app lib
 ```
 
 `scan` exits `1` when it reports findings — that is the tool working, not a
-crash. Exit `2` means RuboCop failed, and `64` means a usage error (unknown
+crash. Exit `2` means RuboCop failed, including on an invalid project
+`.rubocop.yml`, and `64` means a usage error (unknown
 option, missing or nonexistent path, invalid format, or a report file that is
 not a JSON report from `scan --format json` or `rubocop --format json`) in any
 subcommand.

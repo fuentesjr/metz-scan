@@ -7,7 +7,7 @@ behaves; the implementation in
 companion type-inference module follow the rules below.
 
 The starting material is the research file
-[`.mission-research/demeter-static-typing.md`](../../.mission-research/demeter-static-typing.md)
+`demeter-static-typing.md` (see also `docs/spikes/sorbet-issue-26.md`)
 (referenced throughout as `demeter-static-typing.md`). Sections 1–5 of that
 file establish the chain-walking primitives, the literal type predicates,
 the proposed `METHOD_RETURN_TYPES` constant, the survey of prior art, and a
@@ -519,14 +519,14 @@ mission documents:
 
 ## Cross-references
 
-- Source research: [`.mission-research/demeter-static-typing.md`](../../.mission-research/demeter-static-typing.md)
+- Source research: `demeter-static-typing.md`
   (referred to by filename `demeter-static-typing.md` throughout this
   document)
 - Algorithm sketch: `demeter-static-typing.md` §5
 - Type map source: `demeter-static-typing.md` §3
 - Open questions resolved: `demeter-static-typing.md` §6 (this document
   closes Q1–Q12)
-- Historical validation IDs: [milestone-history.md](../../docs/milestone-history.md)
+- Historical validation IDs: `milestone-history.md`
 - csend invariant (project-wide): `AGENTS.md` "csend invariant"
 - Safe-navigation bridge and metadata DSL:
   (`rubocop-metz/lib/rubocop/cop/metz/on_send_csend_bridge.rb`,

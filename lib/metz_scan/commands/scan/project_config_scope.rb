@@ -57,9 +57,10 @@ module MetzScan
           end
 
           def version
-            config.target_ruby_version
-          rescue RuboCop::Error, Psych::Exception
-            nil
+            target = RuboCop::TargetRuby.new(config)
+            return target.version if target.supported?
+
+            raise RuboCop::ValidationError, "unsupported Ruby version #{target.version} in #{target.source}"
           end
 
           private
