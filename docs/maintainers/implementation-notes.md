@@ -9,6 +9,27 @@ Use `.trk/` (`trk status`) for the current goal, next steps, backlog, and
 log. Add new notes here only when a slice needs more durable detail than STATE
 should carry.
 
+## 2026-10-03: v0.6.0 release completion (GitHub Packages)
+
+`v0.6.0` published to GitHub Packages under explicit user authorization; the
+user approved the exact `docs/releases/v0.6.0.md` text first. Minor bump: two
+default-enabled cops, exit 64 for usage errors, `rubocop ~> 1.90`. Main
+requires PRs, so the prep went through PR #63 (body = the approved notes);
+tag `v0.6.0` → merge commit `d8fd71e` after its full-suite push run passed.
+Both gems built from that commit with no warnings and pushed in dependency
+order; `bin/check_published_gem 0.6.0` PASS. The owner then pushed both gems
+to rubygems.org by hand from a `v0.6.0` worktree, in the same order (agent
+`gem push` to rubygems.org is permission-blocked); both report `0.6.0` as
+latest there.
+
+Post-release QA (qa-engineer subagent, published GitHub Packages gems in a
+clean consumer): no blocking defect; every fix in the notes verified end to
+end. It found that the default scan ignores `Enabled: false` and `Max*` for
+`Metz/*` cops (only per-cop `Exclude` applies; reproduced), so the notes'
+"disable or tune" advice holds only under `--all-cops` and plain `rubocop`.
+Also, older than 0.6.0: a broken project config makes `scan` exit 0 instead
+of 2, and `report` on wrong-shape JSON crashes or reports a false clean.
+
 ## 2026-09-15: Rubydex 0.4.0 → 0.4.1 (no adapter change)
 
 Optional `:rubydex` group only; `Rubydex::Graph.configure_for_workspace` verified
