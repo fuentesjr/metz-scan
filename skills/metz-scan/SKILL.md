@@ -176,7 +176,9 @@ same reason recurs, ask the human whether to add a per-cop `Exclude`.
   the config or environment, rerun. Neither is a finding.
 - Stdout holds the report; stderr holds `metz-scan: note:` lines and errors.
   A note about an uninstalled `inherit_gem` means that gem's `Exclude` was
-  skipped; do not install it.
+  skipped; do not install it. If path-scoped cops did not check files under a
+  root, rescan from inside it only if it is the intended project (nested
+  engines or dummy apps are expected).
 - Suppressed findings do not count toward `offense_count` or the exit status.
 - `Lint/Syntax` means RuboCop could not parse the file at its detected Ruby
   version; set `AllCops: TargetRubyVersion` or fix the syntax.

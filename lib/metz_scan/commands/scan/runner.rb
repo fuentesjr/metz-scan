@@ -27,7 +27,7 @@ module MetzScan
           ProjectConfigScope.reset_unresolved_inherit_gems! unless all_cops
           paths = inspection_paths(paths, all_cops: all_cops)
           report = paths.empty? ? empty_report : scan(paths, all_cops: all_cops)
-          report.tap { ProjectConfigScope.warn_unresolved_inherit_gems(stderr) unless all_cops }
+          report.tap { ProjectConfigScope.warn_scope_notes(paths, stderr) unless all_cops }
         end
 
         def self.scan(paths, all_cops:)

@@ -4,6 +4,7 @@ require "pathname"
 require "rubocop"
 
 require "metz_scan/commands/scan/exclude_provenance"
+require "metz_scan/commands/scan/path_scoped_include_note"
 
 module MetzScan
   module Commands
@@ -38,6 +39,14 @@ module MetzScan
 
         def reset_unresolved_inherit_gems!
           @unresolved_inherit_gems = []
+        end
+
+        # The default-mode stderr notes printed after a successful scan of
+        # `files`. Lives here, not in Runner, because Runner is at its
+        # Metrics/ModuleLength limit.
+        def warn_scope_notes(files, stderr)
+          PathScopedIncludeNote.print_note(files, stderr)
+          warn_unresolved_inherit_gems(stderr)
         end
 
         # Default mode drops file-scope Exclude from an inherit_gem whose gem
