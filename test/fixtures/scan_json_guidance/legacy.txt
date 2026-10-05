@@ -1,0 +1,49 @@
+Project analyzers: 3 findings, 8 offenses (advisory signals; review in context)
+  Analyzer counts: MetzProject/ServiceSoup=2, MetzProject/RepeatedBranching=1
+  Confidence counts: medium=2, low=1
+  Severity counts: design pressure=2, setup orchestration=1
+  Category counts: state=1
+  MetzProject/RepeatedBranching: 1 finding, 2 offenses, status: validated, confidence: medium, severity: design pressure
+  MetzProject/ServiceSoup: 2 findings, 6 offenses, status: validated, confidence: medium, severity: design pressure; mix: severity design pressure=1, setup orchestration=1
+
+Metz/MethodsTooLong
+  Why it matters: Long methods hide multiple responsibilities and resist understanding at a glance.
+  Run `metz-scan explain Metz/MethodsTooLong` for details.
+  sample.rb:3:3 Metz/MethodsTooLong: Method has too many lines. [6/5]
+
+MetzProject/RepeatedBranching
+  Why it matters: Repeated branching spreads one domain decision across files and makes change ripple outward.
+  Triage: status: validated; confidence: medium; severity: design pressure. Validated repeated-decision signal; review repeated decisions in context.
+  branching_a.rb:2:1 order.status (state branch subject) branches in 2 files; consider consolidating the decision.
+  branching_b.rb:2:1 order.status (state branch subject) branches in 2 files; consider consolidating the decision.
+
+MetzProject/ServiceSoup
+  Why it matters: Service-object soup scatters one workflow across many procedural steps and makes orchestration harder to change.
+  Triage: status: validated; confidence: medium; severity: design pressure. Validated workflow signal; review methods that coordinate several distinct services.
+  orders_controller.rb:4:1 OrdersController#create coordinates 3 distinct services; consider a workflow object that owns the process.
+  orders_controller.rb:5:1 OrdersController#create coordinates 3 distinct services; consider a workflow object that owns the process.
+  orders_controller.rb:6:1 OrdersController#create coordinates 3 distinct services; consider a workflow object that owns the process.
+  setup_workflow.rb:6:1 Spree::Seeds::All#call coordinates 3 distinct services; consider a workflow object that owns the process.
+  setup_workflow.rb:7:1 Spree::Seeds::All#call coordinates 3 distinct services; consider a workflow object that owns the process.
+  setup_workflow.rb:8:1 Spree::Seeds::All#call coordinates 3 distinct services; consider a workflow object that owns the process.
+
+Suppressed findings: 1, 0 without a reason
+  sample.rb:13:14 Metz/MethodsTooManyParameters: Avoid parameter lists longer than 4 parameters. [5/4]
+    inline disable at line 12, reason: mirrors upstream interface
+
+Summary
+-------
+Metz compliance: 80% (4/5 files clean)
+9 offenses across 3 cops
+
+By cop:
+  MetzProject/ServiceSoup        6
+  MetzProject/RepeatedBranching  2
+  Metz/MethodsTooLong            1
+
+Most offenses:
+  orders_controller.rb  3
+  setup_workflow.rb     3
+  branching_a.rb        1
+  branching_b.rb        1
+  sample.rb             1

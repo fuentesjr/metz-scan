@@ -1,0 +1,645 @@
+{
+  "metadata": {
+    "rubocop_version": "<rubocop_version>",
+    "ruby_engine": "<ruby_engine>",
+    "ruby_version": "<ruby_version>",
+    "ruby_patchlevel": "<ruby_patchlevel>",
+    "ruby_platform": "<ruby_platform>"
+  },
+  "files": [
+    {
+      "path": "branching_a.rb",
+      "offenses": [
+        {
+          "cop_name": "MetzProject/RepeatedBranching",
+          "message": "order.status (state branch subject) branches in 2 files; consider consolidating the decision.",
+          "severity": "refactor",
+          "corrected": false,
+          "correctable": false,
+          "why_it_matters": "Repeated branching spreads one domain decision across files and makes change ripple outward.",
+          "fix_safety": "manual",
+          "suggested_next_moves": [
+            "Name the domain decision once and reuse it instead of repeating the same branch table.",
+            "Consider polymorphism, a strategy object, or a small lookup object when the branch represents type behavior."
+          ],
+          "project_analyzer": {
+            "status": "validated",
+            "confidence": "medium",
+            "triage_severity": "design pressure",
+            "triage_summary": "Validated repeated-decision signal; review repeated decisions in context.",
+            "decision": "order.status",
+            "kind": "case",
+            "branch_values": [
+              "cancelled",
+              "paid",
+              "pending"
+            ],
+            "project_analyzer_category": "state",
+            "decision_subject_kind": "state",
+            "decision_subject_label": "state branch subject",
+            "decision_subject_summary": "State-like subject; repeated branch tables may describe a shared domain decision.",
+            "occurrences": [
+              {
+                "path": "<project>/branching_a.rb",
+                "line": 2,
+                "expression": "case order.status"
+              },
+              {
+                "path": "<project>/branching_b.rb",
+                "line": 2,
+                "expression": "case order.status"
+              }
+            ],
+            "report_location": {
+              "line_source": "source"
+            }
+          },
+          "location": {
+            "start_line": 2,
+            "start_column": 1,
+            "last_line": 2,
+            "last_column": 1,
+            "length": 1,
+            "line": 2,
+            "column": 1
+          }
+        }
+      ]
+    },
+    {
+      "path": "branching_b.rb",
+      "offenses": [
+        {
+          "cop_name": "MetzProject/RepeatedBranching",
+          "message": "order.status (state branch subject) branches in 2 files; consider consolidating the decision.",
+          "severity": "refactor",
+          "corrected": false,
+          "correctable": false,
+          "why_it_matters": "Repeated branching spreads one domain decision across files and makes change ripple outward.",
+          "fix_safety": "manual",
+          "suggested_next_moves": [
+            "Name the domain decision once and reuse it instead of repeating the same branch table.",
+            "Consider polymorphism, a strategy object, or a small lookup object when the branch represents type behavior."
+          ],
+          "project_analyzer": {
+            "status": "validated",
+            "confidence": "medium",
+            "triage_severity": "design pressure",
+            "triage_summary": "Validated repeated-decision signal; review repeated decisions in context.",
+            "decision": "order.status",
+            "kind": "case",
+            "branch_values": [
+              "cancelled",
+              "paid",
+              "pending"
+            ],
+            "project_analyzer_category": "state",
+            "decision_subject_kind": "state",
+            "decision_subject_label": "state branch subject",
+            "decision_subject_summary": "State-like subject; repeated branch tables may describe a shared domain decision.",
+            "occurrences": [
+              {
+                "path": "<project>/branching_a.rb",
+                "line": 2,
+                "expression": "case order.status"
+              },
+              {
+                "path": "<project>/branching_b.rb",
+                "line": 2,
+                "expression": "case order.status"
+              }
+            ],
+            "report_location": {
+              "line_source": "source"
+            }
+          },
+          "location": {
+            "start_line": 2,
+            "start_column": 1,
+            "last_line": 2,
+            "last_column": 1,
+            "length": 1,
+            "line": 2,
+            "column": 1
+          }
+        }
+      ]
+    },
+    {
+      "path": "orders_controller.rb",
+      "offenses": [
+        {
+          "cop_name": "MetzProject/ServiceSoup",
+          "message": "OrdersController#create coordinates 3 distinct services; consider a workflow object that owns the process.",
+          "severity": "refactor",
+          "corrected": false,
+          "correctable": false,
+          "why_it_matters": "Service-object soup scatters one workflow across many procedural steps and makes orchestration harder to change.",
+          "fix_safety": "manual",
+          "suggested_next_moves": [
+            "Introduce a workflow object that owns the multi-step process.",
+            "Keep the controller or job action at one high-level command when possible."
+          ],
+          "project_analyzer": {
+            "status": "validated",
+            "confidence": "medium",
+            "triage_severity": "design pressure",
+            "triage_summary": "Validated workflow signal; review methods that coordinate several distinct services.",
+            "workflow": {
+              "context": "OrdersController#create",
+              "enclosing": "OrdersController",
+              "method": "#create",
+              "line": 3,
+              "expression": "def create"
+            },
+            "services": [
+              {
+                "service": "ValidateOrder",
+                "path": "<project>/orders_controller.rb",
+                "line": 4,
+                "expression": "ValidateOrder.call(order)",
+                "style": "class_call"
+              },
+              {
+                "service": "ReserveInventory",
+                "path": "<project>/orders_controller.rb",
+                "line": 5,
+                "expression": "ReserveInventory.call(order)",
+                "style": "class_call"
+              },
+              {
+                "service": "CapturePayment",
+                "path": "<project>/orders_controller.rb",
+                "line": 6,
+                "expression": "CapturePayment.new(order).call",
+                "style": "new_call"
+              }
+            ],
+            "report_location": {
+              "line_source": "source",
+              "context": "OrdersController#create"
+            }
+          },
+          "location": {
+            "start_line": 4,
+            "start_column": 1,
+            "last_line": 4,
+            "last_column": 1,
+            "length": 1,
+            "line": 4,
+            "column": 1
+          }
+        },
+        {
+          "cop_name": "MetzProject/ServiceSoup",
+          "message": "OrdersController#create coordinates 3 distinct services; consider a workflow object that owns the process.",
+          "severity": "refactor",
+          "corrected": false,
+          "correctable": false,
+          "why_it_matters": "Service-object soup scatters one workflow across many procedural steps and makes orchestration harder to change.",
+          "fix_safety": "manual",
+          "suggested_next_moves": [
+            "Introduce a workflow object that owns the multi-step process.",
+            "Keep the controller or job action at one high-level command when possible."
+          ],
+          "project_analyzer": {
+            "status": "validated",
+            "confidence": "medium",
+            "triage_severity": "design pressure",
+            "triage_summary": "Validated workflow signal; review methods that coordinate several distinct services.",
+            "workflow": {
+              "context": "OrdersController#create",
+              "enclosing": "OrdersController",
+              "method": "#create",
+              "line": 3,
+              "expression": "def create"
+            },
+            "services": [
+              {
+                "service": "ValidateOrder",
+                "path": "<project>/orders_controller.rb",
+                "line": 4,
+                "expression": "ValidateOrder.call(order)",
+                "style": "class_call"
+              },
+              {
+                "service": "ReserveInventory",
+                "path": "<project>/orders_controller.rb",
+                "line": 5,
+                "expression": "ReserveInventory.call(order)",
+                "style": "class_call"
+              },
+              {
+                "service": "CapturePayment",
+                "path": "<project>/orders_controller.rb",
+                "line": 6,
+                "expression": "CapturePayment.new(order).call",
+                "style": "new_call"
+              }
+            ],
+            "report_location": {
+              "line_source": "source",
+              "context": "OrdersController#create"
+            }
+          },
+          "location": {
+            "start_line": 5,
+            "start_column": 1,
+            "last_line": 5,
+            "last_column": 1,
+            "length": 1,
+            "line": 5,
+            "column": 1
+          }
+        },
+        {
+          "cop_name": "MetzProject/ServiceSoup",
+          "message": "OrdersController#create coordinates 3 distinct services; consider a workflow object that owns the process.",
+          "severity": "refactor",
+          "corrected": false,
+          "correctable": false,
+          "why_it_matters": "Service-object soup scatters one workflow across many procedural steps and makes orchestration harder to change.",
+          "fix_safety": "manual",
+          "suggested_next_moves": [
+            "Introduce a workflow object that owns the multi-step process.",
+            "Keep the controller or job action at one high-level command when possible."
+          ],
+          "project_analyzer": {
+            "status": "validated",
+            "confidence": "medium",
+            "triage_severity": "design pressure",
+            "triage_summary": "Validated workflow signal; review methods that coordinate several distinct services.",
+            "workflow": {
+              "context": "OrdersController#create",
+              "enclosing": "OrdersController",
+              "method": "#create",
+              "line": 3,
+              "expression": "def create"
+            },
+            "services": [
+              {
+                "service": "ValidateOrder",
+                "path": "<project>/orders_controller.rb",
+                "line": 4,
+                "expression": "ValidateOrder.call(order)",
+                "style": "class_call"
+              },
+              {
+                "service": "ReserveInventory",
+                "path": "<project>/orders_controller.rb",
+                "line": 5,
+                "expression": "ReserveInventory.call(order)",
+                "style": "class_call"
+              },
+              {
+                "service": "CapturePayment",
+                "path": "<project>/orders_controller.rb",
+                "line": 6,
+                "expression": "CapturePayment.new(order).call",
+                "style": "new_call"
+              }
+            ],
+            "report_location": {
+              "line_source": "source",
+              "context": "OrdersController#create"
+            }
+          },
+          "location": {
+            "start_line": 6,
+            "start_column": 1,
+            "last_line": 6,
+            "last_column": 1,
+            "length": 1,
+            "line": 6,
+            "column": 1
+          }
+        }
+      ]
+    },
+    {
+      "path": "sample.rb",
+      "offenses": [
+        {
+          "severity": "refactor",
+          "message": "Metz/MethodsTooLong: Method has too many lines. [6/5]",
+          "cop_name": "Metz/MethodsTooLong",
+          "corrected": false,
+          "correctable": false,
+          "location": {
+            "start_line": 3,
+            "start_column": 3,
+            "last_line": 10,
+            "last_column": 5,
+            "length": 91,
+            "line": 3,
+            "column": 3
+          },
+          "why_it_matters": "Long methods hide multiple responsibilities and resist understanding at a glance.",
+          "fix_safety": "manual",
+          "suggested_next_moves": [
+            "Extract cohesive blocks into private helper methods named after their intent.",
+            "Replace conditional branches with polymorphism or small lookup objects.",
+            "Move data shaping onto value objects or query methods so the action reads as a list of steps."
+          ]
+        }
+      ]
+    },
+    {
+      "path": "setup_workflow.rb",
+      "offenses": [
+        {
+          "cop_name": "MetzProject/ServiceSoup",
+          "message": "Spree::Seeds::All#call coordinates 3 distinct services; consider a workflow object that owns the process.",
+          "severity": "refactor",
+          "corrected": false,
+          "correctable": false,
+          "why_it_matters": "Setup orchestration often intentionally runs a list of tasks; review only when it changes often or hides domain workflow pressure.",
+          "fix_safety": "manual",
+          "suggested_next_moves": [
+            "Leave setup orchestration as a list when it is stable and declarative.",
+            "Extract a named workflow only when setup steps change together or need clearer sequencing."
+          ],
+          "project_analyzer": {
+            "status": "validated",
+            "confidence": "low",
+            "triage_severity": "setup orchestration",
+            "triage_summary": "Setup workflow signal; review only when setup orchestration changes often or hides domain workflow pressure.",
+            "workflow": {
+              "context": "Spree::Seeds::All#call",
+              "enclosing": "Spree::Seeds::All",
+              "method": "#call",
+              "line": 5,
+              "expression": "def call"
+            },
+            "services": [
+              {
+                "service": "Countries",
+                "path": "<project>/setup_workflow.rb",
+                "line": 6,
+                "expression": "Countries.call",
+                "style": "class_call"
+              },
+              {
+                "service": "States",
+                "path": "<project>/setup_workflow.rb",
+                "line": 7,
+                "expression": "States.call",
+                "style": "class_call"
+              },
+              {
+                "service": "Zones",
+                "path": "<project>/setup_workflow.rb",
+                "line": 8,
+                "expression": "Zones.call",
+                "style": "class_call"
+              }
+            ],
+            "report_location": {
+              "line_source": "source",
+              "context": "Spree::Seeds::All#call"
+            }
+          },
+          "location": {
+            "start_line": 6,
+            "start_column": 1,
+            "last_line": 6,
+            "last_column": 1,
+            "length": 1,
+            "line": 6,
+            "column": 1
+          }
+        },
+        {
+          "cop_name": "MetzProject/ServiceSoup",
+          "message": "Spree::Seeds::All#call coordinates 3 distinct services; consider a workflow object that owns the process.",
+          "severity": "refactor",
+          "corrected": false,
+          "correctable": false,
+          "why_it_matters": "Setup orchestration often intentionally runs a list of tasks; review only when it changes often or hides domain workflow pressure.",
+          "fix_safety": "manual",
+          "suggested_next_moves": [
+            "Leave setup orchestration as a list when it is stable and declarative.",
+            "Extract a named workflow only when setup steps change together or need clearer sequencing."
+          ],
+          "project_analyzer": {
+            "status": "validated",
+            "confidence": "low",
+            "triage_severity": "setup orchestration",
+            "triage_summary": "Setup workflow signal; review only when setup orchestration changes often or hides domain workflow pressure.",
+            "workflow": {
+              "context": "Spree::Seeds::All#call",
+              "enclosing": "Spree::Seeds::All",
+              "method": "#call",
+              "line": 5,
+              "expression": "def call"
+            },
+            "services": [
+              {
+                "service": "Countries",
+                "path": "<project>/setup_workflow.rb",
+                "line": 6,
+                "expression": "Countries.call",
+                "style": "class_call"
+              },
+              {
+                "service": "States",
+                "path": "<project>/setup_workflow.rb",
+                "line": 7,
+                "expression": "States.call",
+                "style": "class_call"
+              },
+              {
+                "service": "Zones",
+                "path": "<project>/setup_workflow.rb",
+                "line": 8,
+                "expression": "Zones.call",
+                "style": "class_call"
+              }
+            ],
+            "report_location": {
+              "line_source": "source",
+              "context": "Spree::Seeds::All#call"
+            }
+          },
+          "location": {
+            "start_line": 7,
+            "start_column": 1,
+            "last_line": 7,
+            "last_column": 1,
+            "length": 1,
+            "line": 7,
+            "column": 1
+          }
+        },
+        {
+          "cop_name": "MetzProject/ServiceSoup",
+          "message": "Spree::Seeds::All#call coordinates 3 distinct services; consider a workflow object that owns the process.",
+          "severity": "refactor",
+          "corrected": false,
+          "correctable": false,
+          "why_it_matters": "Setup orchestration often intentionally runs a list of tasks; review only when it changes often or hides domain workflow pressure.",
+          "fix_safety": "manual",
+          "suggested_next_moves": [
+            "Leave setup orchestration as a list when it is stable and declarative.",
+            "Extract a named workflow only when setup steps change together or need clearer sequencing."
+          ],
+          "project_analyzer": {
+            "status": "validated",
+            "confidence": "low",
+            "triage_severity": "setup orchestration",
+            "triage_summary": "Setup workflow signal; review only when setup orchestration changes often or hides domain workflow pressure.",
+            "workflow": {
+              "context": "Spree::Seeds::All#call",
+              "enclosing": "Spree::Seeds::All",
+              "method": "#call",
+              "line": 5,
+              "expression": "def call"
+            },
+            "services": [
+              {
+                "service": "Countries",
+                "path": "<project>/setup_workflow.rb",
+                "line": 6,
+                "expression": "Countries.call",
+                "style": "class_call"
+              },
+              {
+                "service": "States",
+                "path": "<project>/setup_workflow.rb",
+                "line": 7,
+                "expression": "States.call",
+                "style": "class_call"
+              },
+              {
+                "service": "Zones",
+                "path": "<project>/setup_workflow.rb",
+                "line": 8,
+                "expression": "Zones.call",
+                "style": "class_call"
+              }
+            ],
+            "report_location": {
+              "line_source": "source",
+              "context": "Spree::Seeds::All#call"
+            }
+          },
+          "location": {
+            "start_line": 8,
+            "start_column": 1,
+            "last_line": 8,
+            "last_column": 1,
+            "length": 1,
+            "line": 8,
+            "column": 1
+          }
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "offense_count": 9,
+    "target_file_count": 5,
+    "inspected_file_count": 5,
+    "project_analyzers": {
+      "finding_count": 3,
+      "offense_count": 8,
+      "rules": [
+        {
+          "status": "validated",
+          "confidence": "medium",
+          "triage_severity": "design pressure",
+          "cop_name": "MetzProject/RepeatedBranching",
+          "finding_count": 1,
+          "offense_count": 2,
+          "breakdowns": {
+            "cop_name": [
+              {
+                "value": "MetzProject/RepeatedBranching",
+                "finding_count": 1
+              }
+            ],
+            "confidence": [
+              {
+                "value": "medium",
+                "finding_count": 1
+              }
+            ],
+            "triage_severity": [
+              {
+                "value": "design pressure",
+                "finding_count": 1
+              }
+            ],
+            "metadata": {
+              "project_analyzer_category": [
+                {
+                  "value": "state",
+                  "finding_count": 1
+                }
+              ]
+            }
+          }
+        },
+        {
+          "status": "validated",
+          "confidence": "medium",
+          "triage_severity": "design pressure",
+          "cop_name": "MetzProject/ServiceSoup",
+          "finding_count": 2,
+          "offense_count": 6,
+          "breakdowns": {
+            "cop_name": [
+              {
+                "value": "MetzProject/ServiceSoup",
+                "finding_count": 2
+              }
+            ],
+            "confidence": [
+              {
+                "value": "low",
+                "finding_count": 1
+              },
+              {
+                "value": "medium",
+                "finding_count": 1
+              }
+            ],
+            "triage_severity": [
+              {
+                "value": "design pressure",
+                "finding_count": 1
+              },
+              {
+                "value": "setup orchestration",
+                "finding_count": 1
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "clean_file_count": 4,
+    "files_with_offenses": 1,
+    "offenses_by_cop": {
+      "MetzProject/ServiceSoup": 6,
+      "MetzProject/RepeatedBranching": 2,
+      "Metz/MethodsTooLong": 1
+    }
+  },
+  "suppressions": [
+    {
+      "cop_name": "Metz/MethodsTooManyParameters",
+      "path": "sample.rb",
+      "line": 13,
+      "column": 14,
+      "message": "Metz/MethodsTooManyParameters: Avoid parameter lists longer than 4 parameters. [5/4]",
+      "suppressed_by": "inline_disable",
+      "reason": "mirrors upstream interface",
+      "reason_status": "present",
+      "directive": {
+        "line": 12
+      },
+      "config": null
+    }
+  ]
+}
