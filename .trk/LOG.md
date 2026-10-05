@@ -190,3 +190,6 @@ Skill: when an edit grows a pre-existing method-level finding, try once to resha
 
 ## 2026-10-05T01:22Z log
 report-per-cop-guidance landed: scan --format json moves why_it_matters/suggested_next_moves/fix_safety into a top-level guidance map keyed by cop_name; offenses keep only per-finding overrides; report reads both shapes. BREAKING JSON shape change: call it out in the next release notes. Sample app JSON 8,185 -> 6,625 bytes. Stock cops under --all-cops get empty-valued entries (spec-bound).
+
+## 2026-10-05T01:46Z log
+scan-path-scoped-include-cwd landed: default scan prints one stderr note when target files would match an anchored Metz Include (app/controllers, app/services, app/operations, app/views) only from a deeper root (project scanned from its parent, nested engine, spec/dummy); names every root; stdout, findings, exit status unchanged. Follow-up not taken: --auto-fix also runs --force-default-config and gets no note.

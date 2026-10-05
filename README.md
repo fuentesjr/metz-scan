@@ -250,6 +250,14 @@ stderr naming the gem instead of silently dropping the exclude. Install the
 gem (or run `--all-cops`, which uses your complete project configuration) to
 have that scope honored.
 
+Default mode matches cops scoped to `app/` paths (for example
+`Metz/OperationsTooManyPublicMethods`) relative to the current directory, so
+`app/` files under any other root (a project scanned from its parent, a Rails
+engine, a `spec/dummy` app) skip those cops. When that happens, default mode
+prints one `metz-scan: note:` line to stderr naming those roots. Rescan a root
+from inside it only when it is the project you meant to scan; nested engines
+and dummy apps are expected to be skipped.
+
 Default mode skips remote (`http://` or `https://`) `inherit_from:` entries
 without a warning, so file-scope settings in a remote config are not applied.
 Use `--all-cops` when a remote config carries scope you need.
