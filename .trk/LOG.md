@@ -184,3 +184,6 @@ Trimmed skills/metz-scan/SKILL.md for agent context cost (round 1 F2): 14,621 to
 
 ## 2026-10-04T23:54Z log
 Agent-loop dogfood round 2 with Codex (codex-cli 0.160.0) on lobsters against the trimmed skill: scanned at the end, attributed both grown size findings as pre-existing (round 1 F1 did not recur), wrote the handoff. Skill cost 10,271 bytes; printed scan output 43,064 bytes, mostly repeated per-finding guidance. Two attempts voided: lobsters' contributor AGENTS.md (hidden in the fixture copy) and an unpinned wrapper Ruby. Note: docs/dogfooding/2026-10-04-agent-loop-lobsters-codex.md.
+
+## 2026-10-05T00:22Z log
+Skill: when an edit grows a pre-existing method-level finding, try once to reshape the agent's own addition so it does not grow; class growth is reported only (owner decision 2026-10-04 on grown-preexisting-finding-policy; measure in the next agent-loop round).

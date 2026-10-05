@@ -68,9 +68,13 @@ Run this once, after your code changes are complete, not after every edit.
    with `git show <base>:<file>` and yours from the working tree. Pair findings
    that share a key in `start_line` order. An unpaired finding in your report
    is yours, including a chain you edited or a method or class you renamed.
-   A paired finding is pre-existing even when it overlaps your edit: leave it
-   and list it in the handoff as grew (`27/5` to `30/5`),
-   shrank, or unchanged.
+   A paired finding is pre-existing even when it overlaps your edit: list it
+   in the handoff as grew (`27/5` to `30/5`),
+   shrank, or unchanged. When your edit grew a method-level finding
+   (`Metz/MethodsTooLong`, `Metz/MethodsTooManyParameters`, or a chain cop),
+   try once to reshape your own addition so it does not grow, for example a
+   table entry instead of another branch; do not refactor code you did not
+   change. Report a class that grew without acting on it.
 
    **Every other cop:** a finding is yours when either holds:
 
