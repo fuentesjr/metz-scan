@@ -113,8 +113,9 @@ module MetzScan
 
       def assert_metz_offense_shape
         refute_nil metz_offense, "expected at least one Metz/* offense"
-        %w[why_it_matters fix_safety].each { |k| assert metz_offense.key?(k), "missing #{k}" }
-        assert_kind_of Array, metz_offense["suggested_next_moves"]
+        guidance = JSON.parse(@stdout.string).dig("guidance", metz_offense["cop_name"])
+        %w[why_it_matters fix_safety].each { |k| assert_kind_of String, guidance[k], "missing guidance #{k}" }
+        assert_kind_of Array, guidance["suggested_next_moves"]
         assert metz_offense.dig("location", "start_line"), "missing location.start_line"
       end
 

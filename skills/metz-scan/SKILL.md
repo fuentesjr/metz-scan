@@ -92,8 +92,9 @@ Run this once, after your code changes are complete, not after every edit.
    them in the handoff. When unsure, match against the base scan on the key
    above; unpaired means yours.
 
-4. Fix each finding that is yours. Read its `why_it_matters` and
-   `suggested_next_moves`; `metz-scan explain <cop>` adds the cop's
+4. Fix each finding that is yours. Read `why_it_matters` and
+   `suggested_next_moves` on the offense when present, else in
+   `guidance[cop_name]`; `metz-scan explain <cop>` adds the cop's
    configuration for `Metz/*` cops; `explain` rejects `MetzProject/*`. Fix
    the design problem, not the threshold: move behavior onto the object that
    owns the data; introduce a named query, presenter, or value object; replace

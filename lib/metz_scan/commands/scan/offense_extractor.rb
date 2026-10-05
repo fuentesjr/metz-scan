@@ -7,22 +7,28 @@ module MetzScan
         module_function
 
         def offenses(parsed)
-          Array(parsed["files"]).flat_map { |file| file_offenses(file) }
+          guidance = parsed["guidance"] || {}
+          Array(parsed["files"]).flat_map { |file| file_offenses(file, guidance) }
         end
 
-        def file_offenses(file)
-          Array(file["offenses"]).map { |o| offense_struct(file["path"], o) }
+        def file_offenses(file, guidance)
+          Array(file["offenses"]).map { |o| offense_struct(file["path"], o, guidance) }
         end
 
-        def offense_struct(path, offense)
+        def offense_struct(path, offense, guidance)
           loc = offense["location"] || {}
-          base_offense(path, offense).merge(location_fields(loc))
+          base_offense(path, offense, guidance).merge(location_fields(loc))
         end
 
-        def base_offense(path, offense)
+        def base_offense(path, offense, guidance)
           { path: path, cop_name: offense["cop_name"], severity: offense["severity"],
-            message: offense["message"], why_it_matters: offense["why_it_matters"],
+            message: offense["message"], why_it_matters: why_it_matters(offense, guidance),
             project_analyzer: offense["project_analyzer"] }
+        end
+
+        # Saved scan JSON keeps per-cop defaults in `guidance`; an offense's own field overrides them.
+        def why_it_matters(offense, guidance)
+          offense.fetch("why_it_matters") { guidance.dig(offense["cop_name"], "why_it_matters") }
         end
 
         def location_fields(location)

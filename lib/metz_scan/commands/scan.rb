@@ -11,6 +11,7 @@ require_relative "scan/text_renderer"
 require_relative "scan/sarif_renderer"
 require_relative "scan/github_annotations_renderer"
 require_relative "scan/auto_fix"
+require_relative "scan/json_guidance"
 require_relative "../cli"
 
 module MetzScan
@@ -160,7 +161,7 @@ module MetzScan
       end
 
       def render(parsed, format)
-        return stdout.puts JSON.generate(parsed) if format == "json"
+        return stdout.puts JSON.generate(JsonGuidance.compact!(parsed)) if format == "json"
 
         RENDERERS.fetch(format, TextRenderer).new(stdout, parsed).render
       end
