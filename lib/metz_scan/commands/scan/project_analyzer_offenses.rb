@@ -7,6 +7,7 @@ module MetzScan
     class Scan
       module ProjectAnalyzerOffenses
         OffenseSet = Struct.new(:by_path, :offenses, keyword_init: true)
+        FIX_SAFETY = "manual"
 
         module_function
 
@@ -47,7 +48,7 @@ module MetzScan
         end
 
         def explanation_metadata(finding)
-          { "why_it_matters" => finding.why_it_matters, "fix_safety" => "manual",
+          { "why_it_matters" => finding.why_it_matters, "fix_safety" => FIX_SAFETY,
             "suggested_next_moves" => suggested_next_moves_for(finding) }
         end
 

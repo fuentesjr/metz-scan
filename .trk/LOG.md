@@ -187,3 +187,6 @@ Agent-loop dogfood round 2 with Codex (codex-cli 0.160.0) on lobsters against th
 
 ## 2026-10-05T00:22Z log
 Skill: when an edit grows a pre-existing method-level finding, try once to reshape the agent's own addition so it does not grow; class growth is reported only (owner decision 2026-10-04 on grown-preexisting-finding-policy; measure in the next agent-loop round).
+
+## 2026-10-05T01:22Z log
+report-per-cop-guidance landed: scan --format json moves why_it_matters/suggested_next_moves/fix_safety into a top-level guidance map keyed by cop_name; offenses keep only per-finding overrides; report reads both shapes. BREAKING JSON shape change: call it out in the next release notes. Sample app JSON 8,185 -> 6,625 bytes. Stock cops under --all-cops get empty-valued entries (spec-bound).

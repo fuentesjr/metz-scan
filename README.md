@@ -181,6 +181,14 @@ bundle exec metz-scan scan . --format gh-annotations
 map) alongside the existing fields — so tools can consume the compliance
 scorecard without parsing the text output.
 
+Guidance lives once per cop in a top-level `guidance` object keyed by
+`cop_name`: one entry for each cop with an offense in `files`, holding
+`why_it_matters`, `suggested_next_moves`, and `fix_safety` (empty for stock
+RuboCop cops under `--all-cops`). An offense carries one of those fields only
+when its finding-specific guidance differs from the cop's entry; read the
+offense's field first, then `guidance[cop_name]`. `metz-scan report` resolves
+both shapes, including saved reports from before this map existed.
+
 A default scan also lists the findings a suppression hid. Each finding that an
 inline `# rubocop:disable` (or `todo`, `disable-next`) directive, a
 project per-cop `Exclude` entry, or a project `Enabled: false` kept out of the

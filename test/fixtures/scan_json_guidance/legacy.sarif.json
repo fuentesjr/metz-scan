@@ -1,0 +1,611 @@
+{
+  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "metz-scan",
+          "version": "<metz-scan-version>",
+          "informationUri": "https://github.com/fuentesjr/metz-scan",
+          "rules": [
+            {
+              "id": "MetzProject/RepeatedBranching",
+              "name": "MetzProject/RepeatedBranching",
+              "shortDescription": {
+                "text": "order.status (state branch subject) branches in 2 files; consider consolidating the decision."
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "helpUri": "https://github.com/fuentesjr/metz-scan#rule-MetzProject/RepeatedBranching",
+              "help": {
+                "text": "Repeated branching spreads one domain decision across files and makes change ripple outward."
+              },
+              "fullDescription": {
+                "text": "Repeated branching spreads one domain decision across files and makes change ripple outward."
+              }
+            },
+            {
+              "id": "MetzProject/ServiceSoup",
+              "name": "MetzProject/ServiceSoup",
+              "shortDescription": {
+                "text": "OrdersController#create coordinates 3 distinct services; consider a workflow object that owns the process."
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "helpUri": "https://github.com/fuentesjr/metz-scan#rule-MetzProject/ServiceSoup",
+              "help": {
+                "text": "Service-object soup scatters one workflow across many procedural steps and makes orchestration harder to change."
+              },
+              "fullDescription": {
+                "text": "Service-object soup scatters one workflow across many procedural steps and makes orchestration harder to change."
+              }
+            },
+            {
+              "id": "Metz/MethodsTooLong",
+              "name": "Metz/MethodsTooLong",
+              "shortDescription": {
+                "text": "Metz/MethodsTooLong: Method has too many lines. [6/5]"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "helpUri": "https://github.com/fuentesjr/metz-scan#rule-Metz/MethodsTooLong",
+              "help": {
+                "text": "Long methods hide multiple responsibilities and resist understanding at a glance."
+              },
+              "fullDescription": {
+                "text": "Long methods hide multiple responsibilities and resist understanding at a glance."
+              }
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "MetzProject/RepeatedBranching",
+          "level": "warning",
+          "message": {
+            "text": "order.status (state branch subject) branches in 2 files; consider consolidating the decision."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "branching_a.rb",
+                  "uriBaseId": "ROOT"
+                },
+                "region": {
+                  "startLine": 2,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "primaryLocationLineHash": "40ffe28def081d9f007f5df14ccfc6c31b816ea83325f0bf408c9ca4f1a7428c"
+          },
+          "properties": {
+            "project_analyzer": {
+              "status": "validated",
+              "confidence": "medium",
+              "triage_severity": "design pressure",
+              "triage_summary": "Validated repeated-decision signal; review repeated decisions in context.",
+              "decision": "order.status",
+              "kind": "case",
+              "branch_values": [
+                "cancelled",
+                "paid",
+                "pending"
+              ],
+              "project_analyzer_category": "state",
+              "decision_subject_kind": "state",
+              "decision_subject_label": "state branch subject",
+              "decision_subject_summary": "State-like subject; repeated branch tables may describe a shared domain decision.",
+              "occurrences": [
+                {
+                  "path": "<project>/branching_a.rb",
+                  "line": 2,
+                  "expression": "case order.status"
+                },
+                {
+                  "path": "<project>/branching_b.rb",
+                  "line": 2,
+                  "expression": "case order.status"
+                }
+              ],
+              "report_location": {
+                "line_source": "source"
+              }
+            }
+          }
+        },
+        {
+          "ruleId": "MetzProject/RepeatedBranching",
+          "level": "warning",
+          "message": {
+            "text": "order.status (state branch subject) branches in 2 files; consider consolidating the decision."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "branching_b.rb",
+                  "uriBaseId": "ROOT"
+                },
+                "region": {
+                  "startLine": 2,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "primaryLocationLineHash": "a87d5c8465e50a29f6c2d2cc93b5130e2b53f07a8b0a711e33d9d173cada7b5c"
+          },
+          "properties": {
+            "project_analyzer": {
+              "status": "validated",
+              "confidence": "medium",
+              "triage_severity": "design pressure",
+              "triage_summary": "Validated repeated-decision signal; review repeated decisions in context.",
+              "decision": "order.status",
+              "kind": "case",
+              "branch_values": [
+                "cancelled",
+                "paid",
+                "pending"
+              ],
+              "project_analyzer_category": "state",
+              "decision_subject_kind": "state",
+              "decision_subject_label": "state branch subject",
+              "decision_subject_summary": "State-like subject; repeated branch tables may describe a shared domain decision.",
+              "occurrences": [
+                {
+                  "path": "<project>/branching_a.rb",
+                  "line": 2,
+                  "expression": "case order.status"
+                },
+                {
+                  "path": "<project>/branching_b.rb",
+                  "line": 2,
+                  "expression": "case order.status"
+                }
+              ],
+              "report_location": {
+                "line_source": "source"
+              }
+            }
+          }
+        },
+        {
+          "ruleId": "MetzProject/ServiceSoup",
+          "level": "warning",
+          "message": {
+            "text": "OrdersController#create coordinates 3 distinct services; consider a workflow object that owns the process."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "orders_controller.rb",
+                  "uriBaseId": "ROOT"
+                },
+                "region": {
+                  "startLine": 4,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "primaryLocationLineHash": "e3252a82ae18521386230ddb978f479f0336b997289359c1031ad5bdc48d9dcf"
+          },
+          "properties": {
+            "project_analyzer": {
+              "status": "validated",
+              "confidence": "medium",
+              "triage_severity": "design pressure",
+              "triage_summary": "Validated workflow signal; review methods that coordinate several distinct services.",
+              "workflow": {
+                "context": "OrdersController#create",
+                "enclosing": "OrdersController",
+                "method": "#create",
+                "line": 3,
+                "expression": "def create"
+              },
+              "services": [
+                {
+                  "service": "ValidateOrder",
+                  "path": "<project>/orders_controller.rb",
+                  "line": 4,
+                  "expression": "ValidateOrder.call(order)",
+                  "style": "class_call"
+                },
+                {
+                  "service": "ReserveInventory",
+                  "path": "<project>/orders_controller.rb",
+                  "line": 5,
+                  "expression": "ReserveInventory.call(order)",
+                  "style": "class_call"
+                },
+                {
+                  "service": "CapturePayment",
+                  "path": "<project>/orders_controller.rb",
+                  "line": 6,
+                  "expression": "CapturePayment.new(order).call",
+                  "style": "new_call"
+                }
+              ],
+              "report_location": {
+                "line_source": "source",
+                "context": "OrdersController#create"
+              }
+            }
+          }
+        },
+        {
+          "ruleId": "MetzProject/ServiceSoup",
+          "level": "warning",
+          "message": {
+            "text": "OrdersController#create coordinates 3 distinct services; consider a workflow object that owns the process."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "orders_controller.rb",
+                  "uriBaseId": "ROOT"
+                },
+                "region": {
+                  "startLine": 5,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "primaryLocationLineHash": "b5dd57f3cda26385af31b5a97ed68a2c6b4eb5e1378e10e095e24e66870a2c07"
+          },
+          "properties": {
+            "project_analyzer": {
+              "status": "validated",
+              "confidence": "medium",
+              "triage_severity": "design pressure",
+              "triage_summary": "Validated workflow signal; review methods that coordinate several distinct services.",
+              "workflow": {
+                "context": "OrdersController#create",
+                "enclosing": "OrdersController",
+                "method": "#create",
+                "line": 3,
+                "expression": "def create"
+              },
+              "services": [
+                {
+                  "service": "ValidateOrder",
+                  "path": "<project>/orders_controller.rb",
+                  "line": 4,
+                  "expression": "ValidateOrder.call(order)",
+                  "style": "class_call"
+                },
+                {
+                  "service": "ReserveInventory",
+                  "path": "<project>/orders_controller.rb",
+                  "line": 5,
+                  "expression": "ReserveInventory.call(order)",
+                  "style": "class_call"
+                },
+                {
+                  "service": "CapturePayment",
+                  "path": "<project>/orders_controller.rb",
+                  "line": 6,
+                  "expression": "CapturePayment.new(order).call",
+                  "style": "new_call"
+                }
+              ],
+              "report_location": {
+                "line_source": "source",
+                "context": "OrdersController#create"
+              }
+            }
+          }
+        },
+        {
+          "ruleId": "MetzProject/ServiceSoup",
+          "level": "warning",
+          "message": {
+            "text": "OrdersController#create coordinates 3 distinct services; consider a workflow object that owns the process."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "orders_controller.rb",
+                  "uriBaseId": "ROOT"
+                },
+                "region": {
+                  "startLine": 6,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "primaryLocationLineHash": "98e3a153b46bb6a59d03ef9299fb1927bd9c85eb1b2659a9870a2954148511e1"
+          },
+          "properties": {
+            "project_analyzer": {
+              "status": "validated",
+              "confidence": "medium",
+              "triage_severity": "design pressure",
+              "triage_summary": "Validated workflow signal; review methods that coordinate several distinct services.",
+              "workflow": {
+                "context": "OrdersController#create",
+                "enclosing": "OrdersController",
+                "method": "#create",
+                "line": 3,
+                "expression": "def create"
+              },
+              "services": [
+                {
+                  "service": "ValidateOrder",
+                  "path": "<project>/orders_controller.rb",
+                  "line": 4,
+                  "expression": "ValidateOrder.call(order)",
+                  "style": "class_call"
+                },
+                {
+                  "service": "ReserveInventory",
+                  "path": "<project>/orders_controller.rb",
+                  "line": 5,
+                  "expression": "ReserveInventory.call(order)",
+                  "style": "class_call"
+                },
+                {
+                  "service": "CapturePayment",
+                  "path": "<project>/orders_controller.rb",
+                  "line": 6,
+                  "expression": "CapturePayment.new(order).call",
+                  "style": "new_call"
+                }
+              ],
+              "report_location": {
+                "line_source": "source",
+                "context": "OrdersController#create"
+              }
+            }
+          }
+        },
+        {
+          "ruleId": "Metz/MethodsTooLong",
+          "level": "warning",
+          "message": {
+            "text": "Metz/MethodsTooLong: Method has too many lines. [6/5]"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "sample.rb",
+                  "uriBaseId": "ROOT"
+                },
+                "region": {
+                  "startLine": 3,
+                  "startColumn": 3
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "primaryLocationLineHash": "3f6d117a052676ff885a578fbb4f4e8a1a7c712e936380d984758bc4cd36272d"
+          }
+        },
+        {
+          "ruleId": "MetzProject/ServiceSoup",
+          "level": "warning",
+          "message": {
+            "text": "Spree::Seeds::All#call coordinates 3 distinct services; consider a workflow object that owns the process."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "setup_workflow.rb",
+                  "uriBaseId": "ROOT"
+                },
+                "region": {
+                  "startLine": 6,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "primaryLocationLineHash": "12f2a0db6a7b22f673ec75224aeabd0f90a3f1986198d887aed2284f21ea4043"
+          },
+          "properties": {
+            "project_analyzer": {
+              "status": "validated",
+              "confidence": "low",
+              "triage_severity": "setup orchestration",
+              "triage_summary": "Setup workflow signal; review only when setup orchestration changes often or hides domain workflow pressure.",
+              "workflow": {
+                "context": "Spree::Seeds::All#call",
+                "enclosing": "Spree::Seeds::All",
+                "method": "#call",
+                "line": 5,
+                "expression": "def call"
+              },
+              "services": [
+                {
+                  "service": "Countries",
+                  "path": "<project>/setup_workflow.rb",
+                  "line": 6,
+                  "expression": "Countries.call",
+                  "style": "class_call"
+                },
+                {
+                  "service": "States",
+                  "path": "<project>/setup_workflow.rb",
+                  "line": 7,
+                  "expression": "States.call",
+                  "style": "class_call"
+                },
+                {
+                  "service": "Zones",
+                  "path": "<project>/setup_workflow.rb",
+                  "line": 8,
+                  "expression": "Zones.call",
+                  "style": "class_call"
+                }
+              ],
+              "report_location": {
+                "line_source": "source",
+                "context": "Spree::Seeds::All#call"
+              }
+            }
+          }
+        },
+        {
+          "ruleId": "MetzProject/ServiceSoup",
+          "level": "warning",
+          "message": {
+            "text": "Spree::Seeds::All#call coordinates 3 distinct services; consider a workflow object that owns the process."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "setup_workflow.rb",
+                  "uriBaseId": "ROOT"
+                },
+                "region": {
+                  "startLine": 7,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "primaryLocationLineHash": "3e9a72c1fc8b37b63649e6e28ce1d2e0b2662a132fbcb56d8c7e3803c5c18b84"
+          },
+          "properties": {
+            "project_analyzer": {
+              "status": "validated",
+              "confidence": "low",
+              "triage_severity": "setup orchestration",
+              "triage_summary": "Setup workflow signal; review only when setup orchestration changes often or hides domain workflow pressure.",
+              "workflow": {
+                "context": "Spree::Seeds::All#call",
+                "enclosing": "Spree::Seeds::All",
+                "method": "#call",
+                "line": 5,
+                "expression": "def call"
+              },
+              "services": [
+                {
+                  "service": "Countries",
+                  "path": "<project>/setup_workflow.rb",
+                  "line": 6,
+                  "expression": "Countries.call",
+                  "style": "class_call"
+                },
+                {
+                  "service": "States",
+                  "path": "<project>/setup_workflow.rb",
+                  "line": 7,
+                  "expression": "States.call",
+                  "style": "class_call"
+                },
+                {
+                  "service": "Zones",
+                  "path": "<project>/setup_workflow.rb",
+                  "line": 8,
+                  "expression": "Zones.call",
+                  "style": "class_call"
+                }
+              ],
+              "report_location": {
+                "line_source": "source",
+                "context": "Spree::Seeds::All#call"
+              }
+            }
+          }
+        },
+        {
+          "ruleId": "MetzProject/ServiceSoup",
+          "level": "warning",
+          "message": {
+            "text": "Spree::Seeds::All#call coordinates 3 distinct services; consider a workflow object that owns the process."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "setup_workflow.rb",
+                  "uriBaseId": "ROOT"
+                },
+                "region": {
+                  "startLine": 8,
+                  "startColumn": 1
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "primaryLocationLineHash": "8c83497e412cc84ecb535ee128bc41c518b0b2edc3f1a9023ca61d004de64a78"
+          },
+          "properties": {
+            "project_analyzer": {
+              "status": "validated",
+              "confidence": "low",
+              "triage_severity": "setup orchestration",
+              "triage_summary": "Setup workflow signal; review only when setup orchestration changes often or hides domain workflow pressure.",
+              "workflow": {
+                "context": "Spree::Seeds::All#call",
+                "enclosing": "Spree::Seeds::All",
+                "method": "#call",
+                "line": 5,
+                "expression": "def call"
+              },
+              "services": [
+                {
+                  "service": "Countries",
+                  "path": "<project>/setup_workflow.rb",
+                  "line": 6,
+                  "expression": "Countries.call",
+                  "style": "class_call"
+                },
+                {
+                  "service": "States",
+                  "path": "<project>/setup_workflow.rb",
+                  "line": 7,
+                  "expression": "States.call",
+                  "style": "class_call"
+                },
+                {
+                  "service": "Zones",
+                  "path": "<project>/setup_workflow.rb",
+                  "line": 8,
+                  "expression": "Zones.call",
+                  "style": "class_call"
+                }
+              ],
+              "report_location": {
+                "line_source": "source",
+                "context": "Spree::Seeds::All#call"
+              }
+            }
+          }
+        }
+      ],
+      "originalUriBaseIds": {
+        "ROOT": {
+          "uri": "file://<project>/"
+        }
+      }
+    }
+  ]
+}
