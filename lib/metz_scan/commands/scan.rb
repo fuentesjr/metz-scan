@@ -144,7 +144,7 @@ module MetzScan
         parsed = Runner.invoke(options.paths, all_cops: options.all_cops, stderr: stderr)
         merge_project_analyzers(parsed, options)
         add_compliance_summary(parsed)
-        render(parsed, options.format)
+        render(parsed, options)
         Runner.exit_code_for(parsed)
       end
 
@@ -160,10 +160,15 @@ module MetzScan
         { default_output: !options.project_analyzers }
       end
 
-      def render(parsed, format)
-        return stdout.puts JSON.generate(JsonGuidance.compact!(parsed)) if format == "json"
+      # Text renders the compacted report so live output matches `report` on the saved JSON.
+      def render(parsed, options)
+        format = options.format
+        return RENDERERS.fetch(format).new(stdout, parsed).render if RENDERERS.key?(format)
 
-        RENDERERS.fetch(format, TextRenderer).new(stdout, parsed).render
+        JsonGuidance.compact!(parsed, all_cops: options.all_cops)
+        return stdout.puts JSON.generate(parsed) if format == "json"
+
+        TextRenderer.new(stdout, parsed).render
       end
 
       def parser_error(err)

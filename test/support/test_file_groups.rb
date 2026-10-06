@@ -26,6 +26,7 @@ module MetzScan
       "test/metz_scan/commands/scan_path_scoped_include_note_test.rb",
       "test/metz_scan/commands/scan_project_analyzers_test.rb",
       "test/metz_scan/commands/scan_regexp_exclude_test.rb",
+      "test/metz_scan/commands/scan_stock_guidance_scope_test.rb",
       "test/metz_scan/commands/scan_suppression_ledger_test.rb",
       "test/metz_scan/commands/scan_test.rb"
     ].freeze
