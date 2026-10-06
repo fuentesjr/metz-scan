@@ -193,3 +193,6 @@ report-per-cop-guidance landed: scan --format json moves why_it_matters/suggeste
 
 ## 2026-10-05T01:46Z log
 scan-path-scoped-include-cwd landed: default scan prints one stderr note when target files would match an anchored Metz Include (app/controllers, app/services, app/operations, app/views) only from a deeper root (project scanned from its parent, nested engine, spec/dummy); names every root; stdout, findings, exit status unchanged. Follow-up not taken: --auto-fix also runs --force-default-config and gets no note.
+
+## 2026-10-06T00:28Z log
+stock-cop-guidance landed: under scan --all-cops, stock RuboCop cops get guidance entries from the resolved config of the first file reporting them (why_it_matters = Description; fix_safety safe/unsafe/manual from autocorrect support, AutoCorrect, Safe, SafeAutoCorrect; suggested_next_moves empty), and live text prints the description so report text matches. Default Metz-only scan never loads project config for this (Lint/Syntax keeps empty guidance; broken project config cannot crash after RuboCop succeeds). SARIF rule descriptors still lack stock descriptions (not taken).

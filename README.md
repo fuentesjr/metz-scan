@@ -183,8 +183,13 @@ scorecard without parsing the text output.
 
 Guidance lives once per cop in a top-level `guidance` object keyed by
 `cop_name`: one entry for each cop with an offense in `files`, holding
-`why_it_matters`, `suggested_next_moves`, and `fix_safety` (empty for stock
-RuboCop cops under `--all-cops`). An offense carries one of those fields only
+`why_it_matters`, `suggested_next_moves`, and `fix_safety`. Under
+`--all-cops`, a stock RuboCop cop's entry comes from the resolved config of
+the first file that reports the cop: `why_it_matters` is its `Description`,
+`fix_safety` is `safe`, `unsafe`, or `manual` from its autocorrect support and
+`AutoCorrect`/`Safe`/`SafeAutoCorrect`, and
+`suggested_next_moves` is empty; text output prints that description once per
+cop block. An offense carries one of those fields only
 when its finding-specific guidance differs from the cop's entry; read the
 offense's field first, then `guidance[cop_name]`. `metz-scan report` resolves
 both shapes, including saved reports from before this map existed.

@@ -5,12 +5,26 @@ require "json"
 require "minitest/autorun"
 require "open3"
 require "rbconfig"
+require "rubocop"
 require "tmpdir"
 
 module MetzScan
   module Commands
     module ScanJsonGuidanceFixtures
       GUIDANCE_FIELDS = %w[why_it_matters suggested_next_moves fix_safety].freeze
+      STOCK_MANUAL_SOURCE = <<~RUBY
+        # frozen_string_literal: true
+        def process(enabled = false)
+          enabled
+        end
+      RUBY
+      STOCK_CONFIG_OVERRIDE = <<~YAML
+        AllCops:
+          NewCops: disable
+        Layout/SpaceAroundOperators:
+          Description: Project-specific operator spacing guidance.
+          Safe: false
+      YAML
       LONG_METHOD_SOURCE = <<~RUBY
         # frozen_string_literal: true
         class Sample
@@ -145,12 +159,31 @@ module MetzScan
         assert_equal({}, guidance(doc))
       end
 
-      def test_all_cops_guidance_also_covers_reported_stock_rubocop_cops
+      def test_all_cops_guidance_uses_stock_descriptions_and_safe_autocorrect_metadata
         write_file("stock.rb", "answer=1\n")
         doc = scan_json(all_cops: true)
-        assert_includes cop_names(doc), "Layout/SpaceAroundOperators"
         assert_equal cop_names(doc), guidance(doc).keys.sort
-        guidance(doc).each_value { |entry| assert_guidance_types(entry) }
+        assert_stock_guidance(doc, "Layout/SpaceAroundOperators", "safe")
+        assert_all_stock_descriptions(doc)
+      end
+
+      def test_all_cops_guidance_marks_unsafe_stock_autocorrect_as_unsafe
+        write_file("stock.rb", "# frozen_string_literal: true\nITEMS = []\n")
+
+        assert_stock_guidance(scan_json(all_cops: true), "Style/MutableConstant", "unsafe")
+      end
+
+      def test_all_cops_guidance_marks_stock_cops_without_autocorrect_as_manual
+        write_file("stock.rb", STOCK_MANUAL_SOURCE)
+
+        assert_stock_guidance(scan_json(all_cops: true), "Style/OptionalBooleanParameter", "manual")
+      end
+
+      def test_stock_guidance_uses_the_resolved_project_description_and_safe_setting
+        write_file("stock.rb", "answer=1\n")
+        write_file(".rubocop.yml", STOCK_CONFIG_OVERRIDE)
+
+        assert_stock_guidance(scan_json(all_cops: true), "Layout/SpaceAroundOperators", "unsafe")
       end
 
       def test_guidance_excludes_cops_seen_only_in_suppressions_or_filtered_findings
@@ -204,6 +237,14 @@ module MetzScan
         guidance(doc)
 
         assert_equal LEGACY_TEXT, report_text(doc)
+      end
+
+      def test_all_cops_live_text_prints_stock_description_once_per_block_and_matches_saved_report
+        write_file("stock.rb", "first=1\nsecond=2\n")
+        live_text = scan_output("text", all_cops: true)
+
+        assert_equal live_text, report_text(scan_json(all_cops: true))
+        assert_stock_description_once(live_text, "Layout/SpaceAroundOperators")
       end
 
       def test_report_resolves_shared_guidance_from_a_saved_report
@@ -338,6 +379,42 @@ module MetzScan
         assert_kind_of Array, entry.fetch("suggested_next_moves")
         entry.fetch("suggested_next_moves").each { |move| assert_kind_of String, move }
       end
+
+      def stock_description(name)
+        config = RuboCop::ConfigStore.new.for_file(File.join(@project, "stock.rb"))
+        description = config.for_cop(name).fetch("Description")
+        assert_kind_of String, description
+        refute_empty description
+        description
+      end
+
+      def assert_stock_guidance(doc, name, fix_safety)
+        assert_includes cop_names(doc), name
+        expected = { "why_it_matters" => stock_description(name), "suggested_next_moves" => [],
+                     "fix_safety" => fix_safety }
+        assert_equal expected, guidance(doc).fetch(name), "#{name} must use RuboCop metadata for guidance"
+      end
+
+      def assert_all_stock_descriptions(doc)
+        guidance(doc).each do |name, entry|
+          assert_guidance_types(entry)
+          assert_equal stock_description(name), entry.fetch("why_it_matters"), name
+          assert_empty entry.fetch("suggested_next_moves"), name
+        end
+      end
+
+      def assert_stock_description_once(text, name)
+        block = stock_cop_block(text, name)
+        why_line = "  Why it matters: #{stock_description(name)}\n"
+        assert_equal why_line, block.lines[1], "#{name} must print its Description below the cop heading"
+        assert_equal 1, block.lines.count(why_line), "#{name} must print its Description once for multiple offenses"
+      end
+
+      def stock_cop_block(text, name)
+        block = text.split("\n\n").find { |candidate| candidate.start_with?("#{name}\n") }
+        refute_nil block, "live text must contain a #{name} cop block"
+        block
+      end
     end
 
     module ScanJsonGuidanceSupport
@@ -373,7 +450,7 @@ module MetzScan
       def report_text(doc)
         path = File.join(@project, "saved.json")
         File.write(path, JSON.generate(doc))
-        command("report", path, expected_exit: 1)
+        command("report", path, "--format", "text", expected_exit: 1)
       end
 
       def normalize_runtime_metadata(doc)
