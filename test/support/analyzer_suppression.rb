@@ -12,14 +12,14 @@ module MetzScan
     SERVICE = "MetzProject/ServiceSoup"
     BRANCH = "MetzProject/RepeatedBranching"
     RULES = %w[
-      MetzProject/RepeatedBranching MetzProject/ServiceSoup MetzProject/InheritanceDescendants
+      MetzProject/RepeatedBranching MetzProject/ServiceSoup MetzProject/DeepInheritanceTree
       MetzProject/PackageDependencyPressure MetzProject/NamespaceLeakPressure MetzProject/ImplicitContextPressure
       MetzProject/RepeatedQueryCriteria MetzProject/SubclassOverridePressure MetzProject/TestCallsPrivateMethod
     ].freeze
     WORKFLOW = "app/workflows/orders.rb"
     SERVICE_MESSAGE = "OrdersController#create coordinates 3 distinct services; " \
                       "consider a workflow object that owns the process."
-    BRANCH_MESSAGE = "order.status (state reader) branches in 2 files; consider consolidating the decision."
+    BRANCH_MESSAGE = "order.status (state branch subject) branches in 2 files; consider consolidating the decision."
     CONFIG = <<~YAML
       plugins: [rubocop-metz]
       AllCops:
