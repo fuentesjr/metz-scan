@@ -196,3 +196,6 @@ scan-path-scoped-include-cwd landed: default scan prints one stderr note when ta
 
 ## 2026-10-06T00:28Z log
 stock-cop-guidance landed: under scan --all-cops, stock RuboCop cops get guidance entries from the resolved config of the first file reporting them (why_it_matters = Description; fix_safety safe/unsafe/manual from autocorrect support, AutoCorrect, Safe, SafeAutoCorrect; suggested_next_moves empty), and live text prints the description so report text matches. Default Metz-only scan never loads project config for this (Lint/Syntax keeps empty guidance; broken project config cannot crash after RuboCop succeeds). SARIF rule descriptors still lack stock descriptions (not taken).
+
+## 2026-10-06T01:34Z log
+metzproject-analyzer-config resolved (owner chose Hybrid 2026-10-05): rubocop-metz ships config-only MetzProject/* entries so .rubocop.yml accepts them; every scan mode honors per-analyzer Enabled: false and Exclude, plus inline '# metz-scan:disable MetzProject/X -- reason' (block closed by naming the rule in metz-scan:enable); suppressions land in the ledger. rubocop:disable and the bare MetzProject department key stay unsupported. DDR 2026-07-08 amended.

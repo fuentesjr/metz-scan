@@ -136,3 +136,52 @@ Metz/ViewsDeepNavigation:
   Include:
     - 'app/views/**/*.{erb,haml,slim}'
   VersionAdded: '0.1'
+
+# MetzProject/* entries are configuration only: no RuboCop cop runs under
+# these names. They let a project's .rubocop.yml set `Enabled: false` or
+# `Exclude` for metz-scan's project analyzers without RuboCop rejecting the
+# key as an unrecognized cop.
+MetzProject/RepeatedBranching:
+  Description: 'Project analyzer: the same state or type check branched on in several files.'
+  Enabled: true
+  VersionAdded: '0.7'
+
+MetzProject/ServiceSoup:
+  Description: 'Project analyzer: one method coordinating several distinct service objects.'
+  Enabled: true
+  VersionAdded: '0.7'
+
+MetzProject/DeepInheritanceTree:
+  Description: 'Project analyzer: base classes with a large spread of descendants.'
+  Enabled: true
+  VersionAdded: '0.7'
+
+MetzProject/PackageDependencyPressure:
+  Description: 'Project analyzer: declarations referenced from several files outside their package.'
+  Enabled: true
+  VersionAdded: '0.7'
+
+MetzProject/NamespaceLeakPressure:
+  Description: 'Project analyzer: internal namespace constants referenced outside their namespace.'
+  Enabled: true
+  VersionAdded: '0.7'
+
+MetzProject/ImplicitContextPressure:
+  Description: 'Project analyzer: repeated ambient CurrentAttributes-style context access.'
+  Enabled: true
+  VersionAdded: '0.7'
+
+MetzProject/RepeatedQueryCriteria:
+  Description: 'Project analyzer: repeated hash-style ActiveRecord query predicates across packages.'
+  Enabled: true
+  VersionAdded: '0.7'
+
+MetzProject/SubclassOverridePressure:
+  Description: 'Project analyzer: base classes whose descendants repeatedly override the same method.'
+  Enabled: true
+  VersionAdded: '0.7'
+
+MetzProject/TestCallsPrivateMethod:
+  Description: 'Project analyzer: tests that call private methods of the code under test.'
+  Enabled: true
+  VersionAdded: '0.7'

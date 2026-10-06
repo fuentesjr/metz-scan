@@ -187,13 +187,17 @@ same reason recurs, ask the human whether to add a per-cop `Exclude`.
 
 The default scan runs only `Metz/*` cops at stock thresholds. From the
 project's `.rubocop.yml` it reads only file scope (`AllCops: Exclude`,
-per-cop `Include`/`Exclude`), `Enabled: false` for `Metz/*` cops and the
-`Metz` department, and `AllCops: TargetRubyVersion`. `--all-cops` runs the
+per-cop `Include`/`Exclude`), `Enabled: false` for `Metz/*` cops, the
+`Metz` department, and `MetzProject/*` analyzers, and
+`AllCops: TargetRubyVersion`. `--all-cops` runs the
 full RuboCop suite under the project config and needs the project's
 extension gems.
 
 It also runs the default project analyzers `MetzProject/RepeatedBranching`
 and `MetzProject/ServiceSoup`; treat their findings like any cop finding.
+Suppress one with `# metz-scan:disable MetzProject/<Rule> -- reason` (block
+form closed by `# metz-scan:enable MetzProject/<Rule>`) or a
+`MetzProject/<Rule>` `Exclude`; `# rubocop:disable` does not reach analyzers.
 `--project-analyzers` adds advisory findings: keep them out of the fix loop
 unless the task asks for a broader design review. Some analyzers need the
 optional Rubydex bundle group and report nothing without it; do not install

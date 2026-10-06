@@ -16,7 +16,8 @@ module MetzScan
       # (credited even when an inline disable also covers it), else an inline
       # directive hides it, else it is live. Hidden offenses leave `files` and
       # the counts; the ones a project wrote a suppression for are listed under
-      # `suppressions`.
+      # `suppressions`. Project analyzer offenses go through the same partition
+      # (see partition!), with `# metz-scan:disable` as their inline directive.
       class SuppressionLedger
         SORT_KEYS = %w[path line column cop_name].freeze
 
@@ -29,6 +30,24 @@ module MetzScan
           new(report, []).apply
         end
 
+        # Project analyzer offenses join the report after RuboCop's (in every
+        # scan mode): partitions `offenses_by_path`, adds its records to the
+        # report's ledger (created under --all-cops only when a record exists),
+        # and returns the live offenses by display path.
+        def self.partition!(report, offenses_by_path)
+          files = offenses_by_path.map { |path, live| { "path" => Runner.display_path(path), "offenses" => live } }
+          partitioned = apply("files" => files, "summary" => {})
+          add_records(report, partitioned["suppressions"])
+          partitioned["files"].to_h { |file| file.values_at("path", "offenses") }.reject { |_path, live| live.empty? }
+        end
+
+        def self.add_records(report, new_records)
+          records = sort(Array(report["suppressions"]) + new_records)
+          report["suppressions"] = records if report.key?("suppressions") || records.any?
+        end
+
+        def self.sort(records) = records.sort_by { |record| record.values_at(*SORT_KEYS) }
+
         def initialize(report, config_sources)
           @report = report
           @config_sources = config_sources
@@ -38,7 +57,7 @@ module MetzScan
 
         def apply
           files = Array(report["files"]).map { |file| file.merge("offenses" => live_offenses(file)) }
-          recount(report.merge("files" => files, "suppressions" => records.sort_by { |r| r.values_at(*SORT_KEYS) }))
+          recount(report.merge("files" => files, "suppressions" => self.class.sort(records)))
         end
 
         private
@@ -55,7 +74,7 @@ module MetzScan
 
         def suppression_source(path, offense)
           config_source = config_sources.find { |source| source.scoped_off?(path, offense) }
-          config_source || (directives if offense["suppressed"])
+          config_source || (directives if offense["suppressed"] || directives.analyzer_disabled?(path, offense))
         end
 
         # Hidden offenses with no project-written suppression (stock-default

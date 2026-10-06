@@ -1,19 +1,34 @@
 # frozen_string_literal: true
 
 require_relative "project_analyzer_metadata"
+require_relative "suppression_ledger"
 
 module MetzScan
   module Commands
     class Scan
       module ProjectAnalyzerOffenses
-        OffenseSet = Struct.new(:by_path, :offenses, keyword_init: true)
+        OffenseSet = Struct.new(:findings, :by_path, :offenses, keyword_init: true)
         FIX_SAFETY = "manual"
 
         module_function
 
-        def build(findings)
+        # With a `ledger_report` (scan), the project's MetzProject/* config
+        # and inline directives hide offenses, crediting them in that report's
+        # suppression ledger; findings left with no live offense drop out.
+        def build(findings, ledger_report: nil)
           entries = entries_for(findings)
-          OffenseSet.new(by_path: offenses_by_path(entries), offenses: entries.map { |entry| entry.fetch(:offense) })
+          return live_set(entries, ledger_report) if ledger_report
+
+          OffenseSet.new(findings: findings, by_path: offenses_by_path(entries),
+                         offenses: entries.map { |entry| entry.fetch(:offense) })
+        end
+
+        def live_set(entries, ledger_report)
+          by_path = SuppressionLedger.partition!(ledger_report, offenses_by_path(entries))
+          live = by_path.values.flatten
+          kept = Set.new.compare_by_identity.merge(live)
+          findings = entries.select { |entry| kept.include?(entry.fetch(:offense)) }.map { |entry| entry[:finding] }
+          OffenseSet.new(findings: findings.uniq(&:object_id), by_path: by_path, offenses: live)
         end
 
         def entries_for(findings)
@@ -22,7 +37,7 @@ module MetzScan
 
         def offenses_for(finding)
           locations_for(finding).map do |location|
-            { path: location.path, offense: offense_for(finding, location) }
+            { path: location.path, finding: finding, offense: offense_for(finding, location) }
           end
         end
 
