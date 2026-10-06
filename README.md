@@ -206,8 +206,9 @@ column, and cop name. Each record carries `cop_name`, `path`, `line`, `column`,
 Both `directive` and `config` are always present; exactly one is non-null. Suppressed
 findings never count toward `offense_count`, compliance, or the exit code.
 Text output lists them in a `Suppressed findings: N, M without a reason`
-section before the Summary, omitted when nothing was suppressed. The key is
-absent under `--all-cops`; SARIF and `gh-annotations` output are unchanged.
+section before the Summary, omitted when nothing was suppressed. Under
+`--all-cops` the key lists only suppressed project-analyzer findings and is
+absent when there are none; SARIF and `gh-annotations` output are unchanged.
 
 By default, `scan` runs the RuboCop-backed `Metz/*` cops only, plus
 project-analyzer findings that satisfy the default-output policy: the analyzer
@@ -358,9 +359,20 @@ The default scan reads three kinds of settings from `.rubocop.yml`: file scope
 (`AllCops: Exclude` and per-cop `Include` and `Exclude`), `Enabled: false`
 for a `Metz/*` cop or the `Metz` department, and `AllCops: TargetRubyVersion`.
 Every other cop setting stays at its stock value, so a project cannot weaken a
-Metz cop and get a rosier report. `MetzProject/*` project analyzers read no
-project config: RuboCop rejects `MetzProject/*` keys in `.rubocop.yml` as
-unknown cops.
+Metz cop and get a rosier report.
+
+`MetzProject/*` project analyzers are not RuboCop cops, but the plugin declares
+a config entry for each one, so plain `rubocop` and `--all-cops` accept
+`MetzProject/<Rule>` keys. Every scan mode honors `Enabled: false` and a
+per-analyzer `Exclude` on them, and an inline
+`# metz-scan:disable MetzProject/<Rule> -- reason` on the reported line, or a
+block closed by `# metz-scan:enable MetzProject/<Rule>` (name the rule in
+`enable`; `enable all` does not close the block). Other directive forms, such as
+`todo`, `disable-next`, and `all`, do not reach analyzers. Each hidden finding is
+credited in the suppression ledger like a cop's. `# rubocop:disable` does not
+reach analyzers either, and RuboCop flags it as an unknown cop
+(`Lint/CopDirectiveSyntax`). The `MetzProject` department cannot be disabled as
+a whole.
 
 To take code out of a cop's scope in every scan mode, add a per-cop `Exclude`:
 
@@ -411,7 +423,7 @@ Metz/DemeterTrainWreck:
 | Setting | Where | Notes |
 | --- | --- | --- |
 | File scope | `.rubocop.yml` (`AllCops: Exclude`, per-cop `Include` and `Exclude`) | Honored by every scan mode. |
-| `Enabled: false` | `.rubocop.yml` (`Metz/*` cop or `Metz` department) | Honored by every scan mode; the default scan lists the hidden findings in the suppression ledger. |
+| `Enabled: false` | `.rubocop.yml` (`Metz/*` cop, `Metz` department, or `MetzProject/*` analyzer) | Honored by every scan mode. The suppression ledger lists hidden `Metz/*` findings in the default scan and hidden `MetzProject/*` findings in every mode. |
 | Other cop settings (`Max`, `Severity`, allow-lists) | `.rubocop.yml` | Honored only by `--all-cops` and plain `rubocop`; the default scan uses stock values. |
 | Output format | `metz-scan scan --format text\|json\|sarif\|gh-annotations` | `text` is for humans; `json`/`sarif` are for tools; `gh-annotations` emits GitHub Actions workflow annotations. |
 | Auto-fix safety | `--auto-fix`, `--unsafe`, `--dry-run` | Safe fixes use RuboCop `-a`; unsafe fixes use RuboCop `-A`. No `Metz/*` cop autocorrects, so these only change code with `--all-cops`. |

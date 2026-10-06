@@ -56,4 +56,13 @@ weaken the #33/#37 file-scope contract unless every user noticed the warning.
   project `Enabled: false` for `Metz/*` cops and the `Metz` department and
   credits each hidden finding in the suppression ledger as `config_disabled`.
   `Max*` and other tuning stay at stock values. `MetzProject/*` analyzers read
-  no project config: RuboCop rejects `MetzProject/*` keys as unknown cops.
+  no project config: RuboCop rejects `MetzProject/*` keys as unknown cops
+  (superseded by the 2026-10-05 update).
+- Update 2026-10-05: the owner chose the Hybrid design for analyzer
+  suppression. `rubocop-metz/config/default.yml` ships a config-only
+  `MetzProject/<Rule>` entry (no cop class) for each project analyzer, so
+  RuboCop accepts the keys. Every scan mode honors a per-analyzer
+  `Enabled: false` and `Exclude`, credited as `config_disabled` and
+  `config_exclude`. Inline suppression is `# metz-scan:disable
+  MetzProject/<Rule>` (not `# rubocop:disable`), credited as `inline_disable`.
+  The bare `MetzProject` department key is not supported.

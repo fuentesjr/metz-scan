@@ -18,6 +18,9 @@ module MetzScan
         ENABLED_SOURCE = "MetzScanEnabledSource"
         COP_KEYS = (SCOPE_KEYS + ["Enabled", ENABLED_SOURCE]).freeze
         ALL_COPS_PROJECT_KEYS = (SCOPE_KEYS + %w[RubyInterpreters TargetRubyVersion]).freeze
+        # Not a RuboCop department: plain rubocop rejects the bare key, so only
+        # an analyzer's own `MetzProject/<Rule>` key scopes or disables it.
+        ANALYZER_DEPARTMENT = "MetzProject"
         DEFAULT_FILE = RuboCop::ConfigLoader::DEFAULT_FILE
 
         module_function
@@ -126,7 +129,8 @@ module MetzScan
           # the cop off `file`, or nil when only a stock default does.
           def applied_exclude(badge, file)
             config = for_file(file)
-            @loader.provenance.entries_for(config).applied(config, badge, file)
+            entry = @loader.provenance.entries_for(config).applied(config, badge, file)
+            entry unless entry&.key == ANALYZER_DEPARTMENT
           end
 
           # The project config file and key (the cop or its department) whose
@@ -136,8 +140,13 @@ module MetzScan
             config = for_file(file)
             return unless config.for_cop(cop_name)["Enabled"] == false
 
-            key = [cop_name, cop_name.rpartition("/").first].find { |name| config.to_h.dig(name, ENABLED_SOURCE) }
+            key = enabling_keys(cop_name).find { |name| config.to_h.dig(name, ENABLED_SOURCE) }
             [config.to_h.dig(key, ENABLED_SOURCE), key] if key
+          end
+
+          def enabling_keys(cop_name)
+            department = cop_name.rpartition("/").first
+            department == ANALYZER_DEPARTMENT ? [cop_name] : [cop_name, department]
           end
         end
 

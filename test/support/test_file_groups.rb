@@ -18,6 +18,7 @@ module MetzScan
       "test/metz_scan/check_rubydex_drift_test.rb",
       "test/metz_scan/check_tracker_queue_test.rb",
       "test/metz_scan/sigint_test.rb",
+      "test/metz_scan/commands/scan_analyzer_*_test.rb",
       "test/metz_scan/commands/scan_auto_fix*_test.rb",
       "test/metz_scan/commands/scan_config_disabled_test.rb",
       "test/metz_scan/commands/scan_error_test.rb",
