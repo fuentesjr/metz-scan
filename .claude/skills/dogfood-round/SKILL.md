@@ -72,6 +72,25 @@ uses the tool, not only what the tool prints.
   excludes `tmp/`, so a copy there scans nothing) with
   `skills/metz-scan/SKILL.md` installed and excluded via
   `.git/info/exclude`, and pick a task that edits an existing long method.
+- Run Codex as a clean user so the owner's `~/.codex/AGENTS.md`, config,
+  hooks, and skills do not shape the result. `CODEX_HOME` is an empty temp
+  dir holding only a copy of `~/.codex/auth.json` (the login). Skills under
+  `$HOME/.agents/skills` load whatever `CODEX_HOME` is, so disable each in
+  that dir's `config.toml`:
+
+  ```bash
+  codex_home="$(mktemp -d)"
+  install -m 600 ~/.codex/auth.json "$codex_home/auth.json"
+  for f in "$HOME"/.agents/skills/*/SKILL.md; do
+    printf '[[skills.config]]\npath = "%s"\nenabled = false\n\n' "$f"
+  done > "$codex_home/config.toml"
+  CODEX_HOME="$codex_home" codex login status  # expect "Logged in"
+  ```
+
+  Prefix the agent run with `CODEX_HOME="$codex_home"`, and delete the dir
+  afterwards: it holds a credential. Rounds 2 and 3
+  (`docs/dogfooding/2026-10-04-*`, `2026-10-06-*`) loaded the owner's policy
+  and skills, so compare with them only with that caveat.
 - Do not show the agent this rubric. Judge from its transcript and final
   report, against `git diff` as ground truth:
   1. Scanned at the end of the task, not repeatedly mid-task.

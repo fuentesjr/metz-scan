@@ -13,21 +13,32 @@ Run from the project root so report paths match `git` paths.
 
 ## End-of-task check
 
-Run this once, after your code changes are complete, not after every edit.
+Before your first edit, save a report of the unchanged tree. The fixed
+directory survives shells that drop variables.
 
-1. Save the before report and record `summary.offense_count`. The fixed
-   directory survives shells that drop variables between commands.
+```bash
+out="${TMPDIR:-/tmp}/metz-scan-check"
+mkdir -p "$out"
+bundle exec metz-scan scan . --format json > "$out/base.json"
+```
+
+Pass directories, not changed files: a file named directly is scanned even
+when the project excludes it, and cross-file analyzers see only the paths you
+pass. When the root is slow, pass the top-level directories that will hold
+your changes, for example `app lib`. Reuse these paths in every scan.
+
+Run the rest once, after your changes are complete, not after every edit.
+
+1. Save the report and record `summary.offense_count`:
 
    ```bash
    out="${TMPDIR:-/tmp}/metz-scan-check"
-   mkdir -p "$out"
    bundle exec metz-scan scan . --format json > "$out/scan.json"
    ```
 
-   Pass directories, not changed files: a file named directly is scanned even
-   when the project excludes it, and cross-file analyzers see only the paths
-   you pass. When the root is slow, pass the top-level directories that hold
-   your changes, for example `app lib`.
+   Read a file's findings one per line (`path:line`, cop, message), a fifth
+   the size of its JSON:
+   `bundle exec metz-scan report "$out/scan.json" --format text | grep '<file>:'`
 
 2. Keep the findings in files you changed. `<base>` is the commit your task
    started from: `HEAD` while your work is uncommitted, otherwise the merge
@@ -46,18 +57,19 @@ Run this once, after your code changes are complete, not after every edit.
    **Size and chain cops** (`Metz/MethodsTooLong`, `Metz/ClassesTooLong`,
    `Metz/MethodsTooManyParameters`, `Metz/DemeterTrainWreck`,
    `Metz/ViewsDeepNavigation`) report a count such as `[27/5]`, and overlap
-   with your edit cannot tell yours from a pre-existing one, so the base scan
-   decides. Scan the base commit from inside a worktree, so path-scoped cops
-   match there too, passing the same paths as step 1:
+   with your edit cannot tell yours from a pre-existing one, so the base report
+   decides. Without one, extract the base commit and scan from inside it,
+   so path-scoped cops match there too:
 
    ```bash
    out="${TMPDIR:-/tmp}/metz-scan-check"
-   base_dir="$(mktemp -d)/base"
-   git worktree add --detach "$base_dir" <base>
+   base_dir="$(mktemp -d)"
+   git archive <base> | tar -x -C "$base_dir"
    (cd "$base_dir" && BUNDLE_GEMFILE="$OLDPWD/Gemfile" \
      bundle exec metz-scan scan . --format json) > "$out/base.json"
-   git worktree remove --force "$base_dir"
    ```
+
+   Never overwrite, stash, or check out working-tree files to scan the base.
 
    Match findings on a key: path suffix, `cop_name`, `message`
    with every number removed, and an anchor from the source line at
@@ -89,7 +101,7 @@ Run this once, after your code changes are complete, not after every edit.
      edit, so check their messages.
 
    Other findings in a changed file are pre-existing: leave them and list
-   them in the handoff. When unsure, match against the base scan on the key
+   them in the handoff. When unsure, match against the base report on the key
    above; unpaired means yours.
 
 4. Fix each finding that is yours. Read `why_it_matters` and
@@ -211,7 +223,6 @@ bundle exec metz-scan explain Metz/MethodsTooLong
 bundle exec metz-scan project-analyzers
 bundle exec metz-scan scan . --project-analyzers --format json
 bundle exec metz-scan scan app lib --format text
-bundle exec metz-scan report "${TMPDIR:-/tmp}/metz-scan-check/scan.json" --format text
 bundle exec metz-scan scan . --format sarif
 bundle exec metz-scan scan . --format gh-annotations
 bundle exec metz-scan scan . --all-cops --auto-fix --dry-run
