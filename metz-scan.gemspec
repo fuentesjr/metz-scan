@@ -15,7 +15,7 @@ Gem::Specification.new do |spec|
   spec.homepage    = "https://github.com/fuentesjr/metz-scan"
   spec.license     = "MIT"
 
-  spec.required_ruby_version = ">= 3.3"
+  spec.required_ruby_version = ">= 4.0"
 
   spec.metadata["source_code_uri"] = spec.homepage
   spec.metadata["documentation_uri"] = "#{spec.homepage}/blob/main/README.md"

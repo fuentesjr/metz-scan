@@ -43,7 +43,7 @@ module MetzScan
     end
 
     def assert_gem_identity(spec)
-      assert_equal ">= 3.3", spec.required_ruby_version.to_s
+      assert_equal ">= 4.0", spec.required_ruby_version.to_s
       assert_equal ["fuentesjr@duck.com"], spec.email
       assert_equal "https://github.com/fuentesjr/metz-scan", spec.homepage
       assert_includes spec.files, "LICENSE"

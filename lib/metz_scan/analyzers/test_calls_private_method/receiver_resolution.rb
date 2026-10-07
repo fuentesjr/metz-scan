@@ -45,7 +45,7 @@ module MetzScan
         end
 
         def named_subject_owner(name, scopes)
-          scope = scopes.reverse.find { |candidate| candidate.subject_definitions.key?(name) }
+          scope = scopes.rfind { |candidate| candidate.subject_definitions.key?(name) }
           scope&.subject_definitions&.fetch(name) == :sut ? scope.sut_name : nil
         end
 
@@ -56,7 +56,7 @@ module MetzScan
         end
 
         def explicit_subject_owner(scopes)
-          scope = scopes.reverse.find { |candidate| candidate.subject_definitions[:subject] == :sut }
+          scope = scopes.rfind { |candidate| candidate.subject_definitions[:subject] == :sut }
           scope&.sut_name
         end
 
@@ -65,7 +65,7 @@ module MetzScan
         end
 
         def local_owner_for(name, scopes)
-          scope = scopes.reverse.find { |candidate| candidate.kind == :local && candidate.assignments.key?(name) }
+          scope = scopes.rfind { |candidate| candidate.kind == :local && candidate.assignments.key?(name) }
           scope&.assignments&.fetch(name)
         end
 

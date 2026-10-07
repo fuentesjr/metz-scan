@@ -25,7 +25,7 @@ Do not file public issues for vulnerabilities. See [SECURITY.md](SECURITY.md).
 
 ## Development setup
 
-Requirements: Ruby `>= 3.3`, Bundler `4.0.8`.
+Requirements: Ruby `>= 4.0`, Bundler `4.0.8`.
 
 ```bash
 git clone https://github.com/fuentesjr/metz-scan.git

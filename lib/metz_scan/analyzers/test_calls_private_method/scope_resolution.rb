@@ -47,7 +47,7 @@ module MetzScan
         end
 
         def current_sut_name(scopes)
-          scope = scopes.reverse.find { |candidate| SCOPE_KINDS.include?(candidate.kind) }
+          scope = scopes.rfind { |candidate| SCOPE_KINDS.include?(candidate.kind) }
           scope&.sut_name
         end
       end

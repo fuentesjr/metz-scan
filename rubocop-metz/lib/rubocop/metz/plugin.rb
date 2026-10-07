@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "lint_roller"
-require "pathname"
 
 require_relative "version"
 

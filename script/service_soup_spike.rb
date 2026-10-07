@@ -4,7 +4,6 @@
 repo_root = File.expand_path("..", __dir__)
 $LOAD_PATH.unshift(File.join(repo_root, "lib"))
 
-require "pathname"
 require "metz_scan/analyzers/service_soup"
 
 paths = ARGV.empty? ? [repo_root] : ARGV
