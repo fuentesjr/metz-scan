@@ -38,7 +38,7 @@ module MetzScan
     end
 
     def test_codex_entrypoint_routes_to_shared_brief
-      ["CLAUDE.md", ".trk/", ".trk/STATE.md", ".agents/skills", OPERATOR_PLAYBOOK].each do |ref|
+      ["CLAUDE.md", ".trk/", ".agents/skills", OPERATOR_PLAYBOOK, "`trk status`", "`trk status --json`"].each do |ref|
         assert_includes codex_entrypoint, ref
       end
       refute_includes codex_entrypoint, OBSOLETE_GOAL_BACKLOG
