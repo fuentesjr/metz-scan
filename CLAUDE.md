@@ -73,7 +73,7 @@ Focused single test file (Rakefile load paths at `Rakefile:7`):
 bundle exec ruby -Ilib -Itest -Irubocop-metz/lib -Irubocop-metz/test path/to_test.rb
 ```
 
-Ruby >= 3.3 (gemspecs), Bundler 4.0.8. Development and CI use the Ruby in
+Ruby >= 4.0 (gemspecs), Bundler 4.0.8. Development and CI use the Ruby in
 `.ruby-version`. CI is `.github/workflows/ci.yml`: the required `test` job runs
 without the optional `rubydex` group, and a `rubydex` job (after `test`,
 skipped for docs-only PRs) installs it and runs `bin/check_dogfood`, the full

@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "pathname"
 require "rubocop"
 
 require "metz_scan/commands/scan/exclude_provenance"

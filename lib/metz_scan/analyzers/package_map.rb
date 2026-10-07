@@ -70,7 +70,7 @@ module MetzScan
       end
 
       def project_root_index(parts)
-        parts.each_index.reverse_each.find { |index| project_root?(parts[index]) }
+        parts.rindex { |part| project_root?(part) }
       end
 
       def project_root?(part)

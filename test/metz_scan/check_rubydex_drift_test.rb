@@ -81,8 +81,8 @@ module MetzScan
       Open3.capture3(env, check_rubydex_drift_path, *args, chdir: REPO_ROOT)
     end
 
-    def capture_command_with_missing_rubydex(*args)
-      with_missing_rubydex_shim { |env| capture_command(env, *args) }
+    def capture_command_with_missing_rubydex(*)
+      with_missing_rubydex_shim { |env| capture_command(env, *) }
     end
 
     def rubydex_available?

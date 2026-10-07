@@ -202,3 +202,6 @@ metzproject-analyzer-config resolved (owner chose Hybrid 2026-10-05): rubocop-me
 
 ## 2026-10-06T23:08Z log
 Agent-loop dogfood round 3 (Codex, lobsters, 2026-10-06): printed scan output roughly halved (20.6 KB vs 43.1 KB in round 2); reshape rule held (check_not_brigading 27->29->28); attribution correct; offense_count 551->551. Safety flaw: the agent overwrote working-tree files to scan the base. Owner decisions 2026-10-06: skill saves a base report before the first edit, with a git-archive temp-dir fallback, and forbids touching working-tree files; findings are read via the one-line report text view (JSON stays for matching); future rounds run Codex with a clean CODEX_HOME and user skills disabled. Known gap: a dirty tree at task start makes step 2 (diff vs HEAD) count the user's changes as the agent's. Note: docs/dogfooding/2026-10-06-agent-loop-lobsters-codex-r3.md.
+
+## 2026-10-07T02:15Z log
+Issue #78: dev/CI Ruby 3.4.1 -> 4.0.7; required_ruby_version and TargetRubyVersion raised to 4.0 (user decision 2026-10-06; drops Ruby 3.3/3.4 at next release, call out in release notes). Fixed the 15 TargetRubyVersion 4.0 offenses (rfind/rindex, redundant require pathname, anonymous forwarding). Suite passes on 4.0.7 with and without rubydex; dogfood 0 findings; no gem changes.

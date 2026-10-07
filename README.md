@@ -459,10 +459,10 @@ bundle exec metz-scan --version
 
 ## Requirements
 
-- Ruby `>= 3.3`
+- Ruby `>= 4.0`
 - A working compiler toolchain may be needed by transitive native gems on some platforms.
 
-If your shell resolves to macOS system Ruby, switch to a Ruby `>= 3.3` before running Bundler.
+If your shell resolves to macOS system Ruby, switch to a Ruby `>= 4.0` before running Bundler.
 
 ## Contributing / Development
 
@@ -470,7 +470,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for bug reports, feature proposals, and
 security reporting. Issues are welcome:
 <https://github.com/fuentesjr/metz-scan/issues>
 
-Clone the repo (Ruby `>= 3.3`, Bundler `4.0.8`):
+Clone the repo (Ruby `>= 4.0`, Bundler `4.0.8`):
 
 ```bash
 git clone https://github.com/fuentesjr/metz-scan.git

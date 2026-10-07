@@ -73,9 +73,9 @@ module MetzScan
         Dir.mktmpdir("metz-scan-calibration-evidence-runner-test", &)
       end
 
-      def with_calibration_stubs(cal_root, captures, findings, &block)
+      def with_calibration_stubs(cal_root, captures, findings, &)
         with_default_apps_path(cal_root) do
-          with_fake_index(captures) { with_fake_runner(captures, findings, &block) }
+          with_fake_index(captures) { with_fake_runner(captures, findings, &) }
         end
       end
 
