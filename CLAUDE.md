@@ -1,7 +1,8 @@
 # Claude Code project notes
 
-Orient from `trk status` / `.trk/STATE.md` first — they hold the current goal,
-Next steps, and backlog (including parked work). Work tracking is written
+Orient from `trk status --json` first — it returns the current goal, Next
+steps, backlog health, and recent LOG entries; `trk backlog list --json` gives
+backlog notes (including parked work). Work tracking is written
 through the `trk` CLI; see `AGENTS.md`. Standing process rules below still
 govern slice discipline. Run `bin/check_ci_parity` before any push.
 
