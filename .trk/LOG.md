@@ -205,3 +205,6 @@ Agent-loop dogfood round 3 (Codex, lobsters, 2026-10-06): printed scan output ro
 
 ## 2026-10-07T02:15Z log
 Issue #78: dev/CI Ruby 3.4.1 -> 4.0.7; required_ruby_version and TargetRubyVersion raised to 4.0 (user decision 2026-10-06; drops Ruby 3.3/3.4 at next release, call out in release notes). Fixed the 15 TargetRubyVersion 4.0 offenses (rfind/rindex, redundant require pathname, anonymous forwarding). Suite passes on 4.0.7 with and without rubydex; dogfood 0 findings; no gem changes.
+
+## 2026-10-07T03:10Z log
+Issue #82: agent workspace docs test follows b303f35. AGENTS.md no longer mentions .trk/STATE.md; the test still requires CLAUDE.md, .trk/, .agents/skills, and the operator playbook, and now requires the `trk status` and `trk status --json` commands that file actually names.
