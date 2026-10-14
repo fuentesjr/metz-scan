@@ -511,6 +511,11 @@ bundle exec rake
 bundle exec rubocop
 ```
 
+`bundle exec rake` runs each slow test file as a separate process and the fast
+group as one process, in parallel (default 4 at once, never more than the CPU
+count).
+Set `TEST_JOBS=1` to run them serially, or another number to change the limit.
+
 Additional maintainer checks before a push:
 
 ```bash

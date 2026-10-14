@@ -56,9 +56,12 @@ Key paths:
 ## Commands
 
 ```bash
-bundle exec rake              # full suite (~810 runs as of 2026-10)
-bundle exec rake test:fast    # groups defined in test/support/test_file_groups.rb
-bundle exec rake test:slow    # subprocess/integration tests
+bundle exec rake              # full suite (~940 runs as of 2026-10): fast group in one process
+                              # beside the slow files, each its own process
+bundle exec rake test:fast    # groups defined in test/support/test_file_groups.rb; in-process
+bundle exec rake test:slow    # subprocess/integration tests, one process per file
+TEST_JOBS=1 bundle exec rake  # serial; TEST_JOBS caps concurrent test processes
+                              # (default 4, never more than the CPU count)
 bundle exec rubocop           # repo lints itself with its own plugin
 bin/check_ci_parity           # pre-push gate: runs a deliberate CI subset in a clean clone of the
                                # committed HEAD (docs-freshness tests for docs-only commits, `rake

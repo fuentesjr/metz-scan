@@ -36,6 +36,11 @@ bundle exec rake
 bundle exec rubocop
 ```
 
+`bundle exec rake` and `rake test:slow` run test files as parallel processes
+(default 4 at once, never more than the CPU count), printing each file's
+output when it finishes. Set `TEST_JOBS=1` to run them serially, or another
+number to change the limit.
+
 Run `bin/check_ci_parity` before every push. Its test phase is a subset
 (docs-freshness tests for docs-only commits, `rake test:fast` for code
 commits); set `CI_PARITY_FULL=1` to force the full suite. On failure it
