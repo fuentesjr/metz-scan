@@ -17,6 +17,10 @@ module MetzScan
         ENABLED_SOURCE = "MetzScanEnabledSource"
         COP_KEYS = (SCOPE_KEYS + ["Enabled", ENABLED_SOURCE]).freeze
         ALL_COPS_PROJECT_KEYS = (SCOPE_KEYS + %w[RubyInterpreters TargetRubyVersion]).freeze
+
+        # RuboCop evaluates ERB in `.rubocop.yml`, which can raise anything, even a SyntaxError.
+        class LoadFailure < RuboCop::Error; end
+
         # Not a RuboCop department: plain rubocop rejects the bare key, so only
         # an analyzer's own `MetzProject/<Rule>` key scopes or disables it.
         ANALYZER_DEPARTMENT = "MetzProject"
@@ -121,7 +125,7 @@ module MetzScan
 
           def for_dir(dir)
             path = @path_cache[dir] ||= RuboCop::ConfigLoader.configuration_file_for(dir)
-            @object_cache[path] ||= @loader.load(path)
+            @object_cache[path] ||= load_config(path)
           end
 
           # The project Exclude entry (with its source config file) that scopes
@@ -146,6 +150,15 @@ module MetzScan
           def enabling_keys(cop_name)
             department = cop_name.rpartition("/").first
             department == ANALYZER_DEPARTMENT ? [cop_name] : [cop_name, department]
+          end
+
+          private
+
+          # Everything raised while loading a project config is a configuration failure.
+          def load_config(path)
+            @loader.load(path)
+          rescue StandardError, ScriptError => e
+            raise LoadFailure, e.message
           end
         end
 

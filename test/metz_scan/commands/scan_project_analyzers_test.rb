@@ -215,8 +215,7 @@ module MetzScan
       end
 
       def test_default_scan_respects_project_config_excludes_for_default_output_analyzers
-        write_project_config_excluding_repeated_branching_files
-        write_repeated_branching_files
+        write_clean_project_with_excluded_repeated_branching_files
         code = scan_without_project_analyzers
 
         assert_equal 0, code
@@ -224,8 +223,7 @@ module MetzScan
       end
 
       def test_all_cops_respects_project_config_excludes_for_default_output_analyzers
-        write_project_config_excluding_repeated_branching_files
-        write_repeated_branching_files
+        write_clean_project_with_excluded_repeated_branching_files
         code = scan_all_cops_without_project_analyzers
 
         assert_equal 0, code
@@ -267,6 +265,13 @@ module MetzScan
             Exclude:
               - branching_*.rb
         YAML
+      end
+
+      # Zero-file scans exit 2, so one checked clean file keeps the exclusion observable.
+      def write_clean_project_with_excluded_repeated_branching_files
+        write_project_config_excluding_repeated_branching_files
+        write_repeated_branching_files
+        File.write(File.join(@tmpdir, "clean.rb"), "# frozen_string_literal: true\n\nCLEAN = 1\n")
       end
 
       def write_setup_service_soup_file

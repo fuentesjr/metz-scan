@@ -55,9 +55,11 @@ module MetzScan
         assert_no_stack_trace
       end
 
-      def test_empty_ruby_project_exits_zero
+      def test_empty_ruby_project_exits_two_saying_no_files_scanned
         code = run_scan([@tmpdir])
-        assert_equal 0, code, "expected exit 0 on empty project (stderr: #{@stderr.string.inspect})"
+
+        assert_equal 2, code, "expected exit 2 when no files were scanned (stderr: #{@stderr.string.inspect})"
+        assert_includes @stderr.string, "no files scanned"
       end
 
       def test_help_documents_metz_default_and_all_cops_escape_hatch

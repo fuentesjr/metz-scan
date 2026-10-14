@@ -2,8 +2,10 @@
 
 require "json"
 require "optparse"
+require "stringio"
 
 require_relative "../version"
+require_relative "scan/check_failure"
 require_relative "scan/compliance_scorecard"
 require_relative "scan/runner"
 require_relative "scan/project_analyzer_runner"
@@ -109,8 +111,8 @@ module MetzScan
         handle_options(parse_options(argv))
       rescue OptionParser::ParseError => e
         parser_error(e)
-      rescue Runner::Error => e
-        runner_error(e)
+      rescue *CheckFailure::INTERNAL_ERRORS => e
+        CheckFailure.new(stderr).report(e)
       end
 
       private
@@ -135,17 +137,32 @@ module MetzScan
       end
 
       def dispatch(options)
-        return AutoFix.new(stdout: stdout, stderr: stderr).run(options) if options.auto_fix
+        return auto_fix(options) if options.auto_fix
 
         scan(options)
       end
 
+      # Default-mode auto-fix runs RuboCop with --force-default-config, which never reads the
+      # project's configs; loading them here fails a broken one the way a plain scan does.
+      def auto_fix(options)
+        Runner.with_errors { TargetFileDiscovery.for_project_config(options.paths) } unless options.all_cops
+        AutoFix.new(stdout: stdout, stderr: stderr).run(options)
+      end
+
+      # The report reaches stdout only after every step succeeded; see CheckFailure.
       def scan(options)
-        parsed = Runner.invoke(options.paths, all_cops: options.all_cops, stderr: stderr)
+        parsed = checked_report(options)
         merge_project_analyzers(parsed, options)
         add_compliance_summary(parsed)
-        render(parsed, options)
+        stdout.write(rendered(parsed, options))
         Runner.exit_code_for(parsed)
+      end
+
+      def checked_report(options)
+        parsed = Runner.invoke(options.paths, all_cops: options.all_cops, stderr: stderr)
+        raise CheckFailure::NoFilesScanned, options.paths if parsed.dig("summary", "inspected_file_count").zero?
+
+        parsed
       end
 
       def add_compliance_summary(parsed)
@@ -160,15 +177,19 @@ module MetzScan
         { default_output: !options.project_analyzers }
       end
 
+      def rendered(parsed, options)
+        StringIO.new.tap { |out| render(out, parsed, options) }.string
+      end
+
       # Text renders the compacted report so live output matches `report` on the saved JSON.
-      def render(parsed, options)
+      def render(out, parsed, options)
         format = options.format
-        return RENDERERS.fetch(format).new(stdout, parsed).render if RENDERERS.key?(format)
+        return RENDERERS.fetch(format).new(out, parsed).render if RENDERERS.key?(format)
 
         JsonGuidance.compact!(parsed, all_cops: options.all_cops)
-        return stdout.puts JSON.generate(parsed) if format == "json"
+        return out.puts JSON.generate(parsed) if format == "json"
 
-        TextRenderer.new(stdout, parsed).render
+        TextRenderer.new(out, parsed).render
       end
 
       def parser_error(err)
@@ -196,11 +217,6 @@ module MetzScan
       def invalid_format(fmt)
         stderr.puts "metz-scan scan: invalid --format '#{fmt}'. Valid formats: text, json, sarif, gh-annotations."
         CLI::USAGE_ERROR
-      end
-
-      def runner_error(err)
-        stderr.puts "metz-scan scan: RuboCop failed: #{err.message}"
-        2
       end
     end
   end

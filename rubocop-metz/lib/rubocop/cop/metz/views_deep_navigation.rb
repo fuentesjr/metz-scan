@@ -10,9 +10,11 @@ module RuboCop
       # traverse the object graph deeper than `MaxChainLength`. Reuses
       # `Metz/DemeterTrainWreck`'s chain walker and value-object skip logic,
       # so a chain like `name.upcase.strip.split(' ').first` (every link a
-      # recognised value-object call) stays silent. Path-classified through
-      # `Metz::FileClassifier.view?`: a deep chain inside an `.erb` file
-      # outside `app/views/` will not fire.
+      # recognised value-object call) stays silent. By default path-classified
+      # through `Metz::FileClassifier.view?`: a deep chain inside an `.erb` file
+      # outside an `app/views/` directory will not fire. An `Include` that
+      # still lists the default pattern keeps that scope and adds its other
+      # patterns; one that drops it replaces the scope. `Exclude` always applies.
       # DDR: docs/ddrs/2026-06-24-views-deep-navigation-inherits-demeter.md
       # explains why this specialization uses inheritance instead of composition.
       class ViewsDeepNavigation < DemeterTrainWreck
@@ -39,13 +41,31 @@ module RuboCop
         end
 
         def relevant_file?(file)
-          return super if file.nil? || file.empty? || file == "(string)"
+          return super if file.nil? || file.empty? || file == "(string)" || !default_scope_kept?
 
-          !file_name_matches_any?(file, "Exclude", false) &&
-            ::Metz::FileClassifier.view?(file)
+          default_scope_file?(file) ||
+            (file_name_matches_any?(file, "Include", false) && !file_name_matches_any?(file, "Exclude", false))
+        end
+
+        # The classifier-based default scope minus Exclude, ignoring any
+        # configured Include.
+        def default_scope_file?(file)
+          !file_name_matches_any?(file, "Exclude", false) && ::Metz::FileClassifier.view?(file)
         end
 
         private
+
+        # The default Include glob cannot match nested app roots (engines,
+        # monorepos), so the classifier stands in for it while the configured
+        # Include still lists every default pattern. An Include inherited from
+        # a .rubocop.yml in a parent directory is rewritten by RuboCop relative
+        # to that directory, so it never equals the default pattern and counts
+        # as a replacement, as it does for stock cops.
+        def default_scope_kept?
+          configured = cop_config["Include"]
+          default = RuboCop::ConfigLoader.default_configuration.for_cop(cop_name)["Include"]
+          configured.nil? || (default && (default - configured).empty?)
+        end
 
         def max
           cop_config["MaxChainLength"] || 3

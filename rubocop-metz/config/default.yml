@@ -133,6 +133,7 @@ Metz/ViewsDeepNavigation:
   Enabled: true
   Severity: refactor
   MaxChainLength: 3
+  AllowedReceivers: []
   Include:
     - 'app/views/**/*.{erb,haml,slim}'
   VersionAdded: '0.1'

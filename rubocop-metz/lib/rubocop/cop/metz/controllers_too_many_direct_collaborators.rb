@@ -98,6 +98,11 @@ module RuboCop
           Rails Arel Time Date DateTime File FileUtils Pathname Hash Array String Integer Float
           Symbol Set SecureRandom JSON YAML URI CGI ERB
         ].freeze
+        VALUE_CONSTANT = /\A[A-Z][A-Z0-9_]*\z/
+        DATA_READ_METHODS = %i[
+          include? each map fetch [] keys values first size any? empty? length count last key? to_a dig
+          sample each_with_index == != < <= > >= <=> + - * / % **
+        ].to_set.freeze
 
         def initialize(method_node)
           @method_node = method_node
@@ -115,10 +120,28 @@ module RuboCop
         attr_reader :method_node, :same_class_constants
 
         def record(ordered, const_node)
-          name = const_node.const_name
+          name = collaborator_name(const_node)
           return if name.nil? || ignored?(const_node, name)
 
           ordered[name] ||= const_node
+        end
+
+        # A value constant such as `User::STATUSES` read as data (bare, or the
+        # receiver of a `DATA_READ_METHODS` call or operator) is owned by `User`,
+        # so it counts toward `User` rather than as its own collaborator.
+        def collaborator_name(const_node)
+          name = const_node.const_name
+          owner, separator, last = name.to_s.rpartition("::")
+          return name if separator.empty? || owner.empty? || !last.match?(VALUE_CONSTANT)
+
+          read_as_data?(const_node) ? owner : name
+        end
+
+        def read_as_data?(const_node)
+          parent = const_node.parent
+          return true unless parent&.type?(:send, :csend) && parent.receiver.equal?(const_node)
+
+          DATA_READ_METHODS.include?(parent.method_name)
         end
 
         def ignored?(const_node, name)
@@ -175,9 +198,13 @@ module RuboCop
       # Exception classes at `rescue`/`raise`/`fail` sites, constants owned by
       # the controller class, and core framework/stdlib constants do not
       # count. Multiple references
-      # to the same constant count once. The cop is path-classified through
-      # `Metz::FileClassifier.controller?` and is silent on any file that is
-      # not under `app/controllers/`.
+      # to the same constant count once, and a value constant read as data
+      # (`User::STATUSES`, `User::STATUSES.include?(x)`) counts toward its
+      # owner (`User`). By default the cop is path-classified
+      # through `Metz::FileClassifier.controller?` and is silent on any file
+      # that is not under an `app/controllers/` directory. An `Include`
+      # that still lists the default pattern keeps that scope and adds its other
+      # patterns; one that drops it replaces the scope. `Exclude` always applies.
       class ControllersTooManyDirectCollaborators < RuboCop::Cop::Base
         extend ::Metz::CopMetadata
 
@@ -202,13 +229,31 @@ module RuboCop
         end
 
         def relevant_file?(file)
-          return super if file.nil? || file.empty? || file == "(string)"
+          return super if file.nil? || file.empty? || file == "(string)" || !default_scope_kept?
 
-          !file_name_matches_any?(file, "Exclude", false) &&
-            ::Metz::FileClassifier.controller?(file)
+          default_scope_file?(file) ||
+            (file_name_matches_any?(file, "Include", false) && !file_name_matches_any?(file, "Exclude", false))
+        end
+
+        # The classifier-based default scope minus Exclude, ignoring any
+        # configured Include.
+        def default_scope_file?(file)
+          !file_name_matches_any?(file, "Exclude", false) && ::Metz::FileClassifier.controller?(file)
         end
 
         private
+
+        # The default Include glob cannot match nested app roots (engines,
+        # monorepos), so the classifier stands in for it while the configured
+        # Include still lists every default pattern. An Include inherited from
+        # a .rubocop.yml in a parent directory is rewritten by RuboCop relative
+        # to that directory, so it never equals the default pattern and counts
+        # as a replacement, as it does for stock cops.
+        def default_scope_kept?
+          configured = cop_config["Include"]
+          default = RuboCop::ConfigLoader.default_configuration.for_cop(cop_name)["Include"]
+          configured.nil? || (default && (default - configured).empty?)
+        end
 
         def collect_collaborators(method_node)
           ControllerCollaboratorCollector.new(method_node).call

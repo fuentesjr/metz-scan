@@ -12,8 +12,12 @@ module MetzScan
       # same way #33 honors AllCops: Exclude. RuboCop's own excluded_file?
       # resolves the project config's scope per cop (#37); offenses on files a
       # cop is scoped off are hidden, and the project Exclude entry that hid
-      # one is credited in the suppression ledger. Project analyzers have no
-      # cop class; only a project Exclude entry scopes them off.
+      # one is credited in the suppression ledger. Cops that define
+      # `default_scope_file?` (the classifier-scoped rails-aware cops) honor
+      # only the project's Exclude: the scope-only config drops per-cop
+      # `inherit_mode`, so its Include cannot tell a merge from a replacement.
+      # Project analyzers have no cop class; only a project Exclude entry
+      # scopes them off.
       class ConfigExclusions
         def initialize(store)
           @store = store
@@ -25,7 +29,7 @@ module MetzScan
           cop_class = cop_class(offense)
           return !applied_exclude(offense, absolute).nil? unless cop_class
 
-          cop_class.new(store.for_file(absolute)).excluded_file?(absolute)
+          cop_scoped_off?(cop_class.new(store.for_file(absolute)), absolute)
         end
 
         def record_fields(path, offense)
@@ -40,6 +44,12 @@ module MetzScan
         private
 
         attr_reader :store
+
+        def cop_scoped_off?(cop, file)
+          return !cop.default_scope_file?(file) if cop.respond_to?(:default_scope_file?)
+
+          cop.excluded_file?(file)
+        end
 
         def applied_exclude(offense, file)
           store.applied_exclude(RuboCop::Cop::Badge.parse(offense.fetch("cop_name")), file)

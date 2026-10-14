@@ -5,7 +5,9 @@ require "psych"
 require "rubocop"
 require "stringio"
 
+require "metz/file_classifier"
 require "metz_scan/commands/scan/project_config_scope"
+require "metz_scan/commands/scan/rubocop_failure"
 require "metz_scan/commands/scan/suppression_ledger"
 require "metz_scan/commands/scan/target_ruby_version"
 
@@ -37,9 +39,10 @@ module MetzScan
           all_cops ? report : SuppressionLedger.apply(report)
         end
 
+        # Only what RuboCop and config loading raise; a metz-scan bug keeps its class and backtrace.
         def self.with_errors
           yield
-        rescue LoadError, StandardError => e
+        rescue LoadError, RuboCop::Error, Psych::Exception, SystemCallError => e
           raise Error, concise_message(e.message)
         end
 
@@ -93,17 +96,11 @@ module MetzScan
         end
 
         def self.parse_output(result)
+          raise Error, RubocopFailure.message(result) if RubocopFailure.failed?(result)
+
           JSON.parse(result.stdout)
         rescue JSON::ParserError
-          raise Error, failure_message(result)
-        end
-
-        def self.failure_message(result)
-          detail = concise_message(result.stderr)
-          detail = concise_message(result.stdout) if detail.empty?
-          return detail unless detail.empty?
-
-          "RuboCop exited with status #{result.status} without JSON output"
+          raise Error, RubocopFailure.message(result)
         end
 
         def self.concise_message(text)
@@ -146,7 +143,26 @@ module MetzScan
         module_function
 
         def for_project_config(paths)
-          RuboCop::TargetFinder.new(ProjectConfigScope.store, {}).find(paths, :all_file_types)
+          store = ProjectConfigScope.store
+          finder = RuboCop::TargetFinder.new(store, {})
+          files = (finder.find(paths, :all_file_types) + view_templates(paths, finder, store)).uniq
+          load_governing_configs(files, store)
+        end
+
+        # RuboCop's directory discovery finds only Ruby files; the Metz view cops also check
+        # app/views templates. Hidden directories and the project's Exclude apply as they do to Ruby.
+        def view_templates(paths, finder, store)
+          paths.select { |path| File.directory?(path) }.flat_map do |dir|
+            base_dir = File.expand_path(dir)
+            config = store.for(base_dir)
+            finder.find_files(base_dir, 0).select { |file| Metz::FileClassifier.view?(file) && !config.file_to_exclude?(file) }
+          end
+        end
+
+        # Default mode runs RuboCop with --force-default-config, so nothing else reads nested
+        # configs; loading them here makes a broken one fail the scan instead of being skipped.
+        def load_governing_configs(files, store)
+          files.each { |file| store.for_file(file) }
         end
       end
     end

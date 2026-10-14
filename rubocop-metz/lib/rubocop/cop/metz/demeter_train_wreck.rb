@@ -59,7 +59,7 @@ module RuboCop
 
         def collect_chain(links, start)
           current = start
-          while current
+          until current.nil? || operator_send?(current)
             links.unshift(current) if current.type?(:send, :csend)
             current = inner_node(current)
           end
@@ -72,7 +72,7 @@ module RuboCop
         end
 
         def skip_link?(send_node)
-          operator_send?(send_node) || send_node.setter_method?
+          send_node.setter_method?
         end
 
         def outermost_skippable?(node)
@@ -80,13 +80,16 @@ module RuboCop
         end
 
         def operator_send?(node)
-          node.type?(:send, :csend) && TypeInference.operator?(node.method_name)
+          return false unless node.type?(:send, :csend)
+
+          TypeInference.operator?(node.method_name) || OperatorMethods.unary_operator?(node.method_name)
         end
 
+        # An operator ends a chain: the chain beneath it is measured on its own.
         def part_of_outer_chain?(node)
           unit = wrapping_block(node) || node
           parent = unit.parent
-          parent&.type?(:send, :csend) && parent.receiver.equal?(unit)
+          parent&.type?(:send, :csend) && parent.receiver.equal?(unit) && !operator_send?(parent)
         end
 
         def wrapping_block(node)

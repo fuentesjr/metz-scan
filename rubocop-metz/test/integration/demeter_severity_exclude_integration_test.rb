@@ -61,6 +61,19 @@ class DemeterSeverityExcludeIntegrationTest < Minitest::Test
     end
   end
 
+  # The operator ends the chain, so only `user...balance` is reported; the
+  # `.to_s` after it is not a sixth link of the same chain.
+  def test_chain_through_an_explicit_operator_send_reports_once
+    in_tmp_fixture("z = user.account.owner.profile.balance.+(1).to_s\n") do |path|
+      stdout, stderr, = run_rubocop("--format", "json", path)
+      assert json_payload?(stdout), "Expected JSON on stdout, stderr:\n#{stderr}"
+      offenses = JSON.parse(stdout).fetch("files").flat_map { |f| f["offenses"] }
+      locations = offenses.map { |o| o["location"].values_at("start_line", "start_column", "length") }
+
+      assert_equal [[1, 5, "user.account.owner.profile.balance".length]], locations
+    end
+  end
+
   private
 
   def in_tmp_fixture(body)

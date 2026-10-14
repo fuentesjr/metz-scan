@@ -5,6 +5,9 @@ require_relative "../../../test_helper"
 class RuboCopCopMetzDemeterTrainWreckTest < Minitest::Test
   include Metz::Test::CopHelper
 
+  FIVE_HOPS = "Object-graph traversal of 5 exceeds Max (4). " \
+              "Consider delegating or wrapping intermediate calls."
+
   def cop_class
     RuboCop::Cop::Metz::DemeterTrainWreck
   end
@@ -151,6 +154,43 @@ class RuboCopCopMetzDemeterTrainWreckTest < Minitest::Test
 
   def test_set_value_object_methods_cascade_through_long_chain
     refute_offense("def m; some_set.add(:a).add(:b).add(:c).add(:d).each.to_a; end\n")
+  end
+
+  def test_chain_under_binary_operator_counts_like_bare_chain
+    [
+      "x = user.account.owner.profile.age > 18\n",
+      "if user.account.owner.profile.age == 1 then end\n",
+      "y = user.account.owner.profile.balance + 1\n",
+      "y = 1 + user.account.owner.profile.balance\n",
+      "y = user.account.owner.profile.balance.+(1)\n"
+    ].each do |source|
+      assert_demeter_messages([FIVE_HOPS], source)
+    end
+  end
+
+  def test_chain_under_unary_operator_counts_like_bare_chain
+    %w[! - + ~].each do |operator|
+      source = "v = #{operator}user.account.owner.profile.balance\n"
+
+      assert_demeter_messages([FIVE_HOPS], source)
+    end
+  end
+
+  def test_bare_chain_baseline_counts_five
+    assert_demeter_messages([FIVE_HOPS],
+                            "u = user.account.owner.profile.balance\n")
+  end
+
+  def test_operator_does_not_lift_short_chain_over_max
+    refute_offense("x = account.owner.profile.age > 18\n")
+    refute_offense("v = -account.owner.profile.balance\n")
+  end
+
+  def assert_demeter_messages(expected, source)
+    metz_inspect(source, nil)
+    actual = (@metz_offenses || []).select { |o| o.cop_name == "Metz/DemeterTrainWreck" }
+    messages = actual.map { |o| o.message.delete_prefix("Metz/DemeterTrainWreck: ") }
+    assert_equal expected, messages, "Unexpected Metz/DemeterTrainWreck messages for #{source.inspect}"
   end
 
   def assert_demeter_offense_count(expected, source)
