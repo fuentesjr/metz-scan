@@ -62,7 +62,10 @@ Ask the user for release authorization, then follow
 - Tag the merge commit of the prep PR after its main push run is green (as
   done for v0.6.0), not a later checkpoint commit.
 - rubygems.org publishing is done by the owner by hand; agent `gem push` to
-  rubygems.org is permission-blocked.
+  rubygems.org is permission-blocked. Both gemspecs set
+  `rubygems_mfa_required`, so rubygems.org rejects the push (HTTP 403) unless
+  the owner's account has MFA; the checklist confirms the "UI and API" level,
+  where each push asks for the OTP.
 - **Publish order matters:** `rubocop-metz` first, then `metz-scan` — the
   wrapper's dependency must be resolvable at push time.
 - Credentials: use the `gh`-managed token with `write:packages` scope, written

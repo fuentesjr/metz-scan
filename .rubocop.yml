@@ -51,9 +51,6 @@ Style/StringLiterals:
 Style/Documentation:
   Enabled: false
 
-Gemspec/RequireMFA:
-  Enabled: false
-
 Naming/FileName:
   Exclude:
     - rubocop-metz/lib/rubocop-metz.rb
