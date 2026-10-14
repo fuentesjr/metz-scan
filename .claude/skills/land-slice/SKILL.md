@@ -88,6 +88,11 @@ message instead (see `AGENTS.md`).
 - Keep the top Next items actionable. `bin/check_tracker_queue` fails when all
   of the top three Next items are parked/watch-only (wording like "monitor",
   "keep", "defer" without an action verb such as "add", "fix", or "update").
+- Check `trk backlog list --json` for defects in `scan`'s pass/fail path (a
+  wrong exit status, a clean result for files that were not checked, a crash
+  reported as findings). Promote each with `trk backlog promote <slug>` and
+  `trk next move` it ahead of feature and docs work; these never wait in the
+  backlog (CLAUDE.md Quality bar).
 
 Never commit a tracker-only change unless it is a deliberate direction change.
 If the slice needs more durable detail than STATE should carry, add a short

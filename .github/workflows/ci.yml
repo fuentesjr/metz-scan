@@ -94,7 +94,8 @@ jobs:
 
   # Same checks with the optional rubydex bundle group installed, so the
   # index-backed (RubydexBackend) tests that skip in `test` actually run.
-  # Not a required check; skipped for docs-only PRs via the `test` job's scope.
+  # Required on main alongside `test`. Skipped for docs-only PRs via the `test`
+  # job's scope; GitHub counts a skipped required job as passing.
   rubydex:
     needs: test
     if: needs.test.outputs.docs_only != 'true'

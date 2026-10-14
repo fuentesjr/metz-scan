@@ -14,7 +14,10 @@ example — match its method and its notes format.
 ## Scope rules
 
 - Judge output only. Defects found become filed issues and queue items — do
-  not fix them mid-round.
+  not fix them mid-round. A defect in `scan`'s pass/fail path (a wrong exit
+  status, a clean result for files that were not checked, or a crash reported
+  as findings) goes straight to Next with `trk next add`, never a backlog
+  note.
 - Target checkouts are read, never modified.
 - Use the released GitHub Packages gems, not the working tree. The point is to
   see exactly what a user sees.

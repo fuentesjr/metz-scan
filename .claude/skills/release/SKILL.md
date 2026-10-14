@@ -47,11 +47,11 @@ Touch exactly these surfaces:
 
 Then run the full gauntlet from the `land-slice` skill, including
 `CI_PARITY_FULL=1 bin/check_ci_parity` (parity now runs a reduced subset by
-default; force the full suite for a release prep) on the committed prep. Main is branch-protected
-(required `test` check), so push the prep as a branch and merge it via PR, only
-when the user authorized pushing. Then wait for the green main push run on the
-merge commit before asking to tag. Verify with
-`gh run list --repo fuentesjr/metz-scan --branch main --limit 3`.
+default; force the full suite for a release prep) on the committed prep. Main
+is branch-protected (CLAUDE.md lists the required checks), so push the prep as
+a branch and merge it via PR, only when the user authorized pushing. Then wait
+for the green main push run on the merge commit before asking to tag. Verify
+with `gh run list --repo fuentesjr/metz-scan --branch main --limit 3`.
 
 ## Phase 3 — tag, GitHub Release, publish (authorization required)
 
