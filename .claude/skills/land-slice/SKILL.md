@@ -22,7 +22,7 @@ and the gates that most often surprise agents.
 
 ```bash
 # 1. Focused tests for what you changed (fastest signal)
-bundle exec ruby -Ilib -Itest -Irubocop-metz/lib -Irubocop-metz/test test/path/to_test.rb
+bundle exec ruby -Ilib -Itools/lib -Itest -Irubocop-metz/lib -Irubocop-metz/test test/path/to_test.rb
 
 # 2. Lint — the repo lints itself with its own cops; bin/check_dogfood catches
 #    cop changes that make this repo's own code offend
@@ -88,11 +88,20 @@ message instead (see `AGENTS.md`).
 - Keep the top Next items actionable. `bin/check_tracker_queue` fails when all
   of the top three Next items are parked/watch-only (wording like "monitor",
   "keep", "defer" without an action verb such as "add", "fix", or "update").
+- Check `trk backlog list --json` for defects in `scan`'s pass/fail path (a
+  wrong exit status, a clean result for files that were not checked, a crash
+  reported as findings). Promote each with `trk backlog promote <slug>` and
+  `trk next move` it ahead of feature and docs work; these never wait in the
+  backlog (CLAUDE.md Quality bar).
 
 Never commit a tracker-only change unless it is a deliberate direction change.
-If the slice needs more durable detail than STATE should carry, add a short
-section to `docs/maintainers/implementation-notes.md` (task, scope boundaries, decisions,
-verification) — match the existing entries' shape and brevity.
+Route durable detail by kind:
+
+- Slice detail beyond what Next and the Goal carry (scope boundaries,
+  decisions, verification): `trk log`.
+- Durable code-level design exceptions: a DDR under `docs/ddrs/`.
+- Dogfooding rounds: `docs/dogfooding/`.
+- Calibration evidence: `docs/project-analyzer-calibration.md`.
 
 ## Red-green discipline
 

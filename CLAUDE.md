@@ -44,7 +44,8 @@ Key paths:
   (`RubydexBackend` when the optional `rubydex` bundle group is installed,
   `NullBackend` otherwise — index-backed analyzers then silently contribute
   zero findings).
-- Calibration pipeline: `lib/metz_scan/calibration/`, driven by
+- Calibration pipeline: `tools/lib/metz_scan/calibration/` (dev-only, kept
+  out of `lib/` so the gem does not ship it), driven by
   `bin/check_project_analyzer_calibration`, with the tracked target manifest
   and baseline in `docs/calibration/project_analyzer_{targets,baseline}.yml`.
 - Output renderers (text/sarif/gh-annotations) under
@@ -54,7 +55,7 @@ Key paths:
 ## Commands
 
 ```bash
-bundle exec rake              # full suite (~710 runs as of 2026-10)
+bundle exec rake              # full suite (~810 runs as of 2026-10)
 bundle exec rake test:fast    # groups defined in test/support/test_file_groups.rb
 bundle exec rake test:slow    # subprocess/integration tests
 bundle exec rubocop           # repo lints itself with its own plugin
@@ -71,22 +72,25 @@ bin/check_dogfood             # metz-scan on this repo; requires rubydex group; 
 Focused single test file (Rakefile load paths at `Rakefile:7`):
 
 ```bash
-bundle exec ruby -Ilib -Itest -Irubocop-metz/lib -Irubocop-metz/test path/to_test.rb
+bundle exec ruby -Ilib -Itools/lib -Itest -Irubocop-metz/lib -Irubocop-metz/test path/to_test.rb
 ```
 
 Ruby >= 4.0 (gemspecs), Bundler 4.0.8. Development and CI use the Ruby in
-`.ruby-version`. CI is `.github/workflows/ci.yml`: the required `test` job runs
+`.ruby-version`. CI is `.github/workflows/ci.yml`: the `test` job runs
 without the optional `rubydex` group, and a `rubydex` job (after `test`,
 skipped for docs-only PRs) installs it and runs `bin/check_dogfood`, the full
-suite, and `bin/check_rubydex_drift` on the sample app. `check_ci_parity`
+suite, and `bin/check_rubydex_drift` on the sample app. Branch protection on
+`main` requires both checks and applies to admins, so every change lands
+through a PR. `check_ci_parity`
 replicates every single-command `test`-job step plus tracker hygiene (not the
 `rubydex` job: its clean clone ignores local Bundler config), but scales the
 "tests" step to the commits being pushed (docs-only vs code) rather than
 always running the full suite — remote CI stays the full-suite backstop; set
 `CI_PARITY_FULL=1` to force the full local suite (do this before a release).
 CI applies the same docs-only rule to pull requests: docs-only PRs run only
-the docs-freshness tests and cheap guards (the required `test` check still
-reports), while every push to `main` runs the full suite. Branch pushes get
+the docs-freshness tests and cheap guards (the `test` check still reports,
+and GitHub counts the skipped `rubydex` job as passing), while every push to
+`main` runs the full suite. Branch pushes get
 no separate push run; their PR run covers them.
 
 ## Invariants and conventions (violating these fails a check or a review)
@@ -110,7 +114,7 @@ no separate push run; their PR run covers them.
   byte-for-byte. Output changes require deliberate fixture updates, never
   loosened assertions.
 - Never write a test that assumes the `rubydex` group is installed. The
-  required `test` CI job runs without it (NullBackend path); the separate
+  `test` CI job runs without it (NullBackend path); the separate
   `rubydex` job installs it (RubydexBackend path). Use the
   `test/support/missing_rubydex.rb` pattern so tests cover both paths.
 - New read-only maintenance commands go into the `bin/check_read_only_commands`
@@ -138,6 +142,10 @@ no separate push run; their PR run covers them.
 5. Docs updated when behavior changed (the freshness tests will tell you).
 6. No coverage sweeps: test hardening is declared done. New tests accompany
    behavior changes or defects only.
+7. Defects in `scan`'s pass/fail path go straight to Next, never the
+   backlog: a wrong exit status, a clean result for files that were not
+   checked, or a crash reported as findings. File them with `trk next add`,
+   and at landing promote any such note found in `trk backlog list --json`.
 
 ## Failure modes to expect
 
@@ -157,13 +165,14 @@ no separate push run; their PR run covers them.
 ## Escalation — stop and ask the user before
 
 - Publishing gems, creating tags, cutting GitHub Releases (explicit release
-  authorization is a standing rule; see
-  `docs/maintainers/implementation-notes.md`).
+  authorization is a standing rule; see the Hard boundary paragraph in
+  `.claude/skills/release/SKILL.md`).
 - Filing or closing GitHub issues (issue creation was permission-blocked by
   policy on 2026-07-05; drafts need user approval).
 - Changing analyzer thresholds, statuses, default-output policy, or promoting
-  candidate analyzers — all explicitly parked in `.trk/STATE.md` backlog.
-- Adding app-specific suppressions or new calibration targets (parked).
+  candidate analyzers — the owner's tracker Goal (`trk status --json`) rules
+  these out without new generic evidence.
+- Adding app-specific suppressions or new calibration targets.
 - Adding dependencies (Sorbet was evaluated and rejected in
   `docs/spikes/sorbet-issue-26.md`; don't relitigate without new evidence).
 - Starting a new slice while `origin/main` CI is red — triage the red run

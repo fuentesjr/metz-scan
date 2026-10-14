@@ -19,6 +19,12 @@ fail() {
 
 usage() {
   printf 'Usage: bin/check_published_gem [VERSION]\n'
+  printf '\n'
+  printf 'Environment:\n'
+  printf '  PUBLISHED_GEM_SMOKE_TMPDIR  temp base for the work dir (default /private/tmp,\n'
+  printf '                              else $TMPDIR or /tmp);\n'
+  printf '                              must be outside this repository\n'
+  printf '  KEEP_PUBLISHED_GEM_SMOKE=1  keep the work dir after the run\n'
 }
 
 if [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then

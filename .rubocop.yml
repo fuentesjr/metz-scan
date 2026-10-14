@@ -51,13 +51,12 @@ Style/StringLiterals:
 Style/Documentation:
   Enabled: false
 
-Gemspec/RequireMFA:
-  Enabled: false
-
 Naming/FileName:
   Exclude:
     - rubocop-metz/lib/rubocop-metz.rb
 
+# Test trees exempt the length and size cops and the two Style cops that share
+# this list; no Metz coupling cop, such as Metz/DemeterTrainWreck, is exempt.
 Metrics/MethodLength:
   Exclude:
 <%= emit_test_excludes.call %>

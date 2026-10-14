@@ -23,6 +23,7 @@ Gem::Specification.new do |spec|
   spec.metadata["bug_tracker_uri"] = "#{spec.homepage}/issues"
   spec.metadata["github_repo"] = "ssh://github.com/fuentesjr/metz-scan"
   spec.metadata["github_package_uri"] = "https://github.com/users/fuentesjr/packages/rubygems/package/metz-scan"
+  spec.metadata["rubygems_mfa_required"] = "true"
 
   # Resolve files from the gemspec directory so evaluation is CWD-independent.
   # Do not raise when the entrypoint is absent: Dependabot evaluates gemspecs in

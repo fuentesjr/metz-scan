@@ -3,10 +3,10 @@
 require "open3"
 require "time"
 
-require_relative "../../project_index"
-require_relative "../../commands/scan/project_analyzer_metadata"
-require_relative "../../commands/scan/project_analyzer_offenses"
-require_relative "../../commands/scan/project_analyzer_runner"
+require "metz_scan/project_index"
+require "metz_scan/commands/scan/project_analyzer_metadata"
+require "metz_scan/commands/scan/project_analyzer_offenses"
+require "metz_scan/commands/scan/project_analyzer_runner"
 require_relative "readiness_catalog"
 
 module MetzScan
