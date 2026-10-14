@@ -1,15 +1,13 @@
 # frozen_string_literal: true
 
+require "json"
 require "open3"
-require "stringio"
 require "tempfile"
 
 module MetzScan
   module Commands
     class Scan
       class AutoFix
-        CommandResult = Struct.new(:status, :stdout, :stderr, keyword_init: true)
-
         def initialize(stdout:, stderr:)
           @stdout = stdout
           @stderr = stderr
@@ -25,31 +23,15 @@ module MetzScan
         attr_reader :stdout, :stderr
 
         def run_in_place(options)
-          with_redirected_io { RuboCop::CLI.new.run(rubocop_argv(options)) }
-        end
-
-        def with_redirected_io
-          previous = redirect_to(stdout, stderr)
-          yield
-        ensure
-          restore_io(previous) if previous
-        end
-
-        def redirect_to(out, err)
-          previous = [$stdout, $stderr]
-          $stdout = out
-          $stderr = err
-          previous
-        end
-
-        def restore_io(previous)
-          $stdout = previous[0]
-          $stderr = previous[1]
+          result = checked_rubocop(options)
+          stdout.write(result.stdout)
+          stderr.write(result.stderr)
+          result.status
         end
 
         def run_dry(options)
           snapshot = capture_files(options.paths)
-          dry_run_result(snapshot, capture_rubocop(rubocop_argv(options)))
+          dry_run_result(snapshot, checked_rubocop(options))
         ensure
           restore_files(snapshot)
         end
@@ -60,26 +42,32 @@ module MetzScan
           result.status
         end
 
-        def rubocop_argv(options)
+        # Fails like a plain scan, before any output: RuboCop exits 1 for a cop error and for
+        # remaining offenses alike, and only its own report says how many files it inspected.
+        def checked_rubocop(options)
+          Tempfile.create(["metz-auto-fix-", ".json"]) do |report|
+            Runner.capture_output(rubocop_argv(options, report.path)).tap { |result| check!(result, report, options) }
+          end
+        end
+
+        def check!(result, report, options)
+          raise Runner::Error, RubocopFailure.message(result) if RubocopFailure.failed?(result)
+          raise CheckFailure::NoFilesScanned, options.paths if inspected_file_count(report.path).zero?
+        end
+
+        def inspected_file_count(report_path)
+          JSON.parse(File.read(report_path)).dig("summary", "inspected_file_count")
+        end
+
+        def rubocop_argv(options, report_path)
           flag = options.unsafe ? "-A" : "-a"
           selection = Runner.cop_selection_argv(options.all_cops)
           selection += ["--disable-pending-cops"] unless options.all_cops
-          ["--plugin", "rubocop-metz", *selection, flag, *options.paths]
+          ["--plugin", "rubocop-metz", *selection, flag, *formatter_argv(report_path), *options.paths]
         end
 
-        def capture_rubocop(argv)
-          out = StringIO.new
-          err = StringIO.new
-          status = with_captured_io(out, err) { RuboCop::CLI.new.run(argv) }
-          CommandResult.new(status: status, stdout: out.string, stderr: err.string)
-        end
-
-        def with_captured_io(out, err)
-          previous = redirect_to(out, err)
-          yield
-        ensure
-          restore_io(previous) if previous
-        end
+        # Progress goes last: RuboCop hides cop names when the last --format is json.
+        def formatter_argv(report_path) = ["--format", "json", "--out", report_path, "--format", "progress"]
 
         def capture_files(paths)
           files_under(paths).to_h { |path| [path, File.binread(path)] }

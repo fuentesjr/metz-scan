@@ -90,14 +90,14 @@ module MetzScan
         assert_match(/^[+-]/, @stdout.string)
       end
 
-      def test_auto_fix_on_clean_empty_directory_exits_zero
-        assert_equal 0, run_cli(["scan", @tmpdir, "--auto-fix"])
-        assert_empty @stderr.string
+      def test_auto_fix_on_empty_directory_exits_two_saying_no_files_scanned
+        assert_equal 2, run_cli(["scan", @tmpdir, "--auto-fix"])
+        assert_includes @stderr.string, "no files scanned"
       end
 
-      def test_dry_run_on_clean_empty_directory_exits_zero
-        assert_equal 0, run_cli(["scan", @tmpdir, "--auto-fix", "--dry-run"])
-        assert_empty @stderr.string
+      def test_dry_run_on_empty_directory_exits_two_saying_no_files_scanned
+        assert_equal 2, run_cli(["scan", @tmpdir, "--auto-fix", "--dry-run"])
+        assert_includes @stderr.string, "no files scanned"
       end
 
       def test_dry_run_restores_files_when_offenses_are_corrected
