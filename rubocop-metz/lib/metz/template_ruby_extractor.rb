@@ -1,23 +1,26 @@
 # frozen_string_literal: true
 
-require_relative "file_classifier"
+require_relative "template_ruby_fragment"
 
 module Metz
   # Shared iteration backbone for line-based Ruby extractors that target
   # indentation-driven template languages (HAML, Slim). Concrete extractors
-  # define three patterns -- an expression line, a statement line, and a
-  # filter-block start -- and this module walks the raw source line by
-  # line, hands every matching body to RuboCop as its own ProcessedSource,
-  # and tracks the byte offset of each body inside the original template
-  # so offense locations refer back to the source file rather than the
-  # synthetic snippet.
+  # define a filter-block start pattern (`FILTER_LINE`, capturing the filter
+  # `name`) and `line_fragments(line, processed_source)`, which returns the
+  # `[ruby_source, column]` pairs a single template line carries. Every
+  # filter's indented body is consumed, but only a `ruby` filter's body is
+  # Ruby; other filters (`javascript`, `css`, `markdown`, ...) yield nothing. This
+  # module walks the raw source line by line, hands every fragment to
+  # RuboCop as its own ProcessedSource, and tracks the offset of each
+  # fragment inside the original template so offense locations refer back
+  # to the source file rather than the synthetic snippet.
   module TemplateRubyExtractor
     def call(processed_source)
       path = processed_source.path
       return nil unless path && handles?(path)
 
       snippets = Walker.new(self, processed_source).snippets
-      snippets << empty_snippet(processed_source) if snippets.empty?
+      snippets << TemplateRubyFragment.empty(processed_source) if snippets.empty?
       snippets
     end
 
@@ -25,25 +28,6 @@ module Metz
       extractors = RuboCop::Runner.ruby_extractors
       entrypoint = method(:call)
       extractors.unshift(entrypoint) unless extractors.include?(entrypoint)
-    end
-
-    def empty_snippet(processed_source)
-      ps = build_processed_source("", processed_source)
-      { offset: 0, processed_source: ps }
-    end
-
-    def build_snippet(body, body_offset, processed_source)
-      return nil if body.strip.empty?
-
-      ps = build_processed_source(body, processed_source)
-      return nil unless ps.valid_syntax?
-
-      { offset: body_offset, processed_source: ps }
-    end
-
-    def build_processed_source(body, processed_source)
-      ruby_version = processed_source.ruby_version || RUBY_VERSION.to_f
-      RuboCop::ProcessedSource.new(body, ruby_version, processed_source.path)
     end
 
     # Walks lines of a template, dispatching each line to the owner module's
@@ -61,37 +45,33 @@ module Metz
 
       def walk
         @snippets = []
-        @snippets << next_snippet until @cursor.done?
+        @snippets.concat(next_snippets) until @cursor.done?
         @snippets.compact!
       end
 
-      def next_snippet
+      def next_snippets
         line = @cursor.line
         filter = line.match(@owner::FILTER_LINE)
-        return consume_filter(filter) if filter
+        return [consume_filter(filter)] if filter
 
-        consume_inline(line.match(@owner::EXPR_LINE) || line.match(@owner::STMT_LINE))
+        consume_inline(line)
       end
 
-      def consume_inline(match)
-        snippet = inline_snippet(match)
+      def consume_inline(line)
+        snippets = @owner.line_fragments(line, @processed_source).map { |body, column| inline_snippet(body, column) }
         @cursor.advance(1)
-        snippet
+        snippets
       end
 
-      def inline_snippet(match)
-        return nil if match.nil?
-
-        body_offset = @cursor.offset + match.begin(:body)
-        @owner.build_snippet(match[:body], body_offset, @processed_source)
+      def inline_snippet(body, column)
+        TemplateRubyFragment.snippet(body, @cursor.offset + column, @processed_source)
       end
 
       def consume_filter(match)
         body_offset = @cursor.offset + @cursor.line.length
-        body_lines = collect_filter_body(match[:indent].length)
-        snippet = build_filter_snippet(body_lines, body_offset)
-        @cursor.advance(1 + body_lines.size)
-        snippet
+        body = collect_filter_body(match[:indent].length)
+        @cursor.advance(1 + body.size)
+        TemplateRubyFragment.snippet(body.join, body_offset, @processed_source) if match[:name] == "ruby"
       end
 
       def collect_filter_body(base_indent)
@@ -109,12 +89,6 @@ module Metz
 
       def leading_indent(line)
         line[/\A[ \t]*/].length
-      end
-
-      def build_filter_snippet(body_lines, body_offset)
-        return nil if body_lines.empty?
-
-        @owner.build_snippet(body_lines.join, body_offset, @processed_source)
       end
     end
 

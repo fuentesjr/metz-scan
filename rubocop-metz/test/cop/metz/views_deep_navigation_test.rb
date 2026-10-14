@@ -179,6 +179,94 @@ class CopMetzViewsDeepNavigationTest < Minitest::Test
     end
   end
 
+  # Every template line below holds a four-link chain; [line, column] point at its first link.
+  def test_erb_output_and_control_forms_are_checked_at_template_positions
+    template = <<~ERB
+      <%== user.account.owner.email %>
+      <%# user.account.owner.email %>
+      <%%= user.account.owner.email %>
+      <%= form_with(model: user.account.owner.profile) do |f| %>
+      <% end %>
+    ERB
+
+    assert_equal [[1, 6], [4, 22]], template_offense_positions(template, "erb")
+  end
+
+  def test_haml_output_and_control_forms_are_checked_at_template_positions
+    template = <<~HAML
+      - if user.account.owner.active?
+        %p hi
+      != user.account.owner.email
+      &= user.account.owner.email
+      %p{ title: user.account.owner.name }
+      %p{ title: user.account.owner.name }= user.account.owner.email
+      ~ user.account.owner.email
+      = form_for(user.account.owner.profile) do |f|
+        = f.text_field :name
+      -# user.account.owner.email
+      %p user.account.owner.email
+      %p= user.account.owner.email
+    HAML
+
+    assert_equal [[1, 6], [3, 4], [4, 4], [5, 12], [6, 12], [6, 39], [7, 3], [8, 12], [12, 5]],
+                 template_offense_positions(template, "haml")
+  end
+
+  def test_haml_output_after_attribute_groups_is_checked_at_template_positions
+    template = <<~HAML
+      %div[@user]= user.account.owner.email
+      %p{ title: 1 }(data-x="y")= user.account.owner.email
+    HAML
+
+    assert_equal [[1, 14], [2, 29]], template_offense_positions(template, "haml")
+  end
+
+  def test_slim_output_and_control_forms_are_checked_at_template_positions
+    template = <<~SLIM
+      p = user.account.owner.name
+      - if user.account.owner.active?
+        | hi
+      p title=user.account.owner.name
+      a.link[href=user.account.owner.url] = user.name
+      p.note = user.account.owner.name
+      = form_for(user.account.owner.profile) do |f|
+        = f.text_field :name
+      p title="user.account.owner.name" user.account.owner.name
+      / user.account.owner.email
+      | user.account.owner.email
+      == user.account.owner.email
+    SLIM
+
+    assert_equal [[1, 5], [2, 6], [4, 9], [5, 13], [6, 10], [7, 12], [12, 4]],
+                 template_offense_positions(template, "slim")
+  end
+
+  def test_erb_block_openers_do_not_crash_stock_layout_cops
+    form = "<p>\n  <%= form_with(model: user) do |f| %>\n  <% end %>\n</p>\n"
+    each = "<ul>\n  <% items.each do |i| %>\n  <% end %>\n</ul>\n"
+    _, stderr, status = run_rubocop_on_views({ "form.html.erb" => form, "each.html.erb" => each },
+                                             "--only", "Layout/CommentIndentation")
+
+    refute_match(/error occurred/, stderr)
+    assert status.success?, "Expected exit 0, got #{status.exitstatus}; stderr:\n#{stderr}"
+  end
+
+  # Only the `ruby` filter holds Ruby; other filter bodies are skipped whole.
+  def test_only_ruby_filter_bodies_are_checked
+    slim = "javascript:\n  this.owner = window.a.b.c.d.e;\nmarkdown:\n  item = a.b.c.d.e\n" \
+           "ruby:\n  user.account.owner.name\n"
+    haml = ":css\n  .foo{color:red}\n:ruby\n  user.account.owner.name\n"
+    stdout, = run_rubocop_on_views({ "f.html.slim" => slim, "f.html.haml" => haml }, "--format", "json")
+    found = JSON.parse(stdout).fetch("files").flat_map do |file|
+      file["offenses"].map { |o| [File.extname(file["path"]), o["location"]["start_line"], o["cop_name"]] }
+    end
+
+    assert_equal [[".haml", 4], [".slim", 6]], found.map { |ext, line, _| [ext, line] }.uniq.sort,
+                 "Only the ruby filter bodies may carry findings: #{found.inspect}"
+    assert_includes found, [".haml", 4, "Metz/ViewsDeepNavigation"]
+    assert_includes found, [".slim", 6, "Metz/ViewsDeepNavigation"]
+  end
+
   def test_violating_haml_fixture_fires_via_rubocop
     assert_operator install_fixture_offense_count("violating.html.haml"), :>=, 1
   end
@@ -238,6 +326,30 @@ class CopMetzViewsDeepNavigationTest < Minitest::Test
     cmd << path
     rubocop_offenses(cmd)
       .count { |o| o["cop_name"] == "Metz/ViewsDeepNavigation" }
+  end
+
+  def template_offense_positions(template, ext)
+    Dir.mktmpdir do |dir|
+      view = File.join(dir, "app/views/x/show.html.#{ext}")
+      FileUtils.mkdir_p(File.dirname(view))
+      File.write(view, template)
+      cmd = ["bundle", "exec", "rubocop", "--plugin", "rubocop-metz", "--cache", "false",
+             "--only", "Metz/ViewsDeepNavigation", "--format", "json", view]
+      rubocop_offenses(cmd).map { |o| o["location"].values_at("start_line", "start_column") }.sort
+    end
+  end
+
+  def run_rubocop_on_views(templates, *flags)
+    Dir.mktmpdir do |dir|
+      views = templates.map do |name, template|
+        File.join(dir, "app/views/x", name).tap do |view|
+          FileUtils.mkdir_p(File.dirname(view))
+          File.write(view, template)
+        end
+      end
+      Open3.capture3("bundle", "exec", "rubocop", "--plugin", "rubocop-metz", "--cache", "false",
+                     *flags, *views, chdir: REPO_ROOT)
+    end
   end
 
   def non_metz_offenses(path)

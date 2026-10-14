@@ -6,6 +6,9 @@ class CopMetzControllersTooManyDirectCollaboratorsTest < Minitest::Test
   include Metz::Test::CopHelper
 
   CONTROLLER_PATH = "app/controllers/users_controller.rb"
+  DATA_METHODS = %w[include? each map fetch [] keys values first size].freeze
+  MORE_DATA_METHODS = %w[any? empty? length count last key? to_a dig sample each_with_index].freeze
+  DATA_OPERATORS = %w[== != < <= > >= <=> + - * / % **].freeze
 
   def cop_class
     RuboCop::Cop::Metz::ControllersTooManyDirectCollaborators
@@ -183,6 +186,52 @@ class CopMetzControllersTooManyDirectCollaboratorsTest < Minitest::Test
     refute_offense(source, file: "app/controllers/widgets_controller.rb")
   end
 
+  def test_value_constants_count_toward_their_owning_collaborator
+    source = <<~RUBY
+      class UsersController < ApplicationController
+        def show
+          User.find(1)
+          User::STATUSES
+          User::ROLE_NAMES
+        end
+      end
+    RUBY
+
+    refute_offense(source, file: CONTROLLER_PATH)
+  end
+
+  def test_value_constant_alone_reports_its_owner
+    source = <<~RUBY
+      class UsersController < ApplicationController
+        def show
+          User::STATUSES
+          AuditLog.recent
+        end
+      end
+    RUBY
+
+    metz_inspect(source, CONTROLLER_PATH)
+
+    assert_equal 1, controller_offenses.size
+    assert_match(/\(User, AuditLog\)/, controller_offenses.first.message)
+  end
+
+  def test_classes_in_a_shared_namespace_stay_distinct
+    source = <<~RUBY
+      class RefundsController < ApplicationController
+        def create
+          Billing::Invoice.find(1)
+          Billing::Refund.create
+        end
+      end
+    RUBY
+
+    metz_inspect(source, "app/controllers/refunds_controller.rb")
+
+    assert_equal 1, controller_offenses.size
+    assert_match(/\(Billing::Invoice, Billing::Refund\)/, controller_offenses.first.message)
+  end
+
   def test_ignores_rescue_exception_classes
     source = <<~RUBY
       class ChatsController < ApplicationController
@@ -358,7 +407,239 @@ class CopMetzControllersTooManyDirectCollaboratorsTest < Minitest::Test
     refute_match(/\AAction `set_chat`/, controller_offenses.first.message)
   end
 
+  # A namespaced ALL_CAPS constant counts as its namespace (everything before the
+  # last segment) only when it is bare or the receiver of one of DATA_METHODS,
+  # `&.` included; any other use keeps the full name as its own collaborator.
+  # Source: owner decision 2026-10-13 (cop-accuracy slice).
+  def test_namespaced_all_caps_constant_receiving_a_data_method_counts_as_its_namespace
+    DATA_METHODS.each do |data_method|
+      call = data_method == "[]" ? "User::STATUSES[:admin]" : "User::STATUSES.#{data_method}"
+      source = <<~RUBY
+        class UsersController < ApplicationController
+          def show
+            User.find(1)
+            #{call}
+          end
+        end
+      RUBY
+
+      offenses = metz_inspect(source, CONTROLLER_PATH)
+
+      assert_empty offenses,
+                   "`#{call}` should count as User; got #{offenses.map(&:message).inspect}"
+    end
+  end
+
+  def test_safe_navigation_data_method_read_counts_as_the_namespace
+    source = <<~RUBY
+      class UsersController < ApplicationController
+        def show
+          User.find(1)
+          User::STATUSES&.include?(params[:status])
+          User::ROLE_NAMES&.first
+        end
+      end
+    RUBY
+
+    refute_offense(source, file: CONTROLLER_PATH)
+  end
+
+  def test_namespaced_all_caps_constant_passed_as_an_argument_counts_as_its_namespace
+    source = <<~RUBY
+      class UsersController < ApplicationController
+        def show
+          User.find(1)
+          render json: User::STATUSES
+          respond(User::ROLE_NAMES)
+        end
+      end
+    RUBY
+
+    refute_offense(source, file: CONTROLLER_PATH)
+  end
+
+  def test_namespaced_all_caps_constant_in_an_assignment_counts_as_its_namespace
+    source = <<~RUBY
+      class UsersController < ApplicationController
+        def show
+          User.find(1)
+          @statuses = User::STATUSES
+          roles = User::ROLE_NAMES
+        end
+      end
+    RUBY
+
+    refute_offense(source, file: CONTROLLER_PATH)
+  end
+
+  def test_deeply_namespaced_all_caps_constant_counts_as_its_full_namespace
+    source = <<~RUBY
+      class InvoicesController < ApplicationController
+        def show
+          Billing::Invoice.find(1)
+          Billing::Invoice::STATUSES
+          @names = Billing::Invoice::STATUS_NAMES.keys
+        end
+      end
+    RUBY
+
+    refute_offense(source, file: "app/controllers/invoices_controller.rb")
+  end
+
+  def test_all_caps_class_receiving_a_non_data_method_keeps_its_full_name
+    source = <<~RUBY
+      class FeedsController < ApplicationController
+        def show
+          Net::HTTP.get(uri)
+          AuditLog.recent
+        end
+      end
+    RUBY
+
+    metz_inspect(source, "app/controllers/feeds_controller.rb")
+
+    assert_equal 1, controller_offenses.size
+    assert_match(/\(Net::HTTP, AuditLog\)/, controller_offenses.first.message)
+  end
+
+  def test_namespaced_all_caps_receiver_of_a_command_method_is_its_own_collaborator
+    source = <<~RUBY
+      class ChargesController < ApplicationController
+        def create
+          Billing::Invoice.find(1)
+          Billing::API.charge(order)
+        end
+      end
+    RUBY
+
+    metz_inspect(source, "app/controllers/charges_controller.rb")
+
+    assert_equal 1, controller_offenses.size
+    assert_match(/\(Billing::Invoice, Billing::API\)/, controller_offenses.first.message)
+  end
+
+  def test_safe_navigation_non_data_call_keeps_the_full_name
+    source = <<~RUBY
+      class ChargesController < ApplicationController
+        def create
+          User.find(1)
+          Billing::API&.charge(order)
+        end
+      end
+    RUBY
+
+    metz_inspect(source, "app/controllers/charges_controller.rb")
+
+    assert_equal 1, controller_offenses.size
+    assert_match(/\(User, Billing::API\)/, controller_offenses.first.message)
+  end
+
+  def test_namespaced_all_caps_constant_receiving_a_non_data_method_is_its_own_collaborator
+    source = <<~RUBY
+      class UsersController < ApplicationController
+        def show
+          User.find(1)
+          User::STATUSES.freeze
+        end
+      end
+    RUBY
+
+    metz_inspect(source, CONTROLLER_PATH)
+
+    assert_equal 1, controller_offenses.size
+    assert_match(/\(User, User::STATUSES\)/, controller_offenses.first.message)
+  end
+
+  # Source: owner decision 2026-10-14 (question 26), extending the data-read list.
+  def test_namespaced_all_caps_constant_receiving_a_newly_listed_data_method_counts_as_its_namespace
+    failures = MORE_DATA_METHODS.filter_map do |data_method|
+      call = "User::STATUSES.#{data_method}"
+      offenses = metz_inspect(users_show_source(call), CONTROLLER_PATH)
+      "`#{call}` (method `#{data_method}`): #{offenses.map(&:message).inspect}" if offenses.any?
+    end
+
+    assert_empty failures, "these should count as User, not a second collaborator:\n#{failures.join("\n")}"
+  end
+
+  # Source: owner decision 2026-10-14 (question 26): comparison and arithmetic
+  # operators are data reads when the constant is the receiver.
+  def test_namespaced_all_caps_constant_receiving_a_comparison_or_arithmetic_operator_counts_as_its_namespace
+    failures = DATA_OPERATORS.filter_map do |operator|
+      call = "User::MAX_AGE #{operator} 18"
+      offenses = metz_inspect(users_show_source(call), CONTROLLER_PATH)
+      "operator `#{operator}` (`#{call}`): #{offenses.map(&:message).inspect}" if offenses.any?
+    end
+
+    assert_empty failures, "these should count as User, not a second collaborator:\n#{failures.join("\n")}"
+  end
+
+  # join and find stay out of the data list on purpose: classes such as URI and
+  # models define them. Source: owner decision 2026-10-14 (question 26).
+  def test_namespaced_all_caps_constant_receiving_join_or_find_is_its_own_collaborator
+    ["join(\", \")", "find { |s| s }"].each do |call_tail|
+      call = "User::STATUSES.#{call_tail}"
+      source = <<~RUBY
+        class UsersController < ApplicationController
+          def show
+            User.find(1)
+            #{call}
+          end
+        end
+      RUBY
+
+      metz_inspect(source, CONTROLLER_PATH)
+
+      assert_equal 1, controller_offenses.size, "`#{call}` should add a collaborator"
+      assert_match(/\(User, User::STATUSES\)/, controller_offenses.first.message,
+                   "`#{call}` should keep User::STATUSES as its own collaborator")
+    end
+  end
+
+  # Operators outside comparison and arithmetic are not reads. Source: owner
+  # decision 2026-10-14 (question 26).
+  def test_namespaced_all_caps_constant_receiving_an_append_is_its_own_collaborator
+    source = <<~RUBY
+      class UsersController < ApplicationController
+        def show
+          User.find(1)
+          User::STATUSES << :x
+        end
+      end
+    RUBY
+
+    metz_inspect(source, CONTROLLER_PATH)
+
+    assert_equal 1, controller_offenses.size
+    assert_match(/\(User, User::STATUSES\)/, controller_offenses.first.message)
+  end
+
+  # A bare namespaced ALL_CAPS constant counts as its namespace even when it
+  # names a class. Source: owner decision 2026-10-14 (question 27).
+  def test_bare_namespaced_all_caps_class_passed_as_an_argument_counts_as_its_namespace
+    source = <<~RUBY
+      class FeedsController < ApplicationController
+        def show
+          Net.get_default
+          use(Net::HTTP)
+        end
+      end
+    RUBY
+
+    refute_offense(source, file: "app/controllers/feeds_controller.rb")
+  end
+
   private
+
+  def users_show_source(statement)
+    <<~RUBY
+      class UsersController < ApplicationController
+        def show
+          User.find(1)
+          #{statement}
+        end
+      end
+    RUBY
+  end
 
   def controller_offenses
     Array(@metz_offenses).select do |o|
