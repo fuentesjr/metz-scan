@@ -40,6 +40,31 @@ class CopMetzViewsDeepNavigationTest < Minitest::Test
     %w[erb haml slim].each { |ext| assert_includes combined, ext }
   end
 
+  def test_project_allowed_receivers_is_supported_and_suppresses_its_chains
+    Dir.mktmpdir do |dir|
+      File.write(File.join(dir, ".rubocop.yml"), <<~YAML)
+        plugins:
+          - rubocop-metz
+        AllCops:
+          NewCops: disable
+          SuggestExtensions: false
+          Include: ["**/*.erb"]
+        Metz/ViewsDeepNavigation:
+          AllowedReceivers: [Current]
+      YAML
+      FileUtils.mkdir_p(File.join(dir, "app/views/x"))
+      File.write(File.join(dir, "app/views/x/allowed.html.erb"), "<%= Current.user.account.owner.email %>\n")
+      File.write(File.join(dir, "app/views/x/flagged.html.erb"), "<%= Session.user.account.owner.email %>\n")
+      stdout, stderr, = Open3.capture3({ "BUNDLE_GEMFILE" => File.join(REPO_ROOT, "Gemfile") },
+                                       "bundle", "exec", "rubocop", "--cache", "false", "--only",
+                                       "Metz/ViewsDeepNavigation", "--format", "json", "app/views", chdir: dir)
+      flagged = JSON.parse(stdout).fetch("files").reject { |f| f["offenses"].empty? }.map { |f| f["path"] }
+
+      refute_match(/does not support/, stderr)
+      assert_equal ["app/views/x/flagged.html.erb"], flagged
+    end
+  end
+
   def test_metadata_dsl_is_populated
     meta = RuboCop::Cop::Metz::ViewsDeepNavigation.metz_metadata
 
