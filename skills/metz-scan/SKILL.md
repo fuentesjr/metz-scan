@@ -137,9 +137,9 @@ Run the rest once, after your changes are complete, not after every edit.
 
 Do not make these, even when a finding disappears:
 
-- Moving code where the scan does not look: an excluded directory, a
-  non-Ruby file such as an ERB template, or a directory you add to
-  `AllCops: Exclude`.
+- Moving code where the scan does not look, or looks less: an excluded
+  directory, an ERB, HAML, or Slim template (only the view cops check them),
+  or a directory you add to `AllCops: Exclude`.
 - Renaming a `*Service` class, or moving an operation out of `app/services`
   or `app/operations`, so a name- or path-scoped cop stops matching.
 - Splitting a method into position-named helpers (`step_1`, `build_part_2`,
@@ -182,10 +182,15 @@ same reason recurs, ask the human whether to add a per-cop `Exclude`.
 
 ## Exit status and output
 
-- `0` no findings; `1` findings reported. Exit status `64` is a usage error
-  (missing path, unknown option, invalid format): fix the command. `2` means
-  RuboCop failed, for example on an invalid `.rubocop.yml`: read stderr, fix
-  the config or environment, rerun. Neither is a finding.
+- `0` at least one file checked and no findings; `1` findings reported.
+  Exit status `64` is a usage error (missing path, unknown option, invalid
+  format): fix the command. `2` means the scan could not check the code: a
+  RuboCop error (a cop raised, an unreadable file, or a `.rubocop.yml` at the
+  root or in a subdirectory that is unreadable, has ERB that fails to
+  evaluate, is not valid YAML, or names a missing `inherit_from` file; with
+  `--all-cops`, also any config RuboCop rejects, such as an unknown cop name),
+  an internal `metz-scan` error, or no files scanned. It wins over findings and leaves stdout without a report:
+  read stderr, fix the cause, rerun. Neither is a finding.
 - Stdout holds the report; stderr holds `metz-scan: note:` lines and errors.
   A note about an uninstalled `inherit_gem` means that gem's `Exclude` was
   skipped; do not install it. If path-scoped cops did not check files under a
@@ -201,9 +206,11 @@ The default scan runs only `Metz/*` cops at stock thresholds. From the
 project's `.rubocop.yml` it reads only file scope (`AllCops: Exclude`,
 per-cop `Include`/`Exclude`), `Enabled: false` for `Metz/*` cops, the
 `Metz` department, and `MetzProject/*` analyzers, and
-`AllCops: TargetRubyVersion`. `--all-cops` runs the
-full RuboCop suite under the project config and needs the project's
-extension gems.
+`AllCops: TargetRubyVersion`. A directory scan checks Ruby files plus ERB,
+HAML, and Slim view templates under `app/views`; they count toward the
+scorecard's `N/M files clean`. `--all-cops` runs the full RuboCop suite under
+the project config, with RuboCop's own file discovery, and needs the
+project's extension gems.
 
 It also runs the default project analyzers `MetzProject/RepeatedBranching`
 and `MetzProject/ServiceSoup`; treat their findings like any cop finding.
@@ -233,4 +240,6 @@ shows findings inline on GitHub pull requests; exit status `1` fails the
 step unless the workflow sets `continue-on-error`. No `Metz/*` cop
 autocorrects, so `--auto-fix` matters only with `--all-cops`; `--unsafe`
 adds unsafe corrections, and `--dry-run` prints the diff and restores the
-files, which are rewritten during the run. Preview before applying.
+files, which are rewritten during the run. Preview before applying: if an
+in-place run exits `2`, corrections already written stay on disk, while
+`--dry-run` leaves files unchanged.

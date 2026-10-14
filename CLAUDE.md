@@ -32,7 +32,8 @@ Key paths:
 - `lib/metz_scan/cli.rb` dispatches to `lib/metz_scan/commands/{scan,report,rules,explain,project_analyzers}.rb`.
 - `lib/metz_scan/commands/scan/runner.rb` — default scan is Metz-only: it asks
   RuboCop for target files using the *project's* config (honoring
-  `AllCops: Exclude`, per #33), then runs those files with
+  `AllCops: Exclude`, per #33), adds ERB/HAML/Slim templates under `app/views`
+  found in directory arguments, then runs those files with
   `--force-default-config --only Metz`. `--all-cops` runs the full stock suite.
 - Project analyzers live in `lib/metz_scan/analyzers/`. Two classes:
   AST-only (`service_soup.rb`, `repeated_branching.rb`,
@@ -122,9 +123,9 @@ no separate push run; their PR run covers them.
 - `.rubocop.yml` is ERB and excludes all `test/fixtures/*` app trees. To scan a
   fixture app manually, copy it outside the repo first (mktemp pattern in
   RELEASE_CHECKLIST.md and CI).
-- `scan` exit 1 means "findings reported", not a crash. Exit 2 is a RuboCop
-  failure and 64 a usage error in any subcommand; any other nonzero exit is
-  a crash.
+- `scan` exit 1 means findings were reported. `scan` exits 2 when it could
+  not check the code: a RuboCop error, an internal error, or no files
+  scanned. 64 is a usage error in any subcommand.
 - Version bumps touch both `lib/metz_scan/version.rb` and
   `rubocop-metz/lib/rubocop/metz/version.rb`, plus `Gemfile.lock`;
   release-issue dry-run expectations in tests pin the version string.

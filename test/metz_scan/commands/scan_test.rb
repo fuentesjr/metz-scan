@@ -340,6 +340,7 @@ module MetzScan
       def test_default_scan_honors_project_all_cops_excludes_for_syntax_files
         write_excluding_project_config
         write_template_fixture
+        write_clean_file
         assert_default_scan_has_no_template_syntax_offenses
       end
 
@@ -372,6 +373,11 @@ module MetzScan
 
       def write_metz_violating_fixture
         File.write(metz_violating_path, ScanCopSelectionTest::METZ_VIOLATING_FIXTURE)
+      end
+
+      # Zero-file scans exit 2, so one checked file keeps the exclusion observable.
+      def write_clean_file
+        File.write(File.join(@tmpdir, "clean.rb"), "# frozen_string_literal: true\n\nCLEAN = 1\n")
       end
 
       def write_template_fixture

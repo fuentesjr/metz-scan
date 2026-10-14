@@ -118,18 +118,33 @@ bundle exec metz-scan explain Metz/DemeterTrainWreck
 bundle exec metz-scan scan app lib
 ```
 
-`scan` exits `1` when it reports findings — that is the tool working, not a
-crash. Exit `2` means RuboCop failed, including on an invalid project
-`.rubocop.yml`, and `64` means a usage error (unknown
-option, missing or nonexistent path, invalid format, or a report file that is
-not a JSON report from `scan --format json` or `rubocop --format json`) in any
-subcommand.
+`scan` exits `0` when it checked at least one file and found nothing, and `1`
+when it reports findings — that is the tool working, not a crash.
+
+Exit `2` means `scan` could not check the code: a RuboCop error (a cop raised,
+an autocorrect never converged, a file could not be read, or an invalid
+configuration file), an internal error in `metz-scan`, or no files scanned. In
+default mode, an invalid configuration file is a project `.rubocop.yml` or a
+nested `.rubocop.yml` in a subdirectory that cannot be read, has ERB that fails
+to evaluate, is not valid YAML, or names a missing `inherit_from` file; default
+mode reads only file scope from it, so it does not reject an unknown cop name.
+`--all-cops` also rejects whatever RuboCop finds invalid, such as an unknown cop
+name. Errors take precedence over findings. The error goes to stderr and stdout
+gets no report in any format, so a saved report never looks clean when code
+went unchecked. With in-place `--auto-fix`, corrections RuboCop already wrote
+stay on disk when the scan exits `2`; `--dry-run` leaves files unchanged.
+
+`64` means a usage error (unknown option, missing or nonexistent path, invalid
+format, or a report file that is not a JSON report from `scan --format json` or
+`rubocop --format json`) in any subcommand.
 
 Text `scan` output ends with a `Summary` scorecard. The compliance percentage
 is the share of inspected files with no `Metz/*` rule offenses; advisory
 `MetzProject/*` project-analyzer findings do not make a file unclean. The same
 summary also reports total offenses across cops, per-cop counts, and the five
 files with the most reported offenses. Clean scans print `No offenses found.`
+View templates a directory scan checks count as inspected files, so they
+appear in the `N/M files clean` count.
 
 To see a guaranteed finding on a bundled fixture, run this from a checkout of
 this repository (the `test/fixtures` path exists only in the repo):
@@ -224,6 +239,12 @@ bundle exec metz-scan scan . --project-analyzers
 bundle exec metz-scan scan . --project-analyzers --format json
 bundle exec metz-scan scan . --project-analyzers --format sarif
 ```
+
+In default mode, a directory scan checks Ruby files plus ERB, HAML, and Slim
+view templates under `app/views`; other templates, such as generator or config
+templates, are not Ruby and are skipped. Template files passed explicitly are
+checked in every mode.
+`--all-cops` uses RuboCop's own file discovery.
 
 In default mode, `scan` reports stock Metz opinion on your project: it honors
 your project's file *scope* — `AllCops: Exclude` and per-cop `Include` and
