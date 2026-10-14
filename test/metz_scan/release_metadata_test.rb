@@ -28,6 +28,12 @@ module MetzScan
       assert_runtime_file_list rubocop_metz_spec, expected: "lib/rubocop/metz/plugin.rb"
     end
 
+    def test_metz_scan_gem_omits_dev_only_calibration_tooling
+      calibration_files = metz_scan_spec.files.select { |path| path.include?("metz_scan/calibration") }
+
+      assert_empty calibration_files
+    end
+
     def test_gemspecs_evaluate_from_non_repo_cwd
       Dir.mktmpdir("metz-scan-gemspec-cwd") do |dir|
         assert_metz_scan_loads_from_cwd(dir)
@@ -80,7 +86,7 @@ module MetzScan
     end
 
     def metz_scan_runtime_file
-      "lib/metz_scan/calibration/project_analyzer_evidence_runner/markdown_renderer.rb"
+      "lib/metz_scan/commands/scan/project_analyzer_runner.rb"
     end
 
     def runtime_excluded_path?(spec)

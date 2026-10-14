@@ -79,7 +79,7 @@ independent" is the classic cheap-model failure here.
 | `check_tracker_queue` fails | Make the top Next items actionable through `trk` (`trk next add`, `trk next move <n> <pos>`, `trk next demote <n> --to <slug>`). Never hand-edit `.trk/STATE.md`, delete the check, or pad with fake tasks. |
 | `metz-scan scan` exits 1 | Findings were reported. Not an error. Exit >1 is an error. |
 | `check_dogfood` fails after a cop edit | This repo now offends its own cop. Fix the repo code or reconsider the cop change; never add a suppression. |
-| Tests can't find `rubocop/metz` | Missing load paths — use `-Ilib -Itest -Irubocop-metz/lib -Irubocop-metz/test`. |
+| Tests can't find `rubocop/metz` | Missing load paths — use `-Ilib -Itools/lib -Itest -Irubocop-metz/lib -Irubocop-metz/test`. |
 | Scanning a fixture app prints nothing | Repo `.rubocop.yml` excludes fixture trees; copy the fixture to a mktemp dir first. |
 
 ## Committing

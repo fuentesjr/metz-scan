@@ -22,7 +22,7 @@ and the gates that most often surprise agents.
 
 ```bash
 # 1. Focused tests for what you changed (fastest signal)
-bundle exec ruby -Ilib -Itest -Irubocop-metz/lib -Irubocop-metz/test test/path/to_test.rb
+bundle exec ruby -Ilib -Itools/lib -Itest -Irubocop-metz/lib -Irubocop-metz/test test/path/to_test.rb
 
 # 2. Lint — the repo lints itself with its own cops; bin/check_dogfood catches
 #    cop changes that make this repo's own code offend

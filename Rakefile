@@ -4,7 +4,7 @@ require "rake/testtask"
 require_relative "test/support/test_file_groups"
 
 def configure_test_task(task, files)
-  task.libs.push("rubocop-metz/lib", "rubocop-metz/test", "lib", "test")
+  task.libs.push("rubocop-metz/lib", "rubocop-metz/test", "lib", "tools/lib", "test")
   task.test_files = files
   task.warning = false
 end

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require_relative "../../project_index"
-require_relative "../../commands/scan/project_analyzer_runner"
+require "metz_scan/project_index"
+require "metz_scan/commands/scan/project_analyzer_runner"
 
 module MetzScan
   module Calibration

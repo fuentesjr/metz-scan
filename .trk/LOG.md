@@ -217,3 +217,6 @@ MFA now required for gem pushes (owner decision 2026-10-13): both gemspecs set r
 
 ## 2026-10-14T04:41Z log
 Retired docs/archive, docs/maintainers/metz_scan_design.md and docs/maintainers/implementation-notes.md (owner decision 2026-10-13) after moving their live facts into CLAUDE.md, the skills, the operator playbook, docs and code comments. The skills orient from trk status --json; git history keeps the text.
+
+## 2026-10-14T04:41Z log
+Calibration pipeline moved to tools/lib/metz_scan/calibration (owner decision 2026-10-13), so the metz-scan gem no longer ships it. The three bin scripts and the Rakefile load tools/lib; release_metadata_test asserts the gem leaves it out.

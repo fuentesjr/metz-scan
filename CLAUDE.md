@@ -44,7 +44,8 @@ Key paths:
   (`RubydexBackend` when the optional `rubydex` bundle group is installed,
   `NullBackend` otherwise — index-backed analyzers then silently contribute
   zero findings).
-- Calibration pipeline: `lib/metz_scan/calibration/`, driven by
+- Calibration pipeline: `tools/lib/metz_scan/calibration/` (dev-only, kept
+  out of `lib/` so the gem does not ship it), driven by
   `bin/check_project_analyzer_calibration`, with the tracked target manifest
   and baseline in `docs/calibration/project_analyzer_{targets,baseline}.yml`.
 - Output renderers (text/sarif/gh-annotations) under
@@ -71,7 +72,7 @@ bin/check_dogfood             # metz-scan on this repo; requires rubydex group; 
 Focused single test file (Rakefile load paths at `Rakefile:7`):
 
 ```bash
-bundle exec ruby -Ilib -Itest -Irubocop-metz/lib -Irubocop-metz/test path/to_test.rb
+bundle exec ruby -Ilib -Itools/lib -Itest -Irubocop-metz/lib -Irubocop-metz/test path/to_test.rb
 ```
 
 Ruby >= 4.0 (gemspecs), Bundler 4.0.8. Development and CI use the Ruby in
