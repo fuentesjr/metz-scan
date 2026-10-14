@@ -204,7 +204,10 @@ same reason recurs, ask the human whether to add a per-cop `Exclude`.
 
 The default scan runs only `Metz/*` cops at stock thresholds. From the
 project's `.rubocop.yml` it reads only file scope (`AllCops: Exclude`,
-per-cop `Include`/`Exclude`), `Enabled: false` for `Metz/*` cops, the
+per-cop `Exclude`, and a per-cop `Include` that narrows a cop but cannot
+widen it; `Metz/ControllersTooManyDirectCollaborators` and
+`Metz/ViewsDeepNavigation` ignore `Include` and keep their stock scope plus
+engines and nested apps), `Enabled: false` for `Metz/*` cops, the
 `Metz` department, and `MetzProject/*` analyzers, and
 `AllCops: TargetRubyVersion`. A directory scan checks Ruby files plus ERB,
 HAML, and Slim view templates under `app/views`; they count toward the

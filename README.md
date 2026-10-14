@@ -247,8 +247,11 @@ checked in every mode.
 `--all-cops` uses RuboCop's own file discovery.
 
 In default mode, `scan` reports stock Metz opinion on your project: it honors
-your project's file *scope* — `AllCops: Exclude` and per-cop `Include` and
-`Exclude` lists for `Metz/*` cops — and `Enabled: false` for a `Metz/*` cop
+your project's file *scope* — `AllCops: Exclude`, per-cop `Exclude` lists for
+`Metz/*` cops, and a per-cop `Include` that narrows a `Metz/*` cop (it cannot
+widen one; `Metz/ControllersTooManyDirectCollaborators` and
+`Metz/ViewsDeepNavigation` ignore it and keep their stock scope plus engines
+and nested apps) — and `Enabled: false` for a `Metz/*` cop
 or the whole `Metz` department, but uses stock Metz cop configuration for thresholds, severity, and opt-in
 status, so a project cannot weaken a Metz cop and get a rosier report. Every
 finding that project scope or `Enabled: false` hides is listed in the
@@ -377,7 +380,8 @@ see [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md).
 ## Configuration
 
 The default scan reads three kinds of settings from `.rubocop.yml`: file scope
-(`AllCops: Exclude` and per-cop `Include` and `Exclude`), `Enabled: false`
+(`AllCops: Exclude`, per-cop `Exclude`, and a per-cop `Include` that narrows
+a cop), `Enabled: false`
 for a `Metz/*` cop or the `Metz` department, and `AllCops: TargetRubyVersion`.
 Every other cop setting stays at its stock value, so a project cannot weaken a
 Metz cop and get a rosier report.
@@ -443,7 +447,7 @@ Metz/DemeterTrainWreck:
 
 | Setting | Where | Notes |
 | --- | --- | --- |
-| File scope | `.rubocop.yml` (`AllCops: Exclude`, per-cop `Include` and `Exclude`) | Honored by every scan mode. |
+| File scope | `.rubocop.yml` (`AllCops: Exclude`, per-cop `Include` and `Exclude`) | `AllCops: Exclude` and per-cop `Exclude` are honored by every scan mode. A per-cop `Include` is honored in full by `--all-cops` and plain `rubocop`; the default scan lets it narrow a `Metz/*` cop but not widen it, and `Metz/ControllersTooManyDirectCollaborators` and `Metz/ViewsDeepNavigation` ignore it there. |
 | `Enabled: false` | `.rubocop.yml` (`Metz/*` cop, `Metz` department, or `MetzProject/*` analyzer) | Honored by every scan mode. The suppression ledger lists hidden `Metz/*` findings in the default scan and hidden `MetzProject/*` findings in every mode. |
 | Other cop settings (`Max`, `Severity`, allow-lists) | `.rubocop.yml` | Honored only by `--all-cops` and plain `rubocop`; the default scan uses stock values. |
 | Output format | `metz-scan scan --format text\|json\|sarif\|gh-annotations` | `text` is for humans; `json`/`sarif` are for tools; `gh-annotations` emits GitHub Actions workflow annotations. |
