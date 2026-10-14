@@ -5,6 +5,7 @@ require "minitest/autorun"
 require "tmpdir"
 
 require "metz_scan/commands/scan/project_analyzer_runner"
+require "support/test_process_paths"
 
 module MetzScan
   module Commands
@@ -146,7 +147,7 @@ module MetzScan
       end
 
       def fixture_path
-        "scan-test-tmp/project_analyzer_runner.rb"
+        "app/models/project_analyzer_runner.rb"
       end
 
       def fake_offense
@@ -296,7 +297,7 @@ module MetzScan
       end
 
       def tmp_root
-        File.expand_path("../../../scan-test-tmp", __dir__)
+        TestProcessPaths.scan_tmp_root
       end
     end
 

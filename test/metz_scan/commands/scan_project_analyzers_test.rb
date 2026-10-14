@@ -7,6 +7,7 @@ require "stringio"
 require "tmpdir"
 
 require "metz_scan/commands/scan"
+require "support/test_process_paths"
 
 module MetzScan
   module Commands
@@ -174,7 +175,7 @@ module MetzScan
       end
 
       def tmp_root
-        File.expand_path("../../../scan-test-tmp", __dir__)
+        TestProcessPaths.scan_tmp_root
       end
 
       def configure_rubocop_cache_root
@@ -289,7 +290,7 @@ module MetzScan
       end
 
       def tmp_root
-        File.expand_path("../../../scan-test-tmp", __dir__)
+        TestProcessPaths.scan_tmp_root
       end
 
       def configure_rubocop_cache_root
