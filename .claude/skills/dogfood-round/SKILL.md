@@ -1,12 +1,11 @@
 ---
 name: dogfood-round
-description: "Run a qualitative dogfooding round of released metz-scan gems against real external codebases and judge the output against the headline-UX rubric (rubygems.org exit criterion 2), or run the agent-loop variant that judges how a coding agent uses metz-scan on a real task. Use when the tracker queue calls for a dogfooding round, after a release carrying UX fixes, or when the user asks to evaluate scan output quality on real projects."
+description: "Run a qualitative dogfooding round of released metz-scan gems against real external codebases and judge the output against the headline-UX rubric (no new headline-UX-class defects), or run the agent-loop variant that judges how a coding agent uses metz-scan on a real task. Use when the tracker queue calls for a dogfooding round, after a release carrying UX fixes, or when the user asks to evaluate scan output quality on real projects."
 ---
 
 # Dogfooding round
 
-This is the project's direction engine (`.trk/STATE.md` Current
-Direction): install the *released* gems the way a user would, run them on real
+This is the project's direction engine (tracker Goal; `trk status --json`): install the *released* gems the way a user would, run them on real
 codebases, and judge whether the output would embarrass the tool. The
 2026-07-05 round (`docs/dogfooding/2026-07-05-round-0.5.0.md`) is the canonical
 example — match its method and its notes format.
@@ -38,7 +37,7 @@ example — match its method and its notes format.
 
 ## Rubric — two classes of finding
 
-**Headline-UX defects (block the exit criterion):** wrong default output,
+**Headline-UX defects (fail the round):** wrong default output,
 misleading or duplicated findings, broken quickstart. Examples that qualified:
 default scan ignoring project `AllCops: Exclude` (#33), collaborator cop
 counting rescue classes/own constants/stdlib and mislabeling methods (#34).
@@ -109,9 +108,10 @@ uses the tool, not only what the tool prints.
 
 ## Output
 
-1. Write `docs/dogfooding/YYYY-MM-DD-round-X.Y.Z.md` matching the 0.5.0 file's
-   structure: setup, target table, headline-UX defects (with repro), quality
-   notes, findings that earned their space, verdict against exit criterion 2.
+1. Write `docs/dogfooding/YYYY-MM-DD-round-X.Y.Z.md` matching the structure
+   of the canonical 2026-07-05 round (`docs/dogfooding/2026-07-05-round-0.5.0.md`):
+   setup, target table, headline-UX defects (with repro), quality notes,
+   findings that earned their space, and the verdict defined in item 2.
 2. Verdict is binary: **passed** (no new headline-UX-class defects) or **not
    passed** (list them). Quality nits do not fail the round.
 3. Draft GitHub issues for each headline defect — filing needs user approval

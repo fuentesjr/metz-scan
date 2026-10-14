@@ -8,7 +8,6 @@ repository as well. The two gems do **not** depend on each other for this docume
 shared package, no runtime link). Copies may drift; that is accepted for now.
 
 Related in *this* repo: [README.md](../README.md),
-[metz_scan_design.md](maintainers/metz_scan_design.md),
 cops under `rubocop-metz/`, project analyzer `MetzProject/ServiceSoup`.
 
 ## Why this exists
@@ -195,8 +194,8 @@ Implement under **metz-scan / rubocop-metz** with `why_it_matters` + `suggested_
 |----|------|---------|------|--------|
 | R1 | **Single public entry** on classes in operation paths (`app/services/**`, `app/operations/**`, configurable) | I3 multi-method bags | `Metz/OperationsTooManyPublicMethods` | **shipped** |
 | R2 | **God `*Service` class** — `*Service` name + multiple public methods | I3 | `Metz/GodServiceClass` | **shipped** |
-| R3 | **Trivial CRUD operation** — body is essentially one create/update/destroy (heuristic) | I1 | metz-scan | planned |
-| R4 | **Fat operation body** — `call`/`perform` over line or branch thresholds | I4 / thinness failure | metz-scan | planned |
+| R3 | **Trivial CRUD operation** — body is essentially one create/update/destroy (heuristic) | I1 | metz-scan | **rejected** (2026-07-20): one-write syntax does not distinguish a CRUD wrapper from an operation that also performs I/O |
+| R4 | **Fat operation body** — `call`/`perform` over line or branch thresholds | I4 / thinness failure | metz-scan | **rejected** (2026-07-20): overlaps `Metz/MethodsTooLong` |
 | R5 | **Concern bloat** — concern file method/line thresholds | IC1 | metz-scan | planned |
 | R6 | **Too many app concerns** on one class | IC4 | metz-scan | planned |
 | R7 | ~~Service object *presence* under `app/services` + `call`~~ | n/a (thoughtbot-era) | rails-audit (historical) | **removed** there; never a metz-scan goal |
@@ -206,7 +205,7 @@ Implement under **metz-scan / rubocop-metz** with `why_it_matters` + `suggested_
 | ID | Rule | Detects | Home | Status |
 |----|------|---------|------|--------|
 | P1 | **Service soup** — one method coordinates ≥N distinct service-style calls | I5 | `MetzProject/ServiceSoup` | **shipped** |
-| P2 | **Operation directory density** — high operations/models ratio or absolute count bands | I7 portfolio | metz-scan | planned |
+| P2 | **Operation directory density** — high operations/models ratio or absolute count bands | I7 portfolio | metz-scan | **deferred**; see [Operation-role classifier checkpoint](project-analyzer-calibration.md#operation-role-classifier-checkpoint) |
 | P3 | **Concern soup** — portfolio of bloated/over-included concerns | IC2, IC4 | metz-scan | planned |
 | P4 | **Workflow-in-mixin** — concern defines callbacks + multi-model writes / job enqueues (heuristic) | IC2 | metz-scan | planned (phase 2) |
 
@@ -216,7 +215,7 @@ Neither product depends on the other. Roles below are coordination *intent*, not
 
 | ID | Product | Responsibility | Status |
 |----|---------|----------------|--------|
-| M1 | **metz-scan** | Design coach: shape abuse (R1–R6), portfolio soup (P*), explainable findings | R1/R2/P1 shipped; rest planned |
+| M1 | **metz-scan** | Design coach: shape abuse (R1–R6), portfolio soup (P*), explainable findings | R1/R2/P1 shipped; R3/R4 rejected; P2 deferred; rest planned |
 | A1 | **rails-audit** | Auditor: security, correctness, Rails idiom, schema, complexity, size signals | independent product |
 | A2 | **rails-audit** | Fat model / fat controller as **size** signals (not thoughtbot parity) | shipped there |
 | A3 | **rails-audit** | No service-object *presence* cop | done there |
@@ -239,7 +238,7 @@ Neither product depends on the other. Roles below are coordination *intent*, not
 1. **Explain the why** on every rule (`why_it_matters`, `suggested_next_moves`, `metz-scan explain` for `Metz/*` cops).
 2. **Enforce illegitimacy**, not presence — multi-public-method bags, god `*Service`, soup; not “you have a service class.”
 3. **This document** is the full standard for readers of metz-scan alone; no need to open rails-audit.
-4. Planned R3–R6 / P2–P4 stay in this product’s roadmap.
+4. Planned R5–R6 and P3–P4 stay in this product’s roadmap. R3 and R4 are rejected and P2 is deferred (§7.2, §7.3).
 
 ---
 

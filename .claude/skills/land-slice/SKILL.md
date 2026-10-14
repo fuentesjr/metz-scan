@@ -95,9 +95,13 @@ message instead (see `AGENTS.md`).
   backlog (CLAUDE.md Quality bar).
 
 Never commit a tracker-only change unless it is a deliberate direction change.
-If the slice needs more durable detail than STATE should carry, add a short
-section to `docs/maintainers/implementation-notes.md` (task, scope boundaries, decisions,
-verification) — match the existing entries' shape and brevity.
+Route durable detail by kind:
+
+- Slice detail beyond what Next and the Goal carry (scope boundaries,
+  decisions, verification): `trk log`.
+- Durable code-level design exceptions: a DDR under `docs/ddrs/`.
+- Dogfooding rounds: `docs/dogfooding/`.
+- Calibration evidence: `docs/project-analyzer-calibration.md`.
 
 ## Red-green discipline
 

@@ -4,9 +4,7 @@ Long-lived notes that are not the live product surface:
 
 | File | Role |
 | --- | --- |
-| [implementation-notes.md](implementation-notes.md) | Session decisions, tradeoffs, verification status |
 | [debt.md](debt.md) | Known debt and deferred work |
-| [metz_scan_design.md](metz_scan_design.md) | Early product/design history |
 | [../releases/](../releases/README.md) | Release notes index |
 | [../rubydex-mcp-spike.md](../rubydex-mcp-spike.md) | Rubydex MCP dev-tooling spike |
 | [../sandi-metz-project-analyzer-candidates.md](../sandi-metz-project-analyzer-candidates.md) | Project-analyzer candidate list |

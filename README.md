@@ -549,7 +549,7 @@ For durable code-level design exceptions, write a lightweight Design Decision
 Record before finalizing the exception. See
 [docs/design-decision-records.md](docs/design-decision-records.md).
 
-Working papers (session notes, design history, debt list) live under
+Working papers, including the debt list, live under
 [docs/maintainers/](docs/maintainers/).
 
 ## License

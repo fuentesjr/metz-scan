@@ -214,3 +214,6 @@ Full-repo review (2026-10-13, read-only, autobots) and owner decisions. Baseline
 
 ## 2026-10-14T04:41Z log
 MFA now required for gem pushes (owner decision 2026-10-13): both gemspecs set rubygems_mfa_required, Gemspec/RequireMFA is enabled again, and the release checklist, its issue template and the release skill ask the owner to confirm rubygems.org MFA at the "UI and API" level before pushing.
+
+## 2026-10-14T04:41Z log
+Retired docs/archive, docs/maintainers/metz_scan_design.md and docs/maintainers/implementation-notes.md (owner decision 2026-10-13) after moving their live facts into CLAUDE.md, the skills, the operator playbook, docs and code comments. The skills orient from trk status --json; git history keeps the text.

@@ -485,9 +485,9 @@ Metz/DemeterTrainWreck:
 Notes:
 
 - `Max: 4` permits chains up to four object-graph hops. The threshold
-  comes from `metz_scan_design.md` and Sandi Metz's
-  "demeter-as-a-smell" reading: three or fewer hops is the comfortable
-  range, four is borderline, five and above is a refactor smell.
+  follows Sandi Metz's "demeter-as-a-smell" reading: three or fewer
+  hops is the comfortable range, four is borderline, five and above is a
+  refactor smell.
 - `AllowedValueObjects` is informational in v0.1: the actual value-object
   recognition is hard-wired in `LITERAL_MAP` and `METHOD_RETURN_TYPES`.
   A v0.2 may consult this list to disable, e.g., `Hash` recognition for

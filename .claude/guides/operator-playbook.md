@@ -2,8 +2,9 @@
 
 How an executor model (Claude Opus/Sonnet/Haiku, or a GPT/Codex session) uses
 this workspace safely. Read this, then `CLAUDE.md` (the canonical shared brief,
-whichever harness you run in), then `trk status` / `.trk/STATE.md` — in that
-order — before touching code.
+whichever harness you run in), then `trk status --json` (goal, Next, backlog
+health) and `trk backlog list --json` (parked work) — in that order — before
+touching code.
 
 Harness note: Claude Code auto-discovers the repo skills from
 `.claude/skills/`; Codex discovers the same skills through the
@@ -20,8 +21,9 @@ in a preserved clean clone.
 
 ## Session start (every session, ~5 minutes)
 
-1. Run `trk status` and read `.trk/STATE.md` (Goal, Next, Backlog). Your
-   task must map to a Next item, a filed issue, or an explicit user instruction.
+1. Run `trk status --json` (goal and Next) and `trk backlog list --json`
+   (backlog notes). Your task must map to a Next item, a filed issue, or an
+   explicit user instruction.
    If it maps only to parked backlog, stop and tell the user — do not proceed.
 2. Check `origin/main` CI: `gh run list --repo fuentesjr/metz-scan --branch main --limit 3`.
    Red main = your task changes to triaging the red run (standing rule).
@@ -36,7 +38,7 @@ in a preserved clean clone.
 | Anything involving versions, tags, gem push | the `release` skill |
 | Evaluating scan output on real codebases | the `dogfood-round` skill |
 | Just solved something that took >1 attempt | the `extract-approach` skill |
-| Executing a queued (Next) task | `trk status`, then the top actionable `## Next` item in `.trk/STATE.md` |
+| Executing a queued (Next) task | the top actionable item in `trk next list --json` |
 
 The skills encode ordering (e.g. commit BEFORE `bin/check_ci_parity`, publish
 `rubocop-metz` BEFORE `metz-scan`). Reordering steps because they "seem
@@ -74,7 +76,7 @@ independent" is the classic cheap-model failure here.
 | --- | --- |
 | `bin/check_ci_parity` fails but local suite is green | cd into the printed `clean clone preserved at` path, run the printed `next action:` command there. Cause is usually the optional `rubydex` group or an untracked file. Never "fix" by editing the parity script. |
 | `check_sample_app_frozen` fails | You (or a subagent) touched the frozen fixture. Revert it, or if intended, regenerate `.frozen.sha256` in the same commit. |
-| `check_tracker_queue` fails | Rewrite the top `.trk/STATE.md` Next items to be actionable — do not delete the check or pad with fake tasks. |
+| `check_tracker_queue` fails | Make the top Next items actionable through `trk` (`trk next add`, `trk next move <n> <pos>`, `trk next demote <n> --to <slug>`). Never hand-edit `.trk/STATE.md`, delete the check, or pad with fake tasks. |
 | `metz-scan scan` exits 1 | Findings were reported. Not an error. Exit >1 is an error. |
 | `check_dogfood` fails after a cop edit | This repo now offends its own cop. Fix the repo code or reconsider the cop change; never add a suppression. |
 | Tests can't find `rubocop/metz` | Missing load paths — use `-Ilib -Itest -Irubocop-metz/lib -Irubocop-metz/test`. |

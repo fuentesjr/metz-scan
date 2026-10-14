@@ -21,8 +21,8 @@ hand, in the same order.
 - Patch (`0.5.0` → `0.5.1`): pure defect fixes, no default-behavior change.
 - Minor: any default-behavior change or new user-visible surface. Precedent:
   #31 changed default scan output, forcing `0.5.0` instead of `0.4.1`
-  (`docs/maintainers/implementation-notes.md` 2026-07-05).
-- Do not use `1.0.0`; it remains reserved (`.trk/STATE.md` goal).
+  (`docs/releases/v0.5.0.md`, Highlights and Release Readiness).
+- Do not use `1.0.0`; it remains reserved (tracker Goal; `trk status --json`).
 
 ## Phase 2 — prep commit (one commit, shape of `3ec8f29`)
 
@@ -32,7 +32,9 @@ Touch exactly these surfaces:
 2. `Gemfile.lock` — run `bundle install`; the gemspec pin
    `"~> #{MetzScan::VERSION}"` (the `add_dependency "rubocop-metz"` line in
    `metz-scan.gemspec`) carries the PATH constraint automatically. Do not
-   hand-edit the lockfile.
+   hand-edit the lockfile, and reject a Dependabot PR that rewrites the
+   lockfile's `rubocop-metz` PATH constraint from `~>` to `=` (see closed
+   PR #46).
 3. Release-issue dry-run expectations: `test/metz_scan/create_release_issue_test.rb`
    pins the version string (`release_metadata_test.rb` compares the gemspecs
    and needs no edit).
@@ -55,7 +57,9 @@ with `gh run list --repo fuentesjr/metz-scan --branch main --limit 3`.
 
 ## Phase 3 — tag, GitHub Release, publish (authorization required)
 
-Ask the user for release authorization, then follow
+Ask the user for release authorization. Before cutting the GitHub Release,
+get the owner's approval of the exact `docs/releases/vX.Y.Z.md` text; that
+file becomes the GitHub Release body. Then follow
 `RELEASE_CHECKLIST.md` sections "Source Tag and GitHub Release" and
 "Publish Decision" exactly. Non-obvious constraints:
 
@@ -87,9 +91,11 @@ label for #34 in `0.5.1`). Then:
   still open (issue writes need user approval — batch the ask with the publish
   authorization).
 - `rm -f metz-scan-*.gem rubocop-metz/rubocop-metz-*.gem`.
-- Record completion: `trk log` for the release plus a short
-  `docs/maintainers/implementation-notes.md` entry (shape of "2026-07-06: v0.5.1 release
-  completion"). This record commit is real project work, not tracker churn.
+- Record completion with a `trk log` entry for the release, shaped like the
+  v0.6.0 entry in `.trk/LOG.md` (2026-10-04T01:22Z): tag and the SHA it points
+  to, GitHub Release live, publish order, and `bin/check_published_gem` PASS.
+  Recording a release is the direction-change exception to the no
+  tracker-only commit rule.
 
 ## Known failure modes
 

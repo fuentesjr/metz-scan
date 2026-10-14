@@ -5,6 +5,9 @@ require "rubocop"
 module MetzScan
   class ProjectIndex
     class RubydexBackend
+      # AST overlay for `module_function` visibility: Rubydex 0.2.8 aborted on
+      # that form. Rubydex 0.3.0 and later resolve it, but the overlay stays as
+      # the conservative path.
       module MethodVisibility
         def visibility_for(declaration, attributes)
           return module_function_visibility(attributes) if module_function_method?(attributes)

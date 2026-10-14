@@ -54,7 +54,7 @@ Key paths:
 ## Commands
 
 ```bash
-bundle exec rake              # full suite (~710 runs as of 2026-10)
+bundle exec rake              # full suite (~810 runs as of 2026-10)
 bundle exec rake test:fast    # groups defined in test/support/test_file_groups.rb
 bundle exec rake test:slow    # subprocess/integration tests
 bundle exec rubocop           # repo lints itself with its own plugin
@@ -164,13 +164,14 @@ no separate push run; their PR run covers them.
 ## Escalation — stop and ask the user before
 
 - Publishing gems, creating tags, cutting GitHub Releases (explicit release
-  authorization is a standing rule; see
-  `docs/maintainers/implementation-notes.md`).
+  authorization is a standing rule; see the Hard boundary paragraph in
+  `.claude/skills/release/SKILL.md`).
 - Filing or closing GitHub issues (issue creation was permission-blocked by
   policy on 2026-07-05; drafts need user approval).
 - Changing analyzer thresholds, statuses, default-output policy, or promoting
-  candidate analyzers — all explicitly parked in `.trk/STATE.md` backlog.
-- Adding app-specific suppressions or new calibration targets (parked).
+  candidate analyzers — the owner's tracker Goal (`trk status --json`) rules
+  these out without new generic evidence.
+- Adding app-specific suppressions or new calibration targets.
 - Adding dependencies (Sorbet was evaluated and rejected in
   `docs/spikes/sorbet-issue-26.md`; don't relitigate without new evidence).
 - Starting a new slice while `origin/main` CI is red — triage the red run
