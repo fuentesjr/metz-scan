@@ -24,6 +24,13 @@ module MetzScan
       assert_equal TestFileGroups.all_files, expected
     end
 
+    def test_slow_files_longest_first_reorders_slow_files_without_adding_any
+      ordered = TestFileGroups.slow_files_longest_first
+
+      assert_equal TestFileGroups.slow_files, ordered.sort
+      assert_equal TestFileGroups::LONGEST_SLOW_FILES, ordered.first(TestFileGroups::LONGEST_SLOW_FILES.size)
+    end
+
     private
 
     def assert_slow_file(path)

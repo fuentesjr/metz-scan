@@ -12,3 +12,6 @@ loops/
 # Personal harness state; the rest of .claude/ (skills, guides) is tracked.
 .claude/settings.local.json
 .trk/lock
+
+# Per-process scan test scratch dirs (test/support/test_process_paths.rb).
+/scan-test-tmp-*/
