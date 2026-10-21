@@ -27,6 +27,11 @@ Repo skills follow the open Agent Skills standard and are discoverable at
 For bounded autonomous runs, use `trk status --json`; it returns the goal and
 the current Next queue.
 
+Before you open a PR, and before you edit its title or body, run `/unslop` on
+the title and the body and apply its edits. The skill is at
+`.claude/skills/unslop/SKILL.md`; do not edit it (`SOURCE` records the upstream
+commit and the resync command).
+
 ## OpenAI docs instruction
 
 Always use the OpenAI developer documentation MCP server when working with the

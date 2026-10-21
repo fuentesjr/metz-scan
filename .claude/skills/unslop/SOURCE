@@ -1,0 +1,15 @@
+unslop skill from pstack by Lauren Tan, https://github.com/cursor/plugins/tree/main/pstack/skills/unslop
+MIT License, copyright (c) 2026 Lauren Tan. The full text is in LICENSE in this directory.
+Vendored runtime copy of the pstack unslop skill.
+Do not edit here; change the skill upstream, then resync.
+
+source: https://github.com/cursor/plugins/tree/main/pstack/skills/unslop
+commit: bc697d0a5a163cec979e362b601e36f5616083fd
+copied: SKILL.md
+sha256: ccab208e315ce05e2fab8eeee2f7879f1289b5c6844840b2d307adf31c79144f
+
+Resync from a local cursor/plugins checkout, then update `commit` and `sha256` above:
+
+  S=~/plugins/pstack/skills/unslop
+  cp $S/SKILL.md .agents/skills/unslop/SKILL.md
+  git -C ~/plugins log -1 --format=%H -- pstack/skills/unslop
