@@ -16,6 +16,13 @@ module MetzScan
     RELEASE_METADATA_SMOKE = "bundle exec ruby -Ilib -Itest test/metz_scan/release_metadata_test.rb"
     RELEASE_ISSUE_SMOKE = "bundle exec ruby -Ilib -Itest test/metz_scan/create_release_issue_test.rb"
     RELEASE_ISSUE_DRY_RUN = "bin/create_release_issue --dry-run"
+    PART_P_PLANTS = [
+      ["P1", "permissions:\n  contents: read\n\n", "", false],
+      ["P2", "contents: read", "\"contents\": \"write\"", false],
+      ["P4", "permissions:\n  contents: read\n", "permissions: {contents: read, pull-requests: write}\n", false],
+      ["P6", "  rubydex:\n", "  rubydex:\n    permissions: read-all\n", false],
+      ["P7", "name: CI", "name: CI", true]
+    ].freeze
 
     def test_issue_template_body_matches_release_checklist
       assert_equal canonical_checklist_body, issue_template_body
@@ -61,12 +68,25 @@ module MetzScan
       ci_single_command_steps.each { |command| assert_includes script, command }
     end
 
+    def test_ci_permissions_are_contents_read
+      text = File.read(repo_path(".github/workflows/ci.yml"))
+      assert_equal 5, PART_P_PLANTS.size
+      PART_P_PLANTS.each { |plant| assert_contents_read_plant(text, plant) }
+    end
+
     private
 
     def ci_single_command_steps
       workflow = YAML.safe_load_file(repo_path(".github/workflows/ci.yml"))
       steps = workflow.fetch("jobs").fetch("test").fetch("steps")
       steps.filter_map { |step| step["run"]&.strip }.reject { |run| run.include?("\n") }
+    end
+
+    def assert_contents_read_plant(text, plant)
+      name, pattern, replacement, pass = plant
+      workflow = YAML.safe_load(text.sub(pattern, replacement))
+      assert_equal(pass, workflow["permissions"] == { "contents" => "read" } &&
+        workflow.fetch("jobs").none? { |_, job| job.key?("permissions") }, name)
     end
 
     def release_checklists
