@@ -5,6 +5,7 @@ steps, backlog health, and recent LOG entries; `trk backlog list --json` gives
 backlog notes (including parked work). Work tracking is written
 through the `trk` CLI; see `AGENTS.md`. Standing process rules below still
 govern slice discipline. Run `bin/check_ci_parity` before any push.
+Before you open or edit a PR, run `/unslop` on its title and body (rule in `AGENTS.md`).
 
 Repo skills (canonical in `.claude/skills/`, mirrored for OpenAI/Codex via the
 `.agents/skills` symlink): `land-slice` (finish + verify + commit a slice),
