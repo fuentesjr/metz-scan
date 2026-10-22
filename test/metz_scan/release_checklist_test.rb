@@ -231,6 +231,7 @@ module MetzScan
       messages = []
       messages << JOB_VALUE unless job_values_match?(job)
       messages << "job continue-on-error" if job.key?("continue-on-error")
+      messages.concat(PrDescriptionWorkflowText.step_continue_flags(job))
       messages
     end
 
@@ -328,6 +329,11 @@ module MetzScan
       present ? [message] : []
     end
 
+    def step_continue_flags(job)
+      steps = Array(job["steps"])
+      flag(steps.any? { |step| step.key?("continue-on-error") }, "step continue-on-error")
+    end
+
     def before_flags(steps, index)
       checkout = [PrDescriptionWorkflow::CHECKOUT]
       return [PrDescriptionWorkflow::JOB_VALUE] unless steps[0...index] == checkout
@@ -360,7 +366,7 @@ module MetzScan
     end
 
     def closing
-      fifth + sixth
+      fifth + sixth + seventh
     end
 
     def first
@@ -409,6 +415,10 @@ module MetzScan
         ["W17", [edit(:workflow_env)], "workflow env present"],
         ["W18", [edit(:insert_setup), edit(:self_hosted)], JOB_VALUE]
       ]
+    end
+
+    def seventh
+      [["W19", [edit(:classify_continue)], "step continue-on-error"]]
     end
 
     def edit(name)
@@ -486,6 +496,11 @@ module MetzScan
       text.sub(check_name, "#{check_name}        continue-on-error: true\n")
     end
 
+    def classify_continue(text)
+      name = "      - name: Classify change scope\n"
+      text.sub(name, "#{name}        continue-on-error: true\n")
+    end
+
     def job_if(text)
       text.sub(test_job, "#{test_job}    if: false\n")
     end
@@ -543,7 +558,7 @@ module MetzScan
     def test_part_w_workflow_rows
       text = File.read(File.expand_path("../../.github/workflows/ci.yml", __dir__))
       rows = PrDescriptionWorkflowPlants.rows
-      assert_equal 18, rows.size
+      assert_equal 19, rows.size
       rows.each { |row| assert_workflow_row(text, row) }
     end
 
