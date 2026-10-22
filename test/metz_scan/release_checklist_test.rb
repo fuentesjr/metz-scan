@@ -6,7 +6,6 @@ require "yaml"
 module MetzScan
   class ReleaseChecklistTest < Minitest::Test
     REPO_ROOT = File.expand_path("../..", __dir__)
-    CI_WORKFLOW = ".github/workflows/ci.yml"
     CI_PARITY_CHECK = "bin/check_ci_parity"
     CI_PARITY_NEXT_ACTION = "next action:"
     CI_PARITY_PRESERVED_CLONE = "clean clone preserved at"
@@ -17,9 +16,6 @@ module MetzScan
     RELEASE_METADATA_SMOKE = "bundle exec ruby -Ilib -Itest test/metz_scan/release_metadata_test.rb"
     RELEASE_ISSUE_SMOKE = "bundle exec ruby -Ilib -Itest test/metz_scan/create_release_issue_test.rb"
     RELEASE_ISSUE_DRY_RUN = "bin/create_release_issue --dry-run"
-    CHECKOUT_PIN = "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1"
-    RUBYDEX_CHECKOUT = "BUNDLE_WITH: rubydex\n\n    steps:\n      - name: Checkout\n        uses: "
-    PINNED_ACTION = %r{\A[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+@[0-9a-f]{40}\z}
     PART_P_PLANTS = [
       ["P1", "permissions:\n  contents: read\n\n", "", false],
       ["P2", "contents: read", "\"contents\": \"write\"", false],
@@ -27,41 +23,43 @@ module MetzScan
       ["P6", "  rubydex:\n", "  rubydex:\n    permissions: read-all\n", false],
       ["P7", "name: CI", "name: CI", true]
     ].freeze
-    PART_S_PLANTS = [
-      ["S1", CHECKOUT_PIN, "actions/checkout@v7.0.1", false],
-      ["S3", "#{RUBYDEX_CHECKOUT}#{CHECKOUT_PIN}", "#{RUBYDEX_CHECKOUT}actions/checkout@v7.0.1 # v7.0.1", false],
-      ["S4", CHECKOUT_PIN, "actions/checkout@3d3c42e # v7.0.1", false],
-      ["S5", CHECKOUT_PIN, "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1", false],
-      ["S6", "    steps:\n", "    steps:\n      - { uses: actions/cache@v4 }\n", false],
-      ["S7", "name: CI", "name: CI", true],
-      ["S8", "    steps:\n", "    steps:\n      - \"uses\": actions/cache@v4\n", false],
-      ["S9", "jobs:\n", "jobs:\n  reusable:\n    uses: fuentesjr/x/.github/workflows/y.yml@main\n", false]
-    ].freeze
 
-    def test_issue_template_body_matches_release_checklist = assert_equal canonical_checklist_body, issue_template_body
+    def test_issue_template_body_matches_release_checklist
+      assert_equal canonical_checklist_body, issue_template_body
+    end
 
-    def test_release_checklists_include_calibration_smoke = checklist_includes(CALIBRATION_SMOKE)
+    def test_release_checklists_include_calibration_smoke
+      release_checklists.each { |path| assert_includes File.read(path), CALIBRATION_SMOKE, path }
+    end
 
     def test_release_checklists_include_release_metadata_smokes
       release_checklists.each { |path| assert_release_metadata_smokes(path) }
     end
 
-    def test_release_checklists_document_issue_dry_run = checklist_includes(RELEASE_ISSUE_DRY_RUN)
+    def test_release_checklists_document_issue_dry_run
+      release_checklists.each { |path| assert_includes File.read(path), RELEASE_ISSUE_DRY_RUN, path }
+    end
 
-    def test_ci_runs_calibration_smoke = assert_includes File.read(repo_path(CI_WORKFLOW)), CALIBRATION_SMOKE
+    def test_ci_runs_calibration_smoke
+      assert_includes File.read(repo_path(".github/workflows/ci.yml")), CALIBRATION_SMOKE
+    end
 
     def test_github_annotations_smoke_is_documented_and_run_by_ci
       release_checklists.each { |path| assert_includes File.read(path), GITHUB_ANNOTATIONS_ASSERTION, path }
-      assert_includes File.read(repo_path(CI_WORKFLOW)), GITHUB_ANNOTATIONS_ASSERTION
+      assert_includes File.read(repo_path(".github/workflows/ci.yml")), GITHUB_ANNOTATIONS_ASSERTION
     end
 
-    def test_release_checklists_document_ci_parity_check = checklist_includes(CI_PARITY_CHECK)
+    def test_release_checklists_document_ci_parity_check
+      release_checklists.each { |path| assert_includes File.read(path), CI_PARITY_CHECK, path }
+    end
 
     def test_release_checklists_document_ci_parity_failure_inspection
       release_checklists.each { |path| assert_ci_parity_failure_inspection(path) }
     end
 
-    def test_release_checklists_document_read_only_guard = checklist_includes(READ_ONLY_GUARD)
+    def test_release_checklists_document_read_only_guard
+      release_checklists.each { |path| assert_includes File.read(path), READ_ONLY_GUARD, path }
+    end
 
     def test_ci_parity_script_covers_ci_single_command_steps
       script = normalized_ruby_script(File.read(repo_path(CI_PARITY_CHECK)))
@@ -71,21 +69,15 @@ module MetzScan
     end
 
     def test_ci_permissions_are_contents_read
-      text = File.read(repo_path(CI_WORKFLOW))
+      text = File.read(repo_path(".github/workflows/ci.yml"))
       assert_equal 5, PART_P_PLANTS.size
       PART_P_PLANTS.each { |plant| assert_contents_read_plant(text, plant) }
-    end
-
-    def test_ci_actions_are_sha_pinned
-      text = File.read(repo_path(CI_WORKFLOW))
-      assert_equal 8, PART_S_PLANTS.size
-      PART_S_PLANTS.each { |plant| assert_sha_pinned_plant(text, plant) }
     end
 
     private
 
     def ci_single_command_steps
-      workflow = YAML.safe_load_file(repo_path(CI_WORKFLOW))
+      workflow = YAML.safe_load_file(repo_path(".github/workflows/ci.yml"))
       steps = workflow.fetch("jobs").fetch("test").fetch("steps")
       steps.filter_map { |step| step["run"]&.strip }.reject { |run| run.include?("\n") }
     end
@@ -96,6 +88,70 @@ module MetzScan
       assert_equal(pass, workflow["permissions"] == { "contents" => "read" } &&
         workflow.fetch("jobs").none? { |_, job| job.key?("permissions") }, name)
     end
+
+    def release_checklists
+      [repo_path("RELEASE_CHECKLIST.md"), repo_path(".github/ISSUE_TEMPLATE/release_checklist.md")]
+    end
+
+    def assert_release_metadata_smokes(path)
+      checklist = File.read(path)
+
+      assert_includes checklist, RELEASE_METADATA_SMOKE, path
+      assert_includes checklist, RELEASE_ISSUE_SMOKE, path
+    end
+
+    def assert_ci_parity_failure_inspection(path)
+      checklist = File.read(path)
+
+      assert_includes checklist, CI_PARITY_PRESERVED_CLONE, path
+      assert_includes checklist, CI_PARITY_NEXT_ACTION, path
+    end
+
+    def canonical_checklist_body
+      body_from(File.read(repo_path("RELEASE_CHECKLIST.md")))
+    end
+
+    def issue_template_body
+      body_from(File.read(repo_path(".github/ISSUE_TEMPLATE/release_checklist.md")))
+    end
+
+    def body_from(markdown)
+      markdown[markdown.index("## Verification")..]
+    end
+
+    def normalized_ruby_script(script)
+      script.gsub(/"\s*\\\n\s*"/, "")
+    end
+
+    def repo_path(path)
+      File.join(REPO_ROOT, path)
+    end
+  end
+
+  class CiActionPinTest < Minitest::Test
+    REPO_ROOT = File.expand_path("../..", __dir__)
+    CI_WORKFLOW = ".github/workflows/ci.yml"
+    CHECKOUT_PIN = "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1"
+    RUBYDEX_CHECKOUT = "BUNDLE_WITH: rubydex\n\n    steps:\n      - name: Checkout\n        uses: "
+    PINNED_ACTION = %r{\A[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+@[0-9a-f]{40}\z}
+    PART_S_PLANTS = [
+      ["S1", CHECKOUT_PIN, "actions/checkout@v7.0.1 # v7.0.1", false],
+      ["S3", "#{RUBYDEX_CHECKOUT}#{CHECKOUT_PIN}", "#{RUBYDEX_CHECKOUT}actions/checkout@v7.0.1 # v7.0.1", false],
+      ["S4", CHECKOUT_PIN, "actions/checkout@3d3c42e # v7.0.1", false],
+      ["S5", CHECKOUT_PIN, "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1", false],
+      ["S6", "    steps:\n", "    steps:\n      - { uses: actions/cache@v4 } # v4\n", false],
+      ["S7", "name: CI", "name: CI", true],
+      ["S8", "    steps:\n", "    steps:\n      - \"uses\": actions/cache@v4 # v4\n", false],
+      ["S9", "jobs:\n", "jobs:\n  reusable:\n    uses: fuentesjr/x/.github/workflows/y.yml@main # v1\n", false]
+    ].freeze
+
+    def test_ci_actions_are_sha_pinned
+      text = File.read(repo_path(CI_WORKFLOW))
+      assert_equal 8, PART_S_PLANTS.size
+      PART_S_PLANTS.each { |plant| assert_sha_pinned_plant(text, plant) }
+    end
+
+    private
 
     def assert_sha_pinned_plant(text, plant)
       name, pattern, replacement, pass = plant
@@ -110,28 +166,6 @@ module MetzScan
     def action_uses(workflow) = workflow.fetch("jobs").values.flat_map { |job| job_uses(job) }.compact
 
     def job_uses(job) = [job["uses"], *Array(job["steps"]).filter_map { |step| step["uses"] }]
-
-    def checklist_includes(snippet) = release_checklists.each { |path| assert_includes File.read(path), snippet, path }
-
-    def release_checklists
-      [repo_path("RELEASE_CHECKLIST.md"), repo_path(".github/ISSUE_TEMPLATE/release_checklist.md")]
-    end
-
-    def assert_release_metadata_smokes(path)
-      [RELEASE_METADATA_SMOKE, RELEASE_ISSUE_SMOKE].each { |smoke| assert_includes File.read(path), smoke, path }
-    end
-
-    def assert_ci_parity_failure_inspection(path)
-      [CI_PARITY_PRESERVED_CLONE, CI_PARITY_NEXT_ACTION].each { |text| assert_includes File.read(path), text, path }
-    end
-
-    def canonical_checklist_body = body_from(File.read(repo_path("RELEASE_CHECKLIST.md")))
-
-    def issue_template_body = body_from(File.read(repo_path(".github/ISSUE_TEMPLATE/release_checklist.md")))
-
-    def body_from(markdown) = markdown[markdown.index("## Verification")..]
-
-    def normalized_ruby_script(script) = script.gsub(/"\s*\\\n\s*"/, "")
 
     def repo_path(path) = File.join(REPO_ROOT, path)
   end
