@@ -22,6 +22,20 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
+
+      - name: Check PR description
+        if: github.event_name == 'pull_request'
+        run: |
+          if git cat-file -e HEAD^1:bin/check_pr_description; then
+            git show HEAD^1:bin/check_pr_description > "$RUNNER_TEMP/check_pr_description"
+          elif git rev-parse -q --verify HEAD^1 >/dev/null; then
+            cp bin/check_pr_description "$RUNNER_TEMP/check_pr_description"
+          else
+            exit 1
+          fi
+          git show HEAD^1:.claude/skills/unslop/SKILL.md > "$RUNNER_TEMP/unslop-SKILL.md" || true
+          ruby "$RUNNER_TEMP/check_pr_description"
 
       # Same rule as docs_path? in bin/check_ci_parity; keep the two in sync.
       # The `test` job must still report (branch protection requires it), so

@@ -1,0 +1,260 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "json"
+
+FAIL_CLOSED = "fail: banned list not found in base unslop skill"
+UNSLOP_LINE = "Run /unslop on the PR title and body, then edit the PR."
+DEPENDABOT_LOGIN = "dependabot[bot]"
+SKILL_NAME = "unslop-SKILL.md"
+TOKEN_LIMIT = 40
+SUFFIXES = ["", "s", "es", "d", "ed", "ing"].freeze
+DASH_CHARS = [["\u2014", "U+2014"], ["\u2013", "U+2013"]].freeze
+ENTITY = /&(?:mdash|ndash);|&#0*8212;|&#0*8211;|&#x0*2014;|&#x0*2013;/i
+OWNER_REPO = %r{(?<![A-Za-z0-9-])[A-Za-z0-9-]+/[A-Za-z0-9._-]+#\d+}
+PULL_OR_ISSUE = /
+  \b(?i:PR)[ \t]*\#[ \t]*\d+ |
+  \b(?i:PR)[ \t]+\d+ |
+  \b(?i:pull\ request)[ \t]+\#?[ \t]*\d+ |
+  \b(?i:issue)[ \t]*\#[ \t]*\d+ |
+  \b(?i:issue)[ \t]+\d+
+/x
+LETTER_LABEL = /\b(?i:PR)[ \t]+(?!(?i:I)\b)[A-Z]\b/
+BARE_NUMBER = /#\d+/
+REFERENCE_PATTERNS = [OWNER_REPO, PULL_OR_ISSUE, LETTER_LABEL, BARE_NUMBER].freeze
+LINK_TEXT = /\[([^\[\]]*)\]\([^)]*\)/
+GITHUB_URL = %r{https://github\.com/[^\s)>]+}
+RULE_SEVEN = /\*\*AI vocabulary\.\*\*\s+(.+?)\.\s+Replace with plain words/
+REFERENCE_CHARS = %r{[^A-Za-z0-9#/._ -]}
+
+def main
+  return pass("pass: dependabot") if dependabot?
+  return fail_closed if banned_words.empty?
+
+  report(scan_title(pull_request("title"), banned_words) + scan_body(pull_request("body"), banned_words))
+end
+
+def report(lines)
+  return pass("pass") if lines.empty?
+
+  lines.each { |line| puts line }
+  puts UNSLOP_LINE
+  1
+end
+
+def pass(line)
+  puts line
+  0
+end
+
+def fail_closed
+  puts FAIL_CLOSED
+  1
+end
+
+def dependabot?
+  event.dig("pull_request", "user", "login") == DEPENDABOT_LOGIN
+end
+
+def pull_request(field)
+  event.dig("pull_request", field).to_s
+end
+
+def event
+  @event ||= JSON.parse(File.read(ENV.fetch("GITHUB_EVENT_PATH")))
+end
+
+def banned_words
+  text = skill_text
+  return [] unless text
+
+  parse_rule_seven(text)
+end
+
+def skill_text
+  root = ENV.fetch("RUNNER_TEMP", nil)
+  return if root.nil? || root.empty?
+
+  read_skill(File.join(root, SKILL_NAME))
+end
+
+def read_skill(path)
+  return unless File.file?(path)
+
+  text = File.read(path)
+  text unless text.empty?
+end
+
+def parse_rule_seven(text)
+  line = text.each_line.find { |entry| entry.include?("**AI vocabulary.**") }
+  list = line && line[RULE_SEVEN, 1]
+  return [] unless list
+
+  list.split(",").filter_map { |part| rule_word(part) }
+end
+
+def rule_word(part)
+  word = part.strip
+  return if word.empty? || word.include?("(abstract)")
+
+  word
+end
+
+def scan_title(text, words)
+  scan_line(text, "title", words, false)
+end
+
+def scan_body(text, words)
+  text.split("\n").each_with_index.flat_map do |line, index|
+    scan_line(line, "body line #{index + 1}", words, true)
+  end
+end
+
+def scan_line(line, where, words, exempt_links)
+  hits = dash_hits(line) + reference_hits(line, exempt_links) + word_hits(line, words)
+  hits.sort_by { |hit| hit[:pos] }.map { |hit| format_hit(hit, where) }
+end
+
+def dash_hits(line)
+  chars = DASH_CHARS.flat_map { |char, name| literal_hits(line, char, name) }
+  entities = scan_spans(line, ENTITY).map { |span| span_hit(span, "dash", span[:text]) }
+  spaces = scan_spans(line, / -- /).map { |span| span_hit(span, "dash", "--") }
+  chars + entities + spaces
+end
+
+def literal_hits(line, token, name)
+  scan_spans(line, Regexp.new(Regexp.escape(token))).map { |span| span_hit(span, "dash", name) }
+end
+
+def reference_hits(line, exempt_links)
+  ranges = exempt_links ? exempt_ranges(line) : []
+  reference_matches(line).filter_map { |span| reference_hit(span, ranges) }
+end
+
+def reference_hit(span, ranges)
+  return if covered?(span, ranges)
+
+  span_hit(span, "unlinked reference", clean_reference(span[:text]))
+end
+
+def word_hits(line, words)
+  keep_first(words.flat_map { |word| surface_hits(line, word) })
+end
+
+def surface_hits(line, word)
+  surfaces(word).flat_map do |surface|
+    pattern = /\b#{Regexp.escape(surface)}\b/i
+    scan_spans(line, pattern).map { |span| span_hit(span, "banned word", word) }
+  end
+end
+
+def surfaces(word)
+  forms = SUFFIXES.map { |suffix| "#{word}#{suffix}" }
+  forms << "#{word.delete_suffix('e')}ing" if word.end_with?("e")
+  forms.uniq
+end
+
+def reference_matches(line)
+  spans = keep_spans(REFERENCE_PATTERNS.flat_map { |pattern| scan_spans(line, pattern) })
+  entities = scan_spans(line, ENTITY)
+  spans.reject { |span| inside_entity?(span, entities) }
+end
+
+def inside_entity?(span, entities)
+  entities.any? { |entity| entity[:start] <= span[:start] && span[:end] <= entity[:end] }
+end
+
+def keep_spans(spans)
+  chosen = []
+  walk_spans(spans.sort_by { |span| [span[:start], -span[:text].length] }, chosen)
+  chosen
+end
+
+def walk_spans(spans, chosen)
+  cursor = 0
+  spans.each { |span| cursor = take_span(span, cursor, chosen) }
+end
+
+def take_span(span, cursor, chosen)
+  return cursor if span[:start] < cursor
+
+  chosen << span
+  span[:end]
+end
+
+def keep_first(hits)
+  chosen = []
+  walk_hits(hits.sort_by { |item| [item[:pos], -item[:span]] }, chosen)
+  chosen
+end
+
+def walk_hits(hits, chosen)
+  cursor = 0
+  hits.each { |item| cursor = take_hit(item, cursor, chosen) }
+end
+
+def take_hit(item, cursor, chosen)
+  return cursor if item[:pos] < cursor
+
+  chosen << item
+  item[:pos] + item[:span]
+end
+
+def exempt_ranges(line)
+  link_ranges(line) + url_ranges(line)
+end
+
+def link_ranges(line)
+  ranges_for(line, LINK_TEXT) { |match| text_range(match) }
+end
+
+def url_ranges(line)
+  ranges_for(line, GITHUB_URL) { |match| match.begin(0)...match.end(0) }
+end
+
+def ranges_for(line, pattern)
+  ranges = []
+  each_match(line, pattern) { |match| ranges << yield(match) }
+  ranges
+end
+
+def each_match(line, pattern)
+  offset = 0
+  while (match = pattern.match(line, offset))
+    yield match
+    offset = match.end(0)
+  end
+end
+
+def text_range(match)
+  start = match.begin(0) + 1
+  start...(start + match[1].length)
+end
+
+def covered?(span, ranges)
+  ranges.any? { |range| range.cover?(span[:start]) && range.cover?(span[:end] - 1) }
+end
+
+def clean_reference(text)
+  text.gsub(REFERENCE_CHARS, "")[0, TOKEN_LIMIT]
+end
+
+def scan_spans(line, pattern)
+  spans = []
+  line.scan(pattern) { spans << span_from(Regexp.last_match) }
+  spans
+end
+
+def span_from(match)
+  { start: match.begin(0), end: match.end(0), text: match[0].dup }
+end
+
+def span_hit(span, rule, token)
+  { pos: span[:start], span: span[:end] - span[:start], rule: rule, token: token }
+end
+
+def format_hit(item, where)
+  "fail: #{item[:rule]} #{item[:token]} at #{where}"
+end
+
+exit main
