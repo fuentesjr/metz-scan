@@ -23,7 +23,6 @@ LETTER_LABEL = /\b(?i:PR)[ \t]+(?!(?i:I)\b)[A-Z]\b/
 BARE_NUMBER = /#\d+/
 REFERENCE_PATTERNS = [OWNER_REPO, PULL_OR_ISSUE, LETTER_LABEL, BARE_NUMBER].freeze
 LINK_TEXT = /\[([^\[\]]*)\]\([^)]*\)/
-GITHUB_URL = %r{https://github\.com/[^\s)>]+}
 RULE_SEVEN = /\*\*AI vocabulary\.\*\*\s+(.+?)\.\s+Replace with plain words/
 REFERENCE_CHARS = %r{[^A-Za-z0-9#/._ -]}
 
@@ -127,7 +126,7 @@ def literal_hits(line, token, name)
 end
 
 def reference_hits(line, exempt_links)
-  ranges = exempt_links ? exempt_ranges(line) : []
+  ranges = exempt_links ? link_ranges(line) : []
   reference_matches(line).filter_map { |span| reference_hit(span, ranges) }
 end
 
@@ -138,7 +137,7 @@ def reference_hit(span, ranges)
 end
 
 def word_hits(line, words)
-  keep_first(words.flat_map { |word| surface_hits(line, word) })
+  words.flat_map { |word| surface_hits(line, word) }
 end
 
 def surface_hits(line, word)
@@ -182,34 +181,8 @@ def take_span(span, cursor, chosen)
   span[:end]
 end
 
-def keep_first(hits)
-  chosen = []
-  walk_hits(hits.sort_by { |item| [item[:pos], -item[:span]] }, chosen)
-  chosen
-end
-
-def walk_hits(hits, chosen)
-  cursor = 0
-  hits.each { |item| cursor = take_hit(item, cursor, chosen) }
-end
-
-def take_hit(item, cursor, chosen)
-  return cursor if item[:pos] < cursor
-
-  chosen << item
-  item[:pos] + item[:span]
-end
-
-def exempt_ranges(line)
-  link_ranges(line) + url_ranges(line)
-end
-
 def link_ranges(line)
   ranges_for(line, LINK_TEXT) { |match| text_range(match) }
-end
-
-def url_ranges(line)
-  ranges_for(line, GITHUB_URL) { |match| match.begin(0)...match.end(0) }
 end
 
 def ranges_for(line, pattern)
@@ -250,7 +223,7 @@ def span_from(match)
 end
 
 def span_hit(span, rule, token)
-  { pos: span[:start], span: span[:end] - span[:start], rule: rule, token: token }
+  { pos: span[:start], rule: rule, token: token }
 end
 
 def format_hit(item, where)

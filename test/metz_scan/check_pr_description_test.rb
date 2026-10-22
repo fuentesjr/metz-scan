@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "fileutils"
 require "json"
 require "minitest/autorun"
 require "open3"
@@ -134,7 +135,14 @@ module MetzScan
     end
 
     def base_row
-      { id: "D14", cases: [ROWS.body_fail("pivotal choice", "fail: banned word pivotal at body line 1")] }
+      fail = ROWS.body_fail("pivotal choice", "fail: banned word pivotal at body line 1")
+      { id: "D14", cases: [fail.merge(tree: true)] }
+    end
+
+    def plant_tree(dir, skill)
+      path = File.join(dir, ".claude/skills/unslop/SKILL.md")
+      FileUtils.mkdir_p(File.dirname(path))
+      File.write(path, skill.sub("pivotal, ", ""))
     end
 
     def closed_row
@@ -198,7 +206,15 @@ module MetzScan
     end
 
     def run(plant)
-      Dir.mktmpdir { |dir| Open3.capture3(child_env(*write_inputs(dir, plant)), RbConfig.ruby, SCRIPT) }
+      Dir.mktmpdir { |dir| capture(dir, plant) }
+    end
+
+    def capture(dir, plant)
+      Open3.capture3(child_env(*write_inputs(dir, plant)), RbConfig.ruby, SCRIPT, **chdir_for(dir, plant))
+    end
+
+    def chdir_for(dir, plant)
+      plant[:tree] ? { chdir: dir } : {}
     end
 
     def write_inputs(dir, plant)
@@ -222,6 +238,7 @@ module MetzScan
       return if plant[:skill] == :missing
 
       File.write(File.join(runner, "unslop-SKILL.md"), skill_text(plant))
+      CheckPrDescriptionTail.plant_tree(File.dirname(runner), SKILL) if plant[:tree]
     end
 
     def skill_text(plant)
