@@ -127,4 +127,46 @@ module MetzScan
       File.join(REPO_ROOT, path)
     end
   end
+
+  class CiActionPinTest < Minitest::Test
+    REPO_ROOT = File.expand_path("../..", __dir__)
+    CI_WORKFLOW = ".github/workflows/ci.yml"
+    CHECKOUT_PIN = "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1"
+    RUBYDEX_CHECKOUT = "BUNDLE_WITH: rubydex\n\n    steps:\n      - name: Checkout\n        uses: "
+    PINNED_ACTION = %r{\A[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+@[0-9a-f]{40}\z}
+    PART_S_PLANTS = [
+      ["S1", CHECKOUT_PIN, "actions/checkout@v7.0.1 # v7.0.1", false],
+      ["S3", "#{RUBYDEX_CHECKOUT}#{CHECKOUT_PIN}", "#{RUBYDEX_CHECKOUT}actions/checkout@v7.0.1 # v7.0.1", false],
+      ["S4", CHECKOUT_PIN, "actions/checkout@3d3c42e # v7.0.1", false],
+      ["S5", CHECKOUT_PIN, "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1", false],
+      ["S6", "    steps:\n", "    steps:\n      - { uses: actions/cache@v4 } # v4\n", false],
+      ["S7", "name: CI", "name: CI", true],
+      ["S8", "    steps:\n", "    steps:\n      - \"uses\": actions/cache@v4 # v4\n", false],
+      ["S9", "jobs:\n", "jobs:\n  reusable:\n    uses: fuentesjr/x/.github/workflows/y.yml@main # v1\n", false]
+    ].freeze
+
+    def test_ci_actions_are_sha_pinned
+      text = File.read(repo_path(CI_WORKFLOW))
+      assert_equal 8, PART_S_PLANTS.size
+      PART_S_PLANTS.each { |plant| assert_sha_pinned_plant(text, plant) }
+    end
+
+    private
+
+    def assert_sha_pinned_plant(text, plant)
+      name, pattern, replacement, pass = plant
+      planted = text.sub(pattern, replacement)
+      assert_equal(pass, sha_pinned_actions?(planted), name)
+    end
+
+    def sha_pinned_actions?(text) = action_uses(YAML.safe_load(text)).all?(PINNED_ACTION) && uses_comments?(text)
+
+    def uses_comments?(text) = text.lines.grep(/["']?uses["']?\s*:/).all?(/# v[0-9]+(?:\.[0-9]+)*\s*$/)
+
+    def action_uses(workflow) = workflow.fetch("jobs").values.flat_map { |job| job_uses(job) }.compact
+
+    def job_uses(job) = [job["uses"], *Array(job["steps"]).filter_map { |step| step["uses"] }]
+
+    def repo_path(path) = File.join(REPO_ROOT, path)
+  end
 end
