@@ -11,8 +11,18 @@ module MetzScan
     EM = "\u2014"
     EN = "\u2013"
     UNSLOP = "Run /unslop on the PR title and body, then edit the PR."
+    EDIT = "Edit the PR title and body to follow .cursor/rules/opening-a-pr.mdc."
     CLOSED = "fail: banned list not found in base unslop skill"
     PASS = "pass\n"
+    VALID_TITLE = "fix(ci): clean title"
+    REQUIRED = ["## Why", "## What changed", "## Scope", "## Blast Radius", "## Verification"].freeze
+    PROSE = {
+      "## Why" => "The change fixes the reported miss.",
+      "## What changed" => "- The check reads the copy.",
+      "## Scope" => "- The check covers pull request text.",
+      "## Blast Radius" => "The check runs in the test job.",
+      "## Verification" => "- The row shows the result."
+    }.freeze
     ENTITIES = ["&mdash;", "&#8212;", "&#x2014;", "&ndash;", "&#8211;", "&#x2013;", "&#x02014;", "&#x0002013;"].freeze
     D6_TOKENS = ["PR #12", "PR#12", "pr 12", "pull request 12"].freeze
     D7_TOKENS = ["issue #12", "ISSUE#12"].freeze
@@ -37,6 +47,16 @@ module MetzScan
 
     def rows
       early + middle + late
+    end
+
+    def sections_body(names = REQUIRED, empty: [])
+      names.map { |name| section_block(name, empty.include?(name)) }.join
+    end
+
+    def section_block(name, empty)
+      return "#{name}\n" if empty
+
+      "#{name}\n#{PROSE.fetch(name)}\n"
     end
 
     def early
@@ -124,13 +144,13 @@ module MetzScan
     end
 
     def title_word_row
-      plant = { title: "this is crucial today", status: 1, includes: ["fail: banned word crucial at title"] }
+      plant = { title: "fix(ci): this is crucial today", status: 1, includes: ["fail: banned word crucial at title"] }
       { id: "D12", cases: [plant] }
     end
 
     def title_link_row
       title = "[#12](https://github.com/fuentesjr/metz-scan/issues/12)"
-      plant = { title: title, status: 1, includes: ["fail: unlinked reference #12 at title"] }
+      plant = { title: title, status: 1, includes: ["fail: bad title", "fail: unlinked reference #12 at title", ROWS::EDIT] }
       { id: "D13", cases: [plant] }
     end
 
@@ -170,13 +190,15 @@ module MetzScan
     def bot_row
       shared = { title: "Bump x from 1 to 2", head: "dependabot/bundler/x-2", body: "a #{ROWS::EM} b" }
       bot = shared.merge(login: "dependabot[bot]", status: 0, exact: "pass: dependabot\n")
-      human = shared.merge(login: "fuentesjr", status: 1, includes: ["fail: dash U+2014 at body line 1"])
+      dash = "fail: dash U+2014 at body line 1"
+      human = shared.merge(login: "fuentesjr", status: 1, includes: ["fail: bad title", dash, ROWS::EDIT])
       { id: "D19", cases: [bot, human] }
     end
   end
 
   module CheckPrDescriptionRunner
     SKILL = File.read(File.expand_path("../../.claude/skills/unslop/SKILL.md", __dir__)).freeze
+    COPY = File.read(File.expand_path("../../.cursor/rules/opening-a-pr.mdc", __dir__)).freeze
     SCRIPT = File.expand_path("../../bin/check_pr_description", __dir__).freeze
     ROWS = CheckPrDescriptionRows
 
@@ -214,7 +236,9 @@ module MetzScan
     end
 
     def chdir_for(dir, plant)
-      plant[:tree] ? { chdir: dir } : {}
+      return { chdir: dir } if plant[:tree] || plant[:isolate]
+
+      {}
     end
 
     def write_inputs(dir, plant)
@@ -226,6 +250,19 @@ module MetzScan
     def prepare_runner(runner, plant)
       Dir.mkdir(runner)
       write_skill(runner, plant)
+      write_copy(runner, plant)
+    end
+
+    def write_copy(runner, plant)
+      return if plant[:copy] == :missing
+
+      File.write(File.join(runner, "opening-a-pr.mdc"), copy_body(plant))
+    end
+
+    def copy_body(plant)
+      return plant[:copy] if plant.key?(:copy)
+
+      COPY
     end
 
     def write_event(dir, plant)
@@ -253,7 +290,13 @@ module MetzScan
     end
 
     def pull_request(plant)
-      { "title" => title_of(plant), "body" => body_of(plant) }.merge(actor(plant))
+      { "title" => title_of(plant), "body" => body_of(plant) }.merge(actor(plant), labels_for(plant))
+    end
+
+    def labels_for(plant)
+      return {} unless plant[:labels]
+
+      { "labels" => plant[:labels].map { |name| { "name" => name } } }
     end
 
     def actor(plant)
@@ -261,11 +304,20 @@ module MetzScan
     end
 
     def title_of(plant)
-      plant.fetch(:title, "Clean title")
+      plant.fetch(:title, ROWS::VALID_TITLE)
     end
 
     def body_of(plant)
-      plant.fetch(:body, "Clean body.")
+      return plant.fetch(:body, "").to_s if plant[:raw]
+
+      stitch(plant[:body])
+    end
+
+    def stitch(body)
+      sections = ROWS.sections_body
+      return sections if body.nil? || body.empty?
+
+      "#{body}\n#{sections}"
     end
 
     def child_env(event, runner)
@@ -276,9 +328,138 @@ module MetzScan
     end
   end
 
+  module CheckPrDescriptionSections
+    ROWS = CheckPrDescriptionRows
+    EDIT = ROWS::EDIT
+    CLOSED = "fail: playbook copy not found in base\n"
+    PASS = "pass\n"
+    CONTROL_TITLE = "feat(ci): add section check"
+    BAD_TITLES = ["Add section check", "feat: add check", "feat(ci): add check.", "feat(ci): add check. ",
+                  "Feat(ci): add check"].freeze
+    SWAPPED = ["## Why", "## Scope", "## What changed", "## Blast Radius", "## Verification"].freeze
+    WITH_TRADEOFFS = ["## Why", "## What changed", "## Scope", "## Tradeoffs",
+                      "## Blast Radius", "## Verification"].freeze
+    NO_SECTIONS = "**Titles.** Conventional Commits `type(scope): subject`, no trailing period.\n"
+    NO_TITLES = "- `## Why`: the problem and approach.\n"
+    WRONG_TOKEN = "**Titles.** Conventional Commits `subject only`, no trailing period.\n- `## Why`: text\n"
+
+    module_function
+
+    def assert_rows(test)
+      listed = rows
+      test.assert_equal 8, listed.size
+      listed.each { |row| assert_row(test, row) }
+    end
+
+    def assert_row(test, row)
+      row.fetch(:cases).each { |plant| assert_case(test, row.fetch(:id), plant) }
+    end
+
+    def assert_case(test, id, plant)
+      stdout, stderr, status = CheckPrDescriptionRunner.run(plant)
+      test.assert_empty stderr, id
+      test.assert_equal plant.fetch(:status), status.exitstatus, id
+      test.assert_equal plant.fetch(:exact), stdout, id
+    end
+
+    def rows
+      [missing_row, order_row, level_row, empty_row, title_row, control_row, author_row, copy_row]
+    end
+
+    def missing_row
+      scope = fail_plant(body: ROWS.sections_body(ROWS::REQUIRED - ["## Scope"]),
+                         exact: failed("fail: missing section ## Scope"))
+      why = fail_plant(body: ROWS.sections_body(ROWS::REQUIRED - ["## Why"]),
+                       exact: failed("fail: missing section ## Why"))
+      { id: "1", cases: [scope, why] }
+    end
+
+    def order_row
+      body = ROWS.sections_body(SWAPPED)
+      { id: "2", cases: [fail_plant(body: body, exact: failed("fail: section out of order ## What changed"))] }
+    end
+
+    def level_row
+      { id: "3", cases: [level_plant("###"), level_plant("#")] }
+    end
+
+    def level_plant(marker)
+      body = "#{marker} Why\n#{ROWS::PROSE.fetch('## Why')}\n#{ROWS.sections_body(ROWS::REQUIRED - ['## Why'])}"
+      lines = ["fail: wrong heading level ## Why", "fail: missing section ## Why"]
+      fail_plant(body: body, exact: failed(*lines))
+    end
+
+    def empty_row
+      scope = ROWS.sections_body(ROWS::REQUIRED, empty: ["## Scope"])
+      tradeoffs = ROWS.sections_body(WITH_TRADEOFFS, empty: ["## Tradeoffs"])
+      { id: "4", cases: [fail_plant(body: scope, exact: failed("fail: empty section ## Scope")),
+                         fail_plant(body: tradeoffs, exact: failed("fail: empty section ## Tradeoffs"))] }
+    end
+
+    def title_row
+      { id: "5", cases: BAD_TITLES.map { |title| title_plant(title) } }
+    end
+
+    def title_plant(title)
+      fail_plant(title: title, body: ROWS.sections_body, exact: failed("fail: bad title"))
+    end
+
+    def control_row
+      plant = pass_plant(title: CONTROL_TITLE, body: ROWS.sections_body, exact: PASS)
+      { id: "6", cases: [plant] }
+    end
+
+    def author_row
+      { id: "7", cases: [bot_plant, human_plant] }
+    end
+
+    def bot_plant
+      pass_plant(title: "Bump x from 1 to 2", body: "", login: "dependabot[bot]", exact: "pass: dependabot\n")
+    end
+
+    def human_plant
+      lines = ["fail: bad title", *ROWS::REQUIRED.map { |name| "fail: missing section #{name}" }]
+      fail_plant(title: "Bump x from 1 to 2", body: "", login: "sal", head: "dependabot/bundler/x",
+                 labels: ["dependencies"], exact: failed(*lines))
+    end
+
+    def copy_row
+      { id: "8", cases: [nowhere_plant, worktree_plant, text_plant(NO_SECTIONS), text_plant(NO_TITLES),
+                         text_plant(WRONG_TOKEN), text_plant("")] }
+    end
+
+    def nowhere_plant
+      fail_plant(copy: :missing, isolate: true, title: CONTROL_TITLE, body: ROWS.sections_body, exact: CLOSED)
+    end
+
+    def worktree_plant
+      fail_plant(copy: :missing, title: CONTROL_TITLE, body: ROWS.sections_body, exact: CLOSED)
+    end
+
+    def text_plant(copy)
+      fail_plant(copy: copy, title: CONTROL_TITLE, body: ROWS.sections_body, exact: CLOSED)
+    end
+
+    def failed(*lines)
+      "#{lines.join("\n")}\n#{EDIT}\n"
+    end
+
+    def fail_plant(extra)
+      { raw: true, status: 1 }.merge(extra)
+    end
+
+    def pass_plant(extra)
+      { raw: true, status: 0 }.merge(extra)
+    end
+  end
+
   class CheckPrDescriptionTest < Minitest::Test
     def test_part_d_description_rows
       CheckPrDescriptionRunner.assert_rows(self)
+    end
+
+    def test_opening_a_pr_section_rows
+      CheckPrDescriptionSections.assert_rows(self)
     end
   end
 end

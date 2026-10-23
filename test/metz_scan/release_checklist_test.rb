@@ -173,7 +173,10 @@ module MetzScan
   module PrDescriptionWorkflow
     JOB_VALUE = "a step before the check or a job value differs from its pinned literal"
     EXPECTED_IF = "github.event_name == 'pull_request'"
-    EXPECTED_ON = { "push" => { "branches" => ["main"] }, "pull_request" => nil }.freeze
+    EXPECTED_ON = {
+      "push" => { "branches" => ["main"] },
+      "pull_request" => { "types" => %w[opened edited synchronize reopened] }
+    }.freeze
     OUTPUTS = { "docs_only" => "${{ steps.scope.outputs.docs_only }}" }.freeze
     CHECKOUT_WITH = { "fetch-depth" => 0, "persist-credentials" => false }.freeze
     CHECKOUT = {
@@ -181,17 +184,6 @@ module MetzScan
       "uses" => "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
       "with" => CHECKOUT_WITH
     }.freeze
-    EXPECTED_RUN = <<~RUN
-      if git cat-file -e HEAD^1:bin/check_pr_description; then
-        git show HEAD^1:bin/check_pr_description > "$RUNNER_TEMP/check_pr_description"
-      elif git rev-parse -q --verify HEAD^1 >/dev/null; then
-        cp bin/check_pr_description "$RUNNER_TEMP/check_pr_description"
-      else
-        exit 1
-      fi
-      git show HEAD^1:.claude/skills/unslop/SKILL.md > "$RUNNER_TEMP/unslop-SKILL.md" || true
-      ruby "$RUNNER_TEMP/check_pr_description"
-    RUN
     JOB_KEYS = %w[outputs runs-on steps].freeze
     STEP_KEYS = %w[if name run].freeze
 
@@ -267,7 +259,7 @@ module MetzScan
     def run_flags(step)
       run = step["run"].to_s
       flags = []
-      flags << "run differs" unless run == EXPECTED_RUN
+      flags << "run differs" unless run == PrDescriptionWorkflowText::EXPECTED_RUN
       flags << "expression in run" if run.include?("${{")
       flags
     end
@@ -291,6 +283,25 @@ module MetzScan
 
   module PrDescriptionWorkflowText
     SECRET = ["github.event.pull_request.body", "github.event.pull_request.title"].freeze
+    EXPECTED_RUN = <<~RUN
+      if git cat-file -e HEAD^1:bin/check_pr_description; then
+        git show HEAD^1:bin/check_pr_description > "$RUNNER_TEMP/check_pr_description"
+        git show HEAD^1:.cursor/rules/opening-a-pr.mdc > "$RUNNER_TEMP/opening-a-pr.mdc" || {
+          echo "fail: playbook copy not found in base"
+          exit 1
+        }
+      elif git rev-parse -q --verify HEAD^1 >/dev/null; then
+        cp bin/check_pr_description "$RUNNER_TEMP/check_pr_description"
+        cp .cursor/rules/opening-a-pr.mdc "$RUNNER_TEMP/opening-a-pr.mdc" || {
+          echo "fail: playbook copy not found in base"
+          exit 1
+        }
+      else
+        exit 1
+      fi
+      git show HEAD^1:.claude/skills/unslop/SKILL.md > "$RUNNER_TEMP/unslop-SKILL.md" || true
+      ruby "$RUNNER_TEMP/check_pr_description"
+    RUN
 
     module_function
 
@@ -397,7 +408,19 @@ module MetzScan
       [
         ["W10", [edit(:drop_base_skill)], "run differs"],
         ["W11", [edit(:worktree_checker)], "run differs"],
-        ["W12", [edit(:add_edited)], "on differs"]
+        ["W12", w12_plants, nil]
+      ]
+    end
+
+    def w12_plants
+      [[edit(:use_pr_types), :pass], *trigger_fails]
+    end
+
+    def trigger_fails
+      [
+        [edit(:add_pull_request_target), "on differs"],
+        [edit(:add_workflow_run), "on differs"],
+        [edit(:add_labeled_type), "on differs"]
       ]
     end
 
@@ -487,10 +510,15 @@ module MetzScan
       text.sub(checker_line, replacement)
     end
 
-    def add_edited(text)
-      types = "    types: [opened, edited, synchronize, reopened]\n"
-      text.sub("  pull_request:\n", "  pull_request:\n#{types}")
-    end
+    def use_pr_types(text) = text.sub(/  pull_request:\n(?:    types: \[.*?\]\n)?/, pr_types)
+
+    def add_pull_request_target(text) = text.sub(pr_types, "#{pr_types}  pull_request_target:\n")
+
+    def add_workflow_run(text) = text.sub(pr_types, "#{pr_types}  workflow_run:\n")
+
+    def add_labeled_type(text) = text.sub("synchronize, reopened]", "synchronize, reopened, labeled]")
+
+    def pr_types = "  pull_request:\n    types: [opened, edited, synchronize, reopened]\n"
 
     def continue_on_error(text)
       text.sub(check_name, "#{check_name}        continue-on-error: true\n")
@@ -563,8 +591,16 @@ module MetzScan
     end
 
     def assert_workflow_row(text, row)
-      _name, plants, expected = row
-      plants.each { |plant| assert_workflow_plant(row[0], plant.call(text), expected) }
+      name, plants, expected = row
+      return assert_mixed_plants(text, name, plants) if expected.nil?
+
+      plants.each { |plant| assert_workflow_plant(name, plant.call(text), expected) }
+    end
+
+    def assert_mixed_plants(text, name, plants)
+      plants.each do |plant, expected|
+        assert_workflow_plant(name, plant.call(text), expected)
+      end
     end
 
     def assert_workflow_plant(name, planted, expected)

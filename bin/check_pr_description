@@ -4,9 +4,27 @@
 require "json"
 
 FAIL_CLOSED = "fail: banned list not found in base unslop skill"
+PLAYBOOK_CLOSED = "fail: playbook copy not found in base"
 UNSLOP_LINE = "Run /unslop on the PR title and body, then edit the PR."
+EDIT_LINE = "Edit the PR title and body to follow .cursor/rules/opening-a-pr.mdc."
 DEPENDABOT_LOGIN = "dependabot[bot]"
 SKILL_NAME = "unslop-SKILL.md"
+COPY_NAME = "opening-a-pr.mdc"
+FORMAT = "type(scope): subject"
+TITLES_MARK = "**Titles.**"
+TITLE_FORMAT = /\A[a-z]+\([^ ()]+\): (?<subject>.+)\z/
+TOKEN = /`([^`]+)`/
+SECTION_RULE = /\A- `(## [^`]+)`:/
+HEADING = /\A {0,3}(\#{1,6})([ \t]|\z)/
+SECTION_FAILS = [
+  "bad title",
+  "empty section",
+  "missing section",
+  "section out of order",
+  "unknown section",
+  "wrong heading level"
+].join("|").freeze
+SECTION_MARK = /\Afail: (?:#{SECTION_FAILS})(?= |\z)/
 TOKEN_LIMIT = 40
 SUFFIXES = ["", "s", "es", "d", "ed", "ing"].freeze
 DASH_CHARS = [["\u2014", "U+2014"], ["\u2013", "U+2013"]].freeze
@@ -28,17 +46,36 @@ REFERENCE_CHARS = %r{[^A-Za-z0-9#/._ -]}
 
 def main
   return pass("pass: dependabot") if dependabot?
+  return playbook_closed unless (book = rulebook)
   return fail_closed if banned_words.empty?
 
-  report(scan_title(pull_request("title"), banned_words) + scan_body(pull_request("body"), banned_words))
+  report(section_findings(book) + unslop_findings(banned_words))
 end
 
 def report(lines)
   return pass("pass") if lines.empty?
 
   lines.each { |line| puts line }
-  puts UNSLOP_LINE
+  puts EDIT_LINE if section_failure?(lines)
+  puts UNSLOP_LINE if unslop_failure?(lines)
   1
+end
+
+def playbook_closed
+  puts PLAYBOOK_CLOSED
+  1
+end
+
+def unslop_findings(words)
+  scan_title(pull_request("title"), words) + scan_body(pull_request("body"), words)
+end
+
+def section_failure?(lines)
+  lines.any? { |line| line.match?(SECTION_MARK) }
+end
+
+def unslop_failure?(lines)
+  lines.any? { |line| line.start_with?("fail:") && !line.match?(SECTION_MARK) }
 end
 
 def pass(line)
@@ -71,17 +108,210 @@ def banned_words
 end
 
 def skill_text
-  root = ENV.fetch("RUNNER_TEMP", nil)
-  return if root.nil? || root.empty?
-
-  read_skill(File.join(root, SKILL_NAME))
+  cached_file(SKILL_NAME)
 end
 
-def read_skill(path)
+def copy_text
+  cached_file(COPY_NAME)
+end
+
+def cached_file(name)
+  root = runner_root
+  read_cached(File.join(root, name)) if root
+end
+
+def runner_root
+  root = ENV.fetch("RUNNER_TEMP", nil)
+  root unless root.nil? || root.empty?
+end
+
+def read_cached(path)
   return unless File.file?(path)
 
   text = File.read(path)
   text unless text.empty?
+end
+
+def rulebook
+  text = copy_text
+  parse_copy(text) if text
+end
+
+def parse_copy(text)
+  return unless format_token(text) == FORMAT
+
+  sections = section_list(text)
+  { sections: sections } unless sections.empty?
+end
+
+def format_token(text)
+  line = text.each_line.find { |entry| entry.start_with?(TITLES_MARK) }
+  return unless line
+
+  line[TOKEN, 1]
+end
+
+def section_list(text)
+  text.each_line.filter_map { |entry| section_rule(entry) }
+end
+
+def section_rule(entry)
+  name = entry[SECTION_RULE, 1]
+  return unless name
+
+  { name: name, text: name.delete_prefix("## "), optional: entry.include?("Skip when") }
+end
+
+def section_findings(book)
+  found = scan_headings(pull_request("body"))
+  title_finding + level_findings(found, book) + missing_findings(found, book) +
+    order_findings(found, book) + unknown_findings(found, book) + empty_findings(found, book)
+end
+
+def title_finding
+  return [] unless bad_title?(pull_request("title"))
+
+  ["fail: bad title"]
+end
+
+def bad_title?(title)
+  match = TITLE_FORMAT.match(title.sub(/[ \t]+\z/, ""))
+  return true unless match
+
+  match[:subject].end_with?(".")
+end
+
+def scan_headings(body)
+  body.split("\n").each_with_index.filter_map { |line, index| heading_from(line, index) }
+end
+
+def heading_from(line, index)
+  match = HEADING.match(line)
+  return unless match
+
+  { level: match[1].length, text: heading_text(line, match.end(0)), line: index }
+end
+
+def heading_text(line, offset)
+  line[offset..].sub(/[ \t]+\z/, "")
+end
+
+def level_findings(found, book)
+  found.filter_map { |heading| level_finding(heading, book) }
+end
+
+def level_finding(heading, book)
+  return if heading.fetch(:level) == 2
+
+  name = heading_name(heading, book)
+  "fail: wrong heading level #{name}" if name
+end
+
+def missing_findings(found, book)
+  present = present_names(found, book)
+  book.fetch(:sections).filter_map { |section| missing_finding(section, present) }
+end
+
+def missing_finding(section, present)
+  return if section.fetch(:optional)
+  return if present.include?(section.fetch(:name))
+
+  "fail: missing section #{section.fetch(:name)}"
+end
+
+def present_names(found, book)
+  known_level_two(found, book).map { |heading| heading.fetch(:name) }.uniq
+end
+
+def order_findings(found, book)
+  state = { last: -1, seen: {} }
+  known_level_two(found, book).filter_map { |heading| order_line(heading, book, state) }
+end
+
+def order_line(heading, book, state)
+  name = heading.fetch(:name)
+  return if state[:seen][name]
+
+  state[:seen][name] = true
+  advance_order(name, section_rank(book, name), state)
+end
+
+def advance_order(name, rank, state)
+  return "fail: section out of order #{name}" if rank < state[:last]
+
+  state[:last] = rank
+  nil
+end
+
+def unknown_findings(found, book)
+  seen = {}
+  found.filter_map { |heading| unknown_line(heading, book, seen) }
+end
+
+def unknown_line(heading, book, seen)
+  return unless heading.fetch(:level) == 2
+
+  name = heading_name(heading, book)
+  return "fail: unknown section" if name.nil? || seen[name]
+
+  seen[name] = true
+  nil
+end
+
+def empty_findings(found, book)
+  lines = pull_request("body").split("\n")
+  first_known(found, book).filter_map { |heading| empty_line(heading, lines, found) }
+end
+
+def empty_line(heading, lines, found)
+  return unless blank_span?(lines, heading, found)
+
+  "fail: empty section #{heading.fetch(:name)}"
+end
+
+def blank_span?(lines, heading, found)
+  stop = next_heading_line(found, heading) || lines.size
+  lines[(heading.fetch(:line) + 1)...stop].all? { |line| line.match?(/\A[ \t]*\z/) }
+end
+
+def next_heading_line(found, heading)
+  nxt = found.find { |item| item.fetch(:line) > heading.fetch(:line) }
+  nxt&.fetch(:line)
+end
+
+def first_known(found, book)
+  seen = {}
+  known_level_two(found, book).reject { |heading| seen_name?(seen, heading.fetch(:name)) }
+end
+
+def seen_name?(seen, name)
+  skip = seen[name]
+  seen[name] = true
+  skip
+end
+
+def known_level_two(found, book)
+  found.filter_map { |heading| known_heading(heading, book) }
+end
+
+def known_heading(heading, book)
+  return unless heading.fetch(:level) == 2
+
+  name = heading_name(heading, book)
+  heading.merge(name: name) if name
+end
+
+def heading_name(heading, book)
+  section = named_section(book, heading.fetch(:text))
+  section&.fetch(:name)
+end
+
+def named_section(book, text)
+  book.fetch(:sections).find { |section| section.fetch(:text) == text }
+end
+
+def section_rank(book, name)
+  book.fetch(:sections).index { |section| section.fetch(:name) == name }
 end
 
 def parse_rule_seven(text)
