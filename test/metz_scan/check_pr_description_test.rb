@@ -347,13 +347,11 @@ module MetzScan
 
     def assert_rows(test)
       listed = rows
-      test.assert_equal 8, listed.size
+      test.assert_equal 9, listed.size
       listed.each { |row| assert_row(test, row) }
     end
 
-    def assert_row(test, row)
-      row.fetch(:cases).each { |plant| assert_case(test, row.fetch(:id), plant) }
-    end
+    def assert_row(test, row) = row.fetch(:cases).each { |plant| assert_case(test, row.fetch(:id), plant) }
 
     def assert_case(test, id, plant)
       stdout, stderr, status = CheckPrDescriptionRunner.run(plant)
@@ -363,7 +361,8 @@ module MetzScan
     end
 
     def rows
-      [missing_row, order_row, level_row, empty_row, title_row, control_row, author_row, copy_row]
+      [missing_row, order_row, level_row, empty_row, title_row, control_row, author_row, copy_row,
+       summary_row]
     end
 
     def missing_row
@@ -379,9 +378,7 @@ module MetzScan
       { id: "2", cases: [fail_plant(body: body, exact: failed("fail: section out of order ## What changed"))] }
     end
 
-    def level_row
-      { id: "3", cases: [level_plant("###"), level_plant("#")] }
-    end
+    def level_row = { id: "3", cases: [level_plant("###"), level_plant("#")] }
 
     def level_plant(marker)
       body = "#{marker} Why\n#{ROWS::PROSE.fetch('## Why')}\n#{ROWS.sections_body(ROWS::REQUIRED - ['## Why'])}"
@@ -396,21 +393,22 @@ module MetzScan
                          fail_plant(body: tradeoffs, exact: failed("fail: empty section ## Tradeoffs"))] }
     end
 
-    def title_row
-      { id: "5", cases: BAD_TITLES.map { |title| title_plant(title) } }
-    end
+    def title_row = { id: "5", cases: BAD_TITLES.map { |title| title_plant(title) } }
 
-    def title_plant(title)
-      fail_plant(title: title, body: ROWS.sections_body, exact: failed("fail: bad title"))
-    end
+    def title_plant(title) = fail_plant(title: title, body: ROWS.sections_body, exact: failed("fail: bad title"))
 
     def control_row
-      plant = pass_plant(title: CONTROL_TITLE, body: ROWS.sections_body, exact: PASS)
-      { id: "6", cases: [plant] }
+      body = ROWS.sections_body
+      lf = pass_plant(title: CONTROL_TITLE, body: body, exact: PASS)
+      crlf = pass_plant(title: CONTROL_TITLE, body: body.gsub("\n", "\r\n"), exact: PASS)
+      { id: "6", cases: [lf, crlf] }
     end
 
-    def author_row
-      { id: "7", cases: [bot_plant, human_plant] }
+    def author_row = { id: "7", cases: [bot_plant, human_plant, bot_without_copy] }
+
+    def bot_without_copy
+      pass_plant(title: "Bump x from 1 to 2", body: "", login: "dependabot[bot]", copy: :missing,
+                 isolate: true, exact: "pass: dependabot\n")
     end
 
     def bot_plant
@@ -440,17 +438,16 @@ module MetzScan
       fail_plant(copy: copy, title: CONTROL_TITLE, body: ROWS.sections_body, exact: CLOSED)
     end
 
-    def failed(*lines)
-      "#{lines.join("\n")}\n#{EDIT}\n"
+    def summary_row
+      body = "## Summary\n#{ROWS.sections_body}"
+      { id: "9", cases: [fail_plant(title: CONTROL_TITLE, body: body, exact: failed("fail: unknown section"))] }
     end
 
-    def fail_plant(extra)
-      { raw: true, status: 1 }.merge(extra)
-    end
+    def failed(*lines) = "#{lines.join("\n")}\n#{EDIT}\n"
 
-    def pass_plant(extra)
-      { raw: true, status: 0 }.merge(extra)
-    end
+    def fail_plant(extra) = { raw: true, status: 1 }.merge(extra)
+
+    def pass_plant(extra) = { raw: true, status: 0 }.merge(extra)
   end
 
   class CheckPrDescriptionTest < Minitest::Test
