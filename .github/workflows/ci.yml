@@ -5,6 +5,7 @@ on:
   push:
     branches: [main]
   pull_request:
+    types: [opened, edited, synchronize, reopened]
 
 permissions:
   contents: read
@@ -29,8 +30,16 @@ jobs:
         run: |
           if git cat-file -e HEAD^1:bin/check_pr_description; then
             git show HEAD^1:bin/check_pr_description > "$RUNNER_TEMP/check_pr_description"
+            git show HEAD^1:.cursor/rules/opening-a-pr.mdc > "$RUNNER_TEMP/opening-a-pr.mdc" || {
+              echo "fail: playbook copy not found in base"
+              exit 1
+            }
           elif git rev-parse -q --verify HEAD^1 >/dev/null; then
             cp bin/check_pr_description "$RUNNER_TEMP/check_pr_description"
+            cp .cursor/rules/opening-a-pr.mdc "$RUNNER_TEMP/opening-a-pr.mdc" || {
+              echo "fail: playbook copy not found in base"
+              exit 1
+            }
           else
             exit 1
           fi
