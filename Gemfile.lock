@@ -2,7 +2,7 @@ PATH
   remote: .
   specs:
     metz-scan (0.6.0)
-      rubocop-metz (~> 0.6.0)
+      rubocop-metz (= 0.6.0)
 
 PATH
   remote: rubocop-metz
@@ -47,9 +47,9 @@ GEM
       parser (>= 3.3.7.2)
       prism (~> 1.7)
     ruby-progressbar (1.13.0)
-    rubydex (0.4.1)
-    rubydex (0.4.1-x86_64-darwin)
-    rubydex (0.4.1-x86_64-linux)
+    rubydex (0.4.2)
+    rubydex (0.4.2-x86_64-darwin)
+    rubydex (0.4.2-x86_64-linux)
     unicode-display_width (3.3.0)
       unicode-emoji (~> 4.3)
     unicode-emoji (4.3.0)
@@ -85,9 +85,9 @@ CHECKSUMS
   rubocop-ast (1.50.0) sha256=b9ca88300da0803ee222ad20cdb30494c0a784eed06fdc35d254b06d662788db
   rubocop-metz (0.6.0)
   ruby-progressbar (1.13.0) sha256=80fc9c47a9b640d6834e0dc7b3c94c9df37f08cb072b7761e4a71e22cff29b33
-  rubydex (0.4.1) sha256=9856af8bfbe656eed95449dd9e2c8239a74662b4bb8563e4b99221dbc065a34a
-  rubydex (0.4.1-x86_64-darwin) sha256=a9681db5bc9be6a62f226d96d6889b6b600d0b09e7576391702aafd29912145b
-  rubydex (0.4.1-x86_64-linux) sha256=4e2c8398c9fc585485b54edd28f5ecf76b5a02255e177b6f8402e9d2afffd51b
+  rubydex (0.4.2) sha256=e0188fceba57cff72d8c220d815408fee65dfd81c2a3086f3872a8553b2a4d1b
+  rubydex (0.4.2-x86_64-darwin) sha256=49d3b16c893ae012d92782e988514d41c486bd6b909bb37c06a8b8a57d3f93bd
+  rubydex (0.4.2-x86_64-linux) sha256=ec8522671fb16a5d0c87329568823c83a2edd4d8db587e47ed311b4fd1ae69aa
   unicode-display_width (3.3.0) sha256=4b7aa66a4b11db50f6f7e98411215cd0dd10eaecb665d36eec5bcacb3fa0b613
   unicode-emoji (4.3.0) sha256=11c02fa73290378c066bb0562cd4c87d8e1b706fbbe0059ca12746a4244de8ce
 
