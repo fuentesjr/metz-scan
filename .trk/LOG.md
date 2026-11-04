@@ -238,3 +238,6 @@ Rule-7 item queued with the cop accuracy fix, reproduced on the fixed code. Each
 
 ## 2026-10-14T18:44Z log
 The test suite now runs as parallel processes (owner decision 2026-10-13). `bundle exec rake` runs the fast group as one process and each slow file as its own process, 4 at a time and never more than the CPU count, slowest files first; TEST_JOBS caps that count, and TEST_JOBS=1 runs serially. `rake test:slow` runs the slow files the same way, and `rake test:fast` is unchanged. Each test process gets its own scratch directory for scan tests. In clean clones on 2026-10-14 the full suite (938 runs) took 119 s, against 431 s serial.
+
+## 2026-11-02T18:30Z log
+Issue #102: development and CI Ruby is 4.0.9. `.ruby-version` is the pin, and CI reads that file. ruby/setup-ruby moves from the v1.331.0 commit to the v1.334.0 commit because the older pin's version list rejects 4.0.9 on hosted runners. The gem floor stays `>= 4.0`. No gem or lockfile changes. On Ruby 4.0.9 the suite was 943 runs and 0 failures without rubydex (10 skips) and with rubydex (2 skips). RuboCop was clean. Dogfood reported 0 findings.
