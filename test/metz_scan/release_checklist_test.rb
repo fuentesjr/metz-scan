@@ -134,6 +134,20 @@ module MetzScan
     CHECKOUT_PIN = "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1"
     RUBYDEX_CHECKOUT = "BUNDLE_WITH: rubydex\n\n    steps:\n      - name: Checkout\n        uses: "
     PINNED_ACTION = %r{\A[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+@[0-9a-f]{40}\z}
+    RETIRED_RUBY_PATCH = Regexp.new("4[._]0[._]7".b)
+    RUNTIME_GLOBS = [
+      ".ruby-version",
+      ".tool-versions",
+      "Gemfile",
+      "Gemfile.lock",
+      ".github/workflows/*.{yml,yaml}",
+      "Dockerfile*",
+      ".devcontainer/**/*.{json,yml,yaml}",
+      "README.md",
+      "AGENTS.md",
+      "CLAUDE.md",
+      "CONTRIBUTING.md"
+    ].freeze
     PART_S_PLANTS = [
       ["S1", CHECKOUT_PIN, "actions/checkout@v7.0.1 # v7.0.1", false],
       ["S3", "#{RUBYDEX_CHECKOUT}#{CHECKOUT_PIN}", "#{RUBYDEX_CHECKOUT}actions/checkout@v7.0.1 # v7.0.1", false],
@@ -149,6 +163,12 @@ module MetzScan
       text = File.read(repo_path(CI_WORKFLOW))
       assert_equal 8, PART_S_PLANTS.size
       PART_S_PLANTS.each { |plant| assert_sha_pinned_plant(text, plant) }
+    end
+
+    def test_repo_runtime_comes_from_ruby_version_file
+      assert_empty retired_ruby_patch_files
+      assert_equal "4.0.9", File.read(repo_path(".ruby-version")).strip
+      assert_equal [".ruby-version"], ruby_version_inputs.uniq
     end
 
     private
@@ -168,6 +188,26 @@ module MetzScan
     def job_uses(job) = [job["uses"], *Array(job["steps"]).filter_map { |step| step["uses"] }]
 
     def repo_path(path) = File.join(REPO_ROOT, path)
+
+    def ruby_version_inputs
+      workflow = YAML.safe_load_file(repo_path(CI_WORKFLOW))
+      workflow.fetch("jobs").values.flat_map { |job| job_ruby_versions(job) }
+    end
+
+    def job_ruby_versions(job)
+      Array(job["steps"]).filter_map { |step| step.dig("with", "ruby-version") }
+    end
+
+    def retired_ruby_patch_files
+      runtime_declaration_files.filter_map do |rel|
+        path = File.join(REPO_ROOT, rel)
+        rel if File.file?(path) && File.binread(path).match?(RETIRED_RUBY_PATCH)
+      end
+    end
+
+    def runtime_declaration_files
+      RUNTIME_GLOBS.flat_map { |pattern| Dir.glob(pattern, File::FNM_DOTMATCH, base: REPO_ROOT) }.uniq
+    end
   end
 
   module PrDescriptionWorkflow
