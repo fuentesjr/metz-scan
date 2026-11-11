@@ -31,6 +31,7 @@ Before you open a PR, and before you edit its title or body, run `/unslop` on
 the title and the body and apply its edits. The skill is at
 `.claude/skills/unslop/SKILL.md`; do not edit it (`SOURCE` records the upstream
 commit and the resync command).
+PR titles and bodies follow `.cursor/rules/opening-a-pr.mdc`, checked by the description step in the `test` job.
 
 ## OpenAI docs instruction
 
