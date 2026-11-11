@@ -660,4 +660,79 @@ module MetzScan
       assert_failures ["fail: unlinked reference #12 at body line #{line}"], BLOCK.run(body)
     end
   end
+
+  class CheckPrDescriptionFenceClosingTest < Minitest::Test
+    include CheckPrDescriptionCollapsedBlock::Assertions
+
+    BLOCK = CheckPrDescriptionCollapsedBlock
+    NAMES = BLOCK::NAMES
+    EM = CheckPrDescriptionRows::EM
+    FENCES = ["`", "~"].freeze
+    PAIR = [BLOCK::OPEN, "Inside the pair, a #{EM} dash.", BLOCK::CLOSE].freeze
+
+    def test_a_shorter_fence_line_does_not_close_a_longer_fence_so_a_later_opener_opens_nothing
+      FENCES.each do |char|
+        lines = [char * 4, char * 3, BLOCK::OPEN, char * 4]
+        assert_visible_offense_reported lines
+      end
+    end
+
+    def test_a_complete_details_pair_inside_a_longer_fence_after_a_shorter_fence_line_is_checked
+      FENCES.each { |char| assert_pair_in_fence_is_checked char * 4, char * 3, char * 4 }
+    end
+
+    def test_a_fence_line_followed_by_text_does_not_close_a_fence
+      FENCES.product(["ruby", " not a close"]).each do |char, text|
+        assert_pair_in_fence_is_checked char * 3, "#{char * 3}#{text}", char * 3
+      end
+    end
+
+    def test_a_fence_line_of_the_other_character_does_not_close_a_fence
+      FENCES.zip(FENCES.reverse).each do |outer, other|
+        assert_pair_in_fence_is_checked outer * 3, other * 3, outer * 3
+      end
+    end
+
+    def test_a_closing_fence_with_trailing_spaces_or_tabs_closes_the_fence
+      FENCES.product(["  ", "\t"]).each do |char, trailing|
+        body = BLOCK.join(BLOCK.sections, char * 3, "Plain words.", "#{char * 3}#{trailing}", "",
+                          BLOCK.block(*BLOCK.offenses))
+        assert_passes BLOCK.run(body)
+      end
+    end
+
+    def test_a_fence_indented_by_three_spaces_is_a_fence_so_an_opener_inside_it_opens_nothing
+      FENCES.each do |char|
+        assert_visible_offense_reported ["   #{char * 3}", BLOCK::OPEN, char * 3]
+      end
+    end
+
+    def test_a_closing_tag_with_an_attribute_like_suffix_ends_the_block
+      assert_later_offense_reported_after_closer "</details x>"
+    end
+
+    def test_a_self_closing_style_closing_tag_ends_the_block
+      assert_later_offense_reported_after_closer "</details/>"
+    end
+
+    private
+
+    def assert_pair_in_fence_is_checked(open_fence, middle_line, close_fence)
+      body = BLOCK.join(BLOCK.sections, open_fence, middle_line, PAIR, close_fence)
+      assert_failures ["fail: dash U+2014 at body line #{BLOCK.sections.size + 4}"], BLOCK.run(body)
+    end
+
+    def assert_visible_offense_reported(wrapper)
+      body = BLOCK.join(BLOCK.sections, wrapper, "Visible line, see #12.", "", BLOCK.block("Hidden, see #13."))
+      line = BLOCK.sections.size + wrapper.size + 1
+      assert_failures ["fail: unlinked reference #12 at body line #{line}"], BLOCK.run(body)
+    end
+
+    def assert_later_offense_reported_after_closer(closer)
+      block = BLOCK.reshaped_block(BLOCK::OPEN, closer, "See #12.")
+      body = BLOCK.join(BLOCK.section("## Why"), block, "", "Visible line, see #13.", "",
+                        BLOCK.block("Hidden, see #14."), "", BLOCK.sections(NAMES - ["## Why"]))
+      assert_failures ["fail: unlinked reference #13 at body line 10"], BLOCK.run(body)
+    end
+  end
 end
