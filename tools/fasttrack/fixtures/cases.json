@@ -1,0 +1,903 @@
+[
+  {
+    "id": 1,
+    "repo": "fuentesjr/metz-scan",
+    "kind": "http",
+    "variants": [
+      {
+        "fault": "timeout",
+        "expect": "not cleared: api error"
+      },
+      {
+        "fault": "status",
+        "status": 500,
+        "expect": "not cleared: api error"
+      },
+      {
+        "fault": "status",
+        "status": 404,
+        "expect": "not cleared: api error"
+      },
+      {
+        "fault": "truncated",
+        "expect": "not cleared: api error"
+      },
+      {
+        "fault": "truncated",
+        "patch": true,
+        "expect": "not cleared: api error"
+      },
+      {
+        "fault": "truncated-patch",
+        "expect": "not cleared: truncated patch"
+      },
+      {
+        "fault": "exception",
+        "expect": "not cleared: error"
+      },
+      {
+        "fault": "head-first",
+        "expect": "not cleared: head moved"
+      },
+      {
+        "fault": "head-second",
+        "expect": "not cleared: head moved"
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "repo": "fuentesjr/metz-scan",
+    "kind": "decide",
+    "expect": "not cleared: line ending",
+    "variants": [
+      {
+        "files": [
+          {
+            "filename": "control",
+            "status": "modified",
+            "patch": "@@ -1 +1 @@\n-old note\n+A short handbook note.\r\n",
+            "old_mode": "100644",
+            "new_mode": "100644"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "repo": "fuentesjr/metz-scan",
+    "kind": "decide",
+    "variants": [
+      {
+        "files": [
+          {
+            "filename": ".github/workflows/fasttrack-allowlist.yml",
+            "status": "modified",
+            "patch": "@@ -1 +1 @@\n-old note\n+A short handbook note.\n",
+            "old_mode": "100644",
+            "new_mode": "100644"
+          }
+        ],
+        "expect": "not cleared: workflow"
+      },
+      {
+        "files": [
+          {
+            "filename": "tools/fasttrack/fasttrack_allowlist.rb",
+            "status": "modified",
+            "patch": "@@ -1 +1 @@\n-old note\n+A short handbook note.\n",
+            "old_mode": "100644",
+            "new_mode": "100644"
+          }
+        ],
+        "expect": "not cleared: guard path"
+      },
+      {
+        "files": [
+          {
+            "filename": "tools/fasttrack/allowlist.yml",
+            "status": "modified",
+            "patch": "@@ -1 +1 @@\n-old note\n+A short handbook note.\n",
+            "old_mode": "100644",
+            "new_mode": "100644"
+          }
+        ],
+        "expect": "not cleared: guard path"
+      },
+      {
+        "files": [
+          {
+            "filename": "tools/fasttrack/fasttrack_allowlist_test.rb",
+            "status": "modified",
+            "patch": "@@ -1 +1 @@\n-old note\n+A short handbook note.\n",
+            "old_mode": "100644",
+            "new_mode": "100644"
+          }
+        ],
+        "expect": "not cleared: guard path"
+      },
+      {
+        "files": [
+          {
+            "filename": "tools/fasttrack/fixtures/cases.json",
+            "status": "modified",
+            "patch": "@@ -1 +1 @@\n-old note\n+A short handbook note.\n",
+            "old_mode": "100644",
+            "new_mode": "100644"
+          }
+        ],
+        "expect": "not cleared: guard path"
+      }
+    ]
+  },
+  {
+    "id": 4,
+    "repo": "fuentesjr/metz-scan",
+    "kind": "static",
+    "expect": "static check fails",
+    "rules": [
+      {
+        "name": "second trigger",
+        "file": "workflow",
+        "from": "    types: [opened, synchronize, reopened, labeled, unlabeled]\n",
+        "to": "    types: [opened, synchronize, reopened, labeled, unlabeled]\n  push:\n"
+      },
+      {
+        "name": "extra permission",
+        "file": "workflow",
+        "from": "  pull-requests: read\n",
+        "to": "  pull-requests: read\n  checks: write\n"
+      },
+      {
+        "name": "drop contents read",
+        "file": "workflow",
+        "from": "  contents: read\n",
+        "to": ""
+      },
+      {
+        "name": "checkout head sha",
+        "file": "workflow",
+        "from": "github.event.pull_request.base.sha",
+        "to": "github.event.pull_request.head.sha"
+      },
+      {
+        "name": "persist credentials",
+        "file": "workflow",
+        "from": "persist-credentials: false",
+        "to": "persist-credentials: true"
+      },
+      {
+        "name": "job name",
+        "file": "workflow",
+        "from": "jobs:\n  fasttrack-allowlist:\n",
+        "to": "jobs:\n  other-job:\n"
+      },
+      {
+        "name": "token expression",
+        "file": "workflow",
+        "from": "${{ github.token }}",
+        "to": "${{ secrets.GITHUB_TOKEN }}"
+      },
+      {
+        "name": "drop labeled",
+        "file": "workflow",
+        "from": "opened, synchronize, reopened, labeled, unlabeled",
+        "to": "opened, synchronize, reopened, unlabeled"
+      },
+      {
+        "name": "drop unlabeled",
+        "file": "workflow",
+        "from": "opened, synchronize, reopened, labeled, unlabeled",
+        "to": "opened, synchronize, reopened, labeled"
+      },
+      {
+        "name": "reorder types",
+        "file": "workflow",
+        "from": "labeled, unlabeled",
+        "to": "unlabeled, labeled"
+      },
+      {
+        "name": "pull request target",
+        "file": "workflow",
+        "from": "  pull_request:\n",
+        "to": "  pull_request_target:\n"
+      },
+      {
+        "name": "workflow run trigger",
+        "file": "workflow",
+        "from": "  pull_request:\n",
+        "to": "  pull_request:\n  workflow_run:\n"
+      },
+      {
+        "name": "job permissions",
+        "file": "workflow",
+        "from": "  fasttrack-allowlist:\n    runs-on:",
+        "to": "  fasttrack-allowlist:\n    permissions:\n      contents: write\n    runs-on:"
+      },
+      {
+        "name": "drop token env",
+        "file": "workflow",
+        "from": "        env:\n          GITHUB_TOKEN: ${{ github.token }}\n",
+        "to": ""
+      },
+      {
+        "name": "pins key",
+        "file": "allowlist",
+        "from": "repo: fuentesjr/metz-scan\n",
+        "to": "repo: fuentesjr/metz-scan\npins: []\n"
+      },
+      {
+        "name": "lockfiles key",
+        "file": "allowlist",
+        "from": "repo: fuentesjr/metz-scan\n",
+        "to": "repo: fuentesjr/metz-scan\nlockfiles: []\n"
+      }
+    ]
+  },
+  {
+    "id": 5,
+    "repo": "fuentesjr/metz-scan",
+    "kind": "decide",
+    "expect": "not cleared: workflow",
+    "variants": [
+      {
+        "files": [
+          {
+            "filename": ".github/workflows/ci.yml",
+            "status": "modified",
+            "patch": "@@ -68,7 +68,7 @@ jobs:\n           echo \"docs_only=$docs_only\"\n \n       - name: Setup Ruby\n-        uses: ruby/setup-ruby@26e5b7d197ebf60545ee9667bcbace0be11ccaec # v1.334.0\n+        uses: ruby/setup-ruby@b3aaceaef7e0ee231b499e7b5f49c03fc1d32199 # v1.338.0\n         with:\n           ruby-version: .ruby-version\n           bundler-cache: true\n",
+            "old_mode": "100644",
+            "new_mode": "100644"
+          }
+        ]
+      },
+      {
+        "files": [
+          {
+            "filename": ".github/workflows/extra.yaml",
+            "status": "added",
+            "patch": "@@ -1 +1 @@\n-old note\n+A short handbook note.\n",
+            "old_mode": "100644",
+            "new_mode": "100644"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 6,
+    "repo": "fuentesjr/metz-scan",
+    "kind": "decide",
+    "expect": "not cleared: outside class",
+    "variants": [
+      {
+        "files": [
+          {
+            "filename": "lib/README.md",
+            "status": "added",
+            "patch": "@@ -1 +1 @@\n-old note\n+A short handbook note.\n",
+            "old_mode": "100644",
+            "new_mode": "100644"
+          }
+        ]
+      },
+      {
+        "files": [
+          {
+            "filename": "AGENTS.md",
+            "status": "added",
+            "patch": "@@ -1 +1 @@\n-old note\n+A short handbook note.\n",
+            "old_mode": "100644",
+            "new_mode": "100644"
+          }
+        ]
+      },
+      {
+        "files": [
+          {
+            "filename": "docs/agent-rules.mdc",
+            "status": "added",
+            "patch": "@@ -1 +1 @@\n-old note\n+A short handbook note.\n",
+            "old_mode": "100644",
+            "new_mode": "100644"
+          }
+        ]
+      },
+      {
+        "files": [
+          {
+            "filename": ".github/PULL_REQUEST_TEMPLATE.md",
+            "status": "added",
+            "patch": "@@ -1 +1 @@\n-old note\n+A short handbook note.\n",
+            "old_mode": "100644",
+            "new_mode": "100644"
+          }
+        ]
+      },
+      {
+        "files": [
+          {
+            "filename": ".cursor/notes.md",
+            "status": "added",
+            "patch": "@@ -1 +1 @@\n-old note\n+A short handbook note.\n",
+            "old_mode": "100644",
+            "new_mode": "100644"
+          }
+        ]
+      },
+      {
+        "files": [
+          {
+            "filename": ".github/CODEOWNERS.md",
+            "status": "added",
+            "patch": "@@ -1 +1 @@\n-old note\n+A short handbook note.\n",
+            "old_mode": "100644",
+            "new_mode": "100644"
+          }
+        ]
+      },
+      {
+        "files": [
+          {
+            "filename": "test/guide.md",
+            "status": "added",
+            "patch": "@@ -1 +1 @@\n-old note\n+A short handbook note.\n",
+            "old_mode": "100644",
+            "new_mode": "100644"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 7,
+    "repo": "fuentesjr/metz-scan",
+    "kind": "decide",
+    "variants": [
+      {
+        "files": [
+          {
+            "filename": "control",
+            "status": "removed",
+            "patch": "@@ -1 +1 @@\n-old note\n+A short handbook note.\n",
+            "old_mode": "100644",
+            "new_mode": "100644"
+          }
+        ],
+        "expect": "not cleared: delete"
+      },
+      {
+        "files": [
+          {
+            "filename": "control",
+            "status": "renamed",
+            "patch": "@@ -1 +1 @@\n-old note\n+A short handbook note.\n",
+            "old_mode": "100644",
+            "new_mode": "100644",
+            "previous_filename": "docs/old-note.md"
+          }
+        ],
+        "expect": "not cleared: rename"
+      },
+      {
+        "files": [
+          {
+            "filename": "control",
+            "status": "copied",
+            "patch": "@@ -1 +1 @@\n-old note\n+A short handbook note.\n",
+            "old_mode": "100644",
+            "new_mode": "100644"
+          }
+        ],
+        "expect": "not cleared: copy"
+      },
+      {
+        "files": [
+          {
+            "filename": "control",
+            "status": "modified",
+            "patch": "@@ -1 +1 @@\n-old note\n+A short handbook note.\n",
+            "old_mode": "100644",
+            "new_mode": "100755"
+          }
+        ],
+        "expect": "not cleared: mode"
+      },
+      {
+        "files": [
+          {
+            "filename": "control",
+            "status": "modified",
+            "patch": "@@ -1 +1 @@\n-old note\n+A short handbook note.\n",
+            "old_mode": "100644",
+            "new_mode": "120000"
+          }
+        ],
+        "expect": "not cleared: symlink"
+      },
+      {
+        "files": [
+          {
+            "filename": "control",
+            "status": "modified",
+            "patch": "@@ -1 +1 @@\n-old note\n+A short handbook note.\n",
+            "old_mode": "100644",
+            "new_mode": "100644",
+            "binary": true
+          }
+        ],
+        "expect": "not cleared: binary"
+      },
+      {
+        "files": [
+          {
+            "filename": "control",
+            "status": "modified",
+            "patch": "@@ -1 +1 @@\n-old note\n+A short handbook note.\n",
+            "old_mode": "100644",
+            "new_mode": "160000"
+          }
+        ],
+        "expect": "not cleared: submodule"
+      }
+    ]
+  },
+  {
+    "id": 8,
+    "repo": "fuentesjr/metz-scan",
+    "kind": "decide",
+    "expect": "not cleared: bidi",
+    "variants": [
+      {
+        "files": [
+          {
+            "filename": "control",
+            "status": "modified",
+            "patch": "@@ -1 +1 @@\n-old note\n+A short handbook note.‮\n",
+            "old_mode": "100644",
+            "new_mode": "100644"
+          }
+        ]
+      },
+      {
+        "files": [
+          {
+            "filename": "control",
+            "status": "modified",
+            "patch": "@@ -1 +1 @@\n-old note\n+A short handbook note.​\n",
+            "old_mode": "100644",
+            "new_mode": "100644"
+          }
+        ]
+      },
+      {
+        "files": [
+          {
+            "filename": "control",
+            "status": "modified",
+            "old_mode": "100644",
+            "new_mode": "100644",
+            "patch": "@@ -1 +1 @@\n-old note\n+++‮\n"
+          }
+        ]
+      },
+      {
+        "files": [
+          {
+            "filename": "control",
+            "status": "modified",
+            "old_mode": "100644",
+            "new_mode": "100644",
+            "patch": "@@ -1 +1 @@\n-old note\n+++ permissions:\n"
+          }
+        ],
+        "expect": "not cleared: never-clear"
+      }
+    ]
+  },
+  {
+    "id": 9,
+    "repo": "fuentesjr/metz-scan",
+    "kind": "decide",
+    "expect": "not cleared: docs exclude",
+    "variants": [
+      {
+        "files": [
+          {
+            "filename": "README.md",
+            "status": "added",
+            "patch": "@@ -1 +1 @@\n-old note\n+A short handbook note.\n",
+            "old_mode": "100644",
+            "new_mode": "100644"
+          }
+        ]
+      },
+      {
+        "files": [
+          {
+            "filename": "docs/project-analyzer-calibration.md",
+            "status": "added",
+            "patch": "@@ -1 +1 @@\n-old note\n+A short handbook note.\n",
+            "old_mode": "100644",
+            "new_mode": "100644"
+          }
+        ]
+      },
+      {
+        "files": [
+          {
+            "filename": "docs/calibration/note.md",
+            "status": "added",
+            "patch": "@@ -1 +1 @@\n-old note\n+A short handbook note.\n",
+            "old_mode": "100644",
+            "new_mode": "100644"
+          }
+        ]
+      },
+      {
+        "files": [
+          {
+            "filename": "docs/calibration/nested/note.md",
+            "status": "added",
+            "patch": "@@ -1 +1 @@\n-old note\n+A short handbook note.\n",
+            "old_mode": "100644",
+            "new_mode": "100644"
+          }
+        ]
+      },
+      {
+        "files": [
+          {
+            "filename": "docs/design-decision-records.md",
+            "status": "added",
+            "patch": "@@ -1 +1 @@\n-old note\n+A short handbook note.\n",
+            "old_mode": "100644",
+            "new_mode": "100644"
+          }
+        ]
+      },
+      {
+        "files": [
+          {
+            "filename": "docs/spikes/sorbet-issue-26.md",
+            "status": "added",
+            "patch": "@@ -1 +1 @@\n-old note\n+A short handbook note.\n",
+            "old_mode": "100644",
+            "new_mode": "100644"
+          }
+        ]
+      },
+      {
+        "files": [
+          {
+            "filename": "docs/releases/v0.6.0.md",
+            "status": "added",
+            "patch": "@@ -1 +1 @@\n-old note\n+A short handbook note.\n",
+            "old_mode": "100644",
+            "new_mode": "100644"
+          }
+        ]
+      },
+      {
+        "files": [
+          {
+            "filename": "docs/releases/notes/extra.md",
+            "status": "added",
+            "patch": "@@ -1 +1 @@\n-old note\n+A short handbook note.\n",
+            "old_mode": "100644",
+            "new_mode": "100644"
+          }
+        ]
+      },
+      {
+        "files": [
+          {
+            "filename": "docs/dogfooding/round.md",
+            "status": "added",
+            "patch": "@@ -1 +1 @@\n-old note\n+A short handbook note.\n",
+            "old_mode": "100644",
+            "new_mode": "100644"
+          }
+        ]
+      },
+      {
+        "files": [
+          {
+            "filename": "docs/dogfooding/nested/note.md",
+            "status": "added",
+            "patch": "@@ -1 +1 @@\n-old note\n+A short handbook note.\n",
+            "old_mode": "100644",
+            "new_mode": "100644"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 10,
+    "repo": "fuentesjr/metz-scan",
+    "kind": "decide",
+    "expect": "not cleared: docs reference",
+    "variants": [
+      {
+        "files": [
+          {
+            "filename": "control",
+            "status": "added",
+            "patch": "@@ -1 +1 @@\n-old note\n+A short handbook note.\n",
+            "old_mode": "100644",
+            "new_mode": "100644"
+          }
+        ],
+        "tree": [
+          {
+            "path": "lib/metz_scan/cli.rb",
+            "text": "control"
+          }
+        ]
+      },
+      {
+        "files": [
+          {
+            "filename": "control",
+            "status": "added",
+            "patch": "@@ -1 +1 @@\n-old note\n+A short handbook note.\n",
+            "old_mode": "100644",
+            "new_mode": "100644"
+          }
+        ],
+        "tree": [
+          {
+            "path": "AGENTS.md",
+            "text": "control"
+          }
+        ]
+      },
+      {
+        "files": [
+          {
+            "filename": "control",
+            "status": "added",
+            "patch": "@@ -1 +1 @@\n-old note\n+A short handbook note.\n",
+            "old_mode": "100644",
+            "new_mode": "100644"
+          }
+        ],
+        "tree": [
+          {
+            "path": "CLAUDE.md",
+            "text": "control"
+          }
+        ]
+      },
+      {
+        "files": [
+          {
+            "filename": "control",
+            "status": "added",
+            "patch": "@@ -1 +1 @@\n-old note\n+A short handbook note.\n",
+            "old_mode": "100644",
+            "new_mode": "100644"
+          }
+        ],
+        "tree": [
+          {
+            "path": ".claude/skills/land-slice/SKILL.md",
+            "text": "control"
+          }
+        ]
+      },
+      {
+        "files": [
+          {
+            "filename": "control",
+            "status": "added",
+            "patch": "@@ -1 +1 @@\n-old note\n+A short handbook note.\n",
+            "old_mode": "100644",
+            "new_mode": "100644"
+          }
+        ],
+        "tree": [
+          {
+            "path": ".github/ISSUE_TEMPLATE/bug.md",
+            "text": "control"
+          }
+        ]
+      },
+      {
+        "files": [
+          {
+            "filename": "control",
+            "status": "added",
+            "patch": "@@ -1 +1 @@\n-old note\n+A short handbook note.\n",
+            "old_mode": "100644",
+            "new_mode": "100644"
+          }
+        ],
+        "tree": [
+          {
+            "path": ".cursor/rules/opening-a-pr.mdc",
+            "text": "control"
+          }
+        ]
+      },
+      {
+        "files": [
+          {
+            "filename": "control",
+            "status": "added",
+            "patch": "@@ -1 +1 @@\n-old note\n+A short handbook note.\n",
+            "old_mode": "100644",
+            "new_mode": "100644"
+          }
+        ],
+        "tree": [
+          {
+            "path": ".agents/skills/land-slice/SKILL.md",
+            "text": "control"
+          }
+        ]
+      },
+      {
+        "files": [
+          {
+            "filename": "control",
+            "status": "added",
+            "patch": "@@ -1 +1 @@\n-old note\n+A short handbook note.\n",
+            "old_mode": "100644",
+            "new_mode": "100644"
+          }
+        ],
+        "tree": [
+          {
+            "path": "Gemfile",
+            "text": "control"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 11,
+    "repo": "fuentesjr/metz-scan",
+    "kind": "decide",
+    "variants": [
+      {
+        "files": [
+          {
+            "filename": "control",
+            "status": "added",
+            "patch": "@@ -1 +1 @@\n-old note\n+A short handbook note.\n",
+            "old_mode": "100644",
+            "new_mode": "100644"
+          }
+        ],
+        "pull": {
+          "user_login": "dependabot[bot]",
+          "user_id": 1,
+          "labels": []
+        },
+        "expect": "not cleared: docs author"
+      },
+      {
+        "files": [
+          {
+            "filename": "control",
+            "status": "added",
+            "patch": "@@ -1 +1 @@\n-old note\n+A short handbook note.\n",
+            "old_mode": "100644",
+            "new_mode": "100644"
+          }
+        ],
+        "pull": {
+          "user_login": "octocat",
+          "user_id": 49699333,
+          "labels": []
+        },
+        "expect": "not cleared: docs author"
+      },
+      {
+        "files": [
+          {
+            "filename": "control",
+            "status": "added",
+            "patch": "@@ -1 +1 @@\n-old note\n+A short handbook note.\n",
+            "old_mode": "100644",
+            "new_mode": "100644"
+          }
+        ],
+        "pull": {
+          "user_login": "octocat",
+          "user_id": 1,
+          "labels": [
+            "risk: high"
+          ]
+        },
+        "expect": "not cleared: docs label"
+      },
+      {
+        "files": [
+          {
+            "filename": "control",
+            "status": "added",
+            "patch": "@@ -1 +1 @@\n-old note\n+A short handbook note.\n",
+            "old_mode": "100644",
+            "new_mode": "100644"
+          }
+        ],
+        "pull": {
+          "user_login": "octocat",
+          "user_id": 1,
+          "labels": [
+            "Risk: Medium"
+          ]
+        },
+        "expect": "not cleared: docs label"
+      },
+      {
+        "files": [
+          {
+            "filename": "control",
+            "status": "added",
+            "patch": "@@ -1 +1 @@\n-old note\n+A short handbook note.\n",
+            "old_mode": "100644",
+            "new_mode": "100644"
+          }
+        ],
+        "pull": {
+          "user_login": "octocat",
+          "user_id": 1,
+          "labels": [
+            "RISK: High"
+          ]
+        },
+        "expect": "not cleared: docs label"
+      },
+      {
+        "files": [
+          {
+            "filename": "control",
+            "status": "added",
+            "patch": "@@ -1 +1 @@\n-old note\n+A short handbook note.\n",
+            "old_mode": "100644",
+            "new_mode": "100644"
+          }
+        ],
+        "pull": {
+          "user_login": "octocat",
+          "user_id": 1,
+          "labels": [
+            "risk:"
+          ]
+        },
+        "expect": "not cleared: docs label"
+      }
+    ]
+  },
+  {
+    "id": 12,
+    "repo": "fuentesjr/metz-scan",
+    "kind": "decide",
+    "expect": "not cleared: outside class",
+    "variants": [
+      {
+        "files": [
+          {
+            "filename": "Gemfile.lock",
+            "status": "modified",
+            "patch": "@@ -31,15 +31,15 @@ GEM\n     racc (1.8.1)\n     rainbow (3.1.1)\n     rake (13.4.2)\n-    regexp_parser (2.12.0)\n-    rubocop (1.91.0)\n+    regexp_parser (2.13.1)\n+    rubocop (1.92.0)\n       json (>= 2.3)\n       language_server-protocol (~> 3.17.0.2)\n       lint_roller (~> 1.1.0)\n       parallel (>= 1.10)\n       parser (>= 3.3.0.2)\n       rainbow (>= 2.2.2, < 4.0)\n-      regexp_parser (>= 2.9.3, < 3.0)\n+      regexp_parser (>= 2.11.3, < 3.0)\n       rubocop-ast (>= 1.49.0, < 2.0)\n       ruby-progressbar (~> 1.7)\n       unicode-display_width (>= 2.4.0, < 4.0)\n",
+            "old_mode": "100644",
+            "new_mode": "100644"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 13,
+    "repo": "fuentesjr/metz-scan",
+    "kind": "cli",
+    "expect": "cleared: docs"
+  }
+]

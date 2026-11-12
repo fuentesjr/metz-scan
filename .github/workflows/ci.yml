@@ -73,6 +73,8 @@ jobs:
           ruby-version: .ruby-version
           bundler-cache: true
 
+      - run: bundle exec ruby tools/fasttrack/fasttrack_allowlist_test.rb
+
       - name: Run docs-freshness tests
         if: steps.scope.outputs.docs_only == 'true'
         run: >-

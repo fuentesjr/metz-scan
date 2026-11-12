@@ -61,3 +61,5 @@ implementation changes, agenticons used if any, calibration or evidence results
 when relevant, tests and validation results, review findings, docs or notes updated,
 residual risks or deferred work, working-tree status, and whether anything was
 pushed.
+
+A clear counts only as a check run named `fasttrack-allowlist` from `.github/workflows/fasttrack-allowlist.yml`, event `pull_request`, with head_sha equal to the current tip. Merge Engineer resolves every such run on the tip. Any run failing path, event or head_sha, or still queued or in progress, means not cleared. Otherwise the newest run (latest started_at) counts. Guard paths are `.github/workflows/fasttrack-allowlist.yml`, `tools/fasttrack/fasttrack_allowlist.rb`, `tools/fasttrack/allowlist.yml`, `tools/fasttrack/fasttrack_allowlist_test.rb`, and `tools/fasttrack/fixtures`.
