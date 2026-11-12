@@ -493,7 +493,7 @@ module MetzScan
     def zizmor_command
       [
         ["Z4d", [edit(:weaken_zizmor_command)], JOB_VALUE],
-        ["Z4e", [edit(:weaken_zizmor_command)], JOB_VALUE],
+        ["Z4e", [edit(:change_zizmor_sha)], JOB_VALUE],
         ["Z4f", [edit(:zizmor_after_setup)], "step order differs"]
       ]
     end
@@ -595,6 +595,10 @@ module MetzScan
 
     def weaken_zizmor_command(text)
       text.sub(" --no-ignores", "")
+    end
+
+    def change_zizmor_sha(text)
+      text.sub("d185f726bdaf92df", "0000000000000000")
     end
 
     def zizmor_after_setup(text)

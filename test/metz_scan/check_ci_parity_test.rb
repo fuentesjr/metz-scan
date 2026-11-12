@@ -33,6 +33,7 @@ module MetzScan
       FileUtils.mkdir_p([paths.repo, paths.fake_bin, paths.tmp_base])
       build_repo(paths.repo, tracker)
       build_fake_bundle(paths.fake_bin, fail_rubocop)
+      CheckCiParityFetchFakes.write(paths.fake_bin)
       initialize_git(paths.repo)
     end
 
@@ -42,10 +43,9 @@ module MetzScan
     end
 
     def build_repo(repo, tracker)
-      FileUtils.mkdir_p([File.join(repo, "bin"), File.join(repo, ".trk"), File.join(repo, ".github/workflows")])
+      FileUtils.mkdir_p([File.join(repo, "bin"), File.join(repo, ".trk")])
       copy_ci_scripts(repo)
       write_guard_stubs(repo)
-      CheckCiParityWorkflow.write(repo)
       File.write(File.join(repo, ".trk/STATE.md"), tracker)
     end
 
@@ -129,13 +129,40 @@ module MetzScan
     end
   end
 
-  module CheckCiParityWorkflow
+  module CheckCiParityFetchFakes
+    CURL = <<~SH
+      #!/bin/sh
+      while [ $# -gt 0 ]; do
+        if [ "$1" = "-o" ]; then
+          : > "$2"
+          exit 0
+        fi
+        shift
+      done
+      exit 0
+    SH
+    SHA = "#!/bin/sh\nexit 0\n"
+    TAR = <<~SH
+      #!/bin/sh
+      while [ $# -gt 0 ]; do
+        if [ "$1" = "-C" ]; then
+          printf '%s\n' '#!/bin/sh' 'exit 0' > "$2/zizmor"
+          /bin/chmod 755 "$2/zizmor"
+          exit 0
+        fi
+        shift
+      done
+      exit 1
+    SH
+
     module_function
 
-    def write(repo)
-      body = "name: t\non: push\npermissions: {contents: read}\n" \
-             "jobs: {t: {runs-on: ubuntu-24.04, steps: [{run: 'true'}]}}\n"
-      File.write(File.join(repo, ".github/workflows/ci.yml"), body)
+    def write(dir)
+      { "curl" => CURL, "sha256sum" => SHA, "tar" => TAR }.each do |name, body|
+        path = File.join(dir, name)
+        File.write(path, body)
+        File.chmod(0o755, path)
+      end
     end
   end
 
