@@ -38,8 +38,9 @@ DOCS_FRESHNESS_TESTS = "bundle exec ruby -Ilib -Itest -Irubocop-metz/lib -Iruboc
                        ".each { |f| require File.expand_path(f) }'"
 FAST_TESTS = "bundle exec rake test:fast"
 FULL_TESTS = "bundle exec rake"
-# rubocop:disable-next Layout/LineLength -- the parity coverage check matches this command as one source span
-ZIZMOR_AUDIT = 'curl -sSfL -o "$RUNNER_TEMP/zizmor.tar.gz" https://github.com/zizmorcore/zizmor/releases/download/v1.31.1/zizmor-x86_64-unknown-linux-gnu.tar.gz && echo "d185f726bdaf92df78273217dfdd24ebcd6b0ef48cf3ce776ff5762b6e138c99  $RUNNER_TEMP/zizmor.tar.gz" | sha256sum -c - && tar -xzf "$RUNNER_TEMP/zizmor.tar.gz" -C "$RUNNER_TEMP" zizmor && "$RUNNER_TEMP/zizmor" --offline --no-config --no-ignores --strict-collection --collect=all .github/workflows'
+ZIZMOR_AUDIT = <<~CMD.chomp
+  curl -sSfL -o "$RUNNER_TEMP/zizmor.tar.gz" https://github.com/zizmorcore/zizmor/releases/download/v1.31.1/zizmor-x86_64-unknown-linux-gnu.tar.gz && echo "d185f726bdaf92df78273217dfdd24ebcd6b0ef48cf3ce776ff5762b6e138c99  $RUNNER_TEMP/zizmor.tar.gz" | sha256sum -c - && tar -xzf "$RUNNER_TEMP/zizmor.tar.gz" -C "$RUNNER_TEMP" zizmor && "$RUNNER_TEMP/zizmor" --offline --no-config --no-ignores --strict-collection --collect=all .github/workflows
+CMD
 TESTS_BY_MODE = { docs_only: DOCS_FRESHNESS_TESTS, code: FAST_TESTS }.freeze
 DOCS_PATH_PREFIXES = %w[docs/ skills/].freeze
 UNDETERMINED_REASON = "no upstream configured or diff range undeterminable"
