@@ -417,7 +417,7 @@ module MetzScan
 
     def human_plant
       lines = ["fail: bad title", *ROWS::REQUIRED.map { |name| "fail: missing section #{name}" }]
-      fail_plant(title: "Bump x from 1 to 2", body: "", login: "sal", head: "dependabot/bundler/x",
+      fail_plant(title: "Bump x from 1 to 2", body: "", login: "octocat", head: "dependabot/bundler/x",
                  labels: ["dependencies"], exact: failed(*lines))
     end
 
