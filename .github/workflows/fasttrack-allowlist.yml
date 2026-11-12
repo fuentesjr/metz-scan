@@ -1,0 +1,30 @@
+name: fasttrack-allowlist
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  fasttrack-allowlist:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout base
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@b3aaceaef7e0ee231b499e7b5f49c03fc1d32199 # v1.338.0
+        with:
+          ruby-version: .ruby-version
+          bundler: none
+
+      - name: Decide clearance
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: ruby tools/fasttrack/fasttrack_allowlist.rb

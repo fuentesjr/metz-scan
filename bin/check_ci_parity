@@ -45,6 +45,7 @@ UNDETERMINED_REASON = "no upstream configured or diff range undeterminable"
 STEP_TEMPLATE = [
   ["tracker hygiene", "bin/check_tracker_queue"],
   ["bundle install", "bundle install"],
+  ["fasttrack clearance", "bundle exec ruby tools/fasttrack/fasttrack_allowlist_test.rb"],
   ["tests", :tests],
   ["rubocop", "bundle exec rubocop"],
   ["calibration smoke", CALIBRATION_SMOKE],

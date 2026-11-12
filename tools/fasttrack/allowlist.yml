@@ -1,0 +1,29 @@
+repo: fuentesjr/metz-scan
+docs_exclude:
+  - README.md
+  - docs/project-analyzer-calibration.md
+  - docs/calibration/**
+  - docs/design-decision-records.md
+  - docs/spikes/sorbet-issue-26.md
+  - docs/releases/**
+  - docs/dogfooding/**
+guard_paths:
+  - .github/workflows/fasttrack-allowlist.yml
+  - tools/fasttrack/fasttrack_allowlist.rb
+  - tools/fasttrack/allowlist.yml
+  - tools/fasttrack/fasttrack_allowlist_test.rb
+  - tools/fasttrack/fixtures
+never_clear:
+  - "permissions:"
+  - "on:"
+  - "pull_request_target"
+  - "workflow_run"
+  - "secrets."
+  - "GITHUB_TOKEN"
+  - "id-token"
+  - "persist-credentials"
+  - "run:"
+  - "env:"
+  - "if:"
+  - "with:"
+  - "token"
