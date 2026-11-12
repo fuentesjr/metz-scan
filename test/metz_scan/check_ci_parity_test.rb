@@ -26,9 +26,7 @@ module MetzScan
     end
 
     def prepared_ci_parity_repo(dir, tracker, fail_rubocop)
-      paths = ci_parity_paths(dir)
-      build_ci_repo(paths, tracker, fail_rubocop)
-      paths
+      ci_parity_paths(dir).tap { |paths| build_ci_repo(paths, tracker, fail_rubocop) }
     end
 
     def build_ci_repo(paths, tracker, fail_rubocop)
@@ -44,15 +42,15 @@ module MetzScan
     end
 
     def build_repo(repo, tracker)
-      FileUtils.mkdir_p([File.join(repo, "bin"), File.join(repo, ".trk")])
+      FileUtils.mkdir_p([File.join(repo, "bin"), File.join(repo, ".trk"), File.join(repo, ".github/workflows")])
       copy_ci_scripts(repo)
       write_guard_stubs(repo)
+      CheckCiParityWorkflow.write(repo)
       File.write(File.join(repo, ".trk/STATE.md"), tracker)
     end
 
     def copy_ci_scripts(repo)
-      copy_script(repo, "check_ci_parity")
-      copy_script(repo, "check_tracker_queue")
+      %w[check_ci_parity check_tracker_queue].each { |name| copy_script(repo, name) }
     end
 
     def write_guard_stubs(repo)
@@ -128,6 +126,16 @@ module MetzScan
     def tracker_with_items(*items)
       body = items.each_with_index.map { |item, index| "#{index + 1}. #{item}" }.join("\n")
       "# STATE\n\n## Next\n\n#{body}\n"
+    end
+  end
+
+  module CheckCiParityWorkflow
+    module_function
+
+    def write(repo)
+      body = "name: t\non: push\npermissions: {contents: read}\n" \
+             "jobs: {t: {runs-on: ubuntu-24.04, steps: [{run: 'true'}]}}\n"
+      File.write(File.join(repo, ".github/workflows/ci.yml"), body)
     end
   end
 

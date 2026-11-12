@@ -17,10 +17,6 @@ module MetzScan
     RELEASE_ISSUE_SMOKE = "bundle exec ruby -Ilib -Itest test/metz_scan/create_release_issue_test.rb"
     RELEASE_ISSUE_DRY_RUN = "bin/create_release_issue --dry-run"
     PART_P_PLANTS = [
-      ["P1", "permissions:\n  contents: read\n\n", "", false],
-      ["P2", "contents: read", "\"contents\": \"write\"", false],
-      ["P4", "permissions:\n  contents: read\n", "permissions: {contents: read, pull-requests: write}\n", false],
-      ["P6", "  rubydex:\n", "  rubydex:\n    permissions: read-all\n", false],
       ["P7", "name: CI", "name: CI", true]
     ].freeze
 
@@ -70,7 +66,7 @@ module MetzScan
 
     def test_ci_permissions_are_contents_read
       text = File.read(repo_path(".github/workflows/ci.yml"))
-      assert_equal 5, PART_P_PLANTS.size
+      assert_equal 1, PART_P_PLANTS.size
       PART_P_PLANTS.each { |plant| assert_contents_read_plant(text, plant) }
     end
 
@@ -132,7 +128,6 @@ module MetzScan
     REPO_ROOT = File.expand_path("../..", __dir__)
     CI_WORKFLOW = ".github/workflows/ci.yml"
     CHECKOUT_PIN = "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1"
-    RUBYDEX_CHECKOUT = "BUNDLE_WITH: rubydex\n\n    steps:\n      - name: Checkout\n        uses: "
     PINNED_ACTION = %r{\A[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+@[0-9a-f]{40}\z}
     RETIRED_RUBY_PATCH = Regexp.new("4[._]0[._]7".b)
     RUNTIME_GLOBS = [
@@ -149,19 +144,13 @@ module MetzScan
       "CONTRIBUTING.md"
     ].freeze
     PART_S_PLANTS = [
-      ["S1", CHECKOUT_PIN, "actions/checkout@v7.0.1 # v7.0.1", false],
-      ["S3", "#{RUBYDEX_CHECKOUT}#{CHECKOUT_PIN}", "#{RUBYDEX_CHECKOUT}actions/checkout@v7.0.1 # v7.0.1", false],
-      ["S4", CHECKOUT_PIN, "actions/checkout@3d3c42e # v7.0.1", false],
       ["S5", CHECKOUT_PIN, "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1", false],
-      ["S6", "    steps:\n", "    steps:\n      - { uses: actions/cache@v4 } # v4\n", false],
-      ["S7", "name: CI", "name: CI", true],
-      ["S8", "    steps:\n", "    steps:\n      - \"uses\": actions/cache@v4 # v4\n", false],
-      ["S9", "jobs:\n", "jobs:\n  reusable:\n    uses: fuentesjr/x/.github/workflows/y.yml@main # v1\n", false]
+      ["S7", "name: CI", "name: CI", true]
     ].freeze
 
     def test_ci_actions_are_sha_pinned
       text = File.read(repo_path(CI_WORKFLOW))
-      assert_equal 8, PART_S_PLANTS.size
+      assert_equal 2, PART_S_PLANTS.size
       PART_S_PLANTS.each { |plant| assert_sha_pinned_plant(text, plant) }
     end
 
@@ -224,6 +213,15 @@ module MetzScan
       "uses" => "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
       "with" => CHECKOUT_WITH
     }.freeze
+    ZIZMOR_RUN = "curl -sSfL -o \"$RUNNER_TEMP/zizmor.tar.gz\" " \
+                 "https://github.com/zizmorcore/zizmor/releases/download/v1.31.1/" \
+                 "zizmor-x86_64-unknown-linux-gnu.tar.gz && " \
+                 "echo \"d185f726bdaf92df78273217dfdd24ebcd6b0ef48cf3ce776ff5762b6e138c99  " \
+                 "$RUNNER_TEMP/zizmor.tar.gz\" | sha256sum -c - && " \
+                 "tar -xzf \"$RUNNER_TEMP/zizmor.tar.gz\" -C \"$RUNNER_TEMP\" zizmor && " \
+                 "\"$RUNNER_TEMP/zizmor\" --offline --no-config --no-ignores " \
+                 "--strict-collection --collect=all .github/workflows"
+    ZIZMOR = { "name" => "zizmor", "run" => ZIZMOR_RUN }.freeze
     JOB_KEYS = %w[outputs runs-on steps].freeze
     STEP_KEYS = %w[if name run].freeze
 
@@ -306,7 +304,7 @@ module MetzScan
 
     def place_flags(steps, index)
       flags = []
-      flags << "step order differs" unless index == 1
+      flags << "step order differs" unless index == 2
       flags.concat(PrDescriptionWorkflowText.before_flags(steps, index))
       flags.concat(PrDescriptionWorkflowText.checkout_with_flags(steps))
       flags
@@ -386,8 +384,8 @@ module MetzScan
     end
 
     def before_flags(steps, index)
-      checkout = [PrDescriptionWorkflow::CHECKOUT]
-      return [PrDescriptionWorkflow::JOB_VALUE] unless steps[0...index] == checkout
+      prefix = [PrDescriptionWorkflow::CHECKOUT, PrDescriptionWorkflow::ZIZMOR]
+      return [PrDescriptionWorkflow::JOB_VALUE] unless steps[0...index] == prefix
 
       []
     end
@@ -405,7 +403,7 @@ module MetzScan
     module_function
 
     def rows
-      opening + middle + closing
+      opening + middle + closing + zizmor_guard
     end
 
     def opening
@@ -438,9 +436,7 @@ module MetzScan
 
     def third
       [
-        ["W7", [edit(:keep_credentials)], "checkout with differs"],
-        ["W8", [edit(:leak_body)], "event body in env"],
-        ["W9", [edit(:echo_title)], "expression in run"]
+        ["W8", [edit(:leak_body)], "event body in env"]
       ]
     end
 
@@ -458,8 +454,6 @@ module MetzScan
 
     def trigger_fails
       [
-        [edit(:add_pull_request_target), "on differs"],
-        [edit(:add_workflow_run), "on differs"],
         [edit(:add_labeled_type), "on differs"]
       ]
     end
@@ -476,12 +470,32 @@ module MetzScan
       [
         ["W16", [edit(:job_defaults)], "job defaults present"],
         ["W17", [edit(:workflow_env)], "workflow env present"],
-        ["W18", [edit(:insert_setup), edit(:self_hosted)], JOB_VALUE]
+        ["W18", [edit(:self_hosted)], JOB_VALUE]
       ]
     end
 
     def seventh
       [["W19", [edit(:classify_continue)], "step continue-on-error"]]
+    end
+
+    def zizmor_guard
+      zizmor_presence + zizmor_command
+    end
+
+    def zizmor_presence
+      [
+        ["Z4a", [edit(:remove_zizmor)], JOB_VALUE],
+        ["Z4b", [edit(:skip_zizmor)], JOB_VALUE],
+        ["Z4c", [edit(:zizmor_continue)], "step continue-on-error"]
+      ]
+    end
+
+    def zizmor_command
+      [
+        ["Z4d", [edit(:weaken_zizmor_command)], JOB_VALUE],
+        ["Z4e", [edit(:weaken_zizmor_command)], JOB_VALUE],
+        ["Z4f", [edit(:zizmor_after_setup)], "step order differs"]
+      ]
     end
 
     def edit(name)
@@ -492,13 +506,8 @@ module MetzScan
   module PrDescriptionWorkflowEdits
     CHECK = %r{      - name: Check PR description\n.*?ruby "\$RUNNER_TEMP/check_pr_description"\n}m
     IF_LINE = "        if: github.event_name == 'pull_request'\n"
-    SETUP = [
-      "      - name: Setup Ruby",
-      "        uses: ruby/setup-ruby@v1",
-      "        with:",
-      "          ruby-version: .ruby-version",
-      "          bundler-cache: true\n"
-    ].join("\n")
+    ZIZMOR_STEP = /      - name: zizmor\n        run: '.*'\n/
+    ZIZMOR_NAME = "      - name: zizmor\n"
 
     module_function
 
@@ -527,18 +536,9 @@ module MetzScan
       text.sub("fetch-depth: 0", "fetch-depth: 1")
     end
 
-    def keep_credentials(text)
-      text.sub("          persist-credentials: false\n", "")
-    end
-
     def leak_body(text)
       env = "        env:\n          PR_BODY: ${{ github.event.pull_request.body }}\n"
       text.sub(IF_LINE, "#{IF_LINE}#{env}")
-    end
-
-    def echo_title(text)
-      echo = "          echo \"${{ github.event.pull_request.title }}\"\n"
-      text.sub(ruby_line, "#{ruby_line}#{echo}")
     end
 
     def drop_base_skill(text)
@@ -551,10 +551,6 @@ module MetzScan
     end
 
     def use_pr_types(text) = text.sub(/  pull_request:\n(?:    types: \[.*?\]\n)?/, pr_types)
-
-    def add_pull_request_target(text) = text.sub(pr_types, "#{pr_types}  pull_request_target:\n")
-
-    def add_workflow_run(text) = text.sub(pr_types, "#{pr_types}  workflow_run:\n")
 
     def add_labeled_type(text) = text.sub("synchronize, reopened]", "synchronize, reopened, labeled]")
 
@@ -585,8 +581,25 @@ module MetzScan
       text.sub("jobs:\n", "env: { BASH_ENV: x.sh }\n\njobs:\n")
     end
 
-    def insert_setup(text)
-      text.sub(check_name, "#{SETUP}#{check_name}")
+    def remove_zizmor(text)
+      text.sub(ZIZMOR_STEP, "")
+    end
+
+    def skip_zizmor(text)
+      text.sub(ZIZMOR_NAME, "#{ZIZMOR_NAME}        if: false\n")
+    end
+
+    def zizmor_continue(text)
+      text.sub(ZIZMOR_NAME, "#{ZIZMOR_NAME}        continue-on-error: true\n")
+    end
+
+    def weaken_zizmor_command(text)
+      text.sub(" --no-ignores", "")
+    end
+
+    def zizmor_after_setup(text)
+      block = text[ZIZMOR_STEP]
+      text.sub(block, "").sub(cache_line, "#{cache_line}#{block}")
     end
 
     def self_hosted(text)
@@ -599,10 +612,6 @@ module MetzScan
 
     def cache_line
       "          bundler-cache: true\n"
-    end
-
-    def ruby_line
-      "          ruby \"$RUNNER_TEMP/check_pr_description\"\n"
     end
 
     def skill_line
@@ -626,7 +635,7 @@ module MetzScan
     def test_part_w_workflow_rows
       text = File.read(File.expand_path("../../.github/workflows/ci.yml", __dir__))
       rows = PrDescriptionWorkflowPlants.rows
-      assert_equal 19, rows.size
+      assert_equal 23, rows.size
       rows.each { |row| assert_workflow_row(text, row) }
     end
 

@@ -38,12 +38,15 @@ DOCS_FRESHNESS_TESTS = "bundle exec ruby -Ilib -Itest -Irubocop-metz/lib -Iruboc
                        ".each { |f| require File.expand_path(f) }'"
 FAST_TESTS = "bundle exec rake test:fast"
 FULL_TESTS = "bundle exec rake"
+# rubocop:disable-next Layout/LineLength -- the parity coverage check matches this command as one source span
+ZIZMOR_AUDIT = 'curl -sSfL -o "$RUNNER_TEMP/zizmor.tar.gz" https://github.com/zizmorcore/zizmor/releases/download/v1.31.1/zizmor-x86_64-unknown-linux-gnu.tar.gz && echo "d185f726bdaf92df78273217dfdd24ebcd6b0ef48cf3ce776ff5762b6e138c99  $RUNNER_TEMP/zizmor.tar.gz" | sha256sum -c - && tar -xzf "$RUNNER_TEMP/zizmor.tar.gz" -C "$RUNNER_TEMP" zizmor && "$RUNNER_TEMP/zizmor" --offline --no-config --no-ignores --strict-collection --collect=all .github/workflows'
 TESTS_BY_MODE = { docs_only: DOCS_FRESHNESS_TESTS, code: FAST_TESTS }.freeze
 DOCS_PATH_PREFIXES = %w[docs/ skills/].freeze
 UNDETERMINED_REASON = "no upstream configured or diff range undeterminable"
 
 STEP_TEMPLATE = [
   ["tracker hygiene", "bin/check_tracker_queue"],
+  ["zizmor", ZIZMOR_AUDIT],
   ["bundle install", "bundle install"],
   ["fasttrack clearance", "bundle exec ruby tools/fasttrack/fasttrack_allowlist_test.rb"],
   ["tests", :tests],
@@ -170,6 +173,12 @@ def parity_tmpdir
   Dir.mktmpdir("metz-scan-ci-parity-", ENV.fetch("CI_PARITY_TMPDIR", nil))
 end
 
+def prepare_runner_temp
+  return unless ENV["RUNNER_TEMP"].to_s.empty?
+
+  Dir.mktmpdir("metz-scan-runner-").tap { |dir| ENV["RUNNER_TEMP"] = dir }
+end
+
 puts "check_ci_parity: ruby #{RUBY_VERSION} (CI uses the version in .ruby-version)"
 
 mode = resolve_mode
@@ -179,6 +188,7 @@ steps = steps_for(mode)
 tmp = parity_tmpdir
 success = false
 clone = File.join(tmp, "metz-scan")
+created_runner_temp = prepare_runner_temp
 
 begin
   unless system("git", "clone", "--quiet", "--local", ROOT, clone)
@@ -191,6 +201,7 @@ begin
   success = true
 ensure
   FileUtils.remove_entry(tmp) if success && File.exist?(tmp)
+  FileUtils.remove_entry(created_runner_temp) if created_runner_temp && File.exist?(created_runner_temp)
 end
 
 puts "check_ci_parity: ok"
