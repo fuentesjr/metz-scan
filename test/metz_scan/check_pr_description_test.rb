@@ -459,4 +459,280 @@ module MetzScan
       CheckPrDescriptionSections.assert_rows(self)
     end
   end
+
+  module CheckPrDescriptionCollapsedBlock
+    ROWS = CheckPrDescriptionRows
+    OPEN = "<details>"
+    CLOSE = "</details>"
+    PASS = "pass\n"
+    NAMES = ROWS::REQUIRED
+
+    module_function
+
+    def run(body)
+      stdout, stderr, status = CheckPrDescriptionRunner.run(raw: true, body: body)
+      { stdout: stdout, stderr: stderr, status: status.exitstatus, fails: fail_lines(stdout) }
+    end
+
+    def fail_lines(stdout) = stdout.lines.map(&:chomp).select { |line| line.start_with?("fail:") }
+
+    def block(*inside) = [OPEN, "<summary>For reviewers: gate evidence</summary>", "", *inside, "", CLOSE]
+
+    def reshaped_block(opener, closer, *inside)
+      block(*inside).tap do |lines|
+        lines[0] = opener
+        lines[-1] = closer
+      end
+    end
+
+    def section(name) = ROWS.sections_body([name]).lines.map(&:chomp)
+
+    def sections(names = NAMES) = names.flat_map { |name| section(name) }
+
+    def join(*lines) = "#{lines.flatten.join("\n")}\n"
+
+    def offenses
+      ["Row 1 plant #{ROWS::EM} red. See #93.", "A pivotal result, see fuentesjr/crucible#7."]
+    end
+
+    module Assertions
+      def assert_passes(result)
+        assert_empty result[:stderr]
+        assert_equal 0, result[:status], result[:stdout]
+        assert_equal CheckPrDescriptionCollapsedBlock::PASS, result[:stdout]
+      end
+
+      def assert_failures(expected, result)
+        assert_empty result[:stderr]
+        assert_equal 1, result[:status], result[:stdout]
+        assert_equal expected, result[:fails]
+      end
+    end
+  end
+
+  class CheckPrDescriptionCollapsedBlockTest < Minitest::Test
+    include CheckPrDescriptionCollapsedBlock::Assertions
+
+    BLOCK = CheckPrDescriptionCollapsedBlock
+    NAMES = BLOCK::NAMES
+    EM = CheckPrDescriptionRows::EM
+
+    def test_offenses_inside_a_collapsed_block_at_the_end_produce_no_findings
+      block = BLOCK.block(*BLOCK.offenses).tap { |lines| lines[1] = "<summary>pivotal #{EM}</summary>" }
+      body = BLOCK.join(BLOCK.sections, block)
+      assert_passes BLOCK.run(body)
+    end
+
+    def test_offenses_inside_a_collapsed_block_between_sections_produce_no_findings
+      body = BLOCK.join(BLOCK.section("## Why"), BLOCK.block(*BLOCK.offenses), "",
+                        BLOCK.sections(NAMES - ["## Why"]))
+      assert_passes BLOCK.run(body)
+    end
+
+    def test_offenses_outside_the_block_fail_with_real_body_line_numbers_before_and_after_it
+      expected = ["fail: unlinked reference #12 at body line 3", "fail: dash U+2014 at body line 12",
+                  "fail: banned word pivotal at body line 13"]
+      assert_failures expected, BLOCK.run(around_block)
+    end
+
+    def test_an_unknown_heading_inside_a_collapsed_block_is_not_an_unknown_section
+      body = BLOCK.join(BLOCK.sections, BLOCK.block("## Something", "Plain words."))
+      assert_passes BLOCK.run(body)
+    end
+
+    def test_a_required_heading_that_appears_only_inside_a_collapsed_block_is_missing
+      body = BLOCK.join(BLOCK.sections(NAMES - ["## Scope"]), BLOCK.block("## Scope", "Plain words."))
+      assert_failures ["fail: missing section ## Scope"], BLOCK.run(body)
+    end
+
+    def test_a_section_whose_only_content_is_a_collapsed_block_is_empty
+      body = BLOCK.join("## Why", BLOCK.block("Plain words."), "", BLOCK.sections(NAMES - ["## Why"]))
+      assert_failures ["fail: empty section ## Why"], BLOCK.run(body)
+    end
+
+    def test_a_mid_line_details_mention_does_not_open_a_block
+      body = BLOCK.join("## Why", "Use `<details>` for evidence.", "Later, see #12.",
+                        BLOCK.sections(NAMES - ["## Why"]))
+      assert_failures ["fail: unlinked reference #12 at body line 3"], BLOCK.run(body)
+    end
+
+    def test_details_open_is_not_a_collapsed_block
+      inside = ["Row 1 plant #{EM} red.", "A pivotal result."]
+      body = BLOCK.join(BLOCK.sections, "<details open>", *inside, BLOCK::CLOSE)
+      count = BLOCK.sections.size
+      expected = ["fail: dash U+2014 at body line #{count + 2}", "fail: banned word pivotal at body line #{count + 3}"]
+      assert_failures expected, BLOCK.run(body)
+    end
+
+    def test_a_details_line_with_no_closing_tag_is_not_a_block_so_every_line_stays_checked
+      body = BLOCK.join(BLOCK.sections(NAMES.first(2)), BLOCK::OPEN, "See #12.", BLOCK.sections(NAMES.drop(2)))
+      assert_failures ["fail: unlinked reference #12 at body line 6"], BLOCK.run(body)
+    end
+
+    def test_text_after_the_closing_tag_on_the_same_line_is_checked
+      closer = "#{BLOCK::CLOSE} Then see #12."
+      block = BLOCK.reshaped_block(BLOCK::OPEN, closer, "Plain words.")
+      body = BLOCK.join(BLOCK.section("## Why"), block, "", BLOCK.sections(NAMES - ["## Why"]))
+      assert_failures ["fail: unlinked reference #12 at body line 8"], BLOCK.run(body)
+    end
+
+    def test_an_uppercase_closing_tag_ends_the_block_so_later_offenses_are_reported
+      assert_later_offense_reported_after_closer "</DETAILS>"
+    end
+
+    def test_a_closing_tag_with_whitespace_before_the_bracket_ends_the_block
+      assert_later_offense_reported_after_closer "</details >"
+    end
+
+    def test_an_uppercase_opening_tag_opens_a_block
+      block = BLOCK.reshaped_block("<DETAILS>", BLOCK::CLOSE, *BLOCK.offenses)
+      assert_passes BLOCK.run(BLOCK.join(BLOCK.sections, block))
+    end
+
+    def test_the_block_ends_at_the_closing_tag_so_later_offenses_are_reported
+      body = BLOCK.join("## Why", "The change fixes the reported miss.", BLOCK.block("See #12."),
+                        "Between the blocks, see #13.", BLOCK.block("See #14."), "",
+                        BLOCK.sections(NAMES - ["## Why"]))
+      assert_failures ["fail: unlinked reference #13 at body line 9"], BLOCK.run(body)
+    end
+
+    private
+
+    def assert_later_offense_reported_after_closer(closer)
+      block = BLOCK.reshaped_block(BLOCK::OPEN, closer, "See #12.")
+      body = BLOCK.join(BLOCK.section("## Why"), block, "", "After the block, see #13.",
+                        BLOCK.sections(NAMES - ["## Why"]))
+      assert_failures ["fail: unlinked reference #13 at body line 10"], BLOCK.run(body)
+    end
+
+    def around_block
+      BLOCK.join("## Why", "The change fixes the reported miss.", "Before the block, see #12.",
+                 BLOCK.block(*BLOCK.offenses), "",
+                 "After the block, a #{EM} dash.", "After that, a pivotal word.",
+                 BLOCK.sections(NAMES - ["## Why"]))
+    end
+  end
+
+  class CheckPrDescriptionCollapsedBlockFenceTest < Minitest::Test
+    include CheckPrDescriptionCollapsedBlock::Assertions
+
+    BLOCK = CheckPrDescriptionCollapsedBlock
+    NAMES = BLOCK::NAMES
+    EM = CheckPrDescriptionRows::EM
+
+    def test_an_opener_inside_an_unclosed_fenced_code_block_does_not_hide_a_later_offense
+      body = BLOCK.join(BLOCK.sections, "```", BLOCK::OPEN, "```", "Visible line, see #12.")
+      count = BLOCK.sections.size
+      assert_failures ["fail: unlinked reference #12 at body line #{count + 4}"], BLOCK.run(body)
+    end
+
+    def test_a_complete_details_pair_inside_a_closed_fence_is_not_a_block
+      body = BLOCK.join(BLOCK.sections, "```", BLOCK::OPEN, "Inside the pair, a #{EM} dash.", BLOCK::CLOSE, "```")
+      count = BLOCK.sections.size
+      assert_failures ["fail: dash U+2014 at body line #{count + 3}"], BLOCK.run(body)
+    end
+
+    def test_an_opener_alone_in_a_closed_backtick_fence_does_not_swallow_the_real_block_after_it
+      assert_fenced_opener_is_not_a_block ["```", BLOCK::OPEN, "```"]
+    end
+
+    def test_an_opener_alone_in_a_closed_tilde_fence_does_not_swallow_the_real_block_after_it
+      assert_fenced_opener_is_not_a_block ["~~~~", BLOCK::OPEN, "~~~~"]
+    end
+
+    def test_an_opener_inside_an_html_comment_is_not_a_block
+      assert_fenced_opener_is_not_a_block ["<!--", BLOCK::OPEN, "-->"]
+    end
+
+    def test_a_fenced_code_block_inside_a_real_block_is_skipped_with_the_block
+      raw = ["```", "Raw output, see #12 and a #{EM} dash.", "```"]
+      body = BLOCK.join(BLOCK.section("## Why"), BLOCK.block(*raw), "", "After the block, see #13.",
+                        BLOCK.sections(NAMES - ["## Why"]))
+      assert_failures ["fail: unlinked reference #13 at body line 12"], BLOCK.run(body)
+    end
+
+    private
+
+    def assert_fenced_opener_is_not_a_block(wrapper)
+      body = BLOCK.join(BLOCK.sections, wrapper, "Visible line, see #12.", "",
+                        BLOCK.block("Hidden, see #13."))
+      line = BLOCK.sections.size + wrapper.size + 1
+      assert_failures ["fail: unlinked reference #12 at body line #{line}"], BLOCK.run(body)
+    end
+  end
+
+  class CheckPrDescriptionFenceClosingTest < Minitest::Test
+    include CheckPrDescriptionCollapsedBlock::Assertions
+
+    BLOCK = CheckPrDescriptionCollapsedBlock
+    NAMES = BLOCK::NAMES
+    EM = CheckPrDescriptionRows::EM
+    FENCES = ["`", "~"].freeze
+    PAIR = [BLOCK::OPEN, "Inside the pair, a #{EM} dash.", BLOCK::CLOSE].freeze
+
+    def test_a_shorter_fence_line_does_not_close_a_longer_fence_so_a_later_opener_opens_nothing
+      FENCES.each do |char|
+        lines = [char * 4, char * 3, BLOCK::OPEN, char * 4]
+        assert_visible_offense_reported lines
+      end
+    end
+
+    def test_a_complete_details_pair_inside_a_longer_fence_after_a_shorter_fence_line_is_checked
+      FENCES.each { |char| assert_pair_in_fence_is_checked char * 4, char * 3, char * 4 }
+    end
+
+    def test_a_fence_line_followed_by_text_does_not_close_a_fence
+      FENCES.product(["ruby", " not a close"]).each do |char, text|
+        assert_pair_in_fence_is_checked char * 3, "#{char * 3}#{text}", char * 3
+      end
+    end
+
+    def test_a_fence_line_of_the_other_character_does_not_close_a_fence
+      FENCES.zip(FENCES.reverse).each do |outer, other|
+        assert_pair_in_fence_is_checked outer * 3, other * 3, outer * 3
+      end
+    end
+
+    def test_a_closing_fence_with_trailing_spaces_or_tabs_closes_the_fence
+      FENCES.product(["  ", "\t"]).each do |char, trailing|
+        body = BLOCK.join(BLOCK.sections, char * 3, "Plain words.", "#{char * 3}#{trailing}", "",
+                          BLOCK.block(*BLOCK.offenses))
+        assert_passes BLOCK.run(body)
+      end
+    end
+
+    def test_a_fence_indented_by_three_spaces_is_a_fence_so_an_opener_inside_it_opens_nothing
+      FENCES.each do |char|
+        assert_visible_offense_reported ["   #{char * 3}", BLOCK::OPEN, char * 3]
+      end
+    end
+
+    def test_a_closing_tag_with_an_attribute_like_suffix_ends_the_block
+      assert_later_offense_reported_after_closer "</details x>"
+    end
+
+    def test_a_self_closing_style_closing_tag_ends_the_block
+      assert_later_offense_reported_after_closer "</details/>"
+    end
+
+    private
+
+    def assert_pair_in_fence_is_checked(open_fence, middle_line, close_fence)
+      body = BLOCK.join(BLOCK.sections, open_fence, middle_line, PAIR, close_fence)
+      assert_failures ["fail: dash U+2014 at body line #{BLOCK.sections.size + 4}"], BLOCK.run(body)
+    end
+
+    def assert_visible_offense_reported(wrapper)
+      body = BLOCK.join(BLOCK.sections, wrapper, "Visible line, see #12.", "", BLOCK.block("Hidden, see #13."))
+      line = BLOCK.sections.size + wrapper.size + 1
+      assert_failures ["fail: unlinked reference #12 at body line #{line}"], BLOCK.run(body)
+    end
+
+    def assert_later_offense_reported_after_closer(closer)
+      block = BLOCK.reshaped_block(BLOCK::OPEN, closer, "See #12.")
+      body = BLOCK.join(BLOCK.section("## Why"), block, "", "Visible line, see #13.", "",
+                        BLOCK.block("Hidden, see #14."), "", BLOCK.sections(NAMES - ["## Why"]))
+      assert_failures ["fail: unlinked reference #13 at body line 10"], BLOCK.run(body)
+    end
+  end
 end

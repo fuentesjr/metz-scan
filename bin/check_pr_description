@@ -34,6 +34,13 @@ REFERENCE_PATTERNS = [OWNER_REPO, PULL_OR_ISSUE, LETTER_LABEL, BARE_NUMBER].free
 LINK_TEXT = /\[([^\[\]]*)\]\([^)]*\)/
 RULE_SEVEN = /\*\*AI vocabulary\.\*\*\s+(.+?)\.\s+Replace with plain words/
 REFERENCE_CHARS = %r{[^A-Za-z0-9#/._ -]}
+BACKTICK_FENCE = /^ {0,3}(?<ticks>`{3,}).*?(?:^ {0,3}\k<ticks>`*[ \t]*$|\z)/m
+TILDE_FENCE = /^ {0,3}(?<tildes>~{3,}).*?(?:^ {0,3}\k<tildes>~*[ \t]*$|\z)/m
+HTML_COMMENT = /<!--.*?(?:-->|\z)/m
+CLOSING_TAG = %r{</details\b[^>]*>}i
+DETAILS_BLOCK = /^<details>.*?(?:#{CLOSING_TAG}|\z)/mi
+SHOWN_OR_COLLAPSED = Regexp.union(BACKTICK_FENCE, TILDE_FENCE, HTML_COMMENT, DETAILS_BLOCK)
+COLLAPSED = /\A<details>.*#{CLOSING_TAG}\z/mi
 
 def main
   return pass("pass: dependabot") if dependabot?
@@ -50,7 +57,18 @@ def report_body(book, words)
 end
 
 def body_lines
-  pull_request("body").gsub(/\r\n?/, "\n").split("\n")
+  visible_text(pull_request("body").gsub(/\r\n?/, "\n")).split("\n")
+end
+
+# A collapsed block is for reviewers, so only its line breaks are kept and
+# later findings keep their real line numbers. An opening tag with no closing
+# tag is not a block. Fenced code and comments match first and stay as they
+# are, so a tag inside them opens nothing. Every pattern also matches to the
+# end of the body, which keeps the scan linear on a hostile body.
+def visible_text(body)
+  body.gsub(SHOWN_OR_COLLAPSED) do |part|
+    part.match?(COLLAPSED) ? part.gsub(/[^\n]/, "") : part
+  end
 end
 
 def report(sections, unslop)

@@ -2,7 +2,7 @@
 description: pstack opening-a-pr title and description rules
 alwaysApply: true
 ---
-<!-- Excerpt of pstack 0.15.29 skills/poteto-mode/playbooks/opening-a-pr.md, lines 11-22 (Titles and Descriptions), excerpt sha256 1d82f8c6f93accfdca458f7fafbc1810ca04e74e9c4dab5d50340f2c3a5ff78a. The section check requires every section except Tradeoffs. -->
+<!-- Excerpt of pstack 0.15.29 skills/poteto-mode/playbooks/opening-a-pr.md, lines 11-22 (Titles and Descriptions), excerpt sha256 1d82f8c6f93accfdca458f7fafbc1810ca04e74e9c4dab5d50340f2c3a5ff78a. Local change to the last sentence: it also allows a collapsed `<details>` block, which the description check skips. The section check requires every section except Tradeoffs. -->
 **Titles.** Conventional Commits `type(scope): subject`, no trailing period. Type such as `feat`, `fix`, `docs`, `refactor`, `test`, `chore`, or `perf`. Scope is the area, such as `pstack` or `poteto-mode`. Subject is short, imperative, and names a real symbol when one carries the change, for example `fix(pstack): retarget opening-a-pr babysit trigger`.
 
 **Descriptions.** The PR body is a one-minute briefing, not a lab notebook, for a reviewer who has the diff. It says why the change exists, what it leaves out, what it could break, and how you proved it works. Write short, simple sentences with few identifiers, no walls of text. The body becomes the squash commit body, so keep that commit under about 40 lines. Use `##` headings, not bold lead-ins, in this order, and drop a section with nothing to say:
@@ -14,4 +14,4 @@ alwaysApply: true
 - `## Blast Radius`: 1–2 sentences on who or what it touches and why that is safe or risky. If main is red, state the cost of leaving it red.
 - `## Verification`: 1–3 bullets, each a real run path and its outcome. Perf: one primary number with its unit, `before → after`, and a link to the arena or swarm directory for the rest. No sample-size methodology, swarm recitals, or metric tables.
 
-After the sections, attach videos or screenshots when they prove a claim. Full SHAs, swarm or arena lane recitals, lever-correction essays, file-by-file checklists, and "CLEAN" verdicts go in a linked artifact, not the body.
+After the sections, attach videos or screenshots when they prove a claim. Full SHAs, swarm or arena lane recitals, lever-correction essays, file-by-file checklists, and "CLEAN" verdicts go in a collapsed `<details>` block after the sections or in a linked artifact, not in the sections.
