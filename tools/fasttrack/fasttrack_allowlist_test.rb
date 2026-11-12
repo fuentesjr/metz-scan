@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "digest"
 require "json"
 require "minitest/autorun"
 require "net/http"
@@ -27,6 +28,14 @@ class FasttrackAllowlistTest < Minitest::Test
     docs/releases/**
     docs/dogfooding/**
   ].freeze
+  FORBIDDEN_NAME_LENGTHS = [7, 8, 9, 11].freeze
+  FORBIDDEN_NAME_DIGESTS = %w[
+    340d6bb972c2bc1eb7e627ff505ae4fa90c8de05ea0c9903da7c161942b13cec
+    9e723cd7deba9f7dbccd96630aeaf48224249a38ceb11b4d9210c2f8ab1b3762
+    8d32e2062d706708fb26c9a5bae5d5f3e8dc03c12a53c23da39a8aa00f4d2cda
+    6cb784e0f985cba22d0642283892ad0f90dcd48385524de0dec0f51624456a43
+    6b4d3473e1982fd2e7bdf29615897fe2301e807da6f70a3bd6f4067dba802391
+  ].freeze
   CLEAN_PATCH = "@@ -1 +1 @@\n-old note\n+A short handbook note.\n"
   ROOT = File.expand_path("../..", __dir__)
 
@@ -39,7 +48,14 @@ class FasttrackAllowlistTest < Minitest::Test
     assert_equal Fasttrack::PHRASES, allowlist.fetch("never_clear")
     refute_includes File.read(fixture_path), control_path
     refute_includes File.read(__FILE__), control_path
-    refute_match(/crucible|railsgoat|repoform|grokbot|rails-audit/i, File.read(fixture_path))
+    text = File.read(fixture_path).downcase
+    digests = FORBIDDEN_NAME_LENGTHS.flat_map do |length|
+      next [] if text.length < length
+
+      last = text.length - length
+      (0..last).map { |start| Digest::SHA256.hexdigest(text[start, length]) }
+    end
+    assert_empty(digests & FORBIDDEN_NAME_DIGESTS)
     cases.each do |row|
       assert_equal REPO, row.fetch("repo")
       assert_case(row)
