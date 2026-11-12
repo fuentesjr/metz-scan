@@ -470,6 +470,29 @@
             "new_mode": "100644"
           }
         ]
+      },
+      {
+        "files": [
+          {
+            "filename": "control",
+            "status": "modified",
+            "old_mode": "100644",
+            "new_mode": "100644",
+            "patch": "@@ -1 +1 @@\n-old note\n+++‮\n"
+          }
+        ]
+      },
+      {
+        "files": [
+          {
+            "filename": "control",
+            "status": "modified",
+            "old_mode": "100644",
+            "new_mode": "100644",
+            "patch": "@@ -1 +1 @@\n-old note\n+++ permissions:\n"
+          }
+        ],
+        "expect": "not cleared: never-clear"
       }
     ]
   },

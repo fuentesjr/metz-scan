@@ -44,16 +44,24 @@ class FasttrackAllowlistTest < Minitest::Test
       assert_equal REPO, row.fetch("repo")
       assert_case(row)
     end
+    assert_live_fields_win
   end
 
   def test_missing_token_exits_one
-    env = ENV.to_h
-    env.delete("GITHUB_TOKEN")
-    env.delete("GH_TOKEN")
-    env.delete("GITHUB_STEP_SUMMARY")
-    stdout, _stderr, status = Open3.capture3(env, RbConfig.ruby, script_path)
+    stdout, status = run_script(child_env)
     assert_equal 1, status.exitstatus
     assert_equal "not cleared: token\n", stdout
+  end
+
+  def test_missing_event_exits_one
+    Dir.mktmpdir do |dir|
+      env = child_env
+      env["GITHUB_TOKEN"] = "dummy-token"
+      env["GITHUB_EVENT_PATH"] = File.join(dir, "missing-event.json")
+      stdout, status = run_script(env)
+      assert_equal 1, status.exitstatus
+      assert_equal "not cleared: error\n", stdout
+    end
   end
 
   private
@@ -210,11 +218,13 @@ class FasttrackAllowlistTest < Minitest::Test
   end
 
   def pull_body(sha)
+    script = @http_script || {}
+    labels = script["labels"] || []
     {
       "head" => { "sha" => sha, "repo" => { "fork" => false, "full_name" => REPO } },
-      "user" => { "login" => "octocat", "id" => 1 },
+      "user" => { "login" => script["user_login"] || "octocat", "id" => script["user_id"] || 1 },
       "base" => { "repo" => { "full_name" => REPO }, "sha" => BASE_SHA },
-      "labels" => []
+      "labels" => labels.map { |name| { "name" => name } }
     }
   end
 
@@ -266,9 +276,45 @@ class FasttrackAllowlistTest < Minitest::Test
       "pull_request" => {
         "number" => 4815,
         "base" => { "sha" => BASE_SHA },
-        "head" => { "sha" => HEAD_SHA }
+        "head" => { "sha" => HEAD_SHA },
+        "user" => { "login" => "octocat", "id" => 1 },
+        "labels" => []
       }
     }
+  end
+
+  def assert_live_fields_win
+    saved = ARGV.dup
+    ARGV.clear
+    Dir.mktmpdir do |dir|
+      event = File.join(dir, "event.json")
+      File.write(event, JSON.generate(cli_event))
+      assert_equal "not cleared: docs label", live_summary(event, "labels" => ["risk: high"])
+      author = live_summary(event, "user_login" => "dependabot[bot]", "user_id" => 49_699_333)
+      assert_equal "not cleared: docs author", author
+    end
+  ensure
+    ARGV.replace(saved)
+  end
+
+  def live_summary(event, script)
+    with_http({ "fault" => "clear" }.merge(script)) do
+      _code, summary = Fasttrack.run_cli(cli_env(event))
+      summary
+    end
+  end
+
+  def child_env
+    env = ENV.to_h
+    env.delete("GITHUB_TOKEN")
+    env.delete("GH_TOKEN")
+    env.delete("GITHUB_STEP_SUMMARY")
+    env
+  end
+
+  def run_script(env)
+    stdout, _stderr, status = Open3.capture3(env, RbConfig.ruby, script_path)
+    [stdout, status]
   end
 
   def cli_env(event_path)

@@ -193,7 +193,7 @@ module Fasttrack
     removed = []
     patch.each_line do |raw|
       body = raw.delete_suffix("\n")
-      next if body.start_with?("@@", "---", "+++", "diff ", "\\")
+      next if body.start_with?("@@", "\\")
       if body.start_with?("+")
         added << body[1..]
       elsif body.start_with?("-")
