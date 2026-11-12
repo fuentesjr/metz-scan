@@ -28,7 +28,7 @@ module MetzScan
     D7_TOKENS = ["issue #12", "ISSUE#12"].freeze
     LINK = "https://github.com/fuentesjr/metz-scan/pull/12"
     D16_EXACT = ["fail: dash U+2014 at body line 1",
-                 "fail: unlinked reference fuentesjr/crucible#7 at body line 1",
+                 "fail: unlinked reference fuentesjr/example#7 at body line 1",
                  UNSLOP].join("\n").concat("\n").freeze
 
     module_function
@@ -117,7 +117,7 @@ module MetzScan
     end
 
     def repo_row
-      token = "fuentesjr/crucible#7"
+      token = "fuentesjr/example#7"
       { id: "D9", cases: [body_fail("see #{token} here", "fail: unlinked reference #{token} at body line 1")] }
     end
 
@@ -173,7 +173,7 @@ module MetzScan
     end
 
     def injection_row
-      body = "seen #{ROWS::EM} UNIQUE_MARKER_91 ::error::$(id)fuentesjr/crucible#7"
+      body = "seen #{ROWS::EM} UNIQUE_MARKER_91 ::error::$(id)fuentesjr/example#7"
       { id: "D16", cases: [{ action: "synchronize", body: body, status: 1, exact: ROWS::D16_EXACT }] }
     end
 
@@ -492,7 +492,7 @@ module MetzScan
     def join(*lines) = "#{lines.flatten.join("\n")}\n"
 
     def offenses
-      ["Row 1 plant #{ROWS::EM} red. See #93.", "A pivotal result, see fuentesjr/crucible#7."]
+      ["Row 1 plant #{ROWS::EM} red. See #93.", "A pivotal result, see fuentesjr/example#7."]
     end
 
     module Assertions
