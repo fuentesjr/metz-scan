@@ -48,7 +48,7 @@ class FasttrackAllowlistTest < Minitest::Test
     refute_includes File.read(fixture_path), control_path
     refute_includes File.read(__FILE__), control_path
     words = File.read(fixture_path).downcase.scan(/[a-z][a-z-]*/)
-    digests = words.map { |word| Digest::SHA256.hexdigest(word) }
+    digests = words.flat_map { |word| name_digests(word) }
     assert_empty(digests & FORBIDDEN_NAME_DIGESTS)
     cases.each do |row|
       assert_equal REPO, row.fetch("repo")
@@ -346,6 +346,12 @@ class FasttrackAllowlistTest < Minitest::Test
 
   def fixture_path
     File.join(__dir__, "fixtures", "cases.json")
+  end
+
+  def name_digests(word)
+    parts = word.split("-")
+    pairs = parts.each_cons(2).map { |left, right| "#{left}-#{right}" }
+    [word, *parts, *pairs].map { |name| Digest::SHA256.hexdigest(name) }
   end
 
   def script_path
