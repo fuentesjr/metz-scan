@@ -1,0 +1,10 @@
+on: workflow_dispatch
+
+permissions: {}
+
+jobs:
+  plant:
+    if: github.event_name == 'n1-never' # never `if: false`, because zizmor skips that job
+    runs-on: ubuntu-latest
+    steps:
+      - uses: github/dmca@565ece486c7c1652754d7b6d2b5ed9cb4097f9d5
