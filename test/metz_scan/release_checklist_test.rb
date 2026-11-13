@@ -213,22 +213,13 @@ module MetzScan
       "uses" => "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
       "with" => CHECKOUT_WITH
     }.freeze
-    ZIZMOR_RUN = "curl -sSfL -o \"$RUNNER_TEMP/zizmor.tar.gz\" " \
-                 "https://github.com/zizmorcore/zizmor/releases/download/v1.31.1/" \
-                 "zizmor-x86_64-unknown-linux-gnu.tar.gz && " \
-                 "echo \"d185f726bdaf92df78273217dfdd24ebcd6b0ef48cf3ce776ff5762b6e138c99  " \
-                 "$RUNNER_TEMP/zizmor.tar.gz\" | sha256sum -c - && " \
-                 "tar -xzf \"$RUNNER_TEMP/zizmor.tar.gz\" -C \"$RUNNER_TEMP\" zizmor && " \
-                 "\"$RUNNER_TEMP/zizmor\" --offline --no-config --no-ignores " \
-                 "--strict-collection --collect=all .github/workflows"
-    ZIZMOR = { "name" => "zizmor", "run" => ZIZMOR_RUN }.freeze
     JOB_KEYS = %w[outputs runs-on steps].freeze
     STEP_KEYS = %w[if name run].freeze
 
     module_function
 
     def violations(text)
-      collect(YAML.safe_load(text)).uniq
+      PrDescriptionWorkflowOnline.violations(text, method(:collect))
     end
 
     def collect(workflow)
@@ -384,7 +375,7 @@ module MetzScan
     end
 
     def before_flags(steps, index)
-      prefix = [PrDescriptionWorkflow::CHECKOUT, PrDescriptionWorkflow::ZIZMOR]
+      prefix = [PrDescriptionWorkflow::CHECKOUT, PrDescriptionWorkflowOnline::ZIZMOR]
       return [PrDescriptionWorkflow::JOB_VALUE] unless steps[0...index] == prefix
 
       []
@@ -403,7 +394,7 @@ module MetzScan
     module_function
 
     def rows
-      opening + middle + closing + zizmor_guard
+      opening + middle + closing + zizmor_guard + PrDescriptionWorkflowOnlinePlants.rows
     end
 
     def opening
@@ -499,14 +490,17 @@ module MetzScan
     end
 
     def edit(name)
-      PrDescriptionWorkflowEdits.method(name)
+      owner = PrDescriptionWorkflowOnlineEdits
+      owner = PrDescriptionWorkflowEdits unless owner.respond_to?(name)
+      owner.method(name)
     end
   end
 
   module PrDescriptionWorkflowEdits
     CHECK = %r{      - name: Check PR description\n.*?ruby "\$RUNNER_TEMP/check_pr_description"\n}m
     IF_LINE = "        if: github.event_name == 'pull_request'\n"
-    ZIZMOR_STEP = /      - name: zizmor\n        run: '.*'\n/
+    ONLINE_ENV = "        env:\n          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}\n"
+    ZIZMOR_STEP = /      - name: zizmor\n#{Regexp.escape(ONLINE_ENV)}        run: '.*'\n/
     ZIZMOR_NAME = "      - name: zizmor\n"
 
     module_function
@@ -635,11 +629,210 @@ module MetzScan
     end
   end
 
+  module PrDescriptionWorkflowOnline
+    ZIZMOR_RUN = "curl -sSfL -o \"$RUNNER_TEMP/zizmor.tar.gz\" " \
+                 "https://github.com/zizmorcore/zizmor/releases/download/v1.31.1/" \
+                 "zizmor-x86_64-unknown-linux-gnu.tar.gz && " \
+                 "echo \"d185f726bdaf92df78273217dfdd24ebcd6b0ef48cf3ce776ff5762b6e138c99  " \
+                 "$RUNNER_TEMP/zizmor.tar.gz\" | sha256sum -c - && " \
+                 "tar -xzf \"$RUNNER_TEMP/zizmor.tar.gz\" -C \"$RUNNER_TEMP\" zizmor && " \
+                 "\"$RUNNER_TEMP/zizmor\" --gh-token \"$GITHUB_TOKEN\" --no-config --no-ignores " \
+                 "--strict-collection --collect=all .github/workflows"
+    ZIZMOR = { "name" => "zizmor", "env" => { "GITHUB_TOKEN" => "${{ secrets.GITHUB_TOKEN }}" },
+               "run" => ZIZMOR_RUN }.freeze
+    OFFLINE_KEYS = %w[ZIZMOR_OFFLINE ZIZMOR_NO_ONLINE_AUDITS].freeze
+    CONTENTS_READ = { "contents" => "read" }.freeze
+    OFFLINE = "zizmor offline key"
+    SECRETS = "secrets reference"
+    PERMISSIONS = "permissions differ"
+
+    module_function
+
+    def flags(text, workflow)
+      offline_flags(text) + permission_flags(workflow) + secrets_flags(text)
+    end
+
+    def offline_flags(text)
+      return [OFFLINE] if offline_key?(Psych.parse_stream(text))
+
+      []
+    end
+
+    def violations(text, collect)
+      workflow = YAML.safe_load(text)
+      (collect.call(workflow) + flags(text, workflow)).uniq
+    rescue Psych::Exception
+      ["workflow parse error"]
+    end
+
+    def offline_key?(node)
+      return mapping_offline?(node) if node.is_a?(Psych::Nodes::Mapping)
+      return false if node.nil? || node.children.nil?
+
+      node.children.any? { |child| offline_key?(child) }
+    end
+
+    def mapping_offline?(node)
+      node.children.each_slice(2).any? { |key, value| offline_scalar?(key) || offline_key?(value) }
+    end
+
+    def offline_scalar?(node)
+      node.is_a?(Psych::Nodes::Scalar) && OFFLINE_KEYS.include?(node.value)
+    end
+
+    def permission_flags(workflow)
+      return [PERMISSIONS] unless workflow["permissions"] == CONTENTS_READ
+      return [PERMISSIONS] if widened?(workflow)
+
+      []
+    end
+
+    def widened?(workflow)
+      jobs = workflow["jobs"]
+      jobs.is_a?(Hash) && jobs.each_value.any? { |job| job_widens?(job) }
+    end
+
+    def job_widens?(job)
+      job.is_a?(Hash) && job.key?("permissions") && job["permissions"] != CONTENTS_READ
+    end
+
+    def secrets_flags(text)
+      return [SECRETS] if stray_secrets?(text)
+
+      []
+    end
+
+    def stray_secrets?(text, cursor = 0)
+      found = /\bsecrets\b/i.match(text, cursor)
+      return false unless found
+      return true unless exact_token?(text, found.begin(0))
+
+      stray_secrets?(text, found.end(0))
+    end
+
+    def exact_token?(text, start)
+      text[start..].match?(/\Asecrets\.GITHUB_TOKEN(?![A-Za-z0-9_.\[])/)
+    end
+  end
+
+  module PrDescriptionWorkflowOnlinePlants
+    JOB_VALUE = PrDescriptionWorkflow::JOB_VALUE
+
+    module_function
+
+    def rows
+      offline_row + command_rows + [["N6", [edit(:sarif_format)], JOB_VALUE]]
+    end
+
+    def offline_row
+      [
+        ["N2", [edit(:quote_offline_key)], "zizmor offline key"],
+        ["N5", n5_plants, nil]
+      ]
+    end
+
+    def command_rows
+      [
+        ["N3", [edit(:restore_offline)], JOB_VALUE],
+        ["N4", [edit(:drop_gh_token)], JOB_VALUE]
+      ]
+    end
+
+    def n5_plants
+      token_plants + deploy_key_plants
+    end
+
+    def token_plants
+      [
+        [edit(:secrets_to_json), "secrets reference"],
+        [edit(:secrets_bare), "secrets reference"],
+        [edit(:secrets_token), :pass]
+      ]
+    end
+
+    def deploy_key_plants
+      deploy_word_plants + deploy_form_plants
+    end
+
+    def deploy_word_plants
+      [
+        [edit(:secrets_deploy_key), "secrets reference"],
+        [edit(:secrets_deploy_key_upper), "secrets reference"]
+      ]
+    end
+
+    def deploy_form_plants
+      [
+        [edit(:secrets_deploy_index), "secrets reference"],
+        [edit(:secrets_join), "secrets reference"]
+      ]
+    end
+
+    def edit(name)
+      PrDescriptionWorkflowPlants.edit(name)
+    end
+  end
+
+  module PrDescriptionWorkflowOnlineEdits
+    RUN_TESTS = "      - name: Run tests\n"
+
+    module_function
+
+    def quote_offline_key(text)
+      text.sub("          BASE_SHA:", "          \"ZIZMOR_OFFLINE\": true\n          BASE_SHA:")
+    end
+
+    def restore_offline(text)
+      text.sub(" --no-config", " --offline --no-config")
+    end
+
+    def drop_gh_token(text)
+      text.sub(" --gh-token \"$GITHUB_TOKEN\"", "")
+    end
+
+    def sarif_format(text)
+      text.sub(" --collect=all", " --format=sarif --collect=all")
+    end
+
+    def secrets_to_json(text)
+      plant_secret(text, "${{ toJSON(secrets) }}")
+    end
+
+    def secrets_bare(text)
+      plant_secret(text, "${{ secrets }}")
+    end
+
+    def secrets_token(text)
+      plant_secret(text, "secrets.GITHUB_TOKEN")
+    end
+
+    def secrets_deploy_key(text)
+      plant_secret(text, "secrets.DEPLOY_KEY")
+    end
+
+    def secrets_deploy_key_upper(text)
+      plant_secret(text, "SECRETS.DEPLOY_KEY")
+    end
+
+    def secrets_deploy_index(text)
+      plant_secret(text, "secrets['DEPLOY_KEY']")
+    end
+
+    def secrets_join(text)
+      plant_secret(text, "${{ join(secrets.*, ',') }}")
+    end
+
+    def plant_secret(text, expression)
+      line = "        env:\n          TOKEN: \"#{expression}\"\n"
+      text.sub(RUN_TESTS, "#{RUN_TESTS}#{line}")
+    end
+  end
+
   class PrDescriptionWorkflowTest < Minitest::Test
     def test_part_w_workflow_rows
       text = File.read(File.expand_path("../../.github/workflows/ci.yml", __dir__))
       rows = PrDescriptionWorkflowPlants.rows
-      assert_equal 23, rows.size
+      assert_equal 28, rows.size
       rows.each { |row| assert_workflow_row(text, row) }
     end
 
