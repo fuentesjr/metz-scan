@@ -142,11 +142,17 @@ def steps_for(mode)
   STEP_TEMPLATE.map { |phase, command| [phase, command == :tests ? tests_command(mode) : command] }
 end
 
+def step_env(phase)
+  return CLEAN_BUNDLER_ENV if phase == "zizmor"
+
+  CLEAN_BUNDLER_ENV.merge("GITHUB_TOKEN" => nil, "GH_TOKEN" => nil)
+end
+
 def run_step(step, dir)
   phase, command = step
   started_at = monotonic_time
   puts "check_ci_parity: phase=#{phase} command=#{command}"
-  return phase_ok(phase, started_at) if system(CLEAN_BUNDLER_ENV, command, chdir: dir)
+  return phase_ok(phase, started_at) if system(step_env(phase), command, chdir: dir)
 
   fail_phase(phase, command, dir, started_at)
 end
