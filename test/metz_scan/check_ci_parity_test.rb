@@ -26,15 +26,14 @@ module MetzScan
     end
 
     def prepared_ci_parity_repo(dir, tracker, fail_rubocop)
-      paths = ci_parity_paths(dir)
-      build_ci_repo(paths, tracker, fail_rubocop)
-      paths
+      ci_parity_paths(dir).tap { |paths| build_ci_repo(paths, tracker, fail_rubocop) }
     end
 
     def build_ci_repo(paths, tracker, fail_rubocop)
       FileUtils.mkdir_p([paths.repo, paths.fake_bin, paths.tmp_base])
       build_repo(paths.repo, tracker)
       build_fake_bundle(paths.fake_bin, fail_rubocop)
+      CheckCiParityFetchFakes.write(paths.fake_bin)
       initialize_git(paths.repo)
     end
 
@@ -51,8 +50,7 @@ module MetzScan
     end
 
     def copy_ci_scripts(repo)
-      copy_script(repo, "check_ci_parity")
-      copy_script(repo, "check_tracker_queue")
+      %w[check_ci_parity check_tracker_queue].each { |name| copy_script(repo, name) }
     end
 
     def write_guard_stubs(repo)
@@ -128,6 +126,43 @@ module MetzScan
     def tracker_with_items(*items)
       body = items.each_with_index.map { |item, index| "#{index + 1}. #{item}" }.join("\n")
       "# STATE\n\n## Next\n\n#{body}\n"
+    end
+  end
+
+  module CheckCiParityFetchFakes
+    CURL = <<~SH
+      #!/bin/sh
+      while [ $# -gt 0 ]; do
+        if [ "$1" = "-o" ]; then
+          : > "$2"
+          exit 0
+        fi
+        shift
+      done
+      exit 0
+    SH
+    SHA = "#!/bin/sh\nexit 0\n"
+    TAR = <<~SH
+      #!/bin/sh
+      while [ $# -gt 0 ]; do
+        if [ "$1" = "-C" ]; then
+          printf '%s\n' '#!/bin/sh' 'exit 0' > "$2/zizmor"
+          /bin/chmod 755 "$2/zizmor"
+          exit 0
+        fi
+        shift
+      done
+      exit 1
+    SH
+
+    module_function
+
+    def write(dir)
+      { "curl" => CURL, "sha256sum" => SHA, "tar" => TAR }.each do |name, body|
+        path = File.join(dir, name)
+        File.write(path, body)
+        File.chmod(0o755, path)
+      end
     end
   end
 
