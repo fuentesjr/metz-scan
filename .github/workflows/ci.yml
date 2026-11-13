@@ -20,7 +20,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: github/dmca@565ece486c7c1652754d7b6d2b5ed9cb4097f9d5
         with:
           fetch-depth: 0
           persist-credentials: false
