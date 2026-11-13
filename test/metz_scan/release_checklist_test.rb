@@ -739,10 +739,32 @@ module MetzScan
     end
 
     def n5_plants
+      token_plants + deploy_key_plants
+    end
+
+    def token_plants
       [
         [edit(:secrets_to_json), "secrets reference"],
         [edit(:secrets_bare), "secrets reference"],
         [edit(:secrets_token), :pass]
+      ]
+    end
+
+    def deploy_key_plants
+      deploy_word_plants + deploy_form_plants
+    end
+
+    def deploy_word_plants
+      [
+        [edit(:secrets_deploy_key), "secrets reference"],
+        [edit(:secrets_deploy_key_upper), "secrets reference"]
+      ]
+    end
+
+    def deploy_form_plants
+      [
+        [edit(:secrets_deploy_index), "secrets reference"],
+        [edit(:secrets_join), "secrets reference"]
       ]
     end
 
@@ -782,6 +804,22 @@ module MetzScan
 
     def secrets_token(text)
       plant_secret(text, "secrets.GITHUB_TOKEN")
+    end
+
+    def secrets_deploy_key(text)
+      plant_secret(text, "secrets.DEPLOY_KEY")
+    end
+
+    def secrets_deploy_key_upper(text)
+      plant_secret(text, "SECRETS.DEPLOY_KEY")
+    end
+
+    def secrets_deploy_index(text)
+      plant_secret(text, "secrets['DEPLOY_KEY']")
+    end
+
+    def secrets_join(text)
+      plant_secret(text, "${{ join(secrets.*, ',') }}")
     end
 
     def plant_secret(text, expression)
