@@ -3,6 +3,7 @@
 require "rubocop"
 
 require "metz_scan/commands/scan/exclude_provenance"
+require "metz_scan/commands/scan/inherited_include_rewriter"
 require "metz_scan/commands/scan/path_scoped_include_note"
 
 module MetzScan
@@ -50,8 +51,8 @@ module MetzScan
         # The default-mode stderr notes printed after a successful scan of
         # `files`. Lives here, not in Runner, because Runner is at its
         # Metrics/ModuleLength limit.
-        def warn_scope_notes(files, stderr)
-          PathScopedIncludeNote.print_note(files, stderr)
+        def warn_scope_notes(files, stderr, exec_store: nil)
+          PathScopedIncludeNote.print_note(files, stderr, exec_store: exec_store)
           warn_unresolved_inherit_gems(stderr)
         end
 
@@ -145,6 +146,10 @@ module MetzScan
             entry unless entry&.key == ANALYZER_DEPARTMENT
           end
 
+          def project_exclude?(config, key)
+            @loader.provenance.entries_for(config).any_for?(key)
+          end
+
           # The project config file and key (the cop or its department) whose
           # `Enabled: false` turns `cop_name` off for `file`, or nil when the
           # project leaves it enabled.
@@ -206,7 +211,7 @@ module MetzScan
 
           def inherited_scope_hash(raw_hash, path, seen)
             inherited_paths(raw_hash, path).each_with_object({}) do |inherited_path, merged|
-              child = scope_hash(inherited_path, seen)
+              child = InheritedIncludeRewriter.rewrite(scope_hash(inherited_path, seen), inherited_path, path)
               mode = raw_hash["inherit_mode"] || child["inherit_mode"] || merged["inherit_mode"]
               merged.replace(merge(merged, child, mode))
             end

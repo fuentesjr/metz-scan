@@ -277,3 +277,33 @@ Scan & Scope Engine hardening landed on fix/scan-scope-engine-hardening (2026-11
 2. Default-mode scan --auto-fix scope parity (former Next #2, owner decision question 29): AutoFix#resolve_scope reuses TargetFileDiscovery.scan_scope in default mode so --auto-fix and --dry-run honor AllCops: Exclude, include app/views ERB/HAML/Slim templates, apply TargetRubyVersion, fail closed with exit 2 ("no files scanned") before snapshotting when empty, and rescue JSON::ParserError on report read. Red-green: scan_auto_fix_scope_test.rb (10 runs).
 3. Shared per-scan scope, --all-cops analyzer scope, and dead parameter removal (former Next #3, F-4 + F-1): Scan#scan resolves TargetFileDiscovery.scan_scope once per default scan (1 discovery pass + 1 ProjectConfigScope::ConfigStore shared across Runner, TargetRubyVersion, SuppressionLedger, and ProjectAnalyzerRunner); under --all-cops, ProjectAnalyzerRunner discovers files via RuboCop::TargetFinder with RuboCop::ConfigStore and ConfigDisables/ConfigExclusions fall back to RuboCop::ConfigStore (recording unchecked line: nil ledger entries for remote inherit_from configs while respecting AllCops: DisabledByDefault); removed dead force_default_config: / with_forced_defaults from ProjectAnalyzerRunner. Red-green: scan_all_cops_analyzer_scope_test.rb (5 runs).
 4. SARIF and report guidance parity (F-2 + F-3): Scan#render runs JsonGuidance.compact! before SarifRenderer so live `scan --all-cops --format sarif` emits stock RuboCop Descriptions in rule help/fullDescription matching `report --format sarif`; Commands::Report requires rubocop-metz and OffenseExtractor/SarifRuleDescriptors share O(1) Registry.global fallback when neither the offense nor guidance specifies why_it_matters (preserving explicit nil/empty overrides). Updated README.md guidance and suppression notes. Red-green: scan_sarif_and_report_guidance_test.rb (4 runs).
+
+## 2026-11-16T21:56Z resolve ab-wave1-specs
+Dispatched: 2026-11-16T21:51Z to gemini-4-hydrogen spec-test-writers
+Goal: Write red spec tests for Proposal A (.rubocop / RUBOCOP_OPTS ignored + stderr note) and Proposal B (widening/replacing per-cop Include in default scan + OperationsTooManyPublicMethods Include parity)
+Outcome: Red spec suites created and RuboCop-clean: scan_rubocop_cli_options_test.rb (12 runs, 9 red) and scan_widened_include_test.rb + scan_rails_aware_include_test.rb Req 3 (11 red)
+
+## 2026-11-16T22:02Z resolve ab-wave2-plugin-and-docs
+Dispatched: 2026-11-16T21:59Z to gemini-4-hydrogen coding-worker
+Goal: Add Metz::FileClassifier.template?, align OperationsTooManyPublicMethods with relevant_file?, update test_file_groups.rb, and update README/SKILL/DDR for Proposal A & B
+Outcome: Metz::FileClassifier.template?, OperationsTooManyPublicMethods#relevant_file?, test_file_groups.rb, and README/SKILL/DDR updates completed and verified
+
+## 2026-11-16T22:16Z resolve ab-wave2-scan-engine
+Dispatched: 2026-11-16T22:02Z to gemini-4-hydrogen coding-worker
+Goal: Implement RuboCopInvocation + IgnoredCliOptionsNote (Proposal A) and ExecutionConfigStore + view_templates + ConfigExclusions + PathScopedIncludeNote (Proposal B)
+Outcome: RuboCopInvocation, IgnoredCliOptionsNote, ExecutionConfigStore, InheritedIncludeRewriter, view_templates, ConfigExclusions, and PathScopedIncludeNote implemented; 15 scan suites + rubocop green
+
+## 2026-11-16T22:24Z resolve ab-wave3-review
+Dispatched: 2026-11-16T22:16Z to gemini-4-hydrogen reviewer + doc-reviewer
+Goal: Independent correctness/edge-case review and docs-freshness review of Proposal A and Proposal B implementation
+Outcome: Reviewer caught 2 P1 suppression edge cases + 1 P2 ConfigLoader state leak; doc-reviewer caught stale CLAUDE.md architecture bullet and runner.rb comment
+
+## 2026-11-16T22:31Z resolve ab-wave3-fixes
+Dispatched: 2026-11-16T22:24Z to gemini-4-hydrogen coding-worker
+Goal: Apply red-green fixes for P1 AutoFix per-cop Exclude/Enabled parity, P1 stock Exclude ledger provenance, P2 ConfigLoader state isolation, view_templates cop caching, and CLAUDE.md/comment updates
+Outcome: Red-green fixes applied for AutoFix per-cop Exclude/Enabled parity, stock Exclude ledger provenance, ConfigLoader state isolation, view_templates cop caching, and CLAUDE.md/DDR/comment updates
+
+## 2026-11-16T22:37Z log
+Proposals A & B landed on fix/scan-scope-engine-hardening (owner decisions 2026-11-16, Gemini 4 Hydrogen subagents: spec-test-writers -> coding-workers -> reviewer + doc-reviewer -> coding-worker):
+1. Isolate scan from .rubocop and RUBOCOP_OPTS with stderr note (former Next #3 / Proposal A): RuboCopInvocation drives RuboCop::Runner directly across all 4 scan modes (scan, scan --all-cops, scan --auto-fix, scan --all-cops --auto-fix) with isolated ConfigLoader and PendingCopsReporter state so .rubocop and RUBOCOP_OPTS never alter findings, exit status, output format, or file contents. IgnoredCliOptionsNote prints one stderr line (`metz-scan: note: ignoring RuboCop CLI options from <sources>; configure settings in .rubocop.yml instead`) when a non-empty .rubocop file and/or RUBOCOP_OPTS is present on non-exit-2 runs. Red-green: scan_rubocop_cli_options_test.rb (12 runs).
+2. Honor widening and replacing per-cop Include in default scan (former Next #4 / Proposal B): ExecutionConfigStore replaces --force-default-config with an in-memory execution ConfigStore keeping stock Metz thresholds/Enabled plus project AllCops scope and per-cop Include (clearing stock Exclude when dropped or project-sourced so SuppressionLedger records explicit stock-pattern reasons; honoring per-cop Exclude and Enabled: false in default-mode AutoFix without enabling opt-in cops). InheritedIncludeRewriter rewrites relative non-`/**` Include globs across `.rubocop*` inherit_from chains; OperationsTooManyPublicMethods moves path scoping to relevant_file?; TargetFileDiscovery.view_templates discovers .erb/.haml/.slim templates (Metz::FileClassifier.template?) in ViewsDeepNavigation's effective Include scope (ignoring non-template assets); ConfigExclusions and PathScopedIncludeNote use effective Include scope. Updated README.md, skills/metz-scan/SKILL.md, CLAUDE.md, DDR 2026-07-08, and scan_rails_aware_include_test.rb Requirement 3. Red-green: scan_widened_include_test.rb (10 runs) + scan_auto_fix_scope_test.rb (11 runs).

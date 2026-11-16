@@ -192,10 +192,11 @@ same reason recurs, ask the human whether to add a per-cop `Exclude`.
   an internal `metz-scan` error, or no files scanned. It wins over findings and leaves stdout without a report:
   read stderr, fix the cause, rerun. Neither is a finding.
 - Stdout holds the report; stderr holds `metz-scan: note:` lines and errors.
-  A note about an uninstalled `inherit_gem` means that gem's `Exclude` was
-  skipped; do not install it. If path-scoped cops did not check files under a
-  root, rescan from inside it only if it is the intended project (nested
-  engines or dummy apps are expected).
+  A note about `.rubocop` or `RUBOCOP_OPTS` means those RuboCop CLI flags
+  were ignored (use `.rubocop.yml`); a note about an uninstalled `inherit_gem`
+  means that gem's `Exclude` was skipped (do not install it). If path-scoped
+  cops did not check files under a root, rescan from inside it only if it is
+  the intended project (nested engines or dummy apps are expected).
 - Suppressed findings do not count toward `offense_count` or the exit status.
 - `Lint/Syntax` means RuboCop could not parse the file at its detected Ruby
   version; set `AllCops: TargetRubyVersion` or fix the syntax.
@@ -204,16 +205,13 @@ same reason recurs, ask the human whether to add a per-cop `Exclude`.
 
 The default scan runs only `Metz/*` cops at stock thresholds. From the
 project's `.rubocop.yml` it reads only file scope (`AllCops: Exclude`,
-per-cop `Exclude`, and a per-cop `Include` that narrows a cop but cannot
-widen it; `Metz/ControllersTooManyDirectCollaborators` and
-`Metz/ViewsDeepNavigation` ignore `Include` and keep their stock scope plus
-engines and nested apps), `Enabled: false` for `Metz/*` cops, the
+per-cop `Include` and `Exclude`), `Enabled: false` for `Metz/*` cops, the
 `Metz` department, and `MetzProject/*` analyzers, and
-`AllCops: TargetRubyVersion`. A directory scan checks Ruby files plus ERB,
-HAML, and Slim view templates under `app/views`; they count toward the
-scorecard's `N/M files clean`. `--all-cops` runs the full RuboCop suite under
-the project config, with RuboCop's own file discovery, and needs the
-project's extension gems.
+`AllCops: TargetRubyVersion`. A directory scan checks Ruby files plus `.erb`,
+`.haml`, and `.slim` templates in `Metz/ViewsDeepNavigation`'s scope
+(`app/views` by default); they count toward the scorecard's `N/M files clean`.
+`--all-cops` runs the full RuboCop suite under the project config, with
+RuboCop's own file discovery, and needs the project's extension gems.
 
 It also runs the default project analyzers `MetzProject/RepeatedBranching`
 and `MetzProject/ServiceSoup`; treat their findings like any cop finding.

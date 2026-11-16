@@ -72,3 +72,11 @@ weaken the #33/#37 file-scope contract unless every user noticed the warning.
   `RuboCop::ConfigLoader.default_configuration` before `merge_with_default`
   so stock `Include`/`Exclude` scopes union with project overrides regardless
   of load order.
+- Update 2026-11-16 (Proposal A & B): `scan` and `scan --auto-fix` drive
+  `RuboCop::Runner` directly (ignoring `.rubocop` and `RUBOCOP_OPTS` with a
+  stderr `metz-scan: note:` when non-empty) and pass default mode
+  `ExecutionConfigStore` (stock thresholds and stock `Enabled`, plus project
+  `AllCops` scope and per-cop `Include`, with `InheritedIncludeRewriter`
+  resolving relative `Include` globs across `inherit_from`) instead of
+  `--force-default-config`, while `SuppressionLedger` still partitions project
+  `Enabled: false` and per-cop `Exclude`.

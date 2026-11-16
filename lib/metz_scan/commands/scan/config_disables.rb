@@ -5,7 +5,7 @@ require "metz_scan/commands/scan/exclude_entry_locator"
 module MetzScan
   module Commands
     class Scan
-      # Default mode runs stock Metz config (--force-default-config), so a
+      # Default `scan` strips project `Enabled` via ExecutionConfigStore, so a
       # project's `Enabled: false` would not stop a Metz cop or project
       # analyzer from reporting. Its offenses are hidden here instead, and the
       # project config that disabled it is credited in the suppression ledger.

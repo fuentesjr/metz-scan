@@ -16,6 +16,15 @@ module MetzScan
           Exclude:
             - "legacy.rb"
       YAML
+      PER_COP_EXCLUDE_CONFIG = <<~YAML
+        Metz/MethodsTooManyParameters:
+          Exclude:
+            - "legacy.rb"
+      YAML
+      PER_COP_DISABLED_CONFIG = <<~YAML
+        Metz/MethodsTooManyParameters:
+          Enabled: false
+      YAML
 
       ERB_VIEW_PATH = "app/views/users/show.html.erb"
       HAML_VIEW_PATH = "app/views/users/show.html.haml"
@@ -81,7 +90,22 @@ module MetzScan
         assert_view_offense_exits_one(SLIM_VIEW_PATH, DEEP_SLIM_VIEW, "--auto-fix")
       end
 
+      def test_default_auto_fix_honors_per_cop_exclude_and_enabled_false
+        assert_per_cop_excluded_exits_zero
+        with_project(".rubocop.yml" => PER_COP_DISABLED_CONFIG, "legacy.rb" => TOO_MANY_PARAMETERS) do |dir|
+          assert_exit_status 0, scan_subprocess(dir, ".", "--auto-fix")
+        end
+      end
+
       private
+
+      def assert_per_cop_excluded_exits_zero
+        with_project(".rubocop.yml" => PER_COP_EXCLUDE_CONFIG, "legacy.rb" => TOO_MANY_PARAMETERS,
+                     "clean.rb" => CLEAN_RUBY) do |dir|
+          assert_exit_status 0, scan_subprocess(dir, ".", "--auto-fix")
+          assert_exit_status 0, scan_subprocess(dir, ".", "--auto-fix", "--dry-run")
+        end
+      end
 
       def with_excluded_legacy_project(&)
         files = { ".rubocop.yml" => EXCLUDE_LEGACY_CONFIG, "legacy.rb" => TOO_MANY_PARAMETERS,

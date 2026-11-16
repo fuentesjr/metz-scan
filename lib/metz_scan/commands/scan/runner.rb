@@ -6,8 +6,10 @@ require "rubocop"
 require "stringio"
 
 require "metz/file_classifier"
+require "metz_scan/commands/scan/execution_config_store"
 require "metz_scan/commands/scan/project_config_scope"
 require "metz_scan/commands/scan/rubocop_failure"
+require "metz_scan/commands/scan/rubocop_invocation"
 require "metz_scan/commands/scan/suppression_ledger"
 require "metz_scan/commands/scan/target_ruby_version"
 
@@ -27,14 +29,15 @@ module MetzScan
 
         def self.perform(paths, all_cops:, stderr:, scope: {})
           store = scope[:store] || (ProjectConfigScope.store unless all_cops)
+          exec_store = ExecutionConfigStore.new(store) unless all_cops
           files = inspection_paths(paths, all_cops: all_cops, store: store, target_files: scope[:target_files])
           report = files.empty? ? empty_report : scan(files, all_cops: all_cops, store: store)
-          report.tap { ProjectConfigScope.warn_scope_notes(files, stderr) unless all_cops }
+          report.tap { ProjectConfigScope.warn_scope_notes(files, stderr, exec_store: exec_store) unless all_cops }
         end
 
         def self.scan(paths, all_cops:, store: nil)
           report = TargetRubyVersion.with_project_config(paths, all_cops: all_cops, store: store) do
-            parse_output(capture_output(rubocop_argv(paths, all_cops: all_cops)))
+            parse_output(RuboCopInvocation.scan(paths, all_cops: all_cops, store: store))
           end
           return report if all_cops
 
@@ -48,12 +51,6 @@ module MetzScan
           raise Error, concise_message(e.message)
         end
 
-        def self.rubocop_argv(paths, all_cops:)
-          require_metz_plugin
-          ["--plugin", "rubocop-metz", *cop_selection_argv(all_cops), *ledger_argv(all_cops), "--format", FORMATTER,
-           *paths]
-        end
-
         def self.require_metz_plugin
           require "rubocop-metz"
         rescue LoadError => e
@@ -64,18 +61,6 @@ module MetzScan
           return paths if all_cops
 
           (target_files || TargetFileDiscovery.discover(paths, store: store)).map { |path| display_path(path) }
-        end
-
-        def self.cop_selection_argv(all_cops) = all_cops ? [] : ["--force-default-config", "--only", "Metz"]
-
-        # The suppression ledger needs inline-suppressed offenses; AutoFix reuses cop_selection_argv without it.
-        def self.ledger_argv(all_cops) = all_cops ? [] : ["--display-suppressed"]
-
-        def self.capture_output(argv)
-          out = StringIO.new
-          err = StringIO.new
-          status = with_redirected_io(out, err) { RuboCop::CLI.new.run(argv) }
-          Result.new(stdout: out.string, stderr: err.string, status: status)
         end
 
         def self.with_redirected_io(out, err)
@@ -199,18 +184,31 @@ module MetzScan
           Thread.current[STORE_KEY] || ProjectConfigScope.store
         end
 
-        # RuboCop's directory discovery finds only Ruby files; the Metz view cops also check
-        # app/views templates. Hidden directories and the project's Exclude apply as they do to Ruby.
+        # RuboCop's directory discovery finds only Ruby files; the Metz view cop also
+        # checks template files in its effective Include scope. Hidden directories and
+        # the project's AllCops: Exclude apply as they do to Ruby.
         def view_templates(paths, finder, store)
+          exec_store = ExecutionConfigStore.new(store)
+          cops = {}.compare_by_identity
           paths.select { |path| File.directory?(path) }.flat_map do |dir|
-            base_dir = File.expand_path(dir)
-            config = store.for(base_dir)
-            finder.find_files(base_dir, 0).select { |file| Metz::FileClassifier.view?(file) && !config.file_to_exclude?(file) }
+            templates_in_dir(File.expand_path(dir), finder, exec_store, cops)
           end
         end
 
-        # Default mode runs RuboCop with --force-default-config, so nothing else reads nested
-        # configs; loading them here makes a broken one fail the scan instead of being skipped.
+        def templates_in_dir(base_dir, finder, exec_store, cops)
+          finder.find_files(base_dir, 0).select { |file| included_template?(file, exec_store, cops) }
+        end
+
+        def included_template?(file, exec_store, cops)
+          return false unless Metz::FileClassifier.template?(file)
+
+          exec_config = exec_store.for_file(file)
+          views_cop = cops[exec_config] ||= RuboCop::Cop::Metz::ViewsDeepNavigation.new(exec_config)
+          !exec_config.file_to_exclude?(file) && views_cop.relevant_file?(file)
+        end
+
+        # ExecutionConfigStore builds execution configs per unique loaded_path only, so
+        # loading every file's governing config here makes a broken nested config fail the scan.
         def load_governing_configs(files, store)
           files.each { |file| store.for_file(file) }
         end

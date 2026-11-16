@@ -7,15 +7,12 @@ require "metz_scan/commands/scan/exclude_entry_locator"
 module MetzScan
   module Commands
     class Scan
-      # Default mode runs stock Metz config (--force-default-config) but must
-      # still honor the project's per-cop file scope (Include/Exclude), the
-      # same way #33 honors AllCops: Exclude. RuboCop's own excluded_file?
-      # resolves the project config's scope per cop (#37); offenses on files a
-      # cop is scoped off are hidden, and the project Exclude entry that hid
-      # one is credited in the suppression ledger. Cops that define
-      # `default_scope_file?` (the classifier-scoped rails-aware cops) keep
-      # their stock classifier scope plus project Exclude in default mode
-      # (owner decision 2026-10-14, question 28). Project analyzers have no cop
+      # Default mode runs stock Metz config except for project Include, so it
+      # must still honor the project's per-cop Exclude (#37); offenses on files
+      # a cop is scoped off are hidden, and the project Exclude entry that hid
+      # one is credited in the suppression ledger. Per-cop Include both narrows
+      # and widens in default mode, and RuboCop's excluded_file? resolves each
+      # cop's scope against the project config. Project analyzers have no cop
       # class; only a project or inherited Exclude entry scopes them off.
       class ConfigExclusions
         def initialize(store, rubocop_store: nil)
@@ -86,8 +83,6 @@ module MetzScan
         end
 
         def cop_scoped_off?(cop, file)
-          return !cop.default_scope_file?(file) if cop.respond_to?(:default_scope_file?)
-
           cop.excluded_file?(file)
         end
 

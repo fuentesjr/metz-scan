@@ -35,8 +35,8 @@ module MetzScan
         source: CONTROLLER_SOURCE,
         scan_by: :directory
       }.freeze
-      # The base default scan does not pick up view templates from a directory
-      # scan, so the templates are passed on the command line.
+      # Directory scans now check app/views templates, while Req 1, 2, and 4 pass
+      # template files explicitly (including engine templates); Req 3 scans `.`.
       VIEWS = {
         cop: VIEWS_COP,
         app: "app/views/v/show.html.erb",
@@ -124,9 +124,8 @@ module MetzScan
     # these tests pin the default (Metz-only) scan.
     #
     # Every scan runs as a subprocess from the project root: default mode matches
-    # the cops' app/-anchored globs relative to the current directory. Nothing
-    # here asserts on files under the extra path (lib/**); the default scan does
-    # not check them yet and a separate item tracks that.
+    # the cops' app/-anchored globs relative to the current directory. Per-cop
+    # Include widening under `lib/**` is also tested in `scan_widened_include_test.rb`.
     class ScanRailsAwareIncludeTest < Minitest::Test
       include RailsAwareScanProject
 
@@ -148,18 +147,29 @@ module MetzScan
         assert_app_and_engine_reported(VIEWS, listed_include(VIEWS), "explicit default Include (req 2)")
       end
 
-      # Requirement 3. The owner has not yet designed how the default scan honors
-      # an Include that replaces the default. Until then the scan keeps checking
-      # the stock scope and must never come back clean for this project.
-      def test_controllers_cop_with_replacing_include_still_reports_stock_scope_instead_of_a_clean_result
-        assert_app_and_engine_reported(CONTROLLERS, replacing_include(CONTROLLERS), "replacing Include (req 3)")
+      # Requirement 3. An Include without the default pattern replaces the
+      # stock scope in the default scan, matching --all-cops and plain RuboCop.
+      def test_controllers_cop_with_replacing_include_drops_stock_scope_and_reports_lib
+        assert_replaced_include_reports_only(CONTROLLERS, "lib/reports_controller.rb")
       end
 
-      def test_views_cop_with_replacing_include_still_reports_stock_scope_instead_of_a_clean_result
-        assert_app_and_engine_reported(VIEWS, replacing_include(VIEWS), "replacing Include (req 3)")
+      def test_views_cop_with_replacing_include_drops_stock_scope_and_reports_lib
+        assert_replaced_include_reports_only(VIEWS, "lib/v/show.html.erb")
       end
 
       private
+
+      def assert_replaced_include_reports_only(scope, lib_path)
+        write_replaced_include_project(scope, lib_path)
+        stdout, stderr, status = scan_subprocess(["."])
+        flagged = flagged_paths(stdout, scope.fetch(:cop), stderr)
+        assert_equal [1, [lib_path], []], [status.exitstatus, flagged, JSON.parse(stdout).fetch("suppressions")]
+      end
+
+      def write_replaced_include_project(scope, lib_path)
+        write_file(".rubocop.yml", replacing_include(scope))
+        [scope.fetch(:app), scope.fetch(:engine), lib_path].each { |path| write_file(path, scope.fetch(:source)) }
+      end
 
       def assert_app_and_engine_reported(scope, config, label)
         status, flagged = scan_flagged(scope, config, %i[app engine])

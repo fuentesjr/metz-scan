@@ -4,6 +4,9 @@ require "json"
 require "open3"
 require "tempfile"
 
+require "metz_scan/commands/scan/ignored_cli_options_note"
+require "metz_scan/commands/scan/rubocop_invocation"
+
 module MetzScan
   module Commands
     class Scan
@@ -14,9 +17,11 @@ module MetzScan
         end
 
         def run(options)
-          require "rubocop-metz"
+          Runner.with_errors { Runner.require_metz_plugin }
           scope = resolve_scope(options)
-          options.dry_run ? run_dry(options, scope) : run_in_place(options, scope)
+          status = options.dry_run ? run_dry(options, scope) : run_in_place(options, scope)
+          IgnoredCliOptionsNote.print_note(stderr)
+          status
         end
 
         private
@@ -62,9 +67,13 @@ module MetzScan
         def run_rubocop(options, scope, report_path)
           Runner.with_errors do
             TargetRubyVersion.with_project_config(scope[:paths], all_cops: options.all_cops, store: scope[:store]) do
-              Runner.capture_output(rubocop_argv(options, scope[:paths], report_path))
+              invoke_rubocop(options, scope, report_path)
             end
           end
+        end
+
+        def invoke_rubocop(options, scope, report_path)
+          RuboCopInvocation.auto_fix(scope[:paths], options: options, report_path: report_path, store: scope[:store])
         end
 
         def check!(result, report, options)
@@ -77,16 +86,6 @@ module MetzScan
         rescue JSON::ParserError
           raise Runner::Error, RubocopFailure.message(result)
         end
-
-        def rubocop_argv(options, target_paths, report_path)
-          flag = options.unsafe ? "-A" : "-a"
-          selection = Runner.cop_selection_argv(options.all_cops)
-          selection += ["--disable-pending-cops"] unless options.all_cops
-          ["--plugin", "rubocop-metz", *selection, flag, *formatter_argv(report_path), *target_paths]
-        end
-
-        # Progress goes last: RuboCop hides cop names when the last --format is json.
-        def formatter_argv(report_path) = ["--format", "json", "--out", report_path, "--format", "progress"]
 
         def capture_files(paths) = files_under(paths).to_h { |path| [path, File.binread(path)] }
 

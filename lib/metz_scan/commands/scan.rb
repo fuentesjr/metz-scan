@@ -13,6 +13,7 @@ require_relative "scan/text_renderer"
 require_relative "scan/sarif_renderer"
 require_relative "scan/github_annotations_renderer"
 require_relative "scan/auto_fix"
+require_relative "scan/ignored_cli_options_note"
 require_relative "scan/json_guidance"
 require_relative "../cli"
 
@@ -151,11 +152,17 @@ module MetzScan
       end
 
       def run_scan(options, scope)
+        parsed = build_report(options, scope)
+        stdout.write(rendered(parsed, options))
+        IgnoredCliOptionsNote.print_note(stderr)
+        Runner.exit_code_for(parsed)
+      end
+
+      def build_report(options, scope)
         parsed = checked_report(options, scope)
         merge_project_analyzers(parsed, options, scope)
         ComplianceScorecard.add_to_summary!(parsed)
-        stdout.write(rendered(parsed, options))
-        Runner.exit_code_for(parsed)
+        parsed
       end
 
       def checked_report(options, scope)

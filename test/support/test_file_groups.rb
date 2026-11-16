@@ -33,10 +33,12 @@ module MetzScan
       "test/metz_scan/commands/scan_project_analyzers_test.rb",
       "test/metz_scan/commands/scan_rails_aware_include_test.rb",
       "test/metz_scan/commands/scan_regexp_exclude_test.rb",
+      "test/metz_scan/commands/scan_rubocop_cli_options_test.rb",
       "test/metz_scan/commands/scan_sarif_and_report_guidance_test.rb",
       "test/metz_scan/commands/scan_stock_guidance_scope_test.rb",
       "test/metz_scan/commands/scan_suppression_ledger_test.rb",
-      "test/metz_scan/commands/scan_test.rb"
+      "test/metz_scan/commands/scan_test.rb",
+      "test/metz_scan/commands/scan_widened_include_test.rb"
     ].freeze
     # Slow files measured at 9s or more (2026-10-14, serial), longest first. The
     # parallel runner starts these before the rest so the longest file does

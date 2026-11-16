@@ -32,11 +32,14 @@ Two gems in one repo, strict dependency direction:
 Key paths:
 
 - `lib/metz_scan/cli.rb` dispatches to `lib/metz_scan/commands/{scan,report,rules,explain,project_analyzers}.rb`.
-- `lib/metz_scan/commands/scan/runner.rb` — default scan is Metz-only: it asks
-  RuboCop for target files using the *project's* config (honoring
-  `AllCops: Exclude`, per #33), adds ERB/HAML/Slim templates under `app/views`
-  found in directory arguments, then runs those files with
-  `--force-default-config --only Metz`. `--all-cops` runs the full stock suite.
+- `lib/metz_scan/commands/scan/runner.rb` — default scan is Metz-only:
+  `TargetFileDiscovery` asks RuboCop for target files using the *project's*
+  scope-only config (honoring `AllCops: Exclude`, per #33) and adds
+  ERB/HAML/Slim templates matched by `Metz/ViewsDeepNavigation`'s effective
+  `Include` scope (`app/views` by default), then `RuboCopInvocation` drives
+  `RuboCop::Runner` directly (ignoring `.rubocop` and `RUBOCOP_OPTS` across
+  modes) with `ExecutionConfigStore` (stock thresholds/`Enabled` plus project
+  `AllCops` scope and per-cop `Include`). `--all-cops` runs the full stock suite.
 - Project analyzers live in `lib/metz_scan/analyzers/`. Two classes:
   AST-only (`service_soup.rb`, `repeated_branching.rb`,
   `implicit_context_pressure.rb`, `repeated_query_criteria.rb`) and
