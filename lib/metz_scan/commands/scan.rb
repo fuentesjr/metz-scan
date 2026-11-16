@@ -96,7 +96,6 @@ module MetzScan
     class Scan
       USAGE = ScanOptions::USAGE
       VALID_FORMATS = ScanOptions::VALID_FORMATS
-      RENDERERS = { "sarif" => SarifRenderer, "gh-annotations" => GithubAnnotationsRenderer }.freeze
 
       def self.run(argv, stdout:, stderr:)
         new(stdout: stdout, stderr: stderr).run(argv)
@@ -142,54 +141,48 @@ module MetzScan
         scan(options)
       end
 
-      # Default-mode auto-fix runs RuboCop with --force-default-config, which never reads the
-      # project's configs; loading them here fails a broken one the way a plain scan does.
       def auto_fix(options)
-        Runner.with_errors { TargetFileDiscovery.for_project_config(options.paths) } unless options.all_cops
         AutoFix.new(stdout: stdout, stderr: stderr).run(options)
       end
 
       # The report reaches stdout only after every step succeeded; see CheckFailure.
       def scan(options)
-        parsed = checked_report(options)
-        merge_project_analyzers(parsed, options)
-        add_compliance_summary(parsed)
+        run_scan(options, options.all_cops ? {} : TargetFileDiscovery.scan_scope(options.paths))
+      end
+
+      def run_scan(options, scope)
+        parsed = checked_report(options, scope)
+        merge_project_analyzers(parsed, options, scope)
+        ComplianceScorecard.add_to_summary!(parsed)
         stdout.write(rendered(parsed, options))
         Runner.exit_code_for(parsed)
       end
 
-      def checked_report(options)
-        parsed = Runner.invoke(options.paths, all_cops: options.all_cops, stderr: stderr)
+      def checked_report(options, scope)
+        parsed = Runner.invoke(options.paths, all_cops: options.all_cops, stderr: stderr, **scope)
         raise CheckFailure::NoFilesScanned, options.paths if parsed.dig("summary", "inspected_file_count").zero?
 
         parsed
       end
 
-      def add_compliance_summary(parsed)
-        ComplianceScorecard.add_to_summary!(parsed)
-      end
-
-      def merge_project_analyzers(parsed, options)
-        ProjectAnalyzerRunner.merge!(parsed, options.paths, **project_analyzer_options(options))
-      end
-
-      def project_analyzer_options(options)
-        { default_output: !options.project_analyzers }
+      def merge_project_analyzers(parsed, options, scope)
+        opts = { default_output: !options.project_analyzers, all_cops: options.all_cops, **scope }
+        ProjectAnalyzerRunner.merge!(parsed, options.paths, **opts)
       end
 
       def rendered(parsed, options)
         StringIO.new.tap { |out| render(out, parsed, options) }.string
       end
 
-      # Text renders the compacted report so live output matches `report` on the saved JSON.
+      # Text and SARIF render the compacted report so live output matches `report` on the saved JSON.
       def render(out, parsed, options)
         format = options.format
-        return RENDERERS.fetch(format).new(out, parsed).render if RENDERERS.key?(format)
+        return GithubAnnotationsRenderer.new(out, parsed).render if format == "gh-annotations"
 
         JsonGuidance.compact!(parsed, all_cops: options.all_cops)
         return out.puts JSON.generate(parsed) if format == "json"
 
-        TextRenderer.new(out, parsed).render
+        (format == "sarif" ? SarifRenderer : TextRenderer).new(out, parsed).render
       end
 
       def parser_error(err)

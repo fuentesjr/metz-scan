@@ -15,16 +15,16 @@ module MetzScan
         # With a `ledger_report` (scan), the project's MetzProject/* config
         # and inline directives hide offenses, crediting them in that report's
         # suppression ledger; findings left with no live offense drop out.
-        def build(findings, ledger_report: nil)
+        def build(findings, ledger_report: nil, **scope)
           entries = entries_for(findings)
-          return live_set(entries, ledger_report) if ledger_report
+          return live_set(entries, ledger_report, **scope) if ledger_report
 
           OffenseSet.new(findings: findings, by_path: offenses_by_path(entries),
                          offenses: entries.map { |entry| entry.fetch(:offense) })
         end
 
-        def live_set(entries, ledger_report)
-          by_path = SuppressionLedger.partition!(ledger_report, offenses_by_path(entries))
+        def live_set(entries, ledger_report, **scope)
+          by_path = SuppressionLedger.partition!(ledger_report, offenses_by_path(entries), **scope)
           live = by_path.values.flatten
           kept = Set.new.compare_by_identity.merge(live)
           findings = entries.select { |entry| kept.include?(entry.fetch(:offense)) }.map { |entry| entry[:finding] }

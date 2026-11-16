@@ -21,22 +21,24 @@ module MetzScan
 
         Result = Struct.new(:stdout, :stderr, :status, keyword_init: true)
 
-        def self.invoke(paths, all_cops: false, stderr: $stderr)
-          with_errors { perform(paths, all_cops: all_cops, stderr: stderr) }
+        def self.invoke(paths, all_cops: false, stderr: $stderr, **scope)
+          with_errors { perform(paths, all_cops: all_cops, stderr: stderr, scope: scope) }
         end
 
-        def self.perform(paths, all_cops:, stderr:)
-          ProjectConfigScope.reset_unresolved_inherit_gems! unless all_cops
-          paths = inspection_paths(paths, all_cops: all_cops)
-          report = paths.empty? ? empty_report : scan(paths, all_cops: all_cops)
-          report.tap { ProjectConfigScope.warn_scope_notes(paths, stderr) unless all_cops }
+        def self.perform(paths, all_cops:, stderr:, scope: {})
+          store = scope[:store] || (ProjectConfigScope.store unless all_cops)
+          files = inspection_paths(paths, all_cops: all_cops, store: store, target_files: scope[:target_files])
+          report = files.empty? ? empty_report : scan(files, all_cops: all_cops, store: store)
+          report.tap { ProjectConfigScope.warn_scope_notes(files, stderr) unless all_cops }
         end
 
-        def self.scan(paths, all_cops:)
-          report = TargetRubyVersion.with_project_config(paths, all_cops: all_cops) do
+        def self.scan(paths, all_cops:, store: nil)
+          report = TargetRubyVersion.with_project_config(paths, all_cops: all_cops, store: store) do
             parse_output(capture_output(rubocop_argv(paths, all_cops: all_cops)))
           end
-          all_cops ? report : SuppressionLedger.apply(report)
+          return report if all_cops
+
+          SuppressionLedger.with_store(store) { SuppressionLedger.apply(report) }
         end
 
         # Only what RuboCop and config loading raise; a metz-scan bug keeps its class and backtrace.
@@ -58,10 +60,10 @@ module MetzScan
           raise Error, "could not load rubocop-metz: #{e.message}"
         end
 
-        def self.inspection_paths(paths, all_cops:)
+        def self.inspection_paths(paths, all_cops:, store: nil, target_files: nil)
           return paths if all_cops
 
-          TargetFileDiscovery.for_project_config(paths).map { |path| display_path(path) }
+          (target_files || TargetFileDiscovery.discover(paths, store: store)).map { |path| display_path(path) }
         end
 
         def self.cop_selection_argv(all_cops) = all_cops ? [] : ["--force-default-config", "--only", "Metz"]
@@ -140,13 +142,61 @@ module MetzScan
       end
 
       module TargetFileDiscovery
+        STORE_KEY = :metz_scan_target_file_discovery_store
+
         module_function
 
-        def for_project_config(paths)
+        def scan_scope(paths)
           store = ProjectConfigScope.store
+          { store: store, target_files: Runner.with_errors { discover(paths, store: store) } }
+        end
+
+        def analyzer_scope(options)
+          if options[:all_cops]
+            return { rubocop_store: options[:rubocop_store] || Runner.with_errors { all_cops_store } }
+          end
+
+          { store: options[:store] || ProjectConfigScope.store }
+        end
+
+        def for_analyzer(paths, all_cops: false, store: nil, rubocop_store: nil)
+          return for_all_cops(paths, rubocop_store: rubocop_store || all_cops_store) if all_cops
+
+          discover(paths, store: store)
+        end
+
+        def discover(paths, store: nil)
+          Runner.require_metz_plugin
+          ProjectConfigScope.reset_unresolved_inherit_gems!
+          with_store(store || ProjectConfigScope.store) { for_project_config(paths) }
+        end
+
+        def for_project_config(paths, store: active_store)
           finder = RuboCop::TargetFinder.new(store, {})
           files = (finder.find(paths, :all_file_types) + view_templates(paths, finder, store)).uniq
           load_governing_configs(files, store)
+        end
+
+        def for_all_cops(paths, rubocop_store: all_cops_store)
+          ProjectConfigScope.ensure_metz_defaults_loaded
+          RuboCop::TargetFinder.new(rubocop_store, {}).find(paths, :all_file_types)
+        end
+
+        def all_cops_store
+          ProjectConfigScope.ensure_metz_defaults_loaded
+          RuboCop::ConfigStore.new
+        end
+
+        def with_store(store)
+          previous = Thread.current[STORE_KEY]
+          Thread.current[STORE_KEY] = store
+          yield
+        ensure
+          Thread.current[STORE_KEY] = previous
+        end
+
+        def active_store
+          Thread.current[STORE_KEY] || ProjectConfigScope.store
         end
 
         # RuboCop's directory discovery finds only Ruby files; the Metz view cops also check

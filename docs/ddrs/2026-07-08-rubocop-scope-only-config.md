@@ -66,3 +66,9 @@ weaken the #33/#37 file-scope contract unless every user noticed the warning.
   `config_exclude`. Inline suppression is `# metz-scan:disable
   MetzProject/<Rule>` (not `# rubocop:disable`), credited as `inline_disable`.
   The bare `MetzProject` department key is not supported.
+- Update 2026-11-16: `ProjectConfigScope` preserves per-cop `inherit_mode`,
+  falls back to inherited top-level `inherit_mode` when an inheriting config
+  omits it, and integrates `rubocop-metz` defaults into
+  `RuboCop::ConfigLoader.default_configuration` before `merge_with_default`
+  so stock `Include`/`Exclude` scopes union with project overrides regardless
+  of load order.

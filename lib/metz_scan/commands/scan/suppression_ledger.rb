@@ -20,23 +20,37 @@ module MetzScan
       # (see partition!), with `# metz-scan:disable` as their inline directive.
       class SuppressionLedger
         SORT_KEYS = %w[path line column cop_name].freeze
+        STORE_KEY = :metz_scan_suppression_ledger_store
 
-        def self.apply(report)
-          store = ProjectConfigScope.store
-          new(report, [ConfigDisables.new(store), ConfigExclusions.new(store)]).apply
+        def self.with_store(store)
+          previous = Thread.current[STORE_KEY]
+          Thread.current[STORE_KEY] = store
+          yield
+        ensure
+          Thread.current[STORE_KEY] = previous
+        end
+
+        def self.apply(report, store: nil, rubocop_store: nil)
+          new(report, config_sources(store, rubocop_store)).apply
         rescue RuboCop::Error, Psych::Exception
           # Invalid project config leaves no project config to honor, matching
           # the forced-default target-discovery fallback.
           new(report, []).apply
         end
 
+        def self.config_sources(store, rubocop_store)
+          scope_store = store || Thread.current[STORE_KEY] || ProjectConfigScope.store
+          [ConfigDisables.new(scope_store, rubocop_store: rubocop_store),
+           ConfigExclusions.new(scope_store, rubocop_store: rubocop_store)]
+        end
+
         # Project analyzer offenses join the report after RuboCop's (in every
         # scan mode): partitions `offenses_by_path`, adds its records to the
         # report's ledger (created under --all-cops only when a record exists),
         # and returns the live offenses by display path.
-        def self.partition!(report, offenses_by_path)
+        def self.partition!(report, offenses_by_path, store: nil, rubocop_store: nil)
           files = offenses_by_path.map { |path, live| { "path" => Runner.display_path(path), "offenses" => live } }
-          partitioned = apply("files" => files, "summary" => {})
+          partitioned = apply({ "files" => files, "summary" => {} }, store: store, rubocop_store: rubocop_store)
           add_records(report, partitioned["suppressions"])
           partitioned["files"].to_h { |file| file.values_at("path", "offenses") }.reject { |_path, live| live.empty? }
         end
