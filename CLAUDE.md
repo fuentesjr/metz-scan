@@ -26,8 +26,11 @@ Two gems in one repo, strict dependency direction:
   `MetzScan`/`metz_scan` (only its gemspec may). Enforced by
   `bin/check_dependency_direction`.
 - `lib/metz_scan/` — the `metz-scan` CLI wrapper. Depends on `rubocop-metz`
-  via `"~> #{MetzScan::VERSION}"` (the `add_dependency "rubocop-metz"` line in
-  `metz-scan.gemspec`), so version bumps auto-carry the pin.
+  via `"~> #{MetzScan::VERSION}"` in `metz-scan.gemspec`, assigned before
+  `add_dependency "rubocop-metz"`, so version bumps auto-carry the pin. The
+  string is not that call's argument: Dependabot's gemspec sanitizer would
+  replace an interpolated argument with a bare version, and RubyGems reads a
+  bare version as `=`.
 
 Key paths:
 
