@@ -39,5 +39,11 @@ Gem::Specification.new do |spec|
   spec.executables   = ["metz-scan"]
   spec.require_paths = ["lib"]
 
-  spec.add_dependency "rubocop-metz", "~> #{MetzScan::VERSION}"
+  # The requirement is not the add_dependency argument. Dependabot's
+  # GemspecSanitizer replaces a call argument that interpolates a VERSION
+  # constant with a bare version, and Gem::Requirement.parse reads a bare
+  # version as "=". That drifts the lockfile PATH entry and a frozen install
+  # exits 16.
+  rubocop_metz_requirement = "~> #{MetzScan::VERSION}"
+  spec.add_dependency "rubocop-metz", rubocop_metz_requirement
 end
