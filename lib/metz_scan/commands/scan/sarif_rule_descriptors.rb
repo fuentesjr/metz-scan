@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require_relative "offense_extractor"
 require_relative "sarif_severity"
 
 module MetzScan
@@ -31,8 +32,8 @@ module MetzScan
         end
 
         def add_optional_texts(descriptor, cop_name)
-          descriptor = add_text(descriptor, "help", help_text(cop_name))
-          add_text(descriptor, "fullDescription", full_description_for(cop_name))
+          text = rule_why_text(cop_name)
+          add_text(add_text(descriptor, "help", text), "fullDescription", text)
         end
 
         def add_text(descriptor, key, text)
@@ -45,28 +46,9 @@ module MetzScan
           SarifSeverity.highest_level(offenses.map { |offense| offense[:severity] })
         end
 
-        def help_text(cop_name)
-          offense_for(cop_name)&.dig(:why_it_matters) || registry_metadata(cop_name).fetch("why_it_matters", nil)
-        end
-
-        def full_description_for(cop_name)
-          offense_for(cop_name)&.dig(:why_it_matters) || registry_metadata(cop_name).fetch("why_it_matters", nil)
-        end
-
-        def registry_metadata(cop_name)
-          return {} unless defined?(RuboCop::Cop::Registry)
-
-          metadata_for(cop_for(cop_name))
-        end
-
-        def metadata_for(cop)
-          return {} unless cop.respond_to?(:why_it_matters)
-
-          { "why_it_matters" => cop.why_it_matters }
-        end
-
-        def cop_for(cop_name)
-          RuboCop::Cop::Registry.global.cops.find { |candidate| candidate.cop_name == cop_name }
+        def rule_why_text(cop_name)
+          first = offense_for(cop_name)
+          first&.fetch(:why_it_matters) { OffenseExtractor.registry_why_it_matters(cop_name) }
         end
 
         def offense_for(cop_name)

@@ -156,7 +156,7 @@ module MetzScan
 
     def test_repo_runtime_comes_from_ruby_version_file
       assert_empty retired_ruby_patch_files
-      assert_equal "4.0.9", File.read(repo_path(".ruby-version")).strip
+      assert_equal "4.0.10", File.read(repo_path(".ruby-version")).strip
       assert_equal [".ruby-version"], ruby_version_inputs.uniq
     end
 

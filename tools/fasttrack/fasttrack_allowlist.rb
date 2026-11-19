@@ -87,6 +87,7 @@ module Fasttrack
     return false unless jobs.is_a?(Hash) && jobs.keys == ["fasttrack-allowlist"]
     job = jobs["fasttrack-allowlist"]
     return false unless job.is_a?(Hash) && !job.key?("permissions")
+    return false unless job["if"] == "contains(github.event.pull_request.labels.*.name, 'fast-track')"
     steps = job["steps"]
     return false unless steps.is_a?(Array)
     checks = steps.select { |step| step.is_a?(Hash) && step["uses"].to_s.start_with?("actions/checkout@") }

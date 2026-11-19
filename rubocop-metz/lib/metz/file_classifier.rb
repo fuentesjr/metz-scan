@@ -20,6 +20,7 @@ module Metz
   module FileClassifier
     CONTROLLER_PATTERN = %r{(?:\A|/)app/controllers/[^\0]+\.rb\z}
     VIEW_PATTERN       = %r{(?:\A|/)app/views/[^\0]+\.(?:erb|haml|slim)\z}
+    TEMPLATE_PATTERN   = /\.(?:erb|haml|slim)\z/
     MODEL_PATTERN      = %r{(?:\A|/)app/models/[^\0]+\.rb\z}
     OPERATION_PATTERN  = %r{(?:\A|/)app/(?:services|operations)/[^\0]+\.rb\z}
 
@@ -31,6 +32,10 @@ module Metz
 
     def view?(path)
       normalize(path).match?(VIEW_PATTERN)
+    end
+
+    def template?(path)
+      normalize(path).match?(TEMPLATE_PATTERN)
     end
 
     def model?(path)

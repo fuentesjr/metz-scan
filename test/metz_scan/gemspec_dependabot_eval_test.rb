@@ -47,11 +47,31 @@ module MetzScan
       end
     end
 
+    def test_metz_scan_requirement_survives_dependabot_version_assignment_rewrite
+      fixture = METZ_SCAN
+      source = dependabot_version_assignment_rewrite(fixture)
+      with_sparse_spec(fixture, source: source) do |spec|
+        assert_equal ["~> #{spec.version}"], sparse_requirements(spec, fixture)
+      end
+    end
+
     private
 
-    def with_sparse_spec(fixture)
+    def dependabot_version_assignment_rewrite(fixture)
+      require_relative "../support/dependabot_version_assignment_rewrite"
+      source = File.read(repo_path(fixture.fetch(:gemspec)))
+      DependabotVersionAssignmentRewrite.rewrite(source, gemspec_version(fixture))
+    end
+
+    def gemspec_version(fixture)
+      File.read(repo_path(fixture.fetch(:version)))[/VERSION = "([^"]+)"/, 1]
+    end
+
+    def with_sparse_spec(fixture, source: nil)
       Dir.mktmpdir("metz-scan-gemspec-sparse") do |dir|
-        yield load_spec(write_sparse_tree(dir, fixture))
+        path = write_sparse_tree(dir, fixture)
+        File.write(path, source) if source
+        yield load_spec(path)
       end
     end
 

@@ -38,6 +38,97 @@ class FasttrackAllowlistTest < Minitest::Test
   ].freeze
   CLEAN_PATCH = "@@ -1 +1 @@\n-old note\n+A short handbook note.\n"
   ROOT = File.expand_path("../..", __dir__)
+  # Signed floor for the fast-track job condition. Adding or removing a row is a spec edit.
+  LABEL_GATE = [
+    {
+      id: "N1",
+      input: "Job has no `if`",
+      expect: "workflow check fails closed",
+      pass: false,
+      forms: [:drop]
+    },
+    {
+      id: "N2",
+      input: "`if: always()` or `if: true`",
+      expect: "fails closed",
+      pass: false,
+      forms: ["always()", "true"]
+    },
+    {
+      id: "N3",
+      input: "Label name misspelled or different (`fasttrack`, `fast_track`)",
+      expect: "fails closed",
+      pass: false,
+      forms: [
+        "contains(github.event.pull_request.labels.*.name, 'fasttrack')",
+        "contains(github.event.pull_request.labels.*.name, 'fast_track')"
+      ]
+    },
+    {
+      id: "N4",
+      input: "Condition uses `github.event.label.name` (only the label just added, wrong on `synchronize`)",
+      expect: "fails closed",
+      pass: false,
+      forms: ["contains(github.event.label.name, 'fast-track')"]
+    },
+    {
+      id: "N5",
+      input: "`if` on a step instead of the job",
+      expect: "fails closed",
+      pass: false,
+      forms: [:step]
+    },
+    {
+      id: "N6",
+      input: "Correct `if` combined with `|| ...` or `&& ...`",
+      expect: "fails closed",
+      pass: false,
+      forms: [
+        "contains(github.event.pull_request.labels.*.name, 'fast-track') || true",
+        "contains(github.event.pull_request.labels.*.name, 'fast-track') && true"
+      ]
+    },
+    {
+      id: "N7",
+      input: "Correct `if` plus a second job",
+      expect: "fails closed (one-job rule stays)",
+      pass: false,
+      forms: [:second]
+    },
+    {
+      id: "N8",
+      input: "Wrapped form `if: ${{ contains(github.event.pull_request.labels.*.name, 'fast-track') }}`",
+      expect: "fails closed (exact form only)",
+      pass: false,
+      forms: ["${{ contains(github.event.pull_request.labels.*.name, 'fast-track') }}"]
+    },
+    {
+      id: "N9",
+      input: "Condition reads a field the PR author writes (`github.event.pull_request.title`, `.body` or `.head.ref`)",
+      expect: "fails closed",
+      pass: false,
+      forms: [
+        "contains(github.event.pull_request.title, 'fast-track')",
+        "contains(github.event.pull_request.body, 'fast-track')",
+        "contains(github.event.pull_request.head.ref, 'fast-track')"
+      ]
+    },
+    {
+      id: "N10",
+      input: "Substring match `contains(join(github.event.pull_request.labels.*.name), 'fast-track')` " \
+             "(matches `not-fast-track`)",
+      expect: "fails closed (matches `not-fast-track`)",
+      pass: false,
+      forms: ["contains(join(github.event.pull_request.labels.*.name), 'fast-track')"]
+    },
+    {
+      id: "P1",
+      input: "Today's workflow plus exactly the item 1 `if`",
+      expect: "passes",
+      pass: true,
+      forms: [:same]
+    }
+  ].freeze
 
   def test_clearance_cases
     cases = JSON.parse(File.read(fixture_path))
@@ -113,7 +204,60 @@ class FasttrackAllowlistTest < Minitest::Test
     workflow = File.read(workflow_path)
     allow = File.read(allowlist_path)
     assert Fasttrack.static_ok?(workflow, allow), "shipped workflow and allowlist"
+    assert_label_gate(workflow)
     row.fetch("rules").each { |rule| refute_static(rule, workflow, allow) }
+  end
+
+  def assert_label_gate(workflow)
+    assert_equal 11, LABEL_GATE.size
+    ids = LABEL_GATE.map { |row| row.fetch(:id) }
+    assert_equal %w[N1 N2 N3 N4 N5 N6 N7 N8 N9 N10 P1], ids
+    LABEL_GATE.each { |row| assert_label_gate_row(workflow, row) }
+  end
+
+  def assert_label_gate_row(workflow, row)
+    row.fetch(:forms).each do |form|
+      ok = Fasttrack.workflow_ok?(plant_label_gate(workflow, form))
+      assert_equal row.fetch(:pass), ok, "#{row.fetch(:id)}: #{row.fetch(:input)} => #{row.fetch(:expect)}"
+    end
+  end
+
+  def plant_label_gate(workflow, form)
+    case form
+    when :same then workflow
+    when :drop then swap_job_if(workflow, "")
+    when :step then step_level_if(workflow)
+    when :second then second_job(workflow)
+    else swap_job_if(workflow, "    if: #{form}\n")
+    end
+  end
+
+  def swap_job_if(workflow, line)
+    flunk("job if line missing") unless workflow.include?(job_if_line)
+
+    workflow.sub(job_if_line, line)
+  end
+
+  def step_level_if(workflow)
+    anchor = "      - name: Decide clearance\n"
+    text = swap_job_if(workflow, "")
+    flunk("clearance step missing") unless text.include?(anchor)
+
+    text.sub(anchor, "#{anchor}        if: #{label_gate_if}\n")
+  end
+
+  def second_job(workflow)
+    flunk("job if line missing") unless workflow.include?(job_if_line)
+
+    "#{workflow.chomp}\n  other-job:\n    runs-on: ubuntu-24.04\n"
+  end
+
+  def job_if_line
+    "    if: #{label_gate_if}\n"
+  end
+
+  def label_gate_if
+    "contains(github.event.pull_request.labels.*.name, 'fast-track')"
   end
 
   def refute_static(rule, workflow, allow)

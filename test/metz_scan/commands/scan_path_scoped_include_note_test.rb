@@ -9,9 +9,9 @@ require "tmpdir"
 
 module MetzScan
   module Commands
-    # Default mode runs --force-default-config, so app/-anchored cop Include
-    # globs resolve against the current directory; files they would match from
-    # their project root silently lose those cops, and the scan says so on stderr.
+    # Default mode resolves stock app/-anchored cop Include globs against the
+    # current directory; files they would match from their project root silently
+    # lose those cops, and the scan says so on stderr.
     class ScanPathScopedIncludeNoteTest < Minitest::Test
       OPERATION_FIXTURE = <<~RUBY
         # frozen_string_literal: true

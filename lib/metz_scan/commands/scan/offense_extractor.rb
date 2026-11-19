@@ -26,9 +26,25 @@ module MetzScan
             project_analyzer: offense["project_analyzer"] }
         end
 
-        # Saved scan JSON keeps per-cop defaults in `guidance`; an offense's own field overrides them.
+        # Saved scan JSON keeps per-cop defaults in `guidance`; raw RuboCop JSON falls back to the registry.
         def why_it_matters(offense, guidance)
-          offense.fetch("why_it_matters") { guidance.dig(offense["cop_name"], "why_it_matters") }
+          return offense["why_it_matters"] if offense.key?("why_it_matters")
+
+          guidance_why_it_matters(offense["cop_name"], guidance)
+        end
+
+        def guidance_why_it_matters(cop_name, guidance)
+          entry = guidance[cop_name]
+          return entry["why_it_matters"] if entry.is_a?(Hash) && entry.key?("why_it_matters")
+
+          registry_why_it_matters(cop_name)
+        end
+
+        def registry_why_it_matters(cop_name)
+          return unless defined?(RuboCop::Cop::Registry)
+
+          cop = RuboCop::Cop::Registry.global.find_by_cop_name(cop_name)
+          cop.why_it_matters if cop.respond_to?(:why_it_matters)
         end
 
         def location_fields(location)

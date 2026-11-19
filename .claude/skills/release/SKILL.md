@@ -29,12 +29,13 @@ hand, in the same order.
 Touch exactly these surfaces:
 
 1. `lib/metz_scan/version.rb` and `rubocop-metz/lib/rubocop/metz/version.rb`.
-2. `Gemfile.lock` — run `bundle install`; the gemspec pin
-   `"~> #{MetzScan::VERSION}"` (the `add_dependency "rubocop-metz"` line in
-   `metz-scan.gemspec`) carries the PATH constraint automatically. Do not
-   hand-edit the lockfile, and reject a Dependabot PR that rewrites the
-   lockfile's `rubocop-metz` PATH constraint from `~>` to `=` (see closed
-   PR #46).
+2. `Gemfile.lock` — run `bundle install`. The gemspec pin
+   `"~> #{MetzScan::VERSION}"` is assigned, then passed to
+   `add_dependency "rubocop-metz"` in `metz-scan.gemspec`, and that carries
+   the PATH constraint. Do not move the interpolation back onto the
+   `add_dependency` argument, and do not hand-edit the lockfile. Reject a
+   Dependabot PR that rewrites the lockfile's `rubocop-metz` PATH constraint
+   from `~>` to `=` (see closed PR #46).
 3. Release-issue dry-run expectations: `test/metz_scan/create_release_issue_test.rb`
    pins the version string (`release_metadata_test.rb` compares the gemspecs
    and needs no edit).

@@ -19,6 +19,7 @@ module MetzScan
       "test/metz_scan/check_tracker_queue_test.rb",
       "test/metz_scan/parallel_test_runner_test.rb",
       "test/metz_scan/sigint_test.rb",
+      "test/metz_scan/commands/scan_all_cops_analyzer_scope_test.rb",
       "test/metz_scan/commands/scan_analyzer_*_test.rb",
       "test/metz_scan/commands/scan_auto_fix*_test.rb",
       "test/metz_scan/commands/scan_config_disabled_test.rb",
@@ -26,14 +27,18 @@ module MetzScan
       "test/metz_scan/commands/scan_error_test.rb",
       "test/metz_scan/commands/scan_exit_*_test.rb",
       "test/metz_scan/commands/scan_github_annotations_format_test.rb",
+      "test/metz_scan/commands/scan_inherit_mode_test.rb",
       "test/metz_scan/commands/scan_json_guidance_test.rb",
       "test/metz_scan/commands/scan_path_scoped_include_note_test.rb",
       "test/metz_scan/commands/scan_project_analyzers_test.rb",
       "test/metz_scan/commands/scan_rails_aware_include_test.rb",
       "test/metz_scan/commands/scan_regexp_exclude_test.rb",
+      "test/metz_scan/commands/scan_rubocop_cli_options_test.rb",
+      "test/metz_scan/commands/scan_sarif_and_report_guidance_test.rb",
       "test/metz_scan/commands/scan_stock_guidance_scope_test.rb",
       "test/metz_scan/commands/scan_suppression_ledger_test.rb",
-      "test/metz_scan/commands/scan_test.rb"
+      "test/metz_scan/commands/scan_test.rb",
+      "test/metz_scan/commands/scan_widened_include_test.rb"
     ].freeze
     # Slow files measured at 9s or more (2026-10-14, serial), longest first. The
     # parallel runner starts these before the rest so the longest file does
