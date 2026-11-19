@@ -10,10 +10,11 @@ module MetzScan
 
         module_function
 
-        def with_project_config(paths, all_cops:, &)
+        def with_project_config(paths, all_cops:, store: nil, &)
           return yield if all_cops
 
-          EnvOverride.new(ProjectConfigScope.target_ruby_version(paths)).with_env(&)
+          version = ProjectConfigScope::TargetRubyVersion.new(paths, store: store || ProjectConfigScope.store).version
+          EnvOverride.new(version).with_env(&)
         end
 
         class EnvOverride

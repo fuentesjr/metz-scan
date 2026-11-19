@@ -3,6 +3,7 @@
 require "rubocop"
 
 require "metz_scan/commands/scan/exclude_provenance"
+require "metz_scan/commands/scan/inherited_include_rewriter"
 require "metz_scan/commands/scan/path_scoped_include_note"
 
 module MetzScan
@@ -10,7 +11,7 @@ module MetzScan
     class Scan
       # DDR: docs/ddrs/2026-07-08-rubocop-scope-only-config.md explains why default mode bypasses ConfigStore here.
       module ProjectConfigScope
-        SCOPE_KEYS = %w[Include Exclude Includes Excludes].freeze
+        SCOPE_KEYS = %w[Include Exclude Includes Excludes inherit_mode].freeze
         # ExcludeProvenance stamps ENABLED_SOURCE beside each project-written
         # `Enabled`, so inheritance resolves the file that wrote the winning
         # value along with the value itself.
@@ -50,8 +51,8 @@ module MetzScan
         # The default-mode stderr notes printed after a successful scan of
         # `files`. Lives here, not in Runner, because Runner is at its
         # Metrics/ModuleLength limit.
-        def warn_scope_notes(files, stderr)
-          PathScopedIncludeNote.print_note(files, stderr)
+        def warn_scope_notes(files, stderr, exec_store: nil)
+          PathScopedIncludeNote.print_note(files, stderr, exec_store: exec_store)
           warn_unresolved_inherit_gems(stderr)
         end
 
@@ -67,6 +68,15 @@ module MetzScan
         def unresolved_inherit_gem_message(path, gem_name)
           "metz-scan: note: #{path} inherits from gem `#{gem_name}` which is not installed; " \
             "its file-scope Exclude is not applied — install the gem or use --all-cops"
+        end
+
+        def ensure_metz_defaults_loaded
+          defaults = RuboCop::ConfigLoader.default_configuration
+          return defaults if defaults.key?("Metz/ClassesTooLong")
+
+          require "rubocop-metz"
+          RuboCop::Plugin.integrate_plugins(RuboCop::Config.new, [RuboCop::Metz::Plugin])
+          defaults
         end
 
         class TargetRubyVersion
@@ -136,6 +146,10 @@ module MetzScan
             entry unless entry&.key == ANALYZER_DEPARTMENT
           end
 
+          def project_exclude?(config, key)
+            @loader.provenance.entries_for(config).any_for?(key)
+          end
+
           # The project config file and key (the cop or its department) whose
           # `Enabled: false` turns `cop_name` off for `file`, or nil when the
           # project leaves it enabled.
@@ -167,20 +181,24 @@ module MetzScan
 
           def default_for(dir)
             path = File.join(File.expand_path(dir), ".rubocop.yml")
-            config = RuboCop::Config.new({}, path)
-            RuboCop::ConfigLoader.merge_with_default(config, path)
+            merge_with_default(RuboCop::Config.new({}, path), path)
           end
 
           def load(path)
-            return RuboCop::ConfigLoader.default_configuration if path == DEFAULT_FILE
+            return ProjectConfigScope.ensure_metz_defaults_loaded if path == DEFAULT_FILE
 
             config = RuboCop::Config.new(scope_hash(path), path)
             config.deprecation_check { |_message| nil }
             provenance.make_excludes_absolute(config)
-            RuboCop::ConfigLoader.merge_with_default(config, path)
+            merge_with_default(config, path)
           end
 
           private
+
+          def merge_with_default(config, path)
+            ProjectConfigScope.ensure_metz_defaults_loaded
+            RuboCop::ConfigLoader.merge_with_default(config, path)
+          end
 
           def scope_hash(path, seen = [])
             absolute_path = File.expand_path(path)
@@ -188,12 +206,14 @@ module MetzScan
 
             raw_hash = provenance.load_yaml_configuration(absolute_path)
             inherited = inherited_scope_hash(raw_hash, absolute_path, [*seen, absolute_path])
-            merge(inherited, local_scope_hash(raw_hash), raw_hash["inherit_mode"])
+            merge(inherited, local_scope_hash(raw_hash), raw_hash["inherit_mode"] || inherited["inherit_mode"])
           end
 
           def inherited_scope_hash(raw_hash, path, seen)
             inherited_paths(raw_hash, path).each_with_object({}) do |inherited_path, merged|
-              merged.replace(merge(merged, scope_hash(inherited_path, seen), raw_hash["inherit_mode"]))
+              child = InheritedIncludeRewriter.rewrite(scope_hash(inherited_path, seen), inherited_path, path)
+              mode = raw_hash["inherit_mode"] || child["inherit_mode"] || merged["inherit_mode"]
+              merged.replace(merge(merged, child, mode))
             end
           end
 
@@ -204,9 +224,7 @@ module MetzScan
             resolver.merge(base_hash, derived_hash, inherit_mode: inherit_mode || {})
           end
 
-          def resolver
-            @resolver ||= RuboCop::ConfigLoaderResolver.new
-          end
+          def resolver = @resolver ||= RuboCop::ConfigLoaderResolver.new
 
           def inherited_paths(raw_hash, path)
             gem_inherited_paths(raw_hash["inherit_gem"], path) + local_inherited_paths(raw_hash["inherit_from"], path)
@@ -282,17 +300,9 @@ module MetzScan
             value
           end
 
-          def remote_config?(path)
-            path.to_s.start_with?("http://", "https://")
-          end
-
-          def absolute_path?(path)
-            Pathname.new(path.to_s).absolute?
-          end
-
-          def glob_path?(path)
-            path.match?(/[*?{}\[\]]/)
-          end
+          def remote_config?(path) = path.to_s.start_with?("http://", "https://")
+          def absolute_path?(path) = Pathname.new(path.to_s).absolute?
+          def glob_path?(path) = path.match?(/[*?{}\[\]]/)
         end
       end
     end

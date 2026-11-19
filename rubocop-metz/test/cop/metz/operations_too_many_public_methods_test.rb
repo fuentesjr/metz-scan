@@ -175,4 +175,28 @@ class CopMetzOperationsTooManyPublicMethodsTest < Minitest::Test
 
     assert_equal 1, @metz_offenses.size
   end
+
+  def test_relevant_file_honors_replaced_include_config
+    config = RuboCop::Config.new(
+      "Metz/OperationsTooManyPublicMethods" => cop_config.merge("Include" => ["app/commands/**/*.rb"])
+    )
+    configured_cop = cop_class.new(config)
+
+    assert configured_cop.relevant_file?("app/commands/charge.rb")
+    refute configured_cop.relevant_file?("app/services/checkout.rb")
+  end
+
+  def test_relevant_file_honors_merged_include_and_exclude_config
+    config = RuboCop::Config.new(
+      "Metz/OperationsTooManyPublicMethods" => cop_config.merge(
+        "Include" => ["app/services/**/*.rb", "app/operations/**/*.rb", "app/commands/**/*.rb"],
+        "Exclude" => ["app/commands/legacy.rb"]
+      )
+    )
+    configured_cop = cop_class.new(config)
+
+    assert configured_cop.relevant_file?("app/commands/charge.rb")
+    assert configured_cop.relevant_file?("app/services/checkout.rb")
+    refute configured_cop.relevant_file?("app/commands/legacy.rb")
+  end
 end

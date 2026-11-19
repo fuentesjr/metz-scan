@@ -197,4 +197,31 @@ class MetzFileClassifierTest < Minitest::Test
       end
     end
   end
+
+  def test_template_predicate_matches_erb_haml_and_slim_anywhere
+    %w[
+      app/views/users/index.html.erb
+      app/components/card.html.erb
+      app/components/badge.html.haml
+      app/components/modal.html.slim
+      lib/template.erb
+      C:\project\app\components\card.html.erb
+    ].each do |path|
+      assert_equal true, Metz::FileClassifier.template?(path), "expected template? true for #{path}"
+    end
+  end
+
+  def test_template_predicate_rejects_non_template_paths
+    [
+      "app/models/user.rb",
+      "app/components/card.js",
+      "app/components/card.css",
+      "app/views/users/index.html",
+      "app/views/users/index.html.jbuilder",
+      "",
+      nil
+    ].each do |path|
+      assert_equal false, Metz::FileClassifier.template?(path), "expected template? false for #{path.inspect}"
+    end
+  end
 end

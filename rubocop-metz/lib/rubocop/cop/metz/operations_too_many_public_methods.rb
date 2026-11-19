@@ -30,19 +30,19 @@ module RuboCop
               "keep a single public entry (max %<max>d, excluding %<allowed>s)."
 
         def on_class(node)
-          return unless operation_file?
-
           public_names = api_names(node)
           return if public_names.size <= max_public_methods
 
           add_offense(node.identifier, message: offense_message(public_names))
         end
 
-        private
+        def relevant_file?(file)
+          return super if file.nil? || file.empty? || file == "(string)" || cop_config["Include"]
 
-        def operation_file?
-          ::Metz::FileClassifier.operation?(processed_source.file_path)
+          !file_name_matches_any?(file, "Exclude", false) && ::Metz::FileClassifier.operation?(file)
         end
+
+        private
 
         def api_names(node)
           PublicApiMethods.new(node, allowed_methods: allowed_methods).names

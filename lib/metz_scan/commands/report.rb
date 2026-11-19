@@ -2,6 +2,7 @@
 
 require "json"
 require "optparse"
+require "rubocop-metz"
 
 require_relative "scan/runner"
 require_relative "scan/compliance_scorecard"

@@ -21,15 +21,9 @@ module MetzScan
       # same report shape produced by RuboCop's JSON formatter.
       module ProjectAnalyzerRunner
         ANALYZERS = [
-          Analyzers::RepeatedBranching,
-          Analyzers::ServiceSoup,
-          Analyzers::InheritanceDescendants,
-          Analyzers::PackageDependencyPressure,
-          Analyzers::NamespaceLeakPressure,
-          Analyzers::ImplicitContextPressure,
-          Analyzers::RepeatedQueryCriteria,
-          Analyzers::SubclassOverridePressure,
-          Analyzers::TestCallsPrivateMethod
+          Analyzers::RepeatedBranching, Analyzers::ServiceSoup, Analyzers::InheritanceDescendants,
+          Analyzers::PackageDependencyPressure, Analyzers::NamespaceLeakPressure, Analyzers::ImplicitContextPressure,
+          Analyzers::RepeatedQueryCriteria, Analyzers::SubclassOverridePressure, Analyzers::TestCallsPrivateMethod
         ].freeze
         INDEX_BACKED_ANALYZERS = [Analyzers::InheritanceDescendants, Analyzers::PackageDependencyPressure,
                                   Analyzers::NamespaceLeakPressure, Analyzers::SubclassOverridePressure,
@@ -40,17 +34,22 @@ module MetzScan
 
         module_function
 
-        def merge!(parsed, paths, **)
-          findings = project_findings_for(paths, **)
+        def merge!(parsed, paths, **options)
+          scope = TargetFileDiscovery.analyzer_scope(options)
+          findings = project_findings_for(paths, **options, **scope)
           return parsed if findings.empty?
 
-          offense_set = ProjectAnalyzerOffenses.build(findings, ledger_report: parsed)
+          merge_live_offenses(parsed, findings, scope)
+        end
+
+        def merge_live_offenses(parsed, findings, scope)
+          offense_set = Runner.with_errors { ProjectAnalyzerOffenses.build(findings, ledger_report: parsed, **scope) }
           merge_offense_set(parsed, offense_set) unless offense_set.findings.empty?
           parsed
         end
 
-        def project_findings_for(paths, index: nil, default_output: false, force_default_config: false)
-          paths = analyzer_paths(paths, index: index, force_default_config: force_default_config)
+        def project_findings_for(paths, index: nil, default_output: false, **)
+          paths = analyzer_paths(paths, index: index, **)
           return [] if paths.empty? && !index
 
           findings = project_findings(paths, index: index, default_output: default_output)
@@ -94,16 +93,15 @@ module MetzScan
             finding.triage_severity == DEFAULT_OUTPUT_TRIAGE_SEVERITY
         end
 
-        def analyzer_paths(paths, index: nil, force_default_config: false)
+        def analyzer_paths(paths, index: nil, target_files: nil, **)
           return Array(paths) if index
+          return target_files if target_files
 
-          rubocop_target_files(paths, force_default_config: force_default_config)
+          rubocop_target_files(paths, **)
         end
 
-        def rubocop_target_files(paths, force_default_config: false)
-          return TargetFileDiscovery.with_forced_defaults(paths) if force_default_config
-
-          TargetFileDiscovery.for_project_config(paths)
+        def rubocop_target_files(paths, **)
+          Runner.with_errors { TargetFileDiscovery.for_analyzer(paths, **) }
         end
 
         def merge_offenses(parsed, grouped_offenses)

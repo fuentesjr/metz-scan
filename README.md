@@ -204,10 +204,12 @@ the first file that reports the cop: `why_it_matters` is its `Description`,
 `fix_safety` is `safe`, `unsafe`, or `manual` from its autocorrect support and
 `AutoCorrect`/`Safe`/`SafeAutoCorrect`, and
 `suggested_next_moves` is empty; text output prints that description once per
-cop block. An offense carries one of those fields only
+cop block, and SARIF output puts it in each rule's `help` and
+`fullDescription`. An offense carries one of those fields only
 when its finding-specific guidance differs from the cop's entry; read the
 offense's field first, then `guidance[cop_name]`. `metz-scan report` resolves
-both shapes, including saved reports from before this map existed.
+both shapes, including saved reports from before this map existed and `Metz/*`
+findings in raw `rubocop --format json` output.
 
 A default scan also lists the findings a suppression hid. Each finding that an
 inline `# rubocop:disable` (or `todo`, `disable-next`) directive, a
@@ -217,7 +219,9 @@ column, and cop name. Each record carries `cop_name`, `path`, `line`, `column`,
 `message`, `suppressed_by` (`inline_disable`, `config_exclude`, or
 `config_disabled`), `reason`, `reason_status` (`present`, `missing`, or
 `unchecked`), `directive` (`{line}`), and `config` (`{path, line, pattern}`;
-`config_disabled` records carry `{path, line}`, the line of the `Enabled` key).
+`config_disabled` records carry `{path, line}`, the line of the `Enabled` key,
+with `line` `null` when the setting comes from ERB, a YAML alias, or a remote
+`inherit_from:` under `--all-cops`).
 Both `directive` and `config` are always present; exactly one is non-null. Suppressed
 findings never count toward `offense_count`, compliance, or the exit code.
 Text output lists them in a `Suppressed findings: N, M without a reason`
@@ -240,25 +244,27 @@ bundle exec metz-scan scan . --project-analyzers --format json
 bundle exec metz-scan scan . --project-analyzers --format sarif
 ```
 
-In default mode, a directory scan checks Ruby files plus ERB, HAML, and Slim
-view templates under `app/views`; other templates, such as generator or config
-templates, are not Ruby and are skipped. Template files passed explicitly are
+In default mode, a directory scan checks Ruby files plus `.erb`, `.haml`, and
+`.slim` templates matched by `Metz/ViewsDeepNavigation` (`app/views` by default,
+or widened or replaced via `Metz/ViewsDeepNavigation: Include`, such as
+`app/components/**/*.erb`); non-view templates outside that scope, such as
+generator or config templates, are skipped. Template files passed explicitly are
 checked in every mode.
 `--all-cops` uses RuboCop's own file discovery.
 
 In default mode, `scan` reports stock Metz opinion on your project: it honors
 your project's file *scope* — `AllCops: Exclude`, per-cop `Exclude` lists for
-`Metz/*` cops, and a per-cop `Include` that narrows a `Metz/*` cop (it cannot
-widen one; `Metz/ControllersTooManyDirectCollaborators` and
-`Metz/ViewsDeepNavigation` ignore it and keep their stock scope plus engines
-and nested apps) — and `Enabled: false` for a `Metz/*` cop
-or the whole `Metz` department, but uses stock Metz cop configuration for thresholds, severity, and opt-in
-status, so a project cannot weaken a Metz cop and get a rosier report. Every
-finding that project scope or `Enabled: false` hides is listed in the
-suppression ledger. This is why the length cops (`Metz/MethodsTooLong`,
-`Metz/ClassesTooLong`) can be scoped off test trees with a per-cop `Exclude`
-while still applying to production code. `--all-cops` runs the full stock
-RuboCop suite under your complete project configuration instead.
+`Metz/*` cops, and per-cop `Include` (both narrowing and widening, e.g.
+`inherit_mode: merge: [Include]` to add paths like `app/components/**/*.erb` or
+`app/commands/**/*.rb`, or omitting `merge` to replace the cop's stock scope) —
+and `Enabled: false` for a `Metz/*` cop or the whole `Metz` department, but uses
+stock Metz cop configuration for thresholds, severity, and opt-in status, so a
+project cannot weaken a Metz cop and get a rosier report. Every finding that
+per-cop `Exclude` or `Enabled: false` hides is listed in the suppression ledger.
+This is why the length cops (`Metz/MethodsTooLong`, `Metz/ClassesTooLong`) can
+be scoped off test trees with a per-cop `Exclude` while still applying to
+production code. `--all-cops` runs the full stock RuboCop suite under your
+complete project configuration instead.
 
 `Metz/TestReachesPrivate`, `Metz/TestAssertsOnInternals`, and
 `Metz/TestStubsSubject` are opt-in testing-discipline cops. They are listed by
@@ -291,6 +297,14 @@ and dummy apps are expected to be skipped.
 Default mode skips remote (`http://` or `https://`) `inherit_from:` entries
 without a warning, so file-scope settings in a remote config are not applied.
 Use `--all-cops` when a remote config carries scope you need.
+
+`metz-scan` ignores RuboCop CLI option files (`.rubocop`) and `RUBOCOP_OPTS` in
+every scan mode so project CLI flags cannot hide findings, alter output
+format, or rewrite files. When either is non-empty, `scan` prints one
+`metz-scan: note:` line to stderr (`metz-scan: note: ignoring RuboCop CLI
+options from ...; configure settings in .rubocop.yml instead`). Operational
+RuboCop environment variables such as `RUBOCOP_CACHE_ROOT` and
+`PARALLEL_PROCESSOR_COUNT` still work.
 
 Current project analyzer status:
 
@@ -380,9 +394,11 @@ see [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md).
 ## Configuration
 
 The default scan reads three kinds of settings from `.rubocop.yml`: file scope
-(`AllCops: Exclude`, per-cop `Exclude`, and a per-cop `Include` that narrows
-a cop), `Enabled: false`
-for a `Metz/*` cop or the `Metz` department, and `AllCops: TargetRubyVersion`.
+(`AllCops: Exclude`, per-cop `Exclude`, and per-cop `Include` — both narrowing
+and widening, using `inherit_mode: merge: [Include]` to add paths or omitting
+`merge` to replace the cop's stock scope), `Enabled: false`
+for a `Metz/*` cop, the `Metz` department, or a `MetzProject/*` analyzer, and
+`AllCops: TargetRubyVersion`.
 Every other cop setting stays at its stock value, so a project cannot weaken a
 Metz cop and get a rosier report.
 
@@ -419,7 +435,8 @@ through a YAML alias are reported as `unchecked`. Regexp entries
 not checked. When the same `Exclude` pattern appears in a base config and an
 inheriting config (`inherit_mode: merge`), the base file's entry is credited.
 Stock-default and `AllCops: Exclude` scope produce no record, and neither does
-a per-cop `Include` that narrows a cop: findings it hides leave no record.
+a per-cop `Include` that narrows or replaces a cop's scope: findings it hides
+leave no record.
 
 `Enabled: false` on a `Metz/*` cop, or on the `Metz` department, hides every
 finding of the cops it disables from the counts, compliance, and exit code; as
@@ -447,12 +464,12 @@ Metz/DemeterTrainWreck:
 
 | Setting | Where | Notes |
 | --- | --- | --- |
-| File scope | `.rubocop.yml` (`AllCops: Exclude`, per-cop `Include` and `Exclude`) | `AllCops: Exclude` and per-cop `Exclude` are honored by every scan mode. A per-cop `Include` is honored in full by `--all-cops` and plain `rubocop`; the default scan lets it narrow a `Metz/*` cop but not widen it, and `Metz/ControllersTooManyDirectCollaborators` and `Metz/ViewsDeepNavigation` ignore it there. |
+| File scope | `.rubocop.yml` (`AllCops: Exclude`, per-cop `Include` and `Exclude`) | `AllCops: Exclude`, per-cop `Exclude`, and per-cop `Include` (narrowing, widening with `inherit_mode: merge: [Include]`, or replacing stock scope) are honored by every scan mode. |
 | `Enabled: false` | `.rubocop.yml` (`Metz/*` cop, `Metz` department, or `MetzProject/*` analyzer) | Honored by every scan mode. The suppression ledger lists hidden `Metz/*` findings in the default scan and hidden `MetzProject/*` findings in every mode. |
 | Other cop settings (`Max`, `Severity`, allow-lists) | `.rubocop.yml` | Honored only by `--all-cops` and plain `rubocop`; the default scan uses stock values. |
 | Output format | `metz-scan scan --format text\|json\|sarif\|gh-annotations` | `text` is for humans; `json`/`sarif` are for tools; `gh-annotations` emits GitHub Actions workflow annotations. |
 | Auto-fix safety | `--auto-fix`, `--unsafe`, `--dry-run` | Safe fixes use RuboCop `-a`; unsafe fixes use RuboCop `-A`. No `Metz/*` cop autocorrects, so these only change code with `--all-cops`. |
-| Environment variables | N/A | `metz-scan` does not require environment variables. |
+| Environment variables | `RUBOCOP_OPTS` ignored; `RUBOCOP_CACHE_ROOT`, `PARALLEL_PROCESSOR_COUNT` honored | `metz-scan` does not require environment variables. It ignores `RUBOCOP_OPTS` (and `.rubocop` option files) in every scan mode with a stderr `metz-scan: note:` when non-empty; cache and parallelism variables still apply. |
 
 ## GitHub Packages install
 

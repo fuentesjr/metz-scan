@@ -37,6 +37,11 @@ module MetzScan
             end.first
           end
 
+          def any_for?(key)
+            department = key.rpartition("/").first
+            @entries.each_key.any? { |(entry_key, _)| entry_key == key || entry_key == department }
+          end
+
           private
 
           def index(key, raw, absolute, sources)
