@@ -310,3 +310,6 @@ Proposals A & B landed on fix/scan-scope-engine-hardening (owner decisions 2026-
 
 ## 2026-11-19T22:42Z log
 Release v0.7.0 prep: both gems 0.6.0 -> 0.7.0, Gemfile.lock, release-issue dry-run expectations, README install pin ~> 0.7.0, docs/releases/v0.7.0.md, docs/releases/README.md. Minor bump: Ruby >= 4.0 floor, scan ignores .rubocop and RUBOCOP_OPTS and exits 2 when unable to check code, default scan honors Enabled: false and widened/replaced per-cop Include, JSON top-level guidance map, calibration tooling excluded from shipped gem.
+
+## 2026-11-20T00:03Z log
+v0.7.0 published to GitHub Packages and rubygems.org (tag v0.7.0 -> 5118ffb, GitHub Release live, rubocop-metz then metz-scan, bin/check_published_gem 0.7.0 PASS; owner pushed rubocop-metz 0.7.0 and metz-scan 0.7.0 to rubygems.org with MFA and verified via gem list -r -e).
