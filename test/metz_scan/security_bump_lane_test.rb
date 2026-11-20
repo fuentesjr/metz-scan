@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "fileutils"
 require "json"
 require "minitest/autorun"
 require "open3"
@@ -35,6 +36,12 @@ class SecurityBumpLaneTest < Minitest::Test
     end
     assert_api_error
     assert_unlabeled_run
+    assert_local_diff
+    assert_test_root
+    assert_mise_table
+    assert_mask_rejects
+    assert_live_guards
+    assert_base_copy
   ensure
     restore_tokens(saved)
   end
@@ -160,6 +167,98 @@ class SecurityBumpLaneTest < Minitest::Test
         "changed_files" => changed
       }
     }
+  end
+
+  def assert_local_diff
+    api = [entry(".ruby-version", "4.0.9\n", "4.0.10\n")]
+    real = [entry("Gemfile", "gem \"rake\", \"13.0.0\"\n", "gem \"rake\", \"13.1.0\"\n")]
+    result = LaneSecurityBump.check(labeled_event(1), client: StubClient.new(real, TAGS, api_files: api))
+    assert_equal 1, result[:status]
+    assert_equal false, result[:lane]
+    assert_match(fail_pattern("Gemfile"), result[:message])
+  end
+
+  def assert_test_root
+    entries = [
+      entry(".ruby-version", "4.0.9\n", "4.0.10\n"),
+      entry("lib/test/pin_test.rb", pin_assertion("4.0.9"), pin_assertion("4.0.10"))
+    ]
+    result = LaneSecurityBump.check(labeled_event(2), client: StubClient.new(entries, TAGS))
+    assert_equal 1, result[:status]
+    assert_match(fail_pattern("lib/test/pin_test.rb"), result[:message])
+  end
+
+  def assert_mise_table
+    loose = [entry("mise.toml", "ruby = \"4.0.9\"\n", "ruby = \"4.0.10\"\n")]
+    result = LaneSecurityBump.check(labeled_event(1), client: StubClient.new(loose, TAGS))
+    assert_equal 1, result[:status]
+    assert_match(fail_pattern("mise.toml"), result[:message])
+  end
+
+  def assert_mask_rejects
+    [node_version_line, gem_install_line, second_comparison].each do |entries|
+      result = LaneSecurityBump.check(labeled_event(1), client: StubClient.new(entries, TAGS))
+      assert_equal 1, result[:status], result[:message]
+      assert_equal false, result[:lane]
+    end
+  end
+
+  def node_version_line
+    before = flow_workflow("with: { ruby-version: '4.0.9', node-version: '20.11.0' }")
+    after = flow_workflow("with: { ruby-version: '4.0.10', node-version: '22.12.1' }")
+    [entry(WF, before, after)]
+  end
+
+  def gem_install_line
+    before = "name: CI\njobs:\n  test:\n    steps:\n      - run: gem install foo -v 4.0.9\n"
+    after = "name: CI\njobs:\n  test:\n    steps:\n      - run: gem install foo -v 4.0.10\n"
+    [entry(WF, before, after)]
+  end
+
+  def second_comparison
+    before = "name: CI\njobs:\n  test:\n    steps:\n      - if: matrix.ruby == '4.0.9' && matrix.node == '20.11.0'\n"
+    after = "name: CI\njobs:\n  test:\n    steps:\n      - if: matrix.ruby == '4.0.10' && matrix.node == '22.12.1'\n"
+    [entry(WF, before, after)]
+  end
+
+  def assert_live_guards
+    args = ["token", "owner/name", "a" * 40, "b" * 40, 1]
+    ["http://api.github.com", "https://example.com"].each do |url|
+      assert_raises(LaneSecurityBump::Error) { LaneSecurityBump::Live.new(*args, url, Dir.pwd) }
+    end
+    live = LaneSecurityBump::Live.new(*args, "https://api.github.com", Dir.pwd)
+    calls = 0
+    live.define_singleton_method(:get) do |_path|
+      calls += 1
+      response = Object.new
+      response.define_singleton_method(:body) { "[]" }
+      response.define_singleton_method(:[]) { |_key| '<https://api.github.com/x>; rel="next"' }
+      response
+    end
+    assert_raises(LaneSecurityBump::Error) { live.files }
+    assert_equal 31, calls
+  end
+
+  def assert_base_copy
+    script = workflow_run
+    Dir.mktmpdir do |dir|
+      git_in(dir, "init", "-q")
+      FileUtils.mkdir_p(File.join(dir, "tools/lane"))
+      File.write(File.join(dir, LaneSecurityBump::SCRIPT), "puts 'from-base'\n")
+      git_in(dir, "add", ".")
+      git_in(dir, "-c", "user.email=dev@example.com", "-c", "user.name=dev", "commit", "-q", "-m", "base")
+      sha, status = Open3.capture2("git", "-C", dir, "rev-parse", "HEAD")
+      raise "git rev-parse failed" unless status.success?
+
+      event = File.join(dir, "event.json")
+      File.write(event, JSON.generate(labeled_event(0)))
+      env = { "BASE_SHA" => sha.strip, "GITHUB_EVENT_PATH" => event, "RUNNER_TEMP" => dir, "PATH" => ENV.fetch("PATH") }
+      stdout, stderr, wait = Open3.capture3(env, "bash", "-c", script, chdir: dir)
+      raise stderr unless wait.success?
+
+      assert_includes stdout, "from-base"
+      refute_includes stdout, PASS
+    end
   end
 
   def proof(row, result)
@@ -298,7 +397,7 @@ class SecurityBumpLaneTest < Minitest::Test
   def allowed_set
     [
       entry(".ruby-version", "4.0.9\n", "4.0.10\n"),
-      entry("mise.toml", "ruby = \"4.0.9\"\n", "ruby = \"4.0.10\"\n"),
+      entry("mise.toml", "[tools]\nruby = \"4.0.9\"\n", "[tools]\nruby = \"4.0.10\"\n"),
       entry("Dockerfile", "ARG RUBY_VERSION=4.0.9\n", "ARG RUBY_VERSION=4.0.10\n"),
       entry(WF, full_workflow("4.0.9", OLD_SHA, "v1.342.0"), full_workflow("4.0.10", NEW_SHA, "v1.343.0")),
       entry("Gemfile.lock", lock_ruby("4.0.9"), lock_ruby("4.0.10")),
@@ -436,13 +535,18 @@ class SecurityBumpLaneTest < Minitest::Test
   end
 
   class StubClient
-    def initialize(entries, tags)
+    def initialize(entries, tags, api_files: nil)
       @entries = entries
       @tags = tags
+      @api_files = api_files
     end
 
     def files
-      @entries.map { |entry| entry.slice("filename", "status", "patch", "previous_filename") }
+      (@api_files || @entries).map { |entry| entry.slice("filename", "status", "patch", "previous_filename") }
+    end
+
+    def changes
+      @entries
     end
 
     def contents(side, path)
@@ -467,6 +571,10 @@ class SecurityBumpLaneTest < Minitest::Test
 
   class RaisingClient
     def files
+      raise LaneSecurityBump::Error, "api"
+    end
+
+    def changes
       raise LaneSecurityBump::Error, "api"
     end
 

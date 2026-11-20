@@ -23,6 +23,13 @@ module LaneSecurityBump
   HUNK = /\A@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/
   MATRIX_RUBY = /matrix\.ruby(?![\w.])|matrix\s*\[\s*['"]ruby['"]\s*\]/
   COMPARE = /==|!=|>=|<=|>|</
+  IF_VERSION = /
+    (?:matrix\.ruby(?![\w.])|matrix\s*\[\s*['"]ruby['"]\s*\])
+    \s*(?:==|!=|>=|<=|>|<)\s*
+    (['"]?)
+    (\d+\.\d+\.\d+(?:p\d+|[-.](?:preview|rc|beta|alpha)\d+)?)
+    \1
+  /x
   ASSERTION = /\b(?:assert(?:_[A-Za-z0-9_]+)?|refute(?:_[A-Za-z0-9_]+)?|expect)\b/
   SETUP_PREFIX = "ruby/setup-ruby@"
   BLOCK_STYLES = [4, 5].freeze
@@ -39,12 +46,14 @@ module LaneSecurityBump
     listed = client.files
     changed = request["changed_files"]
     return fail_at("files:0") unless listed.is_a?(Array) && changed.is_a?(Integer) && listed.size == changed
-    return fail_at("files:0") unless listed.all? { |file| file.is_a?(Hash) && file["filename"].is_a?(String) }
-    names = listed.map { |file| file["filename"] }
+    changes = client.changes
+    return fail_at("files:0") unless changes.is_a?(Array) && changes.size == changed
+    return fail_at("files:0") unless changes.all? { |file| file.is_a?(Hash) && file["filename"].is_a?(String) }
+    names = changes.map { |file| file["filename"] }
     return fail_at("files:0") unless names.uniq.size == names.size
-    problem = mode_problem(listed, client.modes)
+    problem = mode_problem(changes, client.modes)
     return problem if problem
-    judge(listed, client) || pass
+    judge(changes, client) || pass
   rescue Error
     fail_at("api:0")
   end
@@ -108,13 +117,39 @@ module LaneSecurityBump
       next if line.empty?
       head, paths = line.split("\t", 2)
       raise Error if paths.nil? || paths.empty?
-      match = head.match(/\A:(\d{6}) (\d{6}) \S+ \S+ \S+\z/)
+      match = head.match(/\A:(\d{6}) (\d{6}) \S+ \S+ ([A-Z])\d*\z/)
       raise Error unless match
-      path = paths.split("\t").last
-      raise Error if path.nil? || path.empty? || path.start_with?('"')
-      result[path] = { "old" => match[1], "new" => match[2] }
+      names = paths.split("\t")
+      raise Error if names.empty? || names.any? { |name| name.empty? || name.start_with?('"') }
+      status = git_status(match[3])
+      raise Error if status.nil?
+      previous = nil
+      if status == "renamed" || status == "copied"
+        raise Error unless names.size == 2
+        previous = names[0]
+        path = names[1]
+      else
+        raise Error unless names.size == 1
+        path = names[0]
+      end
+      result[path] = { "old" => match[1], "new" => match[2], "status" => status, "previous" => previous }
     end
     result
+  end
+
+  def git_status(letter)
+    { "A" => "added", "D" => "removed", "M" => "modified", "T" => "modified", "R" => "renamed", "C" => "copied" }[letter]
+  end
+
+  def split_diff(text)
+    parts = text.to_s.split(/^(?=diff --git )/)
+    parts.each_with_object({}) do |part, map|
+      next if part.empty?
+      match = part.match(/\Adiff --git a\/(\S+) b\/(\S+)\n/)
+      raise Error unless match
+      hunks = part.lines.drop_while { |line| !line.start_with?("@@") }.join
+      map[match[2]] = hunks.empty? ? nil : hunks
+    end
   end
 
   def judge(files, client)
@@ -139,7 +174,7 @@ module LaneSecurityBump
     return fail_line(file, blame(file)) unless base.is_a?(String) && head.is_a?(String)
     case place(file["filename"])
     when :ruby_version then version_pairs(file, base, head, introduced, collect)
-    when :mise then pattern_pairs(file, base, head, MISE_LINE, introduced, collect)
+    when :mise then mise_pairs(file, base, head, introduced, collect)
     when :docker then pattern_pairs(file, base, head, DOCKER_LINE, introduced, collect)
     when :lock then lock_pairs(file, base, head, introduced, collect)
     when :workflow then workflow_pairs(file, base, head, client, introduced, collect)
@@ -170,7 +205,7 @@ module LaneSecurityBump
     return :docker if path == "Dockerfile"
     return :lock if path == "Gemfile.lock"
     return :workflow if path.match?(%r{\A\.github/workflows/[^/]+\.ya?ml\z})
-    return :test if path.match?(%r{(?:\A|/)test/})
+    return :test if path.start_with?("test/")
     :other
   end
 
@@ -197,6 +232,41 @@ module LaneSecurityBump
         fail_line(file, added[:line])
       end
     end
+  end
+
+  def mise_pairs(file, base, head, introduced, collect)
+    base_lines = mise_tools_lines(base)
+    head_lines = mise_tools_lines(head)
+    return fail_line(file, blame(file)) if base_lines.nil? || head_lines.nil?
+    each_problem(file) do |removed, added|
+      ok = aligned?(base, removed) && aligned?(head, added) &&
+           base_lines.include?(removed[:line]) && head_lines.include?(added[:line]) &&
+           MISE_LINE.match?(removed[:text]) && MISE_LINE.match?(added[:text]) &&
+           same_version?(removed, added, uses: false)
+      if ok
+        introduced.concat(fresh_tokens(removed[:text], added[:text])) if collect
+        nil
+      else
+        fail_line(file, added[:line])
+      end
+    end
+  end
+
+  def mise_tools_lines(content)
+    table = nil
+    found = []
+    content.to_s.lines.each_with_index do |raw, index|
+      line = raw.strip
+      next if line.empty? || line.start_with?("#")
+      return nil if line.include?('"""') || line.include?("'''")
+      if (header = line.match(/\A\[\s*([A-Za-z0-9_.-]+)\s*\]\z/))
+        table = header[1]
+        next
+      end
+      return nil if line.start_with?("[")
+      found << (index + 1) if table == "tools" && line.match?(/\A(?:ruby|"ruby"|'ruby')\s*=/)
+    end
+    found
   end
 
   def lock_pairs(file, base, head, introduced, collect)
@@ -358,7 +428,7 @@ module LaneSecurityBump
     return nil if alias_node?(document)
     allowed = {}
     forbidden = {}
-    return nil unless walk_node(document, [], allowed, forbidden)
+    return nil unless walk_node(document, [], allowed, forbidden, content.lines)
     { allowed: allowed, forbidden: forbidden }
   rescue Psych::SyntaxError
     nil
@@ -370,22 +440,22 @@ module LaneSecurityBump
     Array(node.children).any? { |child| alias_node?(child) }
   end
 
-  def walk_node(node, path, allowed, forbidden)
+  def walk_node(node, path, allowed, forbidden, lines)
     case node
     when Psych::Nodes::Document
       children = Array(node.children)
       return false unless children.size == 1
-      walk_node(children.first, path, allowed, forbidden)
+      walk_node(children.first, path, allowed, forbidden, lines)
     when Psych::Nodes::Mapping
-      walk_mapping(node, path, allowed, forbidden)
+      walk_mapping(node, path, allowed, forbidden, lines)
     when Psych::Nodes::Sequence
-      Array(node.children).all? { |child| walk_node(child, path, allowed, forbidden) }
+      Array(node.children).all? { |child| walk_node(child, path, allowed, forbidden, lines) }
     else
       true
     end
   end
 
-  def walk_mapping(node, path, allowed, forbidden)
+  def walk_mapping(node, path, allowed, forbidden, lines)
     list = pairs(node)
     return false if list.nil?
     mark_uses(list, allowed)
@@ -395,8 +465,8 @@ module LaneSecurityBump
       forbid_span(value, forbidden) if name == "env"
       forbid_block(value, forbidden)
       mark_matrix(path, name, value, allowed)
-      mark_if(name, value, allowed)
-      walk_node(value, path + [name], allowed, forbidden)
+      mark_if(name, value, allowed, lines)
+      walk_node(value, path + [name], allowed, forbidden, lines)
     end
   end
 
@@ -426,11 +496,16 @@ module LaneSecurityBump
     each_scalar(value) { |scalar| allow_line(allowed, scalar, :matrix) }
   end
 
-  def mark_if(name, value, allowed)
+  def mark_if(name, value, allowed, lines)
     return unless name == "if" && value.is_a?(Psych::Nodes::Scalar)
-    return if BLOCK_STYLES.include?(value.style)
-    return unless value.value.match?(MATRIX_RUBY) && value.value.match?(COMPARE)
-    allow_line(allowed, value, :if)
+    return if BLOCK_STYLES.include?(value.style) || value.end_line != value.start_line
+    raw = lines[value.start_line].to_s.delete_suffix("\n")
+    region = raw[value.start_column...value.end_column]
+    return if region.nil? || region.scan(COMPARE).size != 1
+    match = region.match(IF_VERSION)
+    return unless match
+    span = [value.start_column + match.begin(2), value.start_column + match.end(2)]
+    (allowed[value.start_line + 1] ||= []) << { kind: :if, span: span }
   end
 
   def each_scalar(node, &block)
@@ -572,8 +647,26 @@ module LaneSecurityBump
       raise Error
     end
 
+    def changes
+      return @changes if @changes
+      spec = "#{merge_base_sha}..#{@head}"
+      info = LaneSecurityBump.parse_raw(git("diff", "--raw", spec))
+      patches = LaneSecurityBump.split_diff(git("diff", "--no-color", "--no-ext-diff", spec))
+      raise Error unless patches.keys.sort == info.keys.sort
+      @modes = info.transform_values { |row| { "old" => row["old"], "new" => row["new"] } }
+      @changes = info.map do |path, row|
+        {
+          "filename" => path,
+          "status" => row["status"],
+          "previous_filename" => row["previous"],
+          "patch" => patches[path]
+        }
+      end
+    end
+
     def modes
-      LaneSecurityBump.parse_raw(git("diff", "--raw", "#{merge_base_sha}..#{@head}"))
+      changes unless @modes
+      @modes
     end
 
     def contents(side, path)
