@@ -2,7 +2,7 @@ name: security-bump lane
 
 on:
   pull_request:
-    types: [opened, reopened, synchronize, labeled, unlabeled]
+    types: [opened, reopened, synchronize, edited, labeled, unlabeled]
 
 permissions:
   contents: read
@@ -42,4 +42,7 @@ jobs:
           if git cat-file -e "$BASE_SHA:tools/lane/security_bump.rb"; then
             git show "$BASE_SHA:tools/lane/security_bump.rb" > "$RUNNER_TEMP/security_bump.rb"
             ruby "$RUNNER_TEMP/security_bump.rb"
+          elif python3 -c 'import json,os,sys; event=json.load(open(os.environ["GITHUB_EVENT_PATH"])); labels=(event.get("pull_request") or {}).get("labels") or []; names=[item.get("name") if isinstance(item, dict) else item for item in labels]; sys.exit(0 if "lane: security-bump" in names else 1)'; then
+            printf '%s\n' "lane: security-bump label on a PR that changes more than version strings: tools/lane/security_bump.rb:1. Remove the label so the normal gates run, or split the version bump into its own PR."
+            exit 1
           fi

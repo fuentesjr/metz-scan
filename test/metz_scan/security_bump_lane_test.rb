@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "json"
 require "minitest/autorun"
 require "open3"
 require "tmpdir"
@@ -16,7 +17,7 @@ class SecurityBumpLaneTest < Minitest::Test
   FORK_SHA = "c" * 40
   TAGS = { "v1.342.0" => OLD_SHA, "v1.343.0" => NEW_SHA }.freeze
   PASS = "security-bump lane: version strings only"
-  TYPES = %w[opened reopened synchronize labeled unlabeled].freeze
+  TYPES = %w[opened reopened synchronize edited labeled unlabeled].freeze
   WF = ".github/workflows/ruby.yml"
   NODE = ".github/workflows/node.yml"
   FAIL_PREFIX = "lane: security-bump label on a PR that changes more than version strings: "
@@ -24,14 +25,16 @@ class SecurityBumpLaneTest < Minitest::Test
 
   def test_lane_predicate_table
     saved = stash_tokens
-    assert_equal 14, rows.size
-    assert_equal((1..14).to_a, rows.map { |row| row.fetch(:id) })
+    assert_equal 17, rows.size
+    assert_equal((1..17).to_a, rows.map { |row| row.fetch(:id) })
     assert_workflow
     rows.each do |row|
       result = decide(row)
       puts proof(row, result) if ENV["LANE_PROOF"] == "1"
       assert_result(row, result)
     end
+    assert_api_error
+    assert_unlabeled_run
   ensure
     restore_tokens(saved)
   end
@@ -58,7 +61,11 @@ class SecurityBumpLaneTest < Minitest::Test
       row(13, "setup-ruby pin edit in the lane workflow", expect: :fail, file: LaneSecurityBump::WORKFLOW,
                                                           label: true, entries: lane_workflow_edit),
       row(14, "files API returns no files while changed_files is 1", expect: :files, label: true,
-                                                                     changed: 1, entries: [])
+                                                                     changed: 1, entries: []),
+      row(15, "rubygems version on an allowed line", expect: :fail, file: WF, label: true, entries: side_version),
+      row(16, "label and base has no lane script", expect: :fail, file: LaneSecurityBump::SCRIPT, label: true,
+                                                   entries: [], changed: 0, shell: true),
+      row(17, "mode 100644 to 100755", expect: :fail, file: ".ruby-version", label: true, entries: mode_change)
     ]
   end
 
@@ -75,11 +82,14 @@ class SecurityBumpLaneTest < Minitest::Test
       status: %i[pass noop].include?(expect) ? 0 : 1,
       file: spec[:file],
       changed: spec[:changed] || entries.size,
-      tags: TAGS
+      tags: TAGS,
+      shell: spec[:shell]
     }
   end
 
   def decide(row)
+    return shell_missing if row[:shell]
+
     client = row[:label] ? StubClient.new(row[:entries], row[:tags]) : ClosedClient.new
     LaneSecurityBump.check(event_for(row), client: client)
   end
@@ -122,6 +132,34 @@ class SecurityBumpLaneTest < Minitest::Test
     assert File.file?(File.join(ROOT, LaneSecurityBump::SCRIPT))
     uses = text.scan(/uses:\s*\S+/)
     assert(uses.all? { |line| line.match?(/@[0-9a-f]{40}\b/) })
+    ruby_lines = text.each_line.map(&:strip).select { |line| line.start_with?("ruby ") }
+    assert_equal [%(ruby "$RUNNER_TEMP/security_bump.rb")], ruby_lines
+    refute_includes text, PASS
+  end
+
+  def assert_api_error
+    result = LaneSecurityBump.check(labeled_event(1), client: RaisingClient.new)
+    assert_equal false, result[:lane]
+    assert_equal 1, result[:status]
+    assert_equal "#{FAIL_PREFIX}api:0#{FAIL_SUFFIX}", result[:message]
+  end
+
+  def assert_unlabeled_run
+    row = rows.find { |item| item.fetch(:id) == 4 }
+    Dir.mktmpdir do |dir|
+      path = File.join(dir, "event.json")
+      File.write(path, JSON.generate(event_for(row)))
+      assert_equal [0, ""], LaneSecurityBump.run("GITHUB_EVENT_PATH" => path)
+    end
+  end
+
+  def labeled_event(changed)
+    {
+      "pull_request" => {
+        "labels" => [{ "name" => "lane: security-bump" }],
+        "changed_files" => changed
+      }
+    }
   end
 
   def proof(row, result)
@@ -146,6 +184,8 @@ class SecurityBumpLaneTest < Minitest::Test
       "filename" => path,
       "status" => extras.fetch(:status, "modified"),
       "previous_filename" => extras[:previous],
+      "old_mode" => extras.fetch(:old_mode, "100644"),
+      "new_mode" => extras.fetch(:new_mode, "100644"),
       "patch" => unified(base, head),
       "base" => base,
       "head" => head
@@ -164,6 +204,53 @@ class SecurityBumpLaneTest < Minitest::Test
 
       body
     end
+  end
+
+  def side_version
+    before = flow_workflow("with: { ruby-version: '4.0.9', rubygems: '3.5.11' }")
+    after = flow_workflow("with: { ruby-version: '4.0.10', rubygems: '3.6.12' }")
+    [entry(WF, before, after)]
+  end
+
+  def mode_change
+    [entry(".ruby-version", "4.0.9\n", "4.0.10\n", { old_mode: "100644", new_mode: "100755" })]
+  end
+
+  def shell_missing
+    script = workflow_run
+    Dir.mktmpdir do |dir|
+      git_in(dir, "init", "-q")
+      git_in(dir, "-c", "user.email=dev@example.com", "-c", "user.name=dev", "commit", "--allow-empty", "-q", "-m",
+             "base")
+      sha, status = Open3.capture2("git", "-C", dir, "rev-parse", "HEAD")
+      raise "git rev-parse failed" unless status.success?
+
+      event = File.join(dir, "event.json")
+      File.write(event, JSON.generate(labeled_event(0)))
+      env = {
+        "BASE_SHA" => sha.strip,
+        "GITHUB_EVENT_PATH" => event,
+        "RUNNER_TEMP" => dir,
+        "PATH" => ENV.fetch("PATH"),
+        "HOME" => Dir.home
+      }
+      stdout, stderr, wait = Open3.capture3(env, "bash", "-c", script, chdir: dir)
+      raise stderr unless wait.exited?
+
+      { lane: false, status: wait.exitstatus, message: stdout.strip }
+    end
+  end
+
+  def workflow_run
+    text = File.read(File.join(ROOT, LaneSecurityBump::WORKFLOW))
+    document = YAML.safe_load(text)
+    steps = document.dig("jobs", "security-bump-lane", "steps")
+    steps.find { |step| step["name"] == "Check security-bump lane" }.fetch("run")
+  end
+
+  def git_in(dir, *args)
+    _stdout, status = Open3.capture2("git", "-C", dir, *args)
+    raise "git #{args.first} failed" unless status.success?
   end
 
   def ruby_bump
@@ -369,6 +456,30 @@ class SecurityBumpLaneTest < Minitest::Test
       raise LaneSecurityBump::Error, "tag" unless @tags.key?(tag)
 
       @tags.fetch(tag)
+    end
+
+    def modes
+      @entries.to_h do |entry|
+        [entry["filename"], { "old" => entry.fetch("old_mode"), "new" => entry.fetch("new_mode") }]
+      end
+    end
+  end
+
+  class RaisingClient
+    def files
+      raise LaneSecurityBump::Error, "api"
+    end
+
+    def contents(*)
+      raise "contents"
+    end
+
+    def tag_commit(*)
+      raise "tag"
+    end
+
+    def modes
+      raise "modes"
     end
   end
 

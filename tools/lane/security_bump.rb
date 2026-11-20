@@ -42,6 +42,8 @@ module LaneSecurityBump
     return fail_at("files:0") unless listed.all? { |file| file.is_a?(Hash) && file["filename"].is_a?(String) }
     names = listed.map { |file| file["filename"] }
     return fail_at("files:0") unless names.uniq.size == names.size
+    problem = mode_problem(listed, client.modes)
+    return problem if problem
     judge(listed, client) || pass
   rescue Error
     fail_at("api:0")
@@ -86,6 +88,33 @@ module LaneSecurityBump
       message: "lane: security-bump label on a PR that changes more than version strings: " \
                "#{place}. Remove the label so the normal gates run, or split the version bump into its own PR."
     }
+  end
+
+  def mode_problem(files, modes)
+    return fail_at("files:0") unless modes.is_a?(Hash)
+    files.each do |file|
+      info = modes[file["filename"]]
+      old_mode = info.is_a?(Hash) ? info["old"] : nil
+      new_mode = info.is_a?(Hash) ? info["new"] : nil
+      return fail_line(file, blame(file)) unless old_mode == "100644" && new_mode == "100644"
+    end
+    nil
+  end
+
+  def parse_raw(text)
+    result = {}
+    text.to_s.each_line do |raw|
+      line = raw.delete_suffix("\n")
+      next if line.empty?
+      head, paths = line.split("\t", 2)
+      raise Error if paths.nil? || paths.empty?
+      match = head.match(/\A:(\d{6}) (\d{6}) \S+ \S+ \S+\z/)
+      raise Error unless match
+      path = paths.split("\t").last
+      raise Error if path.nil? || path.empty? || path.start_with?('"')
+      result[path] = { "old" => match[1], "new" => match[2] }
+    end
+    result
   end
 
   def judge(files, client)
@@ -201,9 +230,13 @@ module LaneSecurityBump
     removed_kinds = kinds(base_marks, removed[:line])
     added_kinds = kinds(head_marks, added[:line])
     return fail_line(file, added[:line]) if removed_kinds.nil? || added_kinds.nil?
-    uses = removed_kinds.include?(:uses) || added_kinds.include?(:uses)
-    return fail_line(file, added[:line]) if uses && !(removed_kinds.include?(:uses) && added_kinds.include?(:uses))
-    return fail_line(file, added[:line]) unless same_version?(removed, added, uses: uses)
+    removed_names = kind_names(removed_kinds)
+    added_names = kind_names(added_kinds)
+    uses = removed_names.include?(:uses) || added_names.include?(:uses)
+    return fail_line(file, added[:line]) if uses && !(removed_names.include?(:uses) && added_names.include?(:uses))
+    return fail_line(file, added[:line]) unless same_version?(
+      removed, added, uses: uses, removed_spans: column_spans(removed_kinds), added_spans: column_spans(added_kinds)
+    )
     return fail_line(file, added[:line]) if uses && !pin_ok?(added[:text], client)
     introduced.concat(fresh_tokens(removed[:text], added[:text])) if collect
     nil
@@ -241,8 +274,10 @@ module LaneSecurityBump
     saw ? nil : fail_line(file, 1)
   end
 
-  def same_version?(removed, added, uses:)
-    removed[:text] != added[:text] && mask(removed[:text], uses: uses) == mask(added[:text], uses: uses)
+  def same_version?(removed, added, uses: false, removed_spans: nil, added_spans: nil)
+    left = removed_spans || value_spans(removed[:text])
+    right = added_spans || value_spans(added[:text])
+    removed[:text] != added[:text] && mask(removed[:text], spans: left, uses: uses) == mask(added[:text], spans: right, uses: uses)
   end
 
   def aligned?(content, entry)
@@ -255,10 +290,27 @@ module LaneSecurityBump
     row.delete_suffix("\n").delete_suffix("\r")
   end
 
-  def mask(text, uses:)
-    masked = text.gsub(VERSION_TOKEN, "V")
+  def mask(text, spans:, uses: false)
+    masked = replace_inside(text, VERSION_TOKEN, "V", spans)
     return masked unless uses
-    masked.gsub(SHA_TOKEN, "S").gsub(/#\s*v\d+\.\d+\.\d+/, "# T")
+    replace_inside(masked, SHA_TOKEN, "S", spans).sub(/#\s*v\d+\.\d+\.\d+/, "# T")
+  end
+
+  def replace_inside(text, pattern, token, spans)
+    text.gsub(pattern) do
+      match = Regexp.last_match
+      cover?(spans, match.begin(0), match.end(0)) ? token : match[0]
+    end
+  end
+
+  def cover?(spans, start, finish)
+    Array(spans).any? { |left, right| start >= left && finish <= right }
+  end
+
+  def value_spans(text)
+    spans = []
+    text.scan(VERSION_TOKEN) { spans << [Regexp.last_match.begin(0), Regexp.last_match.end(0)] }
+    spans.size == 1 ? spans : []
   end
 
   def mask_test(text)
@@ -391,8 +443,17 @@ module LaneSecurityBump
   end
 
   def allow_line(allowed, node, kind)
+    return unless node.is_a?(Psych::Nodes::Scalar) && node.end_line == node.start_line
     line = node.start_line + 1
-    (allowed[line] ||= []) << kind
+    (allowed[line] ||= []) << { kind: kind, span: [node.start_column, node.end_column] }
+  end
+
+  def kind_names(entries)
+    Array(entries).map { |entry| entry[:kind] }
+  end
+
+  def column_spans(entries)
+    Array(entries).filter_map { |entry| entry[:span] }
   end
 
   def forbid_block(node, forbidden)
@@ -509,6 +570,10 @@ module LaneSecurityBump
       raise
     rescue StandardError
       raise Error
+    end
+
+    def modes
+      LaneSecurityBump.parse_raw(git("diff", "--raw", "#{merge_base_sha}..#{@head}"))
     end
 
     def contents(side, path)
