@@ -1,7 +1,7 @@
 # STATE
 
 ## Goal
-v0.6.0 is released on rubygems.org and GitHub Packages (2026-10-03). Active direction: make metz-scan an agent-first end-of-task verification tool without over-complicating it: trim the metz-scan skill for agent context cost, then dogfood it with Codex. Testing-discipline cops stay opt-in. Do not promote candidates, change thresholds, or add suppressions without new generic evidence. 1.0.0 remains reserved.
+v0.7.0 is released on rubygems.org and GitHub Packages (2026-11-19). Active direction: make metz-scan an agent-first end-of-task verification tool without over-complicating it: trim the metz-scan skill for agent context cost, then dogfood it with Codex. Testing-discipline cops stay opt-in. Do not promote candidates, change thresholds, or add suppressions without new generic evidence. 1.0.0 remains reserved.
 
 ## Dispatched
 
