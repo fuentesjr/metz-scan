@@ -1,0 +1,45 @@
+name: security-bump lane
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, labeled, unlabeled]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  security-bump-lane:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@f9c4492e86def3e644ab32a0ef185eda5b0c20d0 # v1.342.0
+        with:
+          ruby-version: .ruby-version
+          bundler: none
+
+      - name: Check security-bump lane
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          case "$BASE_SHA" in
+            *[!0-9a-f]*)
+              exit 1
+              ;;
+          esac
+          if [ "${#BASE_SHA}" -ne 40 ]; then
+            exit 1
+          fi
+          git cat-file -e "$BASE_SHA"
+          if git cat-file -e "$BASE_SHA:tools/lane/security_bump.rb"; then
+            git show "$BASE_SHA:tools/lane/security_bump.rb" > "$RUNNER_TEMP/security_bump.rb"
+            ruby "$RUNNER_TEMP/security_bump.rb"
+          fi
