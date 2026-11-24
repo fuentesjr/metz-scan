@@ -313,3 +313,31 @@ Release v0.7.0 prep: both gems 0.6.0 -> 0.7.0, Gemfile.lock, release-issue dry-r
 
 ## 2026-11-20T00:03Z log
 v0.7.0 published to GitHub Packages and rubygems.org (tag v0.7.0 -> 5118ffb, GitHub Release live, rubocop-metz then metz-scan, bin/check_published_gem 0.7.0 PASS; owner pushed rubocop-metz 0.7.0 and metz-scan 0.7.0 to rubygems.org with MFA and verified via gem list -r -e).
+
+## 2026-11-24T22:48Z resolve wave1-internal-i1
+Dispatched: 2026-11-24T22:43Z to gemini-4-hydrogen
+Goal: Remove dead render_issue_comment_summary, deduplicate release_checklist issue template, ignore .claude/worktrees
+Outcome: Removed render_issue_comment_summary (+test/fixtures/guard/docs), deduplicated .github/ISSUE_TEMPLATE/release_checklist.md, added .claude/worktrees/ to .gitignore, and verified focused tests green
+
+## 2026-11-24T22:55Z resolve wave1-internal-i2
+Dispatched: 2026-11-24T22:43Z to gemini-4-hydrogen
+Goal: Add shared per-scan SourceCache, memoize RubydexBackend, delete obsolete 0.2.8 MethodVisibility overlay, unify Finding/USES_INDEX, inline pass-through wrappers
+Outcome: Added shared SourceCache, memoized RubydexBackend, deleted obsolete 0.2.8 MethodVisibility overlay, unified Analyzers::Finding and USES_INDEX, inlined 4 pass-through wrappers; rubocop and dogfood clean
+
+## 2026-11-24T22:55Z resolve wave1-internal-i3
+Dispatched: 2026-11-24T22:43Z to gemini-4-hydrogen
+Goal: Add test/metz_scan and test/support to .rubocop.yml test_excludes and consolidate non-autofix scan_exit_* tests
+Outcome: Added test/metz_scan and test/support to .rubocop.yml test_excludes, merged 7 non-autofix scan_exit_* files into 2 (20 in-process fast + 17 shim errors), isolated RuboCop::PathUtil.reset_pwd
+
+## 2026-11-24T23:00Z resolve wave1-contract-specs
+Dispatched: 2026-11-24T22:43Z to codex:gpt-6.2-sol
+Goal: Write red spec tests in isolated worktree for C1 (--auto-fix removal) and C2 (explain MetzProject/*, 4 named cop messages, scan --baseline)
+Outcome: GPT-6.2-sol authored 7 RuboCop-clean contract spec files in /tmp/metz-scan-contract-specs (53 expected red failures, 0 Ruby errors)
+
+## 2026-11-24T23:13Z resolve wave1-internal-review
+Dispatched: 2026-11-24T23:00Z to codex:gpt-6.2-sol
+Goal: Cross-vendor review of Internal Slices I1-I3
+Outcome: GPT-6.2-sol reviewed I1-I3 and re-checked fixes: resolved per-file TargetRubyVersion via config_store, unsupported Ruby ArgumentError propagation, ExceptionDeclaration + calibration SourceCache coverage, TargetFileDiscovery cwd cache reset, and frozen RubydexBackend arrays
+
+## 2026-11-24T23:13Z log
+Internal simplicity slices I1-I3 landed (Hydrogen workers + GPT-6.2-sol review): (I1) retired closed-issue bin/render_issue_comment_summary (+test/fixtures/read-only guard/docs), deduplicated .github/ISSUE_TEMPLATE/release_checklist.md to point to RELEASE_CHECKLIST.md + bin/create_release_issue, added .claude/worktrees/ to .gitignore; (I2) added shared per-run Analyzers::SourceCache with per-file TargetRubyVersion resolution across all 7 AST-reading analyzer/triage collectors and calibration FindingRunner, memoized and froze RubydexBackend declarations/documents/method_declarations, deleted obsolete Rubydex 0.2.8 MethodVisibility overlay, unified Analyzers::Finding.define and USES_INDEX/index_backed_analyzers, inlined 4 pass-through wrappers; (I3) added test/metz_scan and test/support to .rubocop.yml test_excludes, merged 7 non-autofix scan_exit_* suites into scan_exit_scope_and_config_test.rb (in-process, 3.1s) and scan_exit_errors_test.rb, and reset RuboCop PathUtil/ConfigFinder cwd caches in TargetFileDiscovery.

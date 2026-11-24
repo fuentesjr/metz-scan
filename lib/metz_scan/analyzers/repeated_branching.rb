@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "../project_index"
+require_relative "finding"
 require_relative "occurrence"
 require_relative "project_analyzer_triage"
 require_relative "ruby_file_enumerator"
@@ -25,10 +26,7 @@ module MetzScan
         "Name the domain decision once and reuse it instead of repeating the same branch table.",
         "Consider polymorphism, a strategy object, or a small lookup object when the branch represents type behavior."
       ].freeze
-      Finding = Struct.new(:source, :rule_id, :message, :decision, :kind, :branch_values, :occurrences,
-                           :project_analyzer_status, :confidence, :triage_severity, :triage_summary,
-                           :project_analyzer_metadata, :why_it_matters, :suggested_next_moves,
-                           keyword_init: true) do
+      Finding = Analyzers::Finding.define(:decision, :kind, :branch_values, :occurrences) do
         def report_occurrences
           occurrences.map { |occurrence| Occurrence.from(occurrence, context: context_name(occurrence)) }
         end

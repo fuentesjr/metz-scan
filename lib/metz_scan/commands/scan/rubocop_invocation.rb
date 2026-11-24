@@ -85,6 +85,7 @@ module MetzScan
         end
 
         def configure_cache_root(config_store)
+          TargetFileDiscovery.reset_cwd_caches
           RuboCop::ResultCache.reset_config_cache
           RuboCop::ConfigLoader.cache_root = RuboCop::ResultCache.cache_root(config_store, nil)
         end

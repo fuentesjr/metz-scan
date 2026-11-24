@@ -1,18 +1,14 @@
 # frozen_string_literal: true
 
-require_relative "method_visibility"
-
 module MetzScan
   class ProjectIndex
     class RubydexBackend
       module MethodDeclarations
-        include MethodVisibility
-
         def method_declarations
-          method_declaration_entries.sort_by do |declaration|
+          @method_declarations ||= method_declaration_entries.sort_by do |declaration|
             [declaration.owner_name.to_s, declaration.method_identity.to_s, declaration.path.to_s,
              declaration.line.to_i]
-          end
+          end.freeze
         end
 
         private
@@ -41,7 +37,7 @@ module MetzScan
         def method_declaration_identity(declaration, owner_attributes)
           location = location_attributes(declaration)
           method_name = method_name_for(owner_attributes.fetch(:signature))
-          identity_attributes(declaration, owner_attributes, method_name, location).merge(location)
+          method_identity_attributes(declaration, owner_attributes, method_name).merge(location)
         end
 
         def method_owner_attributes(declaration)
@@ -53,28 +49,17 @@ module MetzScan
             receiver_kind: receiver_kind_for(raw_owner_name) }
         end
 
-        def identity_attributes(declaration, owner_attributes, method_name, location_attributes)
-          # For supported Ruby visibility forms, Rubydex::Method#visibility is this analyzer's one index assumption.
-          method_identity_attributes(declaration, owner_attributes, method_name, location_attributes)
-        end
-
-        def method_identity_attributes(declaration, owner_attributes, method_name, location_attributes)
+        def method_identity_attributes(declaration, owner_attributes, method_name)
           receiver_kind = owner_attributes.fetch(:receiver_kind)
+          # For supported Ruby visibility forms, Rubydex::Method#visibility is this analyzer's one index assumption.
           core_identity_attributes(declaration, owner_attributes, method_name, receiver_kind)
-            .merge(visibility: visibility_for(declaration,
-                                              visibility_attributes(owner_attributes, method_name, receiver_kind,
-                                                                    location_attributes)))
+            .merge(visibility: declaration.visibility.to_s)
         end
 
         def core_identity_attributes(declaration, owner_attributes, method_name, receiver_kind)
           { name: declaration.name, owner_name: owner_attributes.fetch(:owner_name),
             method_name: method_name, signature: owner_attributes.fetch(:signature),
             receiver_kind: receiver_kind, method_identity: method_identity_for(receiver_kind, method_name) }
-        end
-
-        def visibility_attributes(owner_attributes, method_name, receiver_kind, location_attributes)
-          { owner_name: owner_attributes.fetch(:owner_name), method_name: method_name,
-            receiver_kind: receiver_kind, path: location_attributes.fetch(:path) }
         end
 
         def location_attributes(declaration)

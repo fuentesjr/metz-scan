@@ -12,6 +12,7 @@ module MetzScan
     # Reports configured inheritance roots with enough known descendants.
     class InheritanceDescendants
       RULE_ID = "MetzProject/DeepInheritanceTree"
+      USES_INDEX = true
       PROJECT_ANALYZER_STATUS = "validated"
       CONFIDENCE = "medium"
       TRIAGE_SEVERITY = "manual review"

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "../project_index"
+require_relative "finding"
 require_relative "occurrence"
 require_relative "project_analyzer_triage"
 require_relative "ruby_file_enumerator"
@@ -25,10 +26,7 @@ module MetzScan
         "Introduce a workflow object that owns the multi-step process.",
         "Keep the controller or job action at one high-level command when possible."
       ].freeze
-      Finding = Struct.new(:source, :rule_id, :message, :workflow, :services, :occurrences,
-                           :project_analyzer_status, :confidence, :triage_severity, :triage_summary,
-                           :project_analyzer_metadata, :why_it_matters, :suggested_next_moves,
-                           keyword_init: true) do
+      Finding = Analyzers::Finding.define(:workflow, :services, :occurrences) do
         def report_occurrences
           occurrences.map { |occurrence| Occurrence.from(occurrence, context: workflow) }
         end

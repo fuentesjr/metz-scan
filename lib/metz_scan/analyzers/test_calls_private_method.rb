@@ -19,6 +19,7 @@ module MetzScan
       include Triage
 
       RULE_ID = "MetzProject/TestCallsPrivateMethod"
+      USES_INDEX = true
       PROJECT_ANALYZER_STATUS = "candidate"
       CONFIDENCE = "high"
       TRIAGE_SEVERITY = "manual review"

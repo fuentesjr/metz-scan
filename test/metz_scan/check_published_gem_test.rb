@@ -58,12 +58,8 @@ module MetzScan
     end
 
     def test_release_checklists_run_published_gem_smoke_after_publish
-      [File.join(REPO_ROOT, "RELEASE_CHECKLIST.md"),
-       File.join(REPO_ROOT, ".github/ISSUE_TEMPLATE/release_checklist.md")].each do |path|
-        checklist = File.read(path)
-
-        assert_includes checklist, "bin/check_published_gem X.Y.Z", path
-      end
+      path = File.join(REPO_ROOT, "RELEASE_CHECKLIST.md")
+      assert_includes File.read(path), "bin/check_published_gem X.Y.Z", path
     end
   end
 

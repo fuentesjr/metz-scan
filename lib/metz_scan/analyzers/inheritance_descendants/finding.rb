@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
+require_relative "../finding"
+
 module MetzScan
   module Analyzers
     class InheritanceDescendants
-      Finding = Struct.new(:source, :rule_id, :message, :base_name, :descendants, :locations, :primary_location,
-                           :why_it_matters, :project_analyzer_status, :confidence, :triage_severity, :triage_summary,
-                           :project_analyzer_metadata, :suggested_next_moves, keyword_init: true) do
+      Finding = Analyzers::Finding.define(:base_name, :descendants, :locations, :primary_location) do
         def occurrences = [primary_location].compact
 
         def report_occurrences

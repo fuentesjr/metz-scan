@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
 require_relative "../project_index"
+require_relative "cross_package_reference_set"
 require_relative "namespace_leak_pressure/finding"
 require_relative "namespace_leak_pressure/metadata"
 require_relative "namespace_leak_pressure/namespace"
 require_relative "namespace_leak_pressure/reference_collector"
-require_relative "namespace_leak_pressure/reference_set"
 require_relative "namespace_leak_pressure/shared_namespace_triage"
 require_relative "package_map"
 require_relative "project_analyzer_triage"
@@ -17,6 +17,7 @@ module MetzScan
       include ProjectAnalyzerTriage
 
       RULE_ID = "MetzProject/NamespaceLeakPressure"
+      USES_INDEX = true
       PROJECT_ANALYZER_STATUS = "candidate"
       CONFIDENCE = "medium"
       TRIAGE_SEVERITY = "manual review"
@@ -65,7 +66,7 @@ module MetzScan
       end
 
       def finding_for(declaration)
-        reference_set = ReferenceSet.new(reference_collector.for(declaration))
+        reference_set = CrossPackageReferenceSet.new(reference_collector.for(declaration))
         return unless reference_set.enough?(minimum_referring_files, minimum_referring_packages)
 
         Finding.new(finding_attributes(declaration, reference_set))

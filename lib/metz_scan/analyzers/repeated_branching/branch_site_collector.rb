@@ -3,8 +3,8 @@
 require "rubocop"
 
 require_relative "branch_value"
-require_relative "../contextual_node_walker"
 require_relative "predicate_chain"
+require_relative "../source_cache"
 
 module MetzScan
   module Analyzers
@@ -20,23 +20,15 @@ module MetzScan
         end
 
         def call
-          return [] unless File.file?(path)
-
           contextual_nodes.filter_map { |contextual_node| branch_site_for(contextual_node) }
-        rescue Parser::SyntaxError
-          []
         end
 
         private
 
         attr_reader :path
 
-        def processed_source
-          RuboCop::ProcessedSource.new(File.read(path), RUBY_VERSION.to_f)
-        end
-
         def contextual_nodes
-          MetzScan::Analyzers::ContextualNodeWalker.new(processed_source.ast).nodes
+          SourceCache.contextual_nodes(path)
         end
 
         def case_branch?(node)

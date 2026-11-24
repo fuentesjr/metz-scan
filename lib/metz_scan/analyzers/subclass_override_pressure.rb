@@ -19,6 +19,7 @@ module MetzScan
       include Triage
 
       RULE_ID = "MetzProject/SubclassOverridePressure"
+      USES_INDEX = true
       PROJECT_ANALYZER_STATUS = "candidate"
       CONFIDENCE = "medium"
       TRIAGE_SEVERITY = "manual review"

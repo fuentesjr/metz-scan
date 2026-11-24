@@ -3,8 +3,8 @@
 require "minitest/autorun"
 require "rubocop"
 
+require "metz_scan/analyzers/contextual_node_walker"
 require "metz_scan/analyzers/repeated_branching/branch_value"
-require "metz_scan/analyzers/repeated_branching/contextual_node_walker"
 require "metz_scan/analyzers/repeated_branching/predicate_chain"
 
 module MetzScan
@@ -67,7 +67,7 @@ module MetzScan
 
     class RepeatedBranchingContextualNodeWalkerTest < Minitest::Test
       def test_collects_namespace_and_method_contexts
-        nodes = RepeatedBranching::ContextualNodeWalker.new(processed_ast(context_source)).nodes
+        nodes = ContextualNodeWalker.new(processed_ast(context_source)).nodes
 
         assert_contexts_for_walker_nodes(nodes)
       end
