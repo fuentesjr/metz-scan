@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   fasttrack-allowlist:
-    runs-on: ubuntu-24.04
+    runs-on: avrea-ubuntu-24.04-2-vcpu
     if: contains(github.event.pull_request.labels.*.name, 'fast-track')
     steps:
       - name: Checkout base

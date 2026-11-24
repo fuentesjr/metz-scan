@@ -16,7 +16,7 @@ jobs:
       docs_only: ${{ steps.scope.outputs.docs_only }}
     # Runs without the optional rubydex group so the NullBackend path stays covered.
     # Pinned: ubuntu-latest migrates to 26.04 starting 2026-10-19; pin for reproducible runs.
-    runs-on: ubuntu-24.04
+    runs-on: avrea-ubuntu-24.04-2-vcpu
 
     steps:
       - name: Checkout
@@ -132,7 +132,7 @@ jobs:
   rubydex:
     needs: test
     if: needs.test.outputs.docs_only != 'true'
-    runs-on: ubuntu-24.04
+    runs-on: avrea-ubuntu-24.04-2-vcpu
     env:
       BUNDLE_WITH: rubydex
 
