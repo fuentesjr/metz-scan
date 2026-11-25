@@ -81,14 +81,6 @@ module MetzScan
         end
       end
 
-      def test_a_load_error_when_auto_fix_starts_exits_2_as_an_internal_error
-        with_project("a.rb" => CLEAN_RUBY) do |dir|
-          result = scan_subprocess(dir, ".", "--auto-fix", shim: AUTO_FIX_LOAD_ERROR_SHIM)
-
-          assert_internal_error(result, "LoadError", "injected load failure")
-        end
-      end
-
       private
 
       def assert_internal_error(result, error_class, message)

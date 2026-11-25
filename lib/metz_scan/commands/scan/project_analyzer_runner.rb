@@ -32,17 +32,20 @@ module MetzScan
 
         module_function
 
-        def merge!(parsed, paths, **options)
+        def merge!(parsed, paths, analyzer_entries: nil, **options)
           scope = TargetFileDiscovery.analyzer_scope(options)
           findings = project_findings_for(paths, **options, **scope)
           return parsed if findings.empty?
 
-          merge_live_offenses(parsed, findings, scope)
+          merge_live_offenses(parsed, findings, scope, analyzer_entries)
         end
 
-        def merge_live_offenses(parsed, findings, scope)
+        def merge_live_offenses(parsed, findings, scope, analyzer_entries = nil)
           offense_set = Runner.with_errors { ProjectAnalyzerOffenses.build(findings, ledger_report: parsed, **scope) }
-          merge_offense_set(parsed, offense_set) unless offense_set.findings.empty?
+          return parsed if offense_set.findings.empty?
+
+          analyzer_entries&.concat(offense_set.pairs)
+          merge_offense_set(parsed, offense_set)
           parsed
         end
 

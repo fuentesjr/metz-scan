@@ -117,11 +117,11 @@ module MetzScan
       assert_equal METZ_COPS.sort, JSON.parse(@stdout).map { |entry| entry.fetch("name") }.sort
     end
 
-    def test_explain_still_rejects_analyzer_rule_ids
+    def test_explain_describes_analyzer_rule_ids
       cli("explain", SERVICE)
-      assert_equal 64, @status.exitstatus
-      assert_empty @stdout
-      assert_includes @stderr, SERVICE
+      assert_equal 0, @status.exitstatus, @stderr
+      assert_includes @stdout, SERVICE
+      assert_empty @stderr
     end
 
     def test_guidance_uses_analyzer_metadata_and_contains_only_reported_rules

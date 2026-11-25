@@ -30,7 +30,7 @@ class RuboCopCopMetzMethodsTooManyParametersTest < Minitest::Test
 
   def test_fires_on_method_with_five_parameters
     assert_metz_offense_count(1, "def big(a, b, c, d, e); end\n")
-    assert_match(%r{Avoid parameter lists longer than 4 parameters\. \[5/4\]}, @metz_offenses.first.message)
+    assert_equal "Method `big` has too many parameters. [5/4]", @metz_offenses.first.message
   end
 
   def test_silent_on_method_with_four_parameters
@@ -60,6 +60,7 @@ class RuboCopCopMetzMethodsTooManyParametersTest < Minitest::Test
 
   def test_fires_on_singleton_method_with_five_parameters
     assert_metz_offense_count(1, "def self.big(a, b, c, d, e); end\n")
+    assert_equal "Method `self.big` has too many parameters. [5/4]", @metz_offenses.first.message
   end
 
   def test_silent_on_five_argument_lambda_literal

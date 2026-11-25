@@ -10,16 +10,13 @@ module MetzScan
       # Execution-layer ConfigStore for default mode. Keeps AllCops scope and
       # per-cop Include/inherit_mode from the project config. Default `scan`
       # strips project Enabled and per-cop Exclude so RuboCop runs with stock
-      # Metz defaults and SuppressionLedger can record project suppressions;
-      # `honor_suppressions: true` (--auto-fix) keeps per-cop Exclude and
-      # Enabled: false while never enabling opt-in cops.
+      # Metz defaults and SuppressionLedger can record project suppressions.
       class ExecutionConfigStore
         COP_EXECUTION_KEYS = %w[Include Includes inherit_mode].freeze
         TOP_LEVEL_KEYS = %w[AllCops inherit_mode].freeze
 
-        def initialize(scope_store = ProjectConfigScope.store, honor_suppressions: false)
+        def initialize(scope_store = ProjectConfigScope.store)
           @scope_store = scope_store
-          @honor_suppressions = honor_suppressions
           @cache = {}
         end
 
@@ -83,29 +80,9 @@ module MetzScan
 
         def cop_entry(scope_config, defaults, key, value)
           entry = slice_keys(value, COP_EXECUTION_KEYS)
-          return apply_suppressions(scope_config, defaults, key, entry) if @honor_suppressions
           return entry unless clear_stock_exclude?(scope_config, defaults, key, value)
 
           entry.merge("Exclude" => [], "inherit_mode" => override_exclude_mode(entry["inherit_mode"]))
-        end
-
-        def apply_suppressions(scope_config, defaults, key, entry)
-          value = scope_config[key]
-          entry = entry.merge("Exclude" => copy_value(value["Exclude"])) if value.key?("Exclude")
-          enabled = suppressed_enabled(scope_config, defaults, key, value)
-          enabled.nil? ? entry : entry.merge("Enabled" => enabled)
-        end
-
-        def suppressed_enabled(scope_config, defaults, key, value)
-          return false if value["Enabled"] == false || scope_config.for_cop(key)["Enabled"] == false
-
-          true if reenabled_default_cop?(scope_config, defaults, key, value)
-        end
-
-        def reenabled_default_cop?(scope_config, defaults, key, value)
-          defaults.dig(key, "Enabled") == true &&
-            value[ProjectConfigScope::ENABLED_SOURCE] &&
-            scope_config.for_cop(key)["Enabled"] == true
         end
 
         def clear_stock_exclude?(scope_config, defaults, key, value)

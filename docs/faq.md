@@ -88,15 +88,9 @@ Only partially. `metz-scan` cannot know every runtime type, every domain intenti
 
 That limitation is why findings should be reviewed as prompts. A warning means "look here," not "rewrite this blindly."
 
-## Does auto-fix redesign my code?
+## Does `metz-scan` automatically rewrite code?
 
-No. No `Metz/*` cop rewrites code: design changes require human judgment, naming, and tests, so Metz findings explain the issue and suggest next moves instead. `--auto-fix` only applies stock RuboCop's mechanical corrections, so it changes nothing unless you add `--all-cops`.
-
-Use `--dry-run` to inspect what would change. It prints the diff and restores the original files afterward; files are rewritten during the run.
-
-```bash
-bundle exec metz-scan scan . --all-cops --auto-fix --dry-run
-```
+No `Metz/*` cop or `MetzProject/*` analyzer rewrites code: design changes require human judgment, naming, and tests, so findings explain the issue and suggest next moves instead. If your project uses RuboCop for style autocorrection, run `bundle exec rubocop -a` directly.
 
 ## Where should I start on an existing codebase?
 

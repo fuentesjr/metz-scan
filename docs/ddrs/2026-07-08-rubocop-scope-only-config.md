@@ -80,3 +80,6 @@ weaken the #33/#37 file-scope contract unless every user noticed the warning.
   resolving relative `Include` globs across `inherit_from`) instead of
   `--force-default-config`, while `SuppressionLedger` still partitions project
   `Enabled: false` and per-cop `Exclude`.
+- Update 2026-11-25: `--auto-fix` was removed from `metz-scan scan`, so
+  `RuboCopInvocation` and `ExecutionConfigStore` now serve read-only `scan`
+  and `scan --all-cops` runs only.

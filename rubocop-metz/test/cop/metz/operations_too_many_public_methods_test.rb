@@ -61,14 +61,13 @@ class CopMetzOperationsTooManyPublicMethodsTest < Minitest::Test
     metz_inspect(source, SERVICE_PATH)
 
     assert_equal 1, @metz_offenses.size
-    assert_match(/2 public methods/, @metz_offenses.first.message)
-    assert_match(/:call/, @metz_offenses.first.message)
-    assert_match(/:refund/, @metz_offenses.first.message)
+    assert_equal "Operation `Checkout` defines 2 public methods (:call, :refund); " \
+                 "keep a single public entry (max 1, excluding :initialize).", @metz_offenses.first.message
   end
 
   def test_fires_on_app_operations_path
     source = <<~RUBY
-      class ImportAccounts
+      class Admin::ImportAccounts
         def call; end
         def preview; end
       end
@@ -77,6 +76,23 @@ class CopMetzOperationsTooManyPublicMethodsTest < Minitest::Test
     metz_inspect(source, OPERATION_PATH)
 
     assert_equal 1, @metz_offenses.size
+    assert_equal "Operation `Admin::ImportAccounts` defines 2 public methods (:call, :preview); " \
+                 "keep a single public entry (max 1, excluding :initialize).", @metz_offenses.first.message
+  end
+
+  def test_anonymous_operation_has_no_name_in_message
+    source = <<~RUBY
+      Class.new do
+        def call; end
+        def preview; end
+      end
+    RUBY
+
+    metz_inspect(source, OPERATION_PATH)
+
+    assert_equal 1, @metz_offenses.size
+    assert_equal "Operation defines 2 public methods (:call, :preview); " \
+                 "keep a single public entry (max 1, excluding :initialize).", @metz_offenses.first.message
   end
 
   def test_silent_with_single_public_call_and_initialize

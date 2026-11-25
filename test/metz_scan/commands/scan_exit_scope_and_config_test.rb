@@ -225,18 +225,6 @@ module MetzScan
         end
       end
 
-      def test_auto_fix_exits_2_saying_no_files_scanned_when_the_only_file_is_a_template_outside_app_views
-        with_scaffold_template_only do |dir|
-          assert_fails_closed(scan_subprocess(dir, ".", "--auto-fix"), "no files scanned")
-        end
-      end
-
-      def test_auto_fix_all_cops_exits_2_saying_no_files_scanned_when_the_only_file_is_a_template_outside_app_views
-        with_scaffold_template_only do |dir|
-          assert_fails_closed(scan_subprocess(dir, ".", "--auto-fix", "--all-cops"), "no files scanned")
-        end
-      end
-
       # Already holds: RuboCop's own discovery never sees ERB. Keeps --all-cops unchanged.
       def test_all_cops_scan_still_exits_2_saying_no_files_scanned_when_the_only_file_is_a_template_outside_app_views
         with_scaffold_template_only do |dir|

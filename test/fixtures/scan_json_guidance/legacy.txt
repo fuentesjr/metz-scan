@@ -9,7 +9,7 @@ Project analyzers: 3 findings, 8 offenses (advisory signals; review in context)
 Metz/MethodsTooLong
   Why it matters: Long methods hide multiple responsibilities and resist understanding at a glance.
   Run `metz-scan explain Metz/MethodsTooLong` for details.
-  sample.rb:3:3 Metz/MethodsTooLong: Method has too many lines. [6/5]
+  sample.rb:3:3 Metz/MethodsTooLong: Method `long_method` has too many lines. [6/5]
 
 MetzProject/RepeatedBranching
   Why it matters: Repeated branching spreads one domain decision across files and makes change ripple outward.
@@ -28,7 +28,7 @@ MetzProject/ServiceSoup
   setup_workflow.rb:8:1 Spree::Seeds::All#call coordinates 3 distinct services; consider a workflow object that owns the process.
 
 Suppressed findings: 1, 0 without a reason
-  sample.rb:13:14 Metz/MethodsTooManyParameters: Avoid parameter lists longer than 4 parameters. [5/4]
+  sample.rb:13:14 Metz/MethodsTooManyParameters: Method `adapter` has too many parameters. [5/4]
     inline disable at line 12, reason: mirrors upstream interface
 
 Summary

@@ -35,7 +35,14 @@ class RuboCopCopMetzClassesTooLongTest < Minitest::Test
     source = "class Big\n#{body}\nend\n"
 
     assert_metz_offense_count(1, source)
-    assert_match(%r{Class has too many lines\. \[102/100\]}, @metz_offenses.first.message)
+    assert_equal "Class `Big` has too many lines. [102/100]", @metz_offenses.first.message
+  end
+
+  def test_names_qualified_class_constant
+    body = "  nop = 1\n" * 102
+
+    assert_metz_offense_count(1, "class Foo::Big\n#{body}end\n")
+    assert_equal "Class `Foo::Big` has too many lines. [102/100]", @metz_offenses.first.message
   end
 
   def test_silent_on_class_with_50_lines
@@ -80,6 +87,7 @@ class RuboCopCopMetzClassesTooLongTest < Minitest::Test
     source << "\nend\n"
 
     assert_metz_offense_count(1, source)
+    assert_equal "Class `Big` has too many lines. [102/100]", @metz_offenses.first.message
   end
 
   def test_fires_on_singleton_class_body_exceeding_max
@@ -89,6 +97,7 @@ class RuboCopCopMetzClassesTooLongTest < Minitest::Test
     source << "\nend\n"
 
     assert_metz_offense_count(1, source)
+    assert_equal "Class has too many lines. [102/100]", @metz_offenses.first.message
   end
 
   def assert_metz_offense_count(expected, source)

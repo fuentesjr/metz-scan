@@ -94,7 +94,7 @@ module MetzScan
       LEGACY_ANNOTATIONS = File.read(File.join(FIXTURE_ROOT, "legacy.annotations.txt")).freeze
       EMPTY_OVERRIDE_TEXT = <<~TEXT
         Metz/MethodsTooLong
-          sample.rb:3:3 Metz/MethodsTooLong: Method has too many lines. [6/5]
+          sample.rb:3:3 Metz/MethodsTooLong: Method `long_method` has too many lines. [6/5]
 
         Summary
         -------

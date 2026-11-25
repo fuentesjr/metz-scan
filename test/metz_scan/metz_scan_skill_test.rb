@@ -12,16 +12,14 @@ module MetzScan
       "bundle exec metz-scan rules",
       "bundle exec metz-scan project-analyzers",
       "bundle exec metz-scan scan",
+      "--baseline",
       "--project-analyzers",
       "--format json",
       "--format sarif",
       "--format gh-annotations",
-      "--auto-fix --dry-run",
       "Rubydex",
       "exit status `1`",
-      "Exit status `64`",
-      "with every number removed",
-      "shrank, or unchanged"
+      "Exit status `64`"
     ].freeze
     MAINTAINER_ONLY_TERMS = [
       "PROJECT_TRACKER.md",

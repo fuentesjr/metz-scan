@@ -28,23 +28,40 @@ module RuboCop
         def on_def(node)
           return if allowed?(node.method_name)
 
-          check_code_length(node)
+          check_named_length(node, method_label_name(node))
         end
         alias on_defs on_def
 
         def on_block(node)
           return unless node.method?(:define_method)
-          return if defined_method_allowed?(node.send_node.first_argument)
 
-          check_code_length(node)
+          arg = node.send_node.first_argument
+          return if defined_method_allowed?(arg)
+
+          check_named_length(node, define_method_label_name(arg))
         end
         alias on_numblock on_block
         alias on_itblock on_block
 
         private
 
+        def check_named_length(node, name)
+          @target_name = name
+          check_code_length(node)
+        ensure
+          @target_name = nil
+        end
+
         def cop_label
-          LABEL
+          @target_name ? "Method `#{@target_name}`" : LABEL
+        end
+
+        def method_label_name(node)
+          node.defs_type? ? "#{node.receiver.source}.#{node.method_name}" : node.method_name.to_s
+        end
+
+        def define_method_label_name(arg)
+          arg.value.to_s if arg && (arg.sym_type? || arg.str_type?)
         end
 
         def allowed?(method_name)

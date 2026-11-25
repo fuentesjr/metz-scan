@@ -7,8 +7,9 @@ require_relative "../cli"
 module MetzScan
   module Commands
     class Explain
-      USAGE = "Usage: metz-scan explain Metz/CopName"
+      USAGE = "Usage: metz-scan explain <Metz/CopName|MetzProject/AnalyzerName>"
       NON_KNOB_KEYS = %w[Description VersionAdded StyleGuide Reference].freeze
+      RULE_LIST_HINT = "Run `metz-scan rules` or `metz-scan project-analyzers` to see available rules."
 
       def self.run(argv, stdout:, stderr:)
         new(stdout: stdout, stderr: stderr).run(argv)
@@ -25,15 +26,14 @@ module MetzScan
 
         emit_or_error(args.first)
       rescue OptionParser::ParseError => e
-        parser_error(e)
+        usage_error("metz-scan explain: #{e.message}", USAGE)
       end
 
-      def emit_or_error(cop_name)
-        cop = lookup_metz_cop(cop_name)
-        return unknown_cop_error(cop_name) unless cop
+      def emit_or_error(name)
+        return emit_project_analyzer(name) if name.start_with?("MetzProject/")
 
-        emit(cop)
-        0
+        cop = lookup_metz_cop(name)
+        cop ? emit_cop(cop) : unknown_rule_error(name)
       end
 
       private
@@ -45,92 +45,77 @@ module MetzScan
         argv
       end
 
+      def emit_project_analyzer(name)
+        require_relative "scan/project_analyzer_runner"
+        analyzer = Scan::ProjectAnalyzerRunner::ANALYZERS.find { |entry| name == entry::RULE_ID }
+        analyzer ? emit_analyzer(analyzer) : unknown_rule_error(name)
+      end
+
       def lookup_metz_cop(name)
         require "rubocop-metz"
         cop = RuboCop::Cop::Registry.global.find_by_cop_name(name)
-        cop if cop && metz_cop?(cop)
-      end
-
-      def metz_cop?(cop)
-        cop.cop_name.start_with?("Metz/") && cop.respond_to?(:metz_metadata)
-      end
-
-      def parser_error(err)
-        stderr.puts "metz-scan explain: #{err.message}"
-        stderr.puts USAGE
-        CLI::USAGE_ERROR
+        cop if cop&.cop_name&.start_with?("Metz/") && cop.respond_to?(:metz_metadata)
       end
 
       def missing_argument_error
-        stderr.puts "metz-scan explain: missing required COP_NAME argument."
-        stderr.puts USAGE
-        stderr.puts "Run `metz-scan rules` to see the list of available Metz cops."
+        usage_error("metz-scan explain: missing required RULE_NAME argument.", USAGE, RULE_LIST_HINT)
+      end
+
+      def unknown_rule_error(name)
+        usage_error("metz-scan explain: rule '#{name}' not found.", RULE_LIST_HINT)
+      end
+
+      def usage_error(*lines)
+        lines.each { |line| stderr.puts line }
         CLI::USAGE_ERROR
       end
 
-      def unknown_cop_error(name)
-        stderr.puts "metz-scan explain: no such cop '#{name}'."
-        stderr.puts "Run `metz-scan rules` to see the list of available Metz cops."
-        CLI::USAGE_ERROR
+      def emit_cop(cop)
+        emit_sections(cop.cop_name, cop.why_it_matters, cop.fix_safety, cop.suggested_next_moves)
+        emit_configuration(cop.cop_name)
+        0
       end
 
-      def emit(cop)
-        emit_heading(cop)
-        emit_why(cop)
-        emit_fix_safety(cop)
-        emit_suggested_next_moves(cop)
-        emit_configuration(cop)
+      def emit_analyzer(analyzer)
+        emit_sections(analyzer::RULE_ID, analyzer::WHY, "manual", analyzer::SUGGESTED_NEXT_MOVES)
+        emit_analyzer_status(analyzer)
+        0
       end
 
-      def emit_heading(cop)
-        stdout.puts cop.cop_name
-        stdout.puts("=" * cop.cop_name.length)
-        stdout.puts
+      def emit_sections(title, why, safety, moves)
+        stdout.puts title, "=" * title.length, "", "Why it matters:", "  #{why}", ""
+        stdout.puts "Fix safety: #{safety}", ""
+        emit_suggested_next_moves(moves)
       end
 
-      def emit_why(cop)
-        stdout.puts "Why it matters:"
-        stdout.puts "  #{cop.why_it_matters}"
-        stdout.puts
-      end
-
-      def emit_fix_safety(cop)
-        stdout.puts "Fix safety: #{cop.fix_safety}"
-        stdout.puts
-      end
-
-      def emit_suggested_next_moves(cop)
+      def emit_suggested_next_moves(moves)
         stdout.puts "Suggested next moves:"
-        cop.suggested_next_moves.each { |move| stdout.puts "  - #{move}" }
+        moves.each { |move| stdout.puts "  - #{move}" }
         stdout.puts
       end
 
-      def emit_configuration(cop)
-        knobs = configuration_knobs(cop.cop_name)
+      def emit_analyzer_status(analyzer)
+        default_scan = Scan::ProjectAnalyzerRunner.default_output_analyzer?(analyzer) ? "yes" : "no"
+        stdout.puts "Status: #{analyzer::PROJECT_ANALYZER_STATUS}", "Default scan: #{default_scan}"
+        stdout.puts "Confidence: #{analyzer::CONFIDENCE}", "Triage: #{analyzer::TRIAGE_SEVERITY}"
+      end
+
+      def emit_configuration(cop_name)
+        knobs = (default_config[cop_name] || {}).except(*NON_KNOB_KEYS)
         return if knobs.empty?
 
         stdout.puts "Configuration:"
         knobs.each { |key, value| stdout.puts "  #{key}: #{format_value(value)}" }
       end
 
-      def configuration_knobs(cop_name)
-        entry = default_config[cop_name] || {}
-        entry.except(*NON_KNOB_KEYS)
-      end
-
       def default_config
-        @default_config ||= YAML.load_file(default_config_path)
-      end
-
-      def default_config_path
-        RuboCop::Metz::Plugin.new.rules(nil).value.to_s
+        @default_config ||= YAML.load_file(RuboCop::Metz::Plugin.new.rules(nil).value.to_s)
       end
 
       def format_value(value)
-        case value
-        when Array then value.empty? ? "[]" : value.join(", ")
-        else value.to_s
-        end
+        return value.to_s unless value.is_a?(Array)
+
+        value.empty? ? "[]" : value.join(", ")
       end
     end
   end

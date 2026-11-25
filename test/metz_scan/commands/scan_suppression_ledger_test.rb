@@ -18,10 +18,10 @@ module MetzScan
       DEMETER = "Metz/DemeterTrainWreck"
       PARAMS = "Metz/MethodsTooManyParameters"
       MESSAGES = {
-        LONG => "Metz/MethodsTooLong: Method has too many lines. [6/5]",
+        LONG => "Metz/MethodsTooLong: Method `%<name>s` has too many lines. [6/5]",
         DEMETER => "Metz/DemeterTrainWreck: Object-graph traversal of 5 exceeds Max (4). " \
                    "Consider delegating or wrapping intermediate calls.",
-        PARAMS => "Metz/MethodsTooManyParameters: Avoid parameter lists longer than 4 parameters. [5/4]"
+        PARAMS => "Metz/MethodsTooManyParameters: Method `%<name>s` has too many parameters. [5/4]"
       }.freeze
 
       # An 8-line method (6 body lines) indented for a class body; trips
@@ -85,7 +85,14 @@ module MetzScan
       def repo_root = File.expand_path("../../..", __dir__)
 
       def finding(cop, path, line, column)
-        { "cop_name" => cop, "path" => path, "line" => line, "column" => column, "message" => MESSAGES.fetch(cop) }
+        cop_name, method_name = Array(cop)
+        { "cop_name" => cop_name, "path" => path, "line" => line, "column" => column,
+          "message" => cop_message(cop_name, method_name || "m") }
+      end
+
+      def cop_message(cop, method_name)
+        template = MESSAGES.fetch(cop)
+        cop == DEMETER ? template : format(template, name: method_name)
       end
 
       def inline_disable(directive_line, reason)
@@ -125,7 +132,7 @@ module MetzScan
       # The full record shape for an inline disable, spelled out once.
       WITH_REASON_RECORD = {
         "cop_name" => "Metz/MethodsTooLong", "path" => "app/inline.rb", "line" => 3, "column" => 3,
-        "message" => "Metz/MethodsTooLong: Method has too many lines. [6/5]",
+        "message" => "Metz/MethodsTooLong: Method `with_reason` has too many lines. [6/5]",
         "suppressed_by" => "inline_disable", "reason" => "mirrors vendor schema", "reason_status" => "present",
         "directive" => { "line" => 2 }, "config" => nil
       }.freeze
@@ -173,25 +180,33 @@ module MetzScan
 
       def test_inline_disables_record_the_directive_reason_or_its_absence
         write_file("app/inline.rb", REASONS_FIXTURE)
-        assert_equal [WITH_REASON_RECORD,
-                      finding(LONG, "app/inline.rb", 14, 3).merge(inline_disable(13, nil)),
-                      finding(LONG, "app/inline.rb", 25, 3).merge(inline_disable(24, nil))], suppressions(".")
+        expected = [
+          WITH_REASON_RECORD,
+          finding([LONG, "without_reason"], "app/inline.rb", 14, 3).merge(inline_disable(13, nil)),
+          finding([LONG, "empty_reason"], "app/inline.rb", 25, 3).merge(inline_disable(24, nil))
+        ]
+        assert_equal expected, suppressions(".")
       end
 
       def test_each_directive_form_is_credited_with_its_own_line
         write_file("app/forms.rb", FORMS_FIXTURE)
-        assert_equal [finding(LONG, "app/forms.rb", 2, 3).merge(inline_disable(2, "same line")),
-                      finding(LONG, "app/forms.rb", 12, 3).merge(inline_disable(11, "next line")),
-                      finding(DEMETER, "app/forms.rb", 22, 5).merge(inline_disable(26, "on last line")),
-                      finding(LONG, "app/forms.rb", 30, 3).merge(inline_disable(29, "unclosed"))], suppressions(".")
+        expected = [
+          finding([LONG, "single"], "app/forms.rb", 2, 3).merge(inline_disable(2, "same line")),
+          finding([LONG, "next_line"], "app/forms.rb", 12, 3).merge(inline_disable(11, "next line")),
+          finding(DEMETER, "app/forms.rb", 22, 5).merge(inline_disable(26, "on last line")),
+          finding([LONG, "unclosed"], "app/forms.rb", 30, 3).merge(inline_disable(29, "unclosed"))
+        ]
+        assert_equal expected, suppressions(".")
       end
 
       def test_todo_all_and_department_directives_record_the_hidden_cop
         write_file("app/wide.rb", WIDE_FIXTURE)
-        assert_equal [finding(LONG, "app/wide.rb", 3, 3).merge(inline_disable(2, "todo reason")),
-                      finding(LONG, "app/wide.rb", 14, 3).merge(inline_disable(13, "all reason")),
-                      finding(LONG, "app/wide.rb", 25, 3).merge(inline_disable(24, "department reason"))],
-                     suppressions(".")
+        expected = [
+          finding([LONG, "todo"], "app/wide.rb", 3, 3).merge(inline_disable(2, "todo reason")),
+          finding([LONG, "everything"], "app/wide.rb", 14, 3).merge(inline_disable(13, "all reason")),
+          finding([LONG, "department"], "app/wide.rb", 25, 3).merge(inline_disable(24, "department reason"))
+        ]
+        assert_equal expected, suppressions(".")
       end
     end
 
@@ -252,9 +267,11 @@ module MetzScan
 
       def test_a_directive_naming_two_cops_records_each_hidden_finding
         write_file("app/report.rb", TWO_COPS_FIXTURE)
-        assert_equal [finding(LONG, "app/report.rb", 3, 3).merge(inline_disable(2, "legacy report")),
-                      finding(DEMETER, "app/report.rb", 4, 9).merge(inline_disable(2, "legacy report"))],
-                     suppressions(".")
+        expected = [
+          finding([LONG, "build"], "app/report.rb", 3, 3).merge(inline_disable(2, "legacy report")),
+          finding(DEMETER, "app/report.rb", 4, 9).merge(inline_disable(2, "legacy report"))
+        ]
+        assert_equal expected, suppressions(".")
       end
 
       def test_opt_in_coverage_and_redundant_disables_are_not_recorded
@@ -371,7 +388,7 @@ module MetzScan
       end
 
       def key_comment_record
-        finding(PARAMS, "app/adapters/pay.rb", 2, 11)
+        finding([PARAMS, "call"], "app/adapters/pay.rb", 2, 11)
           .merge(config_exclude(".rubocop.yml", 4, "app/adapters/**/*", "adapters mirror third-party signatures"))
       end
 
@@ -399,17 +416,17 @@ module MetzScan
       # The full record shape for a per-cop Exclude, spelled out once.
       EXCLUDE_RECORD = {
         "cop_name" => "Metz/MethodsTooLong", "path" => "spec/a_spec.rb", "line" => 2, "column" => 3,
-        "message" => "Metz/MethodsTooLong: Method has too many lines. [6/5]",
+        "message" => "Metz/MethodsTooLong: Method `m` has too many lines. [6/5]",
         "suppressed_by" => "config_exclude", "reason" => nil, "reason_status" => "missing",
         "directive" => nil, "config" => { "path" => ".rubocop.yml", "line" => 3, "pattern" => "spec/**/*" }
       }.freeze
       MIXED_TEXT = <<~TEXT
-          app/live.rb:2:3 Metz/MethodsTooLong: Method has too many lines. [6/5]
+          app/live.rb:2:3 Metz/MethodsTooLong: Method `m` has too many lines. [6/5]
 
         Suppressed findings: 2, 1 without a reason
-          app/foo.rb:3:3 Metz/MethodsTooLong: Method has too many lines. [6/5]
+          app/foo.rb:3:3 Metz/MethodsTooLong: Method `m` has too many lines. [6/5]
             inline disable at line 2, reason: mirrors vendor schema
-          spec/a_spec.rb:2:3 Metz/MethodsTooLong: Method has too many lines. [6/5]
+          spec/a_spec.rb:2:3 Metz/MethodsTooLong: Method `m` has too many lines. [6/5]
             .rubocop.yml:3 Exclude "spec/**/*", no reason
 
         Summary
@@ -470,7 +487,7 @@ module MetzScan
       RUBY
       ERB_TEXT = <<~TEXT
         Suppressed findings: 1, 0 without a reason
-          gen/api.rb:2:3 Metz/MethodsTooLong: Method has too many lines. [6/5]
+          gen/api.rb:2:3 Metz/MethodsTooLong: Method `m` has too many lines. [6/5]
             .rubocop.yml Exclude "gen/**/*", reason: generated code
 
         Summary
@@ -478,7 +495,7 @@ module MetzScan
       TEXT
       ALIAS_TEXT = <<~TEXT
         Suppressed findings: 1, 0 without a reason
-          shared/util.rb:2:3 Metz/MethodsTooLong: Method has too many lines. [6/5]
+          shared/util.rb:2:3 Metz/MethodsTooLong: Method `m` has too many lines. [6/5]
             .rubocop.yml Exclude "shared/**/*", reason not checked
 
         Summary
