@@ -321,7 +321,7 @@
       "offenses": [
         {
           "severity": "refactor",
-          "message": "Metz/MethodsTooLong: Method has too many lines. [6/5]",
+          "message": "Metz/MethodsTooLong: Method `long_method` has too many lines. [6/5]",
           "cop_name": "Metz/MethodsTooLong",
           "corrected": false,
           "correctable": false,
@@ -632,7 +632,7 @@
       "path": "sample.rb",
       "line": 13,
       "column": 14,
-      "message": "Metz/MethodsTooManyParameters: Avoid parameter lists longer than 4 parameters. [5/4]",
+      "message": "Metz/MethodsTooManyParameters: Method `adapter` has too many parameters. [5/4]",
       "suppressed_by": "inline_disable",
       "reason": "mirrors upstream interface",
       "reason_status": "present",

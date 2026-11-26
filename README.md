@@ -18,7 +18,7 @@ $ metz-scan scan app lib
 Metz/MethodsTooLong
   Why it matters: Long methods hide multiple responsibilities and resist understanding at a glance.
   Run `metz-scan explain Metz/MethodsTooLong` for details.
-  app/models/order.rb:12:3 Metz/MethodsTooLong: Method has too many lines. [7/5]
+  app/models/order.rb:12:3 Metz/MethodsTooLong: Method `checkout` has too many lines. [7/5]
 
 Summary
 -------
@@ -71,8 +71,8 @@ scorecard — forward with a wider, more current toolset:
   annotations, with an exit code of `1` reserved for "findings reported."
 - **RuboCop-native.** Built as a RuboCop plugin that honors your project's
   `Include`/`Exclude` scope, so it slots into an existing pipeline.
-- **Self-explaining.** `metz-scan explain <cop>` and `metz-scan rules` describe
-  each rule and why it matters.
+- **Self-explaining.** `metz-scan explain <rule>` and `metz-scan rules` describe
+  each `Metz/*` cop or `MetzProject/*` analyzer and why it matters.
 
 `metz-scan` measures design pressure only. It is not a security or correctness
 auditor — pair it with brakeman or a full audit pipeline for those concerns.
@@ -122,17 +122,15 @@ bundle exec metz-scan scan app lib
 when it reports findings — that is the tool working, not a crash.
 
 Exit `2` means `scan` could not check the code: a RuboCop error (a cop raised,
-an autocorrect never converged, a file could not be read, or an invalid
-configuration file), an internal error in `metz-scan`, or no files scanned. In
-default mode, an invalid configuration file is a project `.rubocop.yml` or a
-nested `.rubocop.yml` in a subdirectory that cannot be read, has ERB that fails
-to evaluate, is not valid YAML, or names a missing `inherit_from` file; default
-mode reads only file scope from it, so it does not reject an unknown cop name.
-`--all-cops` also rejects whatever RuboCop finds invalid, such as an unknown cop
-name. Errors take precedence over findings. The error goes to stderr and stdout
-gets no report in any format, so a saved report never looks clean when code
-went unchecked. With in-place `--auto-fix`, corrections RuboCop already wrote
-stay on disk when the scan exits `2`; `--dry-run` leaves files unchanged.
+a file could not be read, or an invalid configuration file), an internal error in
+`metz-scan`, or no files scanned. In default mode, an invalid configuration file
+is a project `.rubocop.yml` or a nested `.rubocop.yml` in a subdirectory that
+cannot be read, has ERB that fails to evaluate, is not valid YAML, or names a
+missing `inherit_from` file; default mode reads only file scope from it, so it
+does not reject an unknown cop name. `--all-cops` also rejects whatever RuboCop
+finds invalid, such as an unknown cop name. Errors take precedence over
+findings. The error goes to stderr and stdout gets no report in any format, so a
+saved report never looks clean when code went unchecked.
 
 `64` means a usage error (unknown option, missing or nonexistent path, invalid
 format, or a report file that is not a JSON report from `scan --format json` or
@@ -176,10 +174,11 @@ bundle exec metz-scan project-analyzers
 bundle exec metz-scan project-analyzers --json
 ```
 
-Explain a cop:
+Explain a cop or project analyzer (`Metz/*` or `MetzProject/*`):
 
 ```bash
 bundle exec metz-scan explain Metz/ViewsDeepNavigation
+bundle exec metz-scan explain MetzProject/ServiceSoup
 ```
 
 Scan paths:
@@ -331,17 +330,16 @@ includes tests, such as `metz-scan scan . --project-analyzers`; scanning only
 [docs/project-analyzer-calibration.md](docs/project-analyzer-calibration.md)
 for per-analyzer scope, thresholds, triage rules, and calibration evidence.
 
-No `Metz/*` cop autocorrects, so `--auto-fix` changes nothing unless you add
-`--all-cops`; it then applies stock RuboCop's safe corrections. Preview them
-first:
+Compare against a saved JSON baseline (recorded from the same working directory
+so relative paths match) to report only `new` and `grew` findings plus new or
+changed suppressions (unchanged and shrunk findings are hidden, compliance still
+reflects all inspected files, and `scan` exits `0` when no new or grown findings
+remain):
 
 ```bash
-bundle exec metz-scan scan . --all-cops --auto-fix --dry-run
-bundle exec metz-scan scan . --all-cops --auto-fix
+bundle exec metz-scan scan . --format json > tmp/base.json
+bundle exec metz-scan scan . --baseline tmp/base.json
 ```
-
-`--dry-run` prints the diff and restores the original files afterward; files
-are rewritten during the run.
 
 Use `--format gh-annotations` in GitHub Actions to emit workflow command
 annotations that appear inline on pull requests:
@@ -468,7 +466,7 @@ Metz/DemeterTrainWreck:
 | `Enabled: false` | `.rubocop.yml` (`Metz/*` cop, `Metz` department, or `MetzProject/*` analyzer) | Honored by every scan mode. The suppression ledger lists hidden `Metz/*` findings in the default scan and hidden `MetzProject/*` findings in every mode. |
 | Other cop settings (`Max`, `Severity`, allow-lists) | `.rubocop.yml` | Honored only by `--all-cops` and plain `rubocop`; the default scan uses stock values. |
 | Output format | `metz-scan scan --format text\|json\|sarif\|gh-annotations` | `text` is for humans; `json`/`sarif` are for tools; `gh-annotations` emits GitHub Actions workflow annotations. |
-| Auto-fix safety | `--auto-fix`, `--unsafe`, `--dry-run` | Safe fixes use RuboCop `-a`; unsafe fixes use RuboCop `-A`. No `Metz/*` cop autocorrects, so these only change code with `--all-cops`. |
+| Baseline | `metz-scan scan --baseline FILE` | Compares against a saved `scan --format json` report; reports only `new` and `grew` findings and new or changed suppressions. |
 | Environment variables | `RUBOCOP_OPTS` ignored; `RUBOCOP_CACHE_ROOT`, `PARALLEL_PROCESSOR_COUNT` honored | `metz-scan` does not require environment variables. It ignores `RUBOCOP_OPTS` (and `.rubocop` option files) in every scan mode with a stderr `metz-scan: note:` when non-empty; cache and parallelism variables still apply. |
 
 ## GitHub Packages install
@@ -569,7 +567,6 @@ these read-only checks:
 bundle exec ruby bin/check_project_analyzer_calibration --text --no-write test/fixtures/sample_app
 bundle exec ruby bin/check_project_analyzer_calibration --print-baseline --baseline-label sample-app-preview --analyzer MetzProject/RepeatedBranching test/fixtures/sample_app
 bin/check_rubydex_drift --allow-missing-rubydex --text test/fixtures/sample_app
-bin/render_issue_comment_summary 27
 ```
 
 Add future read-only maintenance commands to that guard instead of creating a

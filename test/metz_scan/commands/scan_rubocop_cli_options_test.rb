@@ -24,15 +24,11 @@ module MetzScan
       RUBY
 
       FIXABLE_STOCK_RUBY = "puts 'hi'\n"
-      SAFE_AUTOCORRECT_RUBY = "# frozen_string_literal: true\n\nx =  1\nx\n"
-      AUTOCORRECTED_RUBY = "# frozen_string_literal: true\n\nx = 1\nx\n"
       NOTE_PREFIX = "metz-scan: note: ignoring RuboCop CLI options from "
       NOTE_SUFFIX = "; configure settings in .rubocop.yml instead\n"
-      FOUR_MODES = [
+      SCAN_MODES = [
         %w[. --format json],
-        %w[. --all-cops --format json],
-        %w[. --auto-fix],
-        %w[. --all-cops --auto-fix]
+        %w[. --all-cops --format json]
       ].freeze
 
       def run_scan(chdir, *args, rubocop_opts: nil)
@@ -64,11 +60,6 @@ module MetzScan
         assert_equal 1, result.exitstatus, failure_context(result)
         assert_equal FIXABLE_STOCK_RUBY, File.binread(File.join(dir, "fixable.rb"))
         assert_operator result.json.dig("summary", "offense_count"), :>=, 1
-      end
-
-      def assert_autocorrected_with_remaining_offense(dir, result)
-        assert_equal 1, result.exitstatus, failure_context(result)
-        assert_equal AUTOCORRECTED_RUBY, File.binread(File.join(dir, "fixable.rb"))
       end
 
       def assert_cli_options_note(result, sources)
@@ -120,23 +111,8 @@ module MetzScan
         end
       end
 
-      def test_default_auto_fix_ignores_dot_rubocop_fail_level_fatal
-        with_project("long.rb" => LONG_METHOD_RUBY, ".rubocop" => "--fail-level fatal\n") do |dir|
-          assert_equal 1, run_scan(dir, ".", "--auto-fix").exitstatus
-          assert_equal 1, run_scan(dir, ".", "--auto-fix", "--dry-run").exitstatus
-        end
-      end
-
-      def test_all_cops_auto_fix_ignores_rubocop_opts_except_and_fail_level
-        with_project("fixable.rb" => SAFE_AUTOCORRECT_RUBY, "long.rb" => LONG_METHOD_RUBY) do |dir|
-          opts = "--except Layout,Style --fail-level fatal"
-          result = run_scan(dir, ".", "--all-cops", "--auto-fix", rubocop_opts: opts)
-          assert_autocorrected_with_remaining_offense(dir, result)
-        end
-      end
-
-      def test_stderr_notes_dot_rubocop_once_across_all_four_scan_modes
-        FOUR_MODES.each do |args|
+      def test_stderr_notes_dot_rubocop_once_across_scan_modes
+        SCAN_MODES.each do |args|
           with_project("long.rb" => LONG_METHOD_RUBY, ".rubocop" => "--except Metz\n") do |dir|
             assert_cli_options_note(run_scan(dir, *args), ".rubocop")
           end

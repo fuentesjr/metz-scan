@@ -17,7 +17,7 @@ module MetzScan
     module ConfigDisabledScan
       LONG = "Metz/MethodsTooLong"
       GOD = "Metz/GodServiceClass"
-      LONG_MESSAGE = "Metz/MethodsTooLong: Method has too many lines. [6/5]"
+      LONG_MESSAGE = "Metz/MethodsTooLong: Method `m` has too many lines. [6/5]"
       LONG_SOURCE = <<~RUBY
         class Long
           def m

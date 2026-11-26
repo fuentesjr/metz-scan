@@ -14,7 +14,7 @@ module MetzScan
     module InheritModeScanSupport
       LONG = "Metz/MethodsTooLong"
       OPS = "Metz/OperationsTooManyPublicMethods"
-      LONG_MESSAGE = "Metz/MethodsTooLong: Method has too many lines. [6/5]"
+      LONG_MESSAGE = "Metz/MethodsTooLong: Method `m` has too many lines. [6/5]"
 
       def self.long_class(name)
         <<~RUBY

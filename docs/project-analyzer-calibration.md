@@ -187,7 +187,6 @@ fails if tracked files change afterward. The current read-only command set is:
 bundle exec ruby bin/check_project_analyzer_calibration --text --no-write test/fixtures/sample_app
 bundle exec ruby bin/check_project_analyzer_calibration --print-baseline --baseline-label sample-app-preview --analyzer MetzProject/RepeatedBranching test/fixtures/sample_app
 bin/check_rubydex_drift --allow-missing-rubydex --text test/fixtures/sample_app
-bin/render_issue_comment_summary 27
 ```
 
 ```yaml
@@ -387,20 +386,6 @@ Run `bin/check_project_analyzer_calibration --text` or inspect the generated
 evidence boundary, next useful task, and not-next boundary. This document keeps
 the historical evidence trail and rationale behind those current generated
 entries.
-
-For short parked-issue updates, render a local paste-ready summary without
-posting to GitHub. Supported targets are #25 (`dogfood`, `dogfood-ci`), #27
-(`DeepInheritanceTree`, `MetzProject/DeepInheritanceTree`), and #28
-(`RepeatedBranching`, `MetzProject/RepeatedBranching`):
-
-```bash
-bin/render_issue_comment_summary 27
-bin/render_issue_comment_summary MetzProject/RepeatedBranching
-```
-
-The command reads the tracker boundary, readiness catalog, and checked-in
-active-manifest baseline, then prints the current status, count evidence, next
-step, and not-next boundary for issue #25, #27, #28, or the mapped analyzer.
 
 Reporting-language follow-up on 2026-06-24: text output now labels each
 project-analyzer summary with status, confidence, and severity, and the summary

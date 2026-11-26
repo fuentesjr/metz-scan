@@ -5,11 +5,96 @@ require "minitest/autorun"
 require "support/scan_exit_fixtures"
 require "support/scan_subprocess"
 
-# Exit status contract for `scan` (owner-approved 2026-10-13): exit 1 means only
-# "findings reported". RuboCop errors on any file or config exit 2 in both modes,
-# and errors take precedence over findings.
 module MetzScan
   module Commands
+    # R3: a crash inside metz-scan itself must not look like "findings reported" (exit 1).
+    # Interrupts (130) and usage errors (64) are unchanged and covered elsewhere.
+    class ScanExitInternalErrorsTest < Minitest::Test
+      include ScanSubprocessSupport
+      include ScanExitFixtures
+
+      # R3
+      def test_a_project_analyzer_crash_exits_2_naming_the_exception_message
+        with_project("a.rb" => CLEAN_RUBY) do |dir|
+          result = scan_subprocess(dir, ".", shim: ANALYZER_FAILURE_SHIM)
+
+          assert_exit_2_naming(result, "injected analyzer failure")
+        end
+      end
+
+      # R3
+      def test_a_crash_in_the_scan_pipeline_outside_rubocop_exits_2_naming_the_exception_message
+        with_project("a.rb" => CLEAN_RUBY) do |dir|
+          result = scan_subprocess(dir, ".", shim: PIPELINE_FAILURE_SHIM)
+
+          assert_exit_2_naming(result, "injected pipeline failure")
+        end
+      end
+
+      # A metz-scan crash while the RuboCop step runs is not a RuboCop failure: it is
+      # reported as an internal error, with the exception message and a backtrace.
+      def test_a_crash_in_metz_scan_during_the_rubocop_step_is_reported_as_an_internal_error_with_a_backtrace
+        with_project("a.rb" => CLEAN_RUBY) do |dir|
+          assert_internal_error(scan_subprocess(dir, ".", shim: LEDGER_FAILURE_SHIM), "injected ledger failure")
+        end
+      end
+
+      # R2: RuboCop reports a Metz/MethodsTooManyParameters offense; the crash still wins.
+      def test_a_project_analyzer_crash_takes_precedence_over_rubocop_findings
+        with_project("many_params.rb" => TOO_MANY_PARAMETERS) do |dir|
+          result = scan_subprocess(dir, ".", shim: ANALYZER_FAILURE_SHIM)
+
+          assert_exit_2_naming(result, "injected analyzer failure")
+        end
+      end
+
+      private
+
+      def assert_internal_error(result, message)
+        assert_fails_closed(result, message)
+        refute_includes result.stderr, "RuboCop failed", failure_context(result)
+        assert_match(/:\d+:in /, result.stderr, "expected a backtrace on stderr\n#{failure_context(result)}")
+      end
+    end
+
+    # Exit status contract for `scan` (owner-approved 2026-10-13): any crash in metz-scan
+    # itself exits 2 with an "internal error" and backtrace on stderr and nothing on
+    # stdout, including exceptions outside StandardError (ScriptError, SystemStackError).
+    # Interrupt and explicit exit are out of scope.
+    class ScanExitNonStandardErrorsTest < Minitest::Test
+      include ScanSubprocessSupport
+      include ScanExitFixtures
+
+      def test_a_not_implemented_error_in_the_scan_summary_step_exits_2_as_an_internal_error
+        with_project("a.rb" => CLEAN_RUBY) do |dir|
+          result = scan_subprocess(dir, ".", shim: NOT_IMPLEMENTED_SHIM)
+
+          assert_internal_error(result, "NotImplementedError", "injected not-implemented failure")
+        end
+      end
+
+      def test_a_system_stack_error_in_the_scan_summary_step_exits_2_as_an_internal_error
+        with_project("a.rb" => CLEAN_RUBY) do |dir|
+          result = scan_subprocess(dir, ".", shim: STACK_OVERFLOW_SHIM)
+
+          assert_internal_error(result, "SystemStackError", "injected stack failure")
+        end
+      end
+
+      private
+
+      def assert_internal_error(result, error_class, message)
+        assert_fails_closed(result, "internal error")
+        assert_includes result.stderr, error_class, failure_context(result)
+        assert_includes result.stderr, message, failure_context(result)
+        refute_includes result.stderr, "RuboCop failed", failure_context(result)
+        assert_match(/:\d+:in /, result.stderr, "expected a backtrace on stderr\n#{failure_context(result)}")
+      end
+    end
+
+    # Exit status contract for `scan` (owner-approved 2026-10-13): exit 1 means only
+    # "findings reported". RuboCop errors on any file or config exit 2 in both modes,
+    # and errors take precedence over findings.
     class ScanExitRubocopErrorsTest < Minitest::Test
       include ScanSubprocessSupport
       include ScanExitFixtures

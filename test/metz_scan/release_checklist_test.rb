@@ -20,8 +20,12 @@ module MetzScan
       ["P7", "name: CI", "name: CI", true]
     ].freeze
 
-    def test_issue_template_body_matches_release_checklist
-      assert_equal canonical_checklist_body, issue_template_body
+    def test_issue_template_points_to_canonical_checklist_without_duplicating_body
+      template = File.read(repo_path(".github/ISSUE_TEMPLATE/release_checklist.md"))
+
+      assert_includes template, "RELEASE_CHECKLIST.md"
+      assert_includes template, RELEASE_ISSUE_DRY_RUN
+      refute_includes template, "## Verification"
     end
 
     def test_release_checklists_include_calibration_smoke
@@ -86,7 +90,7 @@ module MetzScan
     end
 
     def release_checklists
-      [repo_path("RELEASE_CHECKLIST.md"), repo_path(".github/ISSUE_TEMPLATE/release_checklist.md")]
+      [repo_path("RELEASE_CHECKLIST.md")]
     end
 
     def assert_release_metadata_smokes(path)
@@ -101,18 +105,6 @@ module MetzScan
 
       assert_includes checklist, CI_PARITY_PRESERVED_CLONE, path
       assert_includes checklist, CI_PARITY_NEXT_ACTION, path
-    end
-
-    def canonical_checklist_body
-      body_from(File.read(repo_path("RELEASE_CHECKLIST.md")))
-    end
-
-    def issue_template_body
-      body_from(File.read(repo_path(".github/ISSUE_TEMPLATE/release_checklist.md")))
-    end
-
-    def body_from(markdown)
-      markdown[markdown.index("## Verification")..]
     end
 
     def normalized_ruby_script(script)

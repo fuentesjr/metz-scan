@@ -70,8 +70,7 @@ module MetzScan
       ["bundle exec ruby bin/check_project_analyzer_calibration --text --no-write test/fixtures/sample_app",
        "bundle exec ruby bin/check_project_analyzer_calibration --print-baseline --baseline-label " \
        "sample-app-preview --analyzer MetzProject/RepeatedBranching test/fixtures/sample_app",
-       "bin/check_rubydex_drift --allow-missing-rubydex --text test/fixtures/sample_app",
-       "bin/render_issue_comment_summary 27"]
+       "bin/check_rubydex_drift --allow-missing-rubydex --text test/fixtures/sample_app"]
     end
 
     def check_read_only_commands_path = File.join(REPO_ROOT, "bin/check_read_only_commands")

@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require_relative "finding"
 require_relative "implicit_context_pressure/ambient_context_collector"
 require_relative "implicit_context_pressure/reference_set"
 require_relative "implicit_context_pressure/triage"
@@ -27,10 +28,8 @@ module MetzScan
       ].freeze
       MINIMUM_FILES = 3
       MINIMUM_PACKAGES = 2
-      Finding = Struct.new(:source, :rule_id, :message, :ambient_context, :referring_files,
-                           :referring_packages, :occurrences, :project_analyzer_status, :confidence,
-                           :triage_severity, :triage_summary, :project_analyzer_metadata,
-                           :why_it_matters, :suggested_next_moves, keyword_init: true) do
+      Finding = Analyzers::Finding.define(:ambient_context, :referring_files, :referring_packages,
+                                          :occurrences) do
         def report_occurrences
           occurrence = occurrences.first
           [Occurrence.from(occurrence, context: occurrence&.context)].compact

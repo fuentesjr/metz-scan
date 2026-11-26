@@ -26,12 +26,6 @@ module MetzScan
           run(paths, options: scan_options(all_cops), config_store: config_store(all_cops, store), all_cops: all_cops)
         end
 
-        def auto_fix(paths, options:, report_path:, store: nil)
-          all_cops = options.all_cops
-          store_arg = config_store(all_cops, store, honor_suppressions: !all_cops)
-          run(paths, options: auto_fix_options(options, report_path), config_store: store_arg, all_cops: all_cops)
-        end
-
         def run(paths, options:, config_store:, all_cops: false)
           Runner.require_metz_plugin
           ProjectConfigScope.ensure_metz_defaults_loaded
@@ -85,6 +79,7 @@ module MetzScan
         end
 
         def configure_cache_root(config_store)
+          TargetFileDiscovery.reset_cwd_caches
           RuboCop::ResultCache.reset_config_cache
           RuboCop::ConfigLoader.cache_root = RuboCop::ResultCache.cache_root(config_store, nil)
         end
@@ -112,10 +107,10 @@ module MetzScan
           snapshot.each { |target, values| values.each { |attr, val| target.public_send(:"#{attr}=", val) } }
         end
 
-        def config_store(all_cops, store, honor_suppressions: false)
+        def config_store(all_cops, store)
           return RuboCop::ConfigStore.new if all_cops
 
-          ExecutionConfigStore.new(store || ProjectConfigScope.store, honor_suppressions: honor_suppressions)
+          ExecutionConfigStore.new(store || ProjectConfigScope.store)
         end
 
         def scan_options(all_cops)
@@ -124,17 +119,6 @@ module MetzScan
 
           base.merge(only: ["Lint/Syntax", "Metz"], display_suppressed: true)
         end
-
-        def auto_fix_options(options, report_path)
-          base = autocorrect_options(options.unsafe).merge(
-            format: "progress", formatters: [["json", report_path], ["progress"]], out: report_path
-          )
-          return base if options.all_cops
-
-          base.merge(only: ["Lint/Syntax", "Metz"], disable_pending_cops: true)
-        end
-
-        def autocorrect_options(unsafe) = { autocorrect: true, (unsafe ? :autocorrect_all : :safe_autocorrect) => true }
       end
     end
   end

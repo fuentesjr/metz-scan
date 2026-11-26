@@ -61,16 +61,12 @@ module MetzScan
       end
 
       def declarations
-        entries = graph.declarations.map do |declaration|
-          Declaration.new(name: declaration.name, path: definition_path(declaration),
-                          kind: declaration_kind(declaration))
-        end
-
-        entries.sort_by { |declaration| [declaration.name.to_s, declaration.path.to_s] }
+        @declarations ||= graph.declarations.map { |declaration| build_declaration(declaration) }
+                               .sort_by { |declaration| [declaration.name.to_s, declaration.path.to_s] }.freeze
       end
 
       def documents
-        graph.documents.map { |document| path_from_uri(document.uri) }.compact.sort
+        @documents ||= graph.documents.map { |document| path_from_uri(document.uri) }.compact.sort.freeze
       end
 
       def descendants_of(name)
@@ -94,6 +90,11 @@ module MetzScan
       end
 
       private
+
+      def build_declaration(declaration)
+        Declaration.new(name: declaration.name, path: definition_path(declaration),
+                        kind: declaration_kind(declaration))
+      end
 
       def definition_path(declaration)
         definition = declaration.definitions.first if declaration.respond_to?(:definitions)

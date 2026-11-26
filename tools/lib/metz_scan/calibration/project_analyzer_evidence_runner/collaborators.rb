@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "metz_scan/analyzers/source_cache"
 require "metz_scan/project_index"
 require "metz_scan/commands/scan/project_analyzer_runner"
 
@@ -62,7 +63,9 @@ module MetzScan
         end
 
         def run_selected_analyzers(selected, paths, index)
-          selected.flat_map { |analyzer| analyzer.new(paths: paths, index: index).call }
+          Analyzers::SourceCache.with(config_store: Commands::Scan::ProjectConfigScope.store) do
+            selected.flat_map { |analyzer| analyzer.new(paths: paths, index: index).call }
+          end
         end
 
         def filter_default_output(findings, default_output)

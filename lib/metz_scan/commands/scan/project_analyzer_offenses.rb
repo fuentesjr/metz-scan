@@ -7,7 +7,7 @@ module MetzScan
   module Commands
     class Scan
       module ProjectAnalyzerOffenses
-        OffenseSet = Struct.new(:findings, :by_path, :offenses, keyword_init: true)
+        OffenseSet = Struct.new(:findings, :by_path, :offenses, :pairs, keyword_init: true)
         FIX_SAFETY = "manual"
 
         module_function
@@ -20,16 +20,27 @@ module MetzScan
           return live_set(entries, ledger_report, **scope) if ledger_report
 
           OffenseSet.new(findings: findings, by_path: offenses_by_path(entries),
-                         offenses: entries.map { |entry| entry.fetch(:offense) })
+                         offenses: entries.map { |entry| entry.fetch(:offense) }, pairs: entries)
         end
 
         def live_set(entries, ledger_report, **scope)
           by_path = SuppressionLedger.partition!(ledger_report, offenses_by_path(entries), **scope)
           live = by_path.values.flatten
-          kept = Set.new.compare_by_identity.merge(live)
-          findings = entries.select { |entry| kept.include?(entry.fetch(:offense)) }.map { |entry| entry[:finding] }
-          OffenseSet.new(findings: findings.uniq(&:object_id), by_path: by_path, offenses: live)
+          pairs = select_live_pairs(entries, live)
+          OffenseSet.new(findings: unique_findings(pairs), by_path: by_path, offenses: live, pairs: pairs)
         end
+
+        def filter_entries(pairs, surviving_offenses)
+          live = select_live_pairs(Array(pairs), surviving_offenses)
+          [unique_findings(live), live.map { |entry| entry.fetch(:offense) }]
+        end
+
+        def select_live_pairs(entries, live_offenses)
+          kept = Set.new.compare_by_identity.merge(live_offenses)
+          entries.select { |entry| kept.include?(entry.fetch(:offense)) }
+        end
+
+        def unique_findings(entries) = entries.map { |entry| entry.fetch(:finding) }.uniq(&:object_id)
 
         def entries_for(findings)
           findings.flat_map { |finding| offenses_for(finding) }

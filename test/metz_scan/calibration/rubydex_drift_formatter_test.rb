@@ -30,7 +30,7 @@ module MetzScan
       end
 
       def index_backed_rule_ids
-        Commands::Scan::ProjectAnalyzerRunner::INDEX_BACKED_ANALYZERS.map { |analyzer| analyzer::RULE_ID }
+        Commands::Scan::ProjectAnalyzerRunner.index_backed_analyzers.map { |analyzer| analyzer::RULE_ID }
       end
 
       def fixture(name)

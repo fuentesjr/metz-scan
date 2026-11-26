@@ -34,7 +34,7 @@ Two gems in one repo, strict dependency direction:
 
 Key paths:
 
-- `lib/metz_scan/cli.rb` dispatches to `lib/metz_scan/commands/{scan,report,rules,explain,project_analyzers}.rb`.
+- `lib/metz_scan/cli.rb` dispatches to `lib/metz_scan/commands/{scan,report,rules,explain,project_analyzers}.rb` (`explain` supports both `Metz/*` cops and `MetzProject/*` project analyzers; `scan --baseline FILE` compares against a saved JSON report and reports only `new`/`grew` findings and new or changed suppressions).
 - `lib/metz_scan/commands/scan/runner.rb` — default scan is Metz-only:
   `TargetFileDiscovery` asks RuboCop for target files using the *project's*
   scope-only config (honoring `AllCops: Exclude`, per #33) and adds

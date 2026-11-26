@@ -2,23 +2,19 @@
 
 require "rubocop"
 
+require_relative "../source_cache"
+
 module MetzScan
   module Analyzers
     class SubclassOverridePressure
       class MethodBodyFacts
         Facts = Struct.new(:body_kind, :calls_super, keyword_init: true)
 
-        def initialize
-          @processed_sources = {}
-        end
-
         def for(declaration)
           Facts.new(body_kind: body_kind_for(declaration), calls_super: calls_super?(declaration))
         end
 
         private
-
-        attr_reader :processed_sources
 
         def body_kind_for(declaration)
           body_kind_for_node(method_node_for(declaration))
@@ -48,20 +44,8 @@ module MetzScan
         def method_node_for(declaration)
           return unless declaration&.path && declaration.line
 
-          ast = processed_source_for(declaration.path)&.ast
+          ast = SourceCache.ast(declaration.path)
           each_node(ast).find { |node| method_node_at_line?(node, declaration.line) }
-        end
-
-        def processed_source_for(path)
-          return processed_sources[path] if processed_sources.key?(path)
-
-          processed_sources[path] = build_processed_source(path)
-        end
-
-        def build_processed_source(path)
-          RuboCop::ProcessedSource.new(File.read(path), RUBY_VERSION.to_f) if File.file?(path)
-        rescue Parser::SyntaxError
-          nil
         end
 
         def method_node_at_line?(node, line)

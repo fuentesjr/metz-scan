@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require_relative "../source_cache"
 require_relative "node_predicates"
 require_relative "receiver_resolution"
 require_relative "scope_facts"
@@ -20,18 +21,12 @@ module MetzScan
         end
 
         def call
-          walk(processed_source.ast, [])
-        rescue Parser::SyntaxError
-          []
+          walk(SourceCache.ast(path), [])
         end
 
         private
 
         attr_reader :path, :declarations
-
-        def processed_source
-          RuboCop::ProcessedSource.new(File.read(path), RUBY_VERSION.to_f)
-        end
 
         def walk(node, scopes)
           return [] unless node

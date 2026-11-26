@@ -151,6 +151,7 @@ module MetzScan
         end
 
         def discover(paths, store: nil)
+          reset_cwd_caches
           Runner.require_metz_plugin
           ProjectConfigScope.reset_unresolved_inherit_gems!
           with_store(store || ProjectConfigScope.store) { for_project_config(paths) }
@@ -163,8 +164,14 @@ module MetzScan
         end
 
         def for_all_cops(paths, rubocop_store: all_cops_store)
+          reset_cwd_caches
           ProjectConfigScope.ensure_metz_defaults_loaded
           RuboCop::TargetFinder.new(rubocop_store, {}).find(paths, :all_file_types)
+        end
+
+        def reset_cwd_caches
+          RuboCop::PathUtil.reset_pwd
+          RuboCop::ConfigFinder.project_root = nil
         end
 
         def all_cops_store

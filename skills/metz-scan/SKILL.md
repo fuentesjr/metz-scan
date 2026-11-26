@@ -13,14 +13,29 @@ Run from the project root so report paths match `git` paths.
 
 ## End-of-task check
 
-Before your first edit, save a report of the unchanged tree. The fixed
-directory survives shells that drop variables.
+Before your first edit, save a baseline JSON report of the unchanged tree. The
+fixed directory survives shells that drop variables.
 
 ```bash
 out="${TMPDIR:-/tmp}/metz-scan-check"
 mkdir -p "$out"
 bundle exec metz-scan scan . --format json > "$out/base.json"
 ```
+
+If you started mid-branch without a baseline, extract `<base>` (`HEAD` while
+uncommitted, otherwise the merge base) into a temporary directory and scan
+inside it so relative paths match `.`:
+
+```bash
+out="${TMPDIR:-/tmp}/metz-scan-check"
+mkdir -p "$out"
+base_dir="$(mktemp -d)"
+git archive <base> | tar -x -C "$base_dir"
+(cd "$base_dir" && BUNDLE_GEMFILE="$OLDPWD/Gemfile" \
+  bundle exec metz-scan scan . --format json) > "$out/base.json"
+```
+
+Never overwrite, stash, or check out working-tree files to scan the base.
 
 Pass directories, not changed files: a file named directly is scanned even
 when the project excludes it, and cross-file analyzers see only the paths you
@@ -29,109 +44,56 @@ your changes, for example `app lib`. Reuse these paths in every scan.
 
 Run the rest once, after your changes are complete, not after every edit.
 
-1. Save the report and record `summary.offense_count`:
+1. Run a delta scan against `$out/base.json`:
 
    ```bash
    out="${TMPDIR:-/tmp}/metz-scan-check"
-   bundle exec metz-scan scan . --format json > "$out/scan.json"
+   bundle exec metz-scan scan . --baseline "$out/base.json" --format json > "$out/scan.json"
    ```
 
-   Read a file's findings one per line (`path:line`, cop, message), a fifth
-   the size of its JSON:
+   Pass `--format text` for a human summary, or inspect one file from JSON:
    `bundle exec metz-scan report "$out/scan.json" --format text | grep '<file>:'`
 
-2. Keep the findings in files you changed. `<base>` is the commit your task
-   started from: `HEAD` while your work is uncommitted, otherwise the merge
-   base of your branch and the default branch. `files[].path` is relative to
-   where you ran; add `--relative` to `git diff` when that is not the
-   repository root.
+   `--baseline` reports only `new` and `grew` findings (`baseline_status`), plus
+   newly added or changed `suppressions`. Pre-existing unchanged or shrunk
+   findings and unchanged suppressions are hidden, `summary.baseline` records
+   `pre_existing_offense_count`, `new_offense_count`, and
+   `grown_offense_count`, and `scan` exits `0` when no new or grown findings
+   remain.
 
-   ```bash
-   git diff --name-only <base>
-   git ls-files --others --exclude-standard
-   ```
+   When your edit grew a method-level finding (`Metz/MethodsTooLong`,
+   `Metz/MethodsTooManyParameters`, or a chain cop), try once to reshape your
+   own addition so it does not grow, for example a table entry instead of
+   another branch; do not refactor code you did not change. Report a class
+   that grew without acting on it.
 
-3. Decide which findings are yours. Every finding in a new file is yours. In
-   an existing file, the rule depends on the cop.
-
-   **Size and chain cops** (`Metz/MethodsTooLong`, `Metz/ClassesTooLong`,
-   `Metz/MethodsTooManyParameters`, `Metz/DemeterTrainWreck`,
-   `Metz/ViewsDeepNavigation`) report a count such as `[27/5]`, and overlap
-   with your edit cannot tell yours from a pre-existing one, so the base report
-   decides. Without one, extract the base commit and scan from inside it,
-   so path-scoped cops match there too:
-
-   ```bash
-   out="${TMPDIR:-/tmp}/metz-scan-check"
-   base_dir="$(mktemp -d)"
-   git archive <base> | tar -x -C "$base_dir"
-   (cd "$base_dir" && BUNDLE_GEMFILE="$OLDPWD/Gemfile" \
-     bundle exec metz-scan scan . --format json) > "$out/base.json"
-   ```
-
-   Never overwrite, stash, or check out working-tree files to scan the base.
-
-   Match findings on a key: path suffix, `cop_name`, `message`
-   with every number removed, and an anchor from the source line at
-   `location.start_line`. For the length and parameter cops the anchor is the
-   method, class, or constant name on that line (`def name`,
-   `define_method(:name)`, `class Name`, `Name = Struct.new`); for the chain
-   cops it is the whole line with leading whitespace stripped. Read base lines
-   with `git show <base>:<file>` and yours from the working tree. Pair findings
-   that share a key in `start_line` order. An unpaired finding in your report
-   is yours, including a chain you edited or a method or class you renamed.
-   A paired finding is pre-existing even when it overlaps your edit: list it
-   in the handoff as grew (`27/5` to `30/5`),
-   shrank, or unchanged. When your edit grew a method-level finding
-   (`Metz/MethodsTooLong`, `Metz/MethodsTooManyParameters`, or a chain cop),
-   try once to reshape your own addition so it does not grow, for example a
-   table entry instead of another branch; do not refactor code you did not
-   change. Report a class that grew without acting on it.
-
-   **Every other cop:** a finding is yours when either holds:
-
-   - Its `location.start_line` through `location.last_line` overlaps lines
-     you added or changed. In `git diff -U0 <base> -- <file>`, a hunk
-     `@@ -a,b +c,d @@` covers new lines `c` through `c + d - 1`; an omitted
-     `,d` means one line, and `d` of `0` means a pure deletion.
-   - Its `message` names a method, class, parameter, or collaborator you
-     added or changed. `Metz/GodServiceClass`,
-     `Metz/OperationsTooManyPublicMethods`, and
-     `Metz/ControllersTooManyDirectCollaborators` can anchor away from your
-     edit, so check their messages.
-
-   Other findings in a changed file are pre-existing: leave them and list
-   them in the handoff. When unsure, match against the base report on the key
-   above; unpaired means yours.
-
-4. Fix each finding that is yours. Read `why_it_matters` and
+2. Fix each finding reported by the delta scan. Read `why_it_matters` and
    `suggested_next_moves` on the offense when present, else in
-   `guidance[cop_name]`; `metz-scan explain <cop>` adds the cop's
-   configuration for `Metz/*` cops; `explain` rejects `MetzProject/*`. Fix
-   the design problem, not the threshold: move behavior onto the object that
-   owns the data; introduce a named query, presenter, or value object; replace
-   parameters that travel together with one object; split a long method
-   around named responsibilities; delegate instead of walking collaborators.
-   When every fix makes the code harder to read, suppress instead (below).
+   `guidance[cop_name]`; `bundle exec metz-scan explain <rule>` prints full
+   metadata (plus configuration for `Metz/*` cops) for both `Metz/*` cops and
+   `MetzProject/*` project analyzers (`bundle exec metz-scan project-analyzers`
+   lists the analyzer catalog). Fix the design problem, not the threshold: move
+   behavior onto the object that owns the data; introduce a named query,
+   presenter, or value object; replace parameters that travel together with one
+   object; split a long method around named responsibilities; delegate instead
+   of walking collaborators. When every fix makes the code harder to read,
+   suppress instead (below).
 
-5. Rerun with the same paths into a new file:
+3. Rerun the delta scan with the same paths and baseline into a new file:
 
    ```bash
    out="${TMPDIR:-/tmp}/metz-scan-check"
-   bundle exec metz-scan scan . --format json > "$out/after.json"
+   bundle exec metz-scan scan . --baseline "$out/base.json" --format json > "$out/after.json"
    ```
 
-   A finding is fixed when nothing in the after report matches its step 3
-   key and you did not suppress it; a smaller size finding is not fixed.
-   Suppressed findings move to the report's `suppressions` list. Repeat
-   steps 4 and 5 until none of yours remain, then run the project's tests;
-   a design fix that breaks a test is not done.
+   Repeat steps 2 and 3 until `summary.offense_count` is `0` (exit `0`) or only
+   acknowledged items remain, then run the project's tests; a design fix that
+   breaks a test is not done. Suppressed findings move to `suppressions`.
 
-6. Hand off with a metz-scan section: the scan command; `offense_count`
-   before and after; each finding you fixed (cop, `path:line`, design move);
-   each pre-existing finding you left in a changed file (grew, shrank, or
-   unchanged for size findings); each suppression you added, with its reason;
-   and any finding of yours you could not fix, and why.
+4. Hand off with a metz-scan section: the scan command; `summary.baseline`
+   counts; each finding you fixed (`cop_name`, `path:line`, design move); each
+   new or changed suppression, with its reason; and any `new` or `grew`
+   finding you left, and why.
 
 ## Changes that are not fixes
 
@@ -228,19 +190,17 @@ Rubydex unless the human asks.
 ```bash
 bundle exec metz-scan rules --json
 bundle exec metz-scan explain Metz/MethodsTooLong
+bundle exec metz-scan explain MetzProject/ServiceSoup
 bundle exec metz-scan project-analyzers
+bundle exec metz-scan scan . --baseline "$out/base.json" --format text
 bundle exec metz-scan scan . --project-analyzers --format json
 bundle exec metz-scan scan app lib --format text
 bundle exec metz-scan scan . --format sarif
 bundle exec metz-scan scan . --format gh-annotations
-bundle exec metz-scan scan . --all-cops --auto-fix --dry-run
 ```
 
 `--format sarif` is for code-scanning upload. `--format gh-annotations`
 shows findings inline on GitHub pull requests; exit status `1` fails the
-step unless the workflow sets `continue-on-error`. No `Metz/*` cop
-autocorrects, so `--auto-fix` matters only with `--all-cops`; `--unsafe`
-adds unsafe corrections, and `--dry-run` prints the diff and restores the
-files, which are rewritten during the run. Preview before applying: if an
-in-place run exits `2`, corrections already written stay on disk, while
-`--dry-run` leaves files unchanged.
+step unless the workflow sets `continue-on-error`. `metz-scan` does not
+auto-fix design findings; run `bundle exec rubocop -a` directly if the project
+uses RuboCop for style.

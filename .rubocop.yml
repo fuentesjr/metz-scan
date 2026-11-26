@@ -7,6 +7,8 @@ test_excludes = %w[
   rubocop-metz/test/rubocop/**/*
   rubocop-metz/test/cop_helper_test.rb
   rubocop-metz/test/test_helper.rb
+  test/metz_scan/**/*
+  test/support/**/*
 ]
 emit_test_excludes = lambda do |extra: []|
   (test_excludes + Array(extra)).map { |path| "    - #{path}" }.join("\n")

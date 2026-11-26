@@ -2,12 +2,13 @@
 
 require "rubocop"
 
-require_relative "contextual_node_walker"
+require_relative "finding"
 require_relative "occurrence"
 require_relative "package_map"
 require_relative "project_analyzer_triage"
 require_relative "repeated_query_criteria/triage"
 require_relative "ruby_file_enumerator"
+require_relative "source_cache"
 
 module MetzScan
   module Analyzers
@@ -29,11 +30,8 @@ module MetzScan
       MINIMUM_FILES = 3
       MINIMUM_PACKAGES = 2
       MINIMUM_CRITERIA_KEYS = 2
-      Finding = Struct.new(:source, :rule_id, :message, :query, :receiver, :criteria_keys,
-                           :referring_files, :referring_packages, :occurrences,
-                           :project_analyzer_status, :confidence, :triage_severity, :triage_summary,
-                           :project_analyzer_metadata, :why_it_matters, :suggested_next_moves,
-                           keyword_init: true) do
+      Finding = Analyzers::Finding.define(:query, :receiver, :criteria_keys, :referring_files,
+                                          :referring_packages, :occurrences) do
         def report_occurrences
           occurrence = occurrences.first
           [Occurrence.from(occurrence, context: occurrence&.context)].compact
@@ -177,20 +175,14 @@ module MetzScan
 
         def call
           contextual_nodes.filter_map { |contextual_node| query_site_for(contextual_node) }
-        rescue Parser::SyntaxError
-          []
         end
 
         private
 
         attr_reader :path
 
-        def processed_source
-          RuboCop::ProcessedSource.new(File.read(path), RUBY_VERSION.to_f)
-        end
-
         def contextual_nodes
-          ContextualNodeWalker.new(processed_source.ast).nodes
+          SourceCache.contextual_nodes(path)
         end
 
         def receiver_fingerprint_for(node)

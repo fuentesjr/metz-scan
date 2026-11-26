@@ -9,8 +9,9 @@ factory-ai-artifacts
 logs/
 loops/
 
-# Personal harness state; the rest of .claude/ (skills, guides) is tracked.
+# Personal harness state and local worktrees; the rest of .claude/ (skills, guides) is tracked.
 .claude/settings.local.json
+.claude/worktrees/
 .trk/lock
 
 # Per-process scan test scratch dirs (test/support/test_process_paths.rb).

@@ -7,23 +7,28 @@ module MetzScan
         RULE_COP_PREFIX = "Metz/"
         TOP_FILE_LIMIT = 5
 
-        def self.add_to_summary!(parsed)
-          new(parsed).add_to_summary!
-        end
+        def self.add_to_summary!(parsed) = new(parsed).add_to_summary!
+
+        def self.record_file_counts!(parsed) = new(parsed).record_file_counts!
 
         def initialize(parsed)
           @parsed = parsed
         end
 
-        def add_to_summary!
-          writable_summary["clean_file_count"] = clean_file_count
+        def record_file_counts!
+          writable_summary["clean_file_count"] = computed_clean_file_count
           writable_summary["files_with_offenses"] = files_with_rule_offenses
+          parsed
+        end
+
+        def add_to_summary!
+          record_file_counts! unless writable_summary.key?("clean_file_count")
           writable_summary["offenses_by_cop"] = offenses_by_cop
           parsed
         end
 
         def lines
-          ["Summary", "-------", compliance_line, *offense_summary_lines]
+          ["Summary", "-------", compliance_line, baseline_line, *offense_summary_lines].compact
         end
 
         private
@@ -43,17 +48,20 @@ module MetzScan
           "Metz compliance: #{compliance_percentage}% (#{clean_file_count}/#{inspected_file_count} files clean)"
         end
 
-        def compliance_percentage
-          ((clean_file_count.to_f / inspected_file_count) * 100).round
+        def baseline_line
+          return unless (counts = summary["baseline"])
+
+          "Baseline: #{counts.fetch('new_offense_count')} new, #{counts.fetch('grown_offense_count')} grew, " \
+            "#{counts.fetch('pre_existing_offense_count')} pre-existing hidden"
         end
 
-        def clean_file_count
-          inspected_file_count - files_with_rule_offenses
-        end
+        def compliance_percentage = ((clean_file_count.to_f / inspected_file_count) * 100).round
 
-        def files_with_rule_offenses
-          files.count { |file| rule_offenses?(file) }
-        end
+        def clean_file_count = summary.fetch("clean_file_count") { computed_clean_file_count }.to_i
+
+        def computed_clean_file_count = inspected_file_count - files_with_rule_offenses
+
+        def files_with_rule_offenses = files.count { |file| rule_offenses?(file) }
 
         def rule_offenses?(file)
           Array(file["offenses"]).any? { |offense| offense.fetch("cop_name").start_with?(RULE_COP_PREFIX) }
@@ -63,9 +71,7 @@ module MetzScan
           "#{count_label(offense_count, 'offense')} across #{count_label(sorted_cop_counts.size, 'cop')}"
         end
 
-        def offense_count
-          offenses_by_cop.values.sum
-        end
+        def offense_count = offenses_by_cop.values.sum
 
         def offenses_by_cop
           @offenses_by_cop ||= sorted_cop_counts.to_h
@@ -79,9 +85,7 @@ module MetzScan
           offenses.each_with_object(Hash.new(0)) { |offense, counts| counts[offense.fetch("cop_name")] += 1 }
         end
 
-        def top_file_counts
-          file_counts.sort_by { |path, count| [-count, path] }.first(TOP_FILE_LIMIT)
-        end
+        def top_file_counts = file_counts.sort_by { |path, count| [-count, path] }.first(TOP_FILE_LIMIT)
 
         def file_counts
           files.filter_map do |file|
@@ -95,9 +99,7 @@ module MetzScan
           rows.map { |label, count| "  #{label.ljust(width)}  #{count}" }
         end
 
-        def count_label(count, noun)
-          "#{count} #{noun}#{'s' unless count == 1}"
-        end
+        def count_label(count, noun) = "#{count} #{noun}#{'s' unless count == 1}"
 
         def offenses
           @offenses ||= files.flat_map { |file| Array(file["offenses"]) }

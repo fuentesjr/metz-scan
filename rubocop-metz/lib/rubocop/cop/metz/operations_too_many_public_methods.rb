@@ -26,15 +26,22 @@ module RuboCop
           "Move invariants and calculations onto the objects that own the data."
         ]
 
-        MSG = "Operation defines %<count>d public methods (%<names>s); " \
+        MSG = "%<subject>s defines %<count>d public methods (%<names>s); " \
               "keep a single public entry (max %<max>d, excluding %<allowed>s)."
 
         def on_class(node)
-          public_names = api_names(node)
-          return if public_names.size <= max_public_methods
-
-          add_offense(node.identifier, message: offense_message(public_names))
+          check_operation(node, anchor: node.identifier, name: node.identifier.source)
         end
+
+        def on_block(node)
+          return unless class_constructor_block?(node)
+
+          parent = node.parent
+          anchor, name = parent&.casgn_type? ? [parent, casgn_name(parent)] : [node.send_node, nil]
+          check_operation(node, anchor: anchor, name: name)
+        end
+        alias on_numblock on_block
+        alias on_itblock on_block
 
         def relevant_file?(file)
           return super if file.nil? || file.empty? || file == "(string)" || cop_config["Include"]
@@ -44,18 +51,43 @@ module RuboCop
 
         private
 
+        def check_operation(node, anchor:, name:)
+          public_names = api_names(node)
+          return if public_names.size <= max_public_methods
+
+          add_offense(anchor, message: offense_message(name, public_names))
+        end
+
+        def class_constructor_block?(node)
+          send_node = node.send_node
+          receiver = send_node.receiver
+          receiver&.const_type? && receiver.const_name == "Class" && send_node.method?(:new)
+        end
+
+        def casgn_name(node)
+          ns = node.namespace
+          return node.name.to_s unless ns
+
+          ns.cbase_type? ? "::#{node.name}" : "#{ns.source}::#{node.name}"
+        end
+
         def api_names(node)
           PublicApiMethods.new(node, allowed_methods: allowed_methods).names
         end
 
-        def offense_message(public_names)
-          format(MSG, **message_fields(public_names))
+        def offense_message(name, public_names)
+          format(MSG, **message_fields(name, public_names))
         end
 
-        def message_fields(public_names)
+        def message_fields(name, public_names)
           names = public_names.map(&:inspect).join(", ")
           allowed = allowed_methods.map(&:inspect).join(", ")
-          { count: public_names.size, names: names, max: max_public_methods, allowed: allowed }
+          { subject: operation_subject(name), count: public_names.size, names: names,
+            max: max_public_methods, allowed: allowed }
+        end
+
+        def operation_subject(name)
+          name ? "Operation `#{name}`" : "Operation"
         end
 
         def max_public_methods

@@ -2,6 +2,8 @@
 
 require "rubocop"
 
+require_relative "../../source_cache"
+
 module MetzScan
   module Analyzers
     class NamespaceLeakPressure
@@ -21,20 +23,14 @@ module MetzScan
           end
 
           def exception?
-            return false unless declaration.path && File.file?(declaration.path)
+            return false unless declaration.path
 
-            exception_node?(processed_source.ast, declaration.name.to_s)
-          rescue Parser::SyntaxError, SystemCallError
-            false
+            exception_node?(SourceCache.ast(declaration.path), declaration.name.to_s)
           end
 
           private
 
           attr_reader :declaration
-
-          def processed_source
-            RuboCop::ProcessedSource.new(File.read(declaration.path), RUBY_VERSION.to_f)
-          end
 
           def exception_node?(node, name, namespace = [])
             return false unless node

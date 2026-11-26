@@ -21,11 +21,12 @@ module MetzScan
       "test/metz_scan/sigint_test.rb",
       "test/metz_scan/commands/scan_all_cops_analyzer_scope_test.rb",
       "test/metz_scan/commands/scan_analyzer_*_test.rb",
-      "test/metz_scan/commands/scan_auto_fix*_test.rb",
+      "test/metz_scan/commands/scan_baseline_test.rb",
       "test/metz_scan/commands/scan_config_disabled_test.rb",
       "test/metz_scan/commands/scan_directory_view_templates_test.rb",
       "test/metz_scan/commands/scan_error_test.rb",
-      "test/metz_scan/commands/scan_exit_*_test.rb",
+      "test/metz_scan/commands/scan_exit_errors_test.rb",
+      "test/metz_scan/commands/scan_exit_scope_and_config_test.rb",
       "test/metz_scan/commands/scan_github_annotations_format_test.rb",
       "test/metz_scan/commands/scan_inherit_mode_test.rb",
       "test/metz_scan/commands/scan_json_guidance_test.rb",
@@ -51,15 +52,12 @@ module MetzScan
       test/metz_scan/commands/scan_analyzer_config_suppression_test.rb
       test/metz_scan/commands/scan_analyzer_inline_suppression_test.rb
       rubocop-metz/test/cop/metz/views_deep_navigation_test.rb
-      test/metz_scan/commands/scan_exit_auto_fix_test.rb
       test/metz_scan/commands/scan_config_disabled_test.rb
-      test/metz_scan/commands/scan_exit_rubocop_errors_test.rb
-      test/metz_scan/commands/scan_exit_auto_fix_failures_test.rb
+      test/metz_scan/commands/scan_exit_errors_test.rb
       test/metz_scan/commands/scan_path_scoped_include_note_test.rb
       test/metz_scan/commands/scan_rails_aware_include_test.rb
       test/metz_scan/commands/scan_directory_view_templates_test.rb
       test/metz_scan/check_ci_parity_test.rb
-      test/metz_scan/commands/scan_exit_templates_outside_views_test.rb
     ].freeze
 
     module_function

@@ -12,7 +12,8 @@ require_relative "scan/project_analyzer_runner"
 require_relative "scan/text_renderer"
 require_relative "scan/sarif_renderer"
 require_relative "scan/github_annotations_renderer"
-require_relative "scan/auto_fix"
+require_relative "scan/baseline_filter"
+require_relative "scan/baseline_loader"
 require_relative "scan/ignored_cli_options_note"
 require_relative "scan/json_guidance"
 require_relative "../cli"
@@ -20,21 +21,16 @@ require_relative "../cli"
 module MetzScan
   module Commands
     class ScanOptions
-      USAGE = "Usage: metz-scan scan PATH... [--format text|json|sarif|gh-annotations] " \
-              "[--all-cops] [--project-analyzers] [--auto-fix [--unsafe] [--dry-run]]"
+      USAGE = "Usage: metz-scan scan PATH... [--baseline FILE] [--format text|json|sarif|gh-annotations] " \
+              "[--all-cops] [--project-analyzers]"
       VALID_FORMATS = %w[text json sarif gh-annotations].freeze
       DEFAULT_FORMAT = "text"
 
-      Options = Struct.new(:format, :paths, :all_cops, :project_analyzers, :auto_fix, :unsafe, :dry_run, :help,
-                           keyword_init: true)
+      Options = Struct.new(:format, :paths, :baseline, :all_cops, :project_analyzers, :help, keyword_init: true)
 
-      def self.parse(argv)
-        new.parse(argv)
-      end
+      def self.parse(argv) = new.parse(argv)
 
-      def self.help
-        new.help
-      end
+      def self.help = new.help
 
       def parse(argv)
         flags = default_flags
@@ -42,27 +38,28 @@ module MetzScan
         Options.new(**flags, paths: paths)
       end
 
-      def help
-        option_parser(default_flags).help
-      end
+      def help = option_parser(default_flags).help
 
       private
 
       def default_flags
-        { format: DEFAULT_FORMAT, all_cops: false, project_analyzers: false, auto_fix: false, unsafe: false,
-          dry_run: false, help: false }
+        { format: DEFAULT_FORMAT, baseline: nil, all_cops: false, project_analyzers: false, help: false }
       end
 
-      def option_parser(flags)
-        OptionParser.new(USAGE) { |opts| configure_parser(opts, flags) }
-      end
+      def option_parser(flags) = OptionParser.new(USAGE) { |opts| configure_parser(opts, flags) }
 
       def configure_parser(opts, flags)
+        configure_baseline_parser(opts, flags)
         configure_format_parser(opts, flags)
         configure_cop_selection_parser(opts, flags)
         configure_project_analyzer_parser(opts, flags)
-        configure_auto_fix_parser(opts, flags)
         configure_help_parser(opts, flags)
+      end
+
+      def configure_baseline_parser(opts, flags)
+        opts.on("--baseline FILE", "Report only new or grown findings compared to a saved JSON scan report") do |file|
+          flags[:baseline] = file
+        end
       end
 
       def configure_format_parser(opts, flags)
@@ -83,12 +80,6 @@ module MetzScan
         end
       end
 
-      def configure_auto_fix_parser(opts, flags)
-        opts.on("--auto-fix", "Apply RuboCop's safe fixes (delegates to rubocop -a)") { flags[:auto_fix] = true }
-        opts.on("--unsafe", "With --auto-fix, also apply unsafe fixes (rubocop -A)") { flags[:unsafe] = true }
-        opts.on("--dry-run", "With --auto-fix, print diff without modifying files") { flags[:dry_run] = true }
-      end
-
       def configure_help_parser(opts, flags)
         opts.on("-h", "--help", "Show this help message and exit") { flags[:help] = true }
       end
@@ -98,13 +89,12 @@ module MetzScan
       USAGE = ScanOptions::USAGE
       VALID_FORMATS = ScanOptions::VALID_FORMATS
 
-      def self.run(argv, stdout:, stderr:)
-        new(stdout: stdout, stderr: stderr).run(argv)
-      end
+      def self.run(argv, stdout:, stderr:) = new(stdout: stdout, stderr: stderr).run(argv)
 
       def initialize(stdout:, stderr:)
         @stdout = stdout
         @stderr = stderr
+        @baseline = nil
       end
 
       def run(argv)
@@ -122,28 +112,17 @@ module MetzScan
       def handle_options(options)
         return print_help if options.help
 
-        validate(options) || dispatch(options)
+        validate(options) || scan(options)
       end
 
-      def parse_options(argv)
-        ScanOptions.parse(argv)
-      end
+      def parse_options(argv) = ScanOptions.parse(argv)
 
       def validate(options)
         return missing_path_arg if options.paths.empty?
         return missing_paths(options.paths) unless options.paths.all? { |p| File.exist?(p) }
+        return invalid_format(options.format) unless VALID_FORMATS.include?(options.format)
 
-        invalid_format(options.format) unless VALID_FORMATS.include?(options.format)
-      end
-
-      def dispatch(options)
-        return auto_fix(options) if options.auto_fix
-
-        scan(options)
-      end
-
-      def auto_fix(options)
-        AutoFix.new(stdout: stdout, stderr: stderr).run(options)
+        validate_baseline(options.baseline) if options.baseline
       end
 
       # The report reaches stdout only after every step succeeded; see CheckFailure.
@@ -160,9 +139,10 @@ module MetzScan
 
       def build_report(options, scope)
         parsed = checked_report(options, scope)
-        merge_project_analyzers(parsed, options, scope)
+        entries = merge_project_analyzers(parsed, options, scope)
+        ComplianceScorecard.record_file_counts!(parsed)
+        BaselineFilter.apply!(parsed, @baseline, analyzer_entries: entries) if @baseline
         ComplianceScorecard.add_to_summary!(parsed)
-        parsed
       end
 
       def checked_report(options, scope)
@@ -173,13 +153,14 @@ module MetzScan
       end
 
       def merge_project_analyzers(parsed, options, scope)
-        opts = { default_output: !options.project_analyzers, all_cops: options.all_cops, **scope }
+        entries = []
+        opts = { default_output: !options.project_analyzers, all_cops: options.all_cops,
+                 analyzer_entries: entries, **scope }
         ProjectAnalyzerRunner.merge!(parsed, options.paths, **opts)
+        entries
       end
 
-      def rendered(parsed, options)
-        StringIO.new.tap { |out| render(out, parsed, options) }.string
-      end
+      def rendered(parsed, options) = StringIO.new.tap { |out| render(out, parsed, options) }.string
 
       # Text and SARIF render the compacted report so live output matches `report` on the saved JSON.
       def render(out, parsed, options)
@@ -216,6 +197,18 @@ module MetzScan
 
       def invalid_format(fmt)
         stderr.puts "metz-scan scan: invalid --format '#{fmt}'. Valid formats: text, json, sarif, gh-annotations."
+        CLI::USAGE_ERROR
+      end
+
+      def validate_baseline(path)
+        @baseline = BaselineLoader.load(path)
+        nil
+      rescue BaselineLoader::Error => e
+        invalid_baseline(path, e.message)
+      end
+
+      def invalid_baseline(path, reason)
+        stderr.puts "metz-scan scan: invalid --baseline '#{path}': #{reason}"
         CLI::USAGE_ERROR
       end
     end

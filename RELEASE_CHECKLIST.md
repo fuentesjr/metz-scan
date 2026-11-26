@@ -148,18 +148,6 @@ bundle exec metz-scan scan "$fixture_dir/service_soup_app" --project-analyzers -
 rm -rf "$fixture_dir"
 ```
 
-- [ ] Confirm dry-run auto-fix does not modify files.
-
-```bash
-git diff --quiet
-autofix_dir="$(mktemp -d)"
-cp -R test/fixtures/service_soup_app "$autofix_dir/service_soup_app"
-bundle exec metz-scan scan "$autofix_dir/service_soup_app" --auto-fix --dry-run
-diff -qr test/fixtures/service_soup_app "$autofix_dir/service_soup_app"
-git diff --quiet
-rm -rf "$autofix_dir"
-```
-
 ## Source Tag and GitHub Release
 
 - [ ] Open the prep PR, merge it after CI passes, wait for the main push run to go green, then tag that merge commit.

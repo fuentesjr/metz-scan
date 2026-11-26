@@ -5,8 +5,8 @@ require "minitest/autorun"
 require "support/scan_subprocess"
 
 # Spec tests for Proposal B: per-cop `Include` widening and replacement in the
-# default (Metz-only) scan, `--auto-fix`, `--all-cops`, suppression ledger, and
-# nested `.rubocop.yml` inheritance.
+# default (Metz-only) scan, `--all-cops`, suppression ledger, and nested
+# `.rubocop.yml` inheritance.
 module MetzScan
   module Commands
     module WidenedIncludeScanSupport
@@ -70,12 +70,6 @@ module MetzScan
         end
       end
 
-      def test_auto_fix_on_project_with_only_widened_view_component_template_exits_one
-        with_project(single_widened_component_project) do |dir|
-          assert_equal 1, scan_subprocess(dir, ".", "--auto-fix").exitstatus
-        end
-      end
-
       def test_broad_widened_include_glob_ignores_non_template_assets
         with_project(broad_glob_component_files) do |dir|
           assert_clean_single_template_scan(scan_subprocess(dir, ".", "--format", "json"))
@@ -89,11 +83,6 @@ module MetzScan
       end
 
       private
-
-      def single_widened_component_project
-        { ".rubocop.yml" => merged_views_config(COMPONENT_GLOB),
-          "app/components/card_component.html.erb" => DEEP_ERB }
-      end
 
       def widened_component_templates
         { ".rubocop.yml" => merged_views_config(COMPONENT_GLOB),

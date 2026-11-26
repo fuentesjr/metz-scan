@@ -13,8 +13,10 @@ module MetzScan
         Metz/ClassesTooLong
         Metz/ControllersTooManyDirectCollaborators
         Metz/DemeterTrainWreck
+        Metz/GodServiceClass
         Metz/MethodsTooLong
         Metz/MethodsTooManyParameters
+        Metz/OperationsTooManyPublicMethods
         Metz/TestAssertsOnInternals
         Metz/TestReachesPrivate
         Metz/TestStubsSubject
@@ -82,6 +84,73 @@ module MetzScan
         code = Explain.run([], stdout: @stdout, stderr: @stderr)
         assert_equal 64, code
         assert_match(/Usage: metz-scan explain/, @stderr.string)
+      end
+    end
+
+    class ExplainProjectAnalyzerTest < Minitest::Test
+      %w[
+        ServiceSoup RepeatedBranching DeepInheritanceTree PackageDependencyPressure NamespaceLeakPressure
+        ImplicitContextPressure RepeatedQueryCriteria SubclassOverridePressure TestCallsPrivateMethod
+      ].each do |analyzer|
+        define_method("test_explain_supports_project_analyzer_#{analyzer}") do
+          explain_project_analyzer("MetzProject/#{analyzer}")
+        end
+      end
+
+      def setup
+        @stdout = StringIO.new
+        @stderr = StringIO.new
+      end
+
+      def test_explain_service_soup_describes_the_validated_default_analyzer
+        output = project_analyzer_metadata("MetzProject/ServiceSoup")
+        assert_match(/workflow.*orchestration|orchestration.*workflow/i, rationale(output))
+        assert_analyzer_status(output, "validated", "yes", "design pressure")
+      end
+
+      def test_explain_package_dependency_pressure_describes_the_opt_in_candidate
+        output = project_analyzer_metadata("MetzProject/PackageDependencyPressure")
+        assert_match(/package.*(?:dependenc|boundar)|(?:dependenc|boundar).*package/i, rationale(output))
+        assert_analyzer_status(output, "candidate", "no", "manual review")
+      end
+
+      def test_explain_unknown_project_analyzer_exits_with_discovery_guidance
+        code = Explain.run(["MetzProject/Nonexistent"], stdout: @stdout, stderr: @stderr)
+
+        assert_equal 64, code
+        assert_includes @stderr.string, "MetzProject/Nonexistent"
+        assert_match(/metz-scan (?:project-analyzers|rules)\b/, @stderr.string)
+        refute_match(/Traceback|\.rb:\d+:in /, @stdout.string + @stderr.string)
+      end
+
+      private
+
+      def explain_project_analyzer(rule_id)
+        code = Explain.run([rule_id], stdout: @stdout, stderr: @stderr)
+        assert_equal 0, code, @stderr.string
+
+        assert_includes @stdout.string.lines.map(&:chomp), rule_id
+        refute_empty rationale(@stdout.string)
+        @stdout.string
+      end
+
+      def project_analyzer_metadata(rule_id)
+        output = explain_project_analyzer(rule_id)
+        assert_includes output.lines.map(&:chomp).each_cons(2).to_a, [rule_id, "=" * rule_id.length]
+        assert_match(/^Fix safety: manual$/, output)
+        assert_match(/^Suggested next moves:[ \t]*\n[ \t]*- \S/, output)
+        output
+      end
+
+      def rationale(output)
+        output[/^Why it matters:[ \t]*\n?(.*?)(?=^[A-Z][^:\n]*:|\z)/m, 1].to_s.split.join(" ")
+      end
+
+      def assert_analyzer_status(output, status, default_scan, triage)
+        assert_match(/^Status:\s*#{status}\b/, output)
+        assert_match(/Default scan: #{default_scan}\b/, output)
+        assert_match(/Confidence: medium\b/, output)
+        assert_match(/Triage: #{triage}\b/, output)
       end
     end
   end

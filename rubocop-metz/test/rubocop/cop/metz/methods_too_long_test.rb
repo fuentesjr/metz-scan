@@ -39,7 +39,7 @@ class RuboCopCopMetzMethodsTooLongTest < Minitest::Test
     source = "def big\n#{body}\nend\n"
 
     assert_metz_offense_count(1, source)
-    assert_match(%r{Method has too many lines\. \[7/5\]}, @metz_offenses.first.message)
+    assert_equal "Method `big` has too many lines. [7/5]", @metz_offenses.first.message
   end
 
   def test_silent_on_method_with_five_line_body
@@ -65,15 +65,33 @@ class RuboCopCopMetzMethodsTooLongTest < Minitest::Test
     body = %w[a b c d e f g].map { |n| "#{n} = 1" }.join("\n")
 
     assert_metz_offense_count(1, "def self.big\n#{body}\nend\n")
+    assert_equal "Method `self.big` has too many lines. [7/5]", @metz_offenses.first.message
   end
 
-  def test_fires_on_define_method_block_body
-    body = %w[a b c d e f g].map { |n| "  #{n} = 1" }.join("\n")
-    source = +"define_method(:big) do\n"
-    source << body
-    source << "\nend\n"
+  def test_names_singleton_method_on_a_constant
+    body = "  step\n" * 7
 
-    assert_metz_offense_count(1, source)
+    assert_metz_offense_count(1, "def Foo.big\n#{body}end\n")
+    assert_equal "Method `Foo.big` has too many lines. [7/5]", @metz_offenses.first.message
+  end
+
+  def test_names_define_method_with_a_symbol_literal
+    assert_define_method_message(":big", "Method `big` has too many lines. [7/5]")
+  end
+
+  def test_names_define_method_with_a_string_literal
+    assert_define_method_message(%("big"), "Method `big` has too many lines. [7/5]")
+  end
+
+  def test_omits_method_name_when_define_method_argument_is_dynamic
+    assert_define_method_message("dynamic_name", "Method has too many lines. [7/5]")
+  end
+
+  def assert_define_method_message(argument, message)
+    body = "  step\n" * 7
+
+    assert_metz_offense_count(1, "define_method(#{argument}) do\n#{body}end\n")
+    assert_equal message, @metz_offenses.first.message
   end
 
   def test_silent_when_comments_dominate_and_count_comments_false

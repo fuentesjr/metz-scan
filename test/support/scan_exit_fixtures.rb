@@ -91,13 +91,5 @@ module MetzScan
         def add_to_summary!(_parsed) = raise(SystemStackError, "injected stack failure")
       end)
     RUBY
-
-    # Raised when --auto-fix starts, before it hands anything to RuboCop.
-    AUTO_FIX_LOAD_ERROR_SHIM = <<~RUBY
-      require "%<lib>s/metz_scan/commands/scan"
-      MetzScan::Commands::Scan::AutoFix.prepend(Module.new do
-        def run(_options) = raise(LoadError, "injected load failure")
-      end)
-    RUBY
   end
 end

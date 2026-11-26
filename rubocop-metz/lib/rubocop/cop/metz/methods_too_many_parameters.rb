@@ -22,7 +22,7 @@ module RuboCop
           "Inject collaborators through the constructor so action methods stay narrow."
         ]
 
-        MSG = "Avoid parameter lists longer than %<max>d parameters. [%<count>d/%<max>d]"
+        MSG = "Method `%<name>s` has too many parameters. [%<count>d/%<max>d]"
 
         exclude_limit "Max"
 
@@ -37,9 +37,12 @@ module RuboCop
         def register_offense(node, count)
           return unless count > max_params
 
-          add_offense(node, message: format(MSG, max: max_params, count: count)) do
-            self.max = count
-          end
+          msg = format(MSG, name: method_name(node.parent), max: max_params, count: count)
+          add_offense(node, message: msg) { self.max = count }
+        end
+
+        def method_name(parent)
+          parent.defs_type? ? "#{parent.receiver.source}.#{parent.method_name}" : parent.method_name.to_s
         end
 
         def method_definition_args?(node)

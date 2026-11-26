@@ -47,7 +47,7 @@
               "id": "Metz/MethodsTooLong",
               "name": "Metz/MethodsTooLong",
               "shortDescription": {
-                "text": "Metz/MethodsTooLong: Method has too many lines. [6/5]"
+                "text": "Metz/MethodsTooLong: Method `long_method` has too many lines. [6/5]"
               },
               "defaultConfiguration": {
                 "level": "warning"
@@ -382,7 +382,7 @@
           "ruleId": "Metz/MethodsTooLong",
           "level": "warning",
           "message": {
-            "text": "Metz/MethodsTooLong: Method has too many lines. [6/5]"
+            "text": "Metz/MethodsTooLong: Method `long_method` has too many lines. [6/5]"
           },
           "locations": [
             {
@@ -399,7 +399,7 @@
             }
           ],
           "partialFingerprints": {
-            "primaryLocationLineHash": "3f6d117a052676ff885a578fbb4f4e8a1a7c712e936380d984758bc4cd36272d"
+            "primaryLocationLineHash": "4dc94da7b56064482587b194dd3575f2eea0c54aec33ac2c26ff519de000d4a5"
           }
         },
         {

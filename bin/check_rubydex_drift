@@ -11,7 +11,7 @@ require "metz_scan/calibration/rubydex_drift_formatter"
 require "metz_scan/commands/scan/project_analyzer_runner"
 
 PROJECT_ANALYZER_RUNNER = MetzScan::Commands::Scan::ProjectAnalyzerRunner
-ANALYZERS = PROJECT_ANALYZER_RUNNER::INDEX_BACKED_ANALYZERS.map { |analyzer| analyzer::RULE_ID }.freeze
+ANALYZERS = PROJECT_ANALYZER_RUNNER.index_backed_analyzers.map { |analyzer| analyzer::RULE_ID }.freeze
 DEFAULT_TARGETS_FILE = File.expand_path("../docs/calibration/project_analyzer_targets.yml", __dir__)
 RUNNER = MetzScan::Calibration::ProjectAnalyzerEvidenceRunner
 

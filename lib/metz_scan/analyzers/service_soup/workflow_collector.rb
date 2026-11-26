@@ -3,6 +3,7 @@
 require "rubocop"
 
 require_relative "service_call_pattern"
+require_relative "../source_cache"
 
 module MetzScan
   module Analyzers
@@ -17,18 +18,12 @@ module MetzScan
         end
 
         def call
-          collect_workflows(processed_source.ast, [], [])
-        rescue Parser::SyntaxError
-          []
+          collect_workflows(SourceCache.ast(path), [], [])
         end
 
         private
 
         attr_reader :path
-
-        def processed_source
-          RuboCop::ProcessedSource.new(File.read(path), RUBY_VERSION.to_f)
-        end
 
         def collect_workflows(node, namespace, workflows)
           return workflows unless node
