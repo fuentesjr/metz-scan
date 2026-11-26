@@ -1,0 +1,72 @@
+name: security-bump lane
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, edited, labeled, unlabeled]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  security-bump-lane:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Reset working tree to base
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          case "$BASE_SHA" in
+            *[!0-9a-f]*)
+              exit 1
+              ;;
+          esac
+          if [ "${#BASE_SHA}" -ne 40 ]; then
+            exit 1
+          fi
+          git cat-file -e "$BASE_SHA"
+          git checkout --force --detach "$BASE_SHA"
+          git clean -fdx
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@f9c4492e86def3e644ab32a0ef185eda5b0c20d0 # v1.342.0
+        with:
+          ruby-version: .ruby-version
+          bundler: none
+
+      - name: Check security-bump lane
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          case "$BASE_SHA" in
+            *[!0-9a-f]*)
+              exit 1
+              ;;
+          esac
+          if [ "${#BASE_SHA}" -ne 40 ]; then
+            exit 1
+          fi
+          git cat-file -e "$BASE_SHA"
+          if git cat-file -e "$BASE_SHA:tools/lane/security_bump.rb" 2>/dev/null && [ "$(git cat-file -t "$BASE_SHA:tools/lane/security_bump.rb")" = "blob" ]; then
+            git show "$BASE_SHA:tools/lane/security_bump.rb" > "$RUNNER_TEMP/security_bump.rb"
+            ruby "$RUNNER_TEMP/security_bump.rb"
+          else
+            rc=0
+            python3 -c 'import json,os,sys; event=json.load(open(os.environ["GITHUB_EVENT_PATH"])); pr=event.get("pull_request"); sys.exit(2) if not isinstance(pr, dict) else None; labels=pr.get("labels"); sys.exit(2) if not isinstance(labels, list) else None; names=[item.get("name") if isinstance(item, dict) else item for item in labels]; sys.exit(0 if "lane: security-bump" in names else 3)' || rc=$?
+            if [ "$rc" -eq 0 ]; then
+              printf '%s\n' "lane: security-bump label on a PR that changes more than version strings: tools/lane/security_bump.rb:1. Remove the label so the normal gates run, or split the version bump into its own PR."
+              exit 1
+            elif [ "$rc" -ne 3 ]; then
+              printf '%s\n' "lane: security-bump label on a PR that changes more than version strings: api:0. Remove the label so the normal gates run, or split the version bump into its own PR."
+              exit 1
+            fi
+          fi
