@@ -371,3 +371,6 @@ Wave 2 feature and cleanup slices landed (Hydrogen workers + GPT-6.2-sol contrac
 
 ## 2026-11-26T00:13Z log
 add Release prep v0.8.0: bumped both gems to 0.8.0 for #138 (--baseline, cop target names, --auto-fix removal); release notes in docs/releases/v0.8.0.md.
+
+## 2026-11-26T00:40Z log
+v0.8.0 published: tag v0.8.0 at 88af0a8 (PR #139 merge, green main run 45729069941); GitHub Release live; GitHub Packages publish rubocop-metz then metz-scan; bin/check_published_gem 0.8.0 PASS; owner pushed both gems to rubygems.org in the same order (0.8.0 confirmed via rubygems.org API).
